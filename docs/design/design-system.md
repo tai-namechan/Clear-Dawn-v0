@@ -48,7 +48,7 @@ UI 仕様書 v2 の内容を正として移植したドキュメント。
     position: relative;
     min-height: 100vh;
     background-color: #f7f3ec;
-    background-image: url('/images/bg/marble-soft.webp');
+    background-image: url('/images/backgrounds/paper-marble-mist.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
