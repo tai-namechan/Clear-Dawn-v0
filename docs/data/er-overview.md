@@ -1,7 +1,8 @@
 # 全体 ER 図と横串 FK 方針
 
-Phase 1 の 4 テーブルは Phase 1 設計書 v0.3 を正とする（確定）。
-それ以外の後続フェーズのテーブルは **ドラフト** であり、各マイルストーン着手前に確定させる。
+Phase 1 の Matrix 中核 4 テーブル + 横断イベントログ **activity_logs** は Phase 1 設計書 v0.3
+をベースに確定（activity_logs は M1 追加）。それ以外の後続フェーズのテーブルは **ドラフト** であり、
+各マイルストーン着手前に確定させる。
 
 ## Phase 1（確定）
 
@@ -12,6 +13,8 @@ erDiagram
     life_areas ||--o{ matrix_cells : "column"
     matrix_rows ||--o{ matrix_cells : "row"
     matrix_cells ||--o{ matrix_cell_items : contains
+    users ||--o{ activity_logs : has
+    matrix_cell_items ||--o{ activity_logs : "events"
 
     life_areas {
         ulid id PK
@@ -45,10 +48,20 @@ erDiagram
         int sort_order
         datetime deleted_at
     }
+    activity_logs {
+        ulid id PK
+        bigint user_id FK
+        string event_type
+        string subject_type
+        ulid subject_id
+        datetime occurred_at
+    }
 ```
 
 - `matrix_rows` はグローバルマスタ（user_id を持たない）。seed で固定 3 行を投入する
 - `matrix_cells` は unique(user_id, life_area_id, matrix_row_id) で重複禁止
+- **activity_logs** は M1 で作成・記録開始（`matrix_item_completed` / `matrix_item_reopened`）。
+  実行履歴 UI（/history）は M3
 
 ## v0 全体（後続フェーズ・ドラフト）
 
@@ -94,20 +107,21 @@ erDiagram
 - 領域の非表示（`is_active = false`）時も FK は保持する（データを失わない）
 - 領域は物理削除しない運用を基本とするため、FK の on delete は restrict を基本とする
 
-## イベントログ（activity_logs）方針
+## イベントログ（activity_logs）方針（確定）
 
-実行履歴画面の基盤。以下のイベントを 1 テーブルに時系列で記録する。
+実行履歴の基盤。不変のイベントログとして 1 テーブルに時系列で記録する。
+TOP Matrix 自体のスナップショット履歴ではない。
 
-| イベント種別 | 発生元 | 記録内容 |
-|---|---|---|
-| matrix_item_completed | セル項目の完了切替（完了時） | subject: matrix_cell_item_id, occurred_at |
-| routine_completed | ルーティン実行の完了 | subject: routine_log_id, occurred_at |
+| イベント種別 | 記録開始 | 発生元 | 記録内容 |
+|---|---|---|---|
+| matrix_item_completed | **M1** | セル項目の完了切替（完了時） | subject: matrix_cell_item_id, occurred_at |
+| matrix_item_reopened | **M1** | セル項目の完了取り消し | subject: matrix_cell_item_id, occurred_at |
+| routine_completed | **M3** | ルーティン実行の完了 | subject: routine_log_id, occurred_at |
 
 - subject はポリモーフィック参照（subject_type + subject_id）とする
-- **Phase 2 着手前に設計を確定する**（後付けは過去履歴が欠損するため）。
-  Phase 1 実装時点から完了イベントを記録開始するかはロードマップの判断ポイント
-- ログは不変（更新しない）。完了取り消し時は取り消しイベントを追加するか、
-  対象イベントを削除するかを設計確定時に決める
+- ログは不変（更新・削除しない）。完了取り消しは `matrix_item_reopened` イベントを追加する
+- 実行履歴 UI（GET /history）は **M3** で実装。M1 では記録のみ
+- 日次・週次振り返りは M2 初期は `completed_at` 参照。将来的に activity_logs を参照できるようにする
 
 ## 想定データ規模とクエリ方針
 

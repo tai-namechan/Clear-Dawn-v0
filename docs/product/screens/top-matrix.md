@@ -47,14 +47,15 @@ v0 の核であり、最初に実装する縦断対象。
 ## データ設計
 
 テーブル定義の詳細は [../../data/tables.md](../../data/tables.md) を参照。
-Phase 1 は以下 4 テーブルを中心に構成する。
+Phase 1（M1）は **Matrix 中核 4 テーブル + 横断 activity_logs** で構成する。
 
 | テーブル | 主なカラム | 役割 |
 |---|---|---|
-| life_areas | id(ULID), user_id, name, color, sort_order, is_active, deleted_at | 横軸の領域。仕事・野球など |
+| life_areas | id(ULID), user_id(bigint), name, color, sort_order, is_active, deleted_at | 横軸の領域。仕事・野球など |
 | matrix_rows | id(ULID), key, label, sort_order, is_checkable | 縦軸の固定行。チェック表示可否も持つ |
-| matrix_cells | id(ULID), user_id, life_area_id, matrix_row_id | 領域 × 行のセル。重複禁止 |
+| matrix_cells | id(ULID), user_id(bigint), life_area_id, matrix_row_id | 領域 × 行のセル。重複禁止 |
 | matrix_cell_items | id(ULID), matrix_cell_id, title, memo, is_completed, completed_at, sort_order, deleted_at | セル内の複数項目。実際の表示単位 |
+| activity_logs | id(ULID), user_id(bigint), event_type, subject_type, subject_id, occurred_at | 不変イベントログ。M1 から記録開始 |
 
 ### index / unique 制約
 
@@ -109,16 +110,20 @@ Phase 1 は以下 4 テーブルを中心に構成する。
 2. PATCH /matrix-cell-items/{item}/toggle を送信
 3. 対象項目が存在しなければ 404
 4. 自分のデータでなければ 403（Policy）
-5. `is_completed` が false なら true にし、`completed_at = now()`
-6. `is_completed` が true なら false にし、`completed_at = null`
+5. `is_completed` が false なら true にし、`completed_at = now()`。`activity_logs` に `matrix_item_completed` を記録
+6. `is_completed` が true なら false にし、`completed_at = null`。`activity_logs` に `matrix_item_reopened` を記録
 7. 保存後、画面を更新する
+
+activity_logs は不変のイベントログである。TOP Matrix のスナップショット履歴ではない。
+実行履歴 UI（GET /history）は M3 で実装する。
 
 ## 他機能との接続（v0 全体視点）
 
-- 完了切替はイベントログ（実行履歴の基盤）に記録する。詳細は
-  [routines.md](./routines.md) の「実行履歴」と [../../data/er-overview.md](../../data/er-overview.md) を参照
-- セル項目から「メモとして残す」導線を後続フェーズで追加する（[memos.md](./memos.md)）
-- 日次振り返りは当日完了した「今やるべきこと」項目を参照表示する（[reviews.md](./reviews.md)）
+- 完了切替は M1 から **activity_logs** に記録する（`matrix_item_completed` / `matrix_item_reopened`）。
+  実行履歴 UI は M3（[routines.md](./routines.md) 参照）
+- セル項目から「メモとして残す」導線を M2 で追加する（[memos.md](./memos.md)）
+- 日次振り返りは M2 初期は `completed_at` 参照。将来的に activity_logs 参照へ移行可能
+  （[reviews.md](./reviews.md)）
 
 ## UI 上の要点（デザインの正: UI 仕様書 v2）
 
