@@ -25,7 +25,7 @@ description: >-
 ### Step 1: 調査（コードを書かない）
 1. SEARCH_SCOPE 内で関連ファイル候補を列挙する
 2. 類似実装（正常に動いている同種機能）を最大3件 Read し、期待される構造を把握する
-3. データフローを Controller → Service → Repository → Vue まで追跡する
+3. データフローを Controller → Query / Service → Vue まで追跡する
 4. Data Cardinality / Filter Location / Ops Delta を根拠付きで確定する
 
 ### Step 2: 原因確定

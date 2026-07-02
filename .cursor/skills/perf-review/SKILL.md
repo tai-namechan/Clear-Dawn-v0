@@ -20,12 +20,12 @@ description: >-
 
 - [対象メソッド/ファイル]
 - [変更内容]（before/after 概要）
-- [Repository 側の取得/フィルタ条件]
+- [Query / 取得側のフィルタ条件]
 - SEARCH_SCOPE
 
 ## 手順
 
-1. **Data Cardinality の確定**: Repository / SQL のコードを根拠に、対象データが 0/1・複数・大量のどれか確定する（推測禁止。`first()` / `get()` / WHERE 条件を実コードで確認）
+1. **Data Cardinality の確定**: Query / SQL / Eloquent のコードを根拠に、対象データが 0/1・複数・大量のどれか確定する（推測禁止。`first()` / `get()` / WHERE 条件を実コードで確認）
 2. **Filter Location の判定**: 絞り込みが SQL（WHERE / JOIN ON）か PHP（Collection）か特定し、変更で SQL → PHP に移動していないか確認する
 3. **Ops Delta の具体化**: クエリ発行数・ループ回数・メモリ載せ件数の増減を数で示す
 4. **最悪ケースの検証**: 本番最大データ件数（数千件想定）で落ちない/遅くならないことを説明する。破綻する場合はその条件を明示する

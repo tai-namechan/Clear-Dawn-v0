@@ -1,9 +1,9 @@
 ---
-description: レイヤー構造と責務 - Controller / Service / Repository / Request / Resource の配置
+description: レイヤー構造と責務 - Controller / Query / Service / Policy / FormRequest / Resource
 alwaysApply: true
 ---
 
-# アーキテクチャ基準（Laravel + Inertia）
+# アーキテクチャ基準（Laravel + Inertia / Clear Dawn）
 
 ## 基本思想
 
@@ -23,26 +23,43 @@ alwaysApply: true
 - 「なぜこう書いたのか分からない」場合は、書き換える前にユーザーに確認する
 - 既存コードの命名・構造パターンを踏襲する（独自の命名規則を持ち込まない）
 
-## レイヤー構造（厳守）
+## レイヤー構造（Clear Dawn 基本方針）
 
 ```
 Controller（薄く）
- ↓ 認可 → Request による入力確定 → Service/Repository 呼び出し → Resource 整形 → Inertia 返却
-Service（ビジネスロジック）
- ↓ Repository を組み合わせて業務要件を実現
-Repository（DB操作のみ）
- ↓ クエリビルダー・Eloquent 操作
+ ↓ Policy 認可 → FormRequest 入力検証 → Query（表示取得）/ Service（更新処理）→ Resource 整形 → Inertia 返却
+Query（表示・一覧取得）
+ ↓ Eloquent / クエリビルダー（読み取り）
+Service（更新・業務ロジック）
+ ↓ トランザクション・複数モデル更新・副作用
+Policy（認可）
+FormRequest（入力検証）
 ```
 
-- **Controller にビジネスロジックを書かない**
-- **Service に DB クエリを直接書かない**（Repository 経由）
-- **Repository にビジネス判断を入れない**（条件の組み立ては Service が行い、Repository はそれを受け取る）
-- 例外: 簡単な取得は Controller から Repository を直接呼んでよい（既存パターンがある場合は踏襲。迷ったら Service 経由）
+### 責務分担
+
+| レイヤー | 責務 | 必須 |
+|---|---|---|
+| Controller | HTTP 入出力、Policy 呼び出し、Query/Service 委譲、Inertia 返却 | はい |
+| FormRequest | 入力バリデーション | はい（入力がある場合） |
+| Policy | 認可（`authorize()` / `can()`） | はい（権限が絡む場合） |
+| Query | 表示・一覧・詳細のデータ取得 | 取得処理を分離する場合 |
+| Service | 更新・作成・削除・複合業務ロジック | 更新処理を分離する場合 |
+| Resource | Inertia props の整形 | 推奨 |
+
+### 重要な制約
+
+- **Repository Pattern は必須ではない**。導入済み領域があれば踏襲するが、未導入領域に勝手に追加しない
+- **Service 層も未導入の領域がある**。現行コードが Controller 直書きなら、まず既存パターンに合わせる
+- **Controller に更新ロジックを肥大化させない**。複雑化したら Service へ切り出す
+- **Query に更新処理を書かない**（読み取り専用）
+- **データスコープ**: ユーザー固有データは `user_id` で所有者を限定する（WHERE に必ず含める）
+- **持ち込まない概念**: `Admin` / `Shop` / `tenant_id` / 組織・店舗前提のマルチテナント設計
 
 ## 配置ルール
 
-- Controller / Request / Resource の配置は既存のディレクトリ構成に従う（領域分割がある場合はそれを踏襲する）
-- バリデーションは Request に集約する（Controller で二重チェックしない）
+- Controller / FormRequest / Policy の配置は既存のディレクトリ構成に従う
+- バリデーションは FormRequest に集約する（Controller で二重チェックしない）
 - Inertia に渡す props は **Resource 経由を優先**（配列直書きを増やさない）
 - Model は `app/Models`。既存の Relation / Accessor / Scope を優先して使う
 - Enum / 定数は既存の定義を使う。重複定義しない

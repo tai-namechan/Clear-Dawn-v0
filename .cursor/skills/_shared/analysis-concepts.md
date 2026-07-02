@@ -7,10 +7,10 @@ bugfix / incident / perf-review / review-only / spec の各スキルが参照す
 
 ## Data Cardinality（データ件数前提）
 
-対象データが「0/1件・複数件・大量件」のどれかを、**推測ではなく Repository / SQL のコードを根拠に**確定する。
+対象データが「0/1件・複数件・大量件」のどれかを、**推測ではなく Query / SQL / Eloquent のコードを根拠に**確定する。
 
 判定手順:
-1. 対象の Controller → Service → Repository とデータ取得元まで遡る
+1. 対象の Controller → Query / Service とデータ取得元まで遡る
 2. クエリに `limit` / `first()` / ページネーションがあるか、`get()` / `all()` 全件取得か確認する
 3. WHERE 条件（所有者・権限・日付範囲等）から本番での現実的な件数を見積もる
 
@@ -58,7 +58,7 @@ NG が1つでもあれば、パッチではなく「提案のみ（理由/代替
 |---|---|---|
 | 1 | サイドバー/ヘッダー等の共通部品を変更していないか | `global-workflow.mdc` |
 | 2 | 共通UIコンポーネント/パッケージの内部を直接変更していないか | `design-consistency.mdc` |
-| 3 | データのアクセス範囲（所有者・権限）のスコープ漏れがないか | `sql-memory-performance.mdc` |
+| 3 | データのアクセス範囲（`user_id`・Policy による権限）のスコープ漏れがないか | `sql-memory-performance.mdc` |
 | 4 | 1000件超になり得るデータの全件取得・N+1 を生んでいないか | `sql-memory-performance.mdc` |
 | 5 | テストが外部 HTTP を投げる可能性（Http::fake 漏れ）がないか | `http-safety.mdc` |
 | 6 | ビルド・dev server 関連の禁止コマンドを実行していないか | `project-specific.mdc` |

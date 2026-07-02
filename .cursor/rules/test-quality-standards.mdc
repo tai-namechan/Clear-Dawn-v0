@@ -16,7 +16,7 @@ alwaysApply: true
 | 種別 | 目的 | DB | 依存 |
 |---|---|---|---|
 | Unit Test | Service のビジネスロジック分岐を検証 | 使わない | Mockery でモック |
-| Feature Test (Repository) | クエリが正しいデータを返すか検証 | `RefreshDatabase` | 実DB |
+| Feature Test (Query) | クエリが正しいデータを返すか検証 | `RefreshDatabase` | 実DB |
 | Feature Test (Controller) | HTTP リクエスト → レスポンスの統合検証 | `RefreshDatabase` | 実DB + 認証 |
 
 ### 2. Mock のルール（Unit Test）
@@ -33,7 +33,7 @@ alwaysApply: true
 - **プロジェクト既存の Factory ヘルパーを最大限活用する**
   - 手動で複数 Factory を組み立てる前に、既存ヘルパーが使えないか確認する
 - **テスト対象外のデータも作り、スコープの正しさを証明する**
-  - 例: 所有者・権限でフィルタするなら「対象外のデータが返らないこと」もアサートする
+  - 例: `user_id` でフィルタするなら「他ユーザーのデータが返らないこと」もアサートする
   - 例: 日付範囲なら「範囲外の日付のデータが返らないこと」もアサートする
 - **`assertDatabaseCount` のハードコード件数に注意**
   - Factory ヘルパーが内部でレコードを作る場合がある。`$cntBefore = Model::count()` で取得してから差分で検証する
