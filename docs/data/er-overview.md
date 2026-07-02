@@ -15,7 +15,7 @@ erDiagram
 
     life_areas {
         ulid id PK
-        ulid user_id FK
+        bigint user_id FK
         string name
         string color
         int sort_order
@@ -31,7 +31,7 @@ erDiagram
     }
     matrix_cells {
         ulid id PK
-        ulid user_id FK
+        bigint user_id FK
         ulid life_area_id FK
         ulid matrix_row_id FK
     }

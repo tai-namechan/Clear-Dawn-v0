@@ -6,6 +6,9 @@
 共通規約（ULID / user_id スコープ / soft delete / 日付）は [conventions.md](./conventions.md) を参照。
 全テーブルに `created_at` / `updated_at` を持つ（以下では省略）。
 
+**ID 型の方針**: 新規ドメインテーブルの主キーは ULID。`users` を参照する `user_id` は
+bigint unsigned（既存 `users.id` に合わせる）。ドメインテーブル間の FK は ULID。
+
 ## Phase 1（確定）
 
 ### life_areas
@@ -13,7 +16,7 @@
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | ULID | PK |
-| user_id | ULID | FK(users) |
+| user_id | bigint unsigned | FK(users)。既存 `users.id`（BIGINT auto-increment）に合わせる |
 | name | string | 領域名 |
 | color | string | パレットキー |
 | sort_order | int | 列順 |
@@ -45,7 +48,7 @@ seed する固定 3 行:
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | ULID | PK |
-| user_id | ULID | FK(users) |
+| user_id | bigint unsigned | FK(users)。既存 `users.id`（BIGINT auto-increment）に合わせる |
 | life_area_id | ULID | FK(life_areas) |
 | matrix_row_id | ULID | FK(matrix_rows) |
 
@@ -73,7 +76,7 @@ index: (matrix_cell_id, sort_order), (matrix_cell_id, is_completed)
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | ULID | PK |
-| user_id | ULID | FK(users) |
+| user_id | bigint unsigned | FK(users)。既存 `users.id`（BIGINT auto-increment）に合わせる |
 | life_area_id | ULID nullable | FK(life_areas)。任意タグ |
 | matrix_cell_item_id | ULID nullable | FK(matrix_cell_items)。「メモ化」の由来 |
 | title | string nullable | |
@@ -87,7 +90,7 @@ index: (user_id, created_at), (user_id, life_area_id)
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | ULID | PK |
-| user_id | ULID | FK(users) |
+| user_id | bigint unsigned | FK(users)。既存 `users.id`（BIGINT auto-increment）に合わせる |
 | date | date | 対象日 |
 | note | text | 所感 |
 | score | tinyint nullable | 自己評価（例: 1-5） |
@@ -100,7 +103,7 @@ unique: (user_id, date)。当日完了実績はコピーせずクエリ参照。
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | ULID | PK |
-| user_id | ULID | FK(users) |
+| user_id | bigint unsigned | FK(users)。既存 `users.id`（BIGINT auto-increment）に合わせる |
 | week_start_date | date | 週の起点（月曜・ISO 週） |
 | note | text | 領域バランスの所感 |
 
@@ -113,7 +116,7 @@ unique: (user_id, week_start_date)
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | ULID | PK |
-| user_id | ULID | FK(users) |
+| user_id | bigint unsigned | FK(users)。既存 `users.id`（BIGINT auto-increment）に合わせる |
 | life_area_id | ULID nullable | FK(life_areas) |
 | name | string | |
 | frequency_type | string(Enum) | daily / weekly_days |
@@ -139,7 +142,7 @@ unique: (user_id, week_start_date)
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | ULID | PK |
-| user_id | ULID | FK(users) |
+| user_id | bigint unsigned | FK(users)。既存 `users.id`（BIGINT auto-increment）に合わせる |
 | routine_id | ULID | FK(routines) |
 | started_at | datetime | |
 | finished_at | datetime nullable | 中断時 null |
@@ -162,7 +165,7 @@ index: (user_id, started_at)。ログは soft delete しない（不変）。
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | ULID | PK |
-| user_id | ULID | FK(users) |
+| user_id | bigint unsigned | FK(users)。既存 `users.id`（BIGINT auto-increment）に合わせる |
 | event_type | string(Enum) | matrix_item_completed / routine_completed 等 |
 | subject_type | string | ポリモーフィック参照 |
 | subject_id | ULID | ポリモーフィック参照 |
@@ -188,7 +191,7 @@ index: (user_id, occurred_at), (user_id, event_type, occurred_at)
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | ULID | PK |
-| user_id | ULID | FK(users) |
+| user_id | bigint unsigned | FK(users)。既存 `users.id`（BIGINT auto-increment）に合わせる |
 | metric_id | ULID | FK(metrics) |
 | life_area_id | ULID nullable | FK(life_areas) |
 | recorded_on | date | 記録日 |
@@ -208,7 +211,7 @@ unique: (user_id, metric_id, recorded_on)
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | ULID | PK |
-| user_id | ULID | FK(users) |
+| user_id | bigint unsigned | FK(users)。既存 `users.id`（BIGINT auto-increment）に合わせる |
 | name | string | |
 | type | string(Enum) | income / expense |
 | sort_order | int | |
@@ -219,7 +222,7 @@ unique: (user_id, metric_id, recorded_on)
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | ULID | PK |
-| user_id | ULID | FK(users) |
+| user_id | bigint unsigned | FK(users)。既存 `users.id`（BIGINT auto-increment）に合わせる |
 | finance_category_id | ULID | FK(finance_categories) |
 | life_area_id | ULID nullable | FK(life_areas) |
 | type | string(Enum) | income / expense |
@@ -235,7 +238,7 @@ index: (user_id, date), (user_id, finance_category_id)
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | ULID | PK |
-| user_id | ULID | FK(users) |
+| user_id | bigint unsigned | FK(users)。既存 `users.id`（BIGINT auto-increment）に合わせる |
 | life_area_id | ULID nullable | FK(life_areas) |
 | title | string | |
 | storage_key | string | Object Storage 上のキー。公開 URL は保存しない |
@@ -248,7 +251,7 @@ index: (user_id, date), (user_id, finance_category_id)
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | ULID | PK |
-| user_id | ULID | FK(users) |
+| user_id | bigint unsigned | FK(users)。既存 `users.id`（BIGINT auto-increment）に合わせる |
 | kind | string(Enum) | 提案種別 |
 | content | json | 提案内容 |
 | status | string(Enum) | pending / adopted / dismissed |

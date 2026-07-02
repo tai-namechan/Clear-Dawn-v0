@@ -45,7 +45,7 @@ Clear Dawn は、単なるタスク管理アプリではない。仕事・夢・
 
 - スタック: Laravel + Inertia.js + Vue 3 + TypeScript + Tailwind CSS v4
 - PC ファースト（16:9 基準で設計、実装はレスポンシブ）
-- 主キーは ULID で統一（[ADR-0001](../adr/0001-ulid-primary-keys.md)）
+- 新規ドメインテーブルの主キーは ULID。既存 `users` は BIGINT を維持（[ADR-0001](../adr/0001-ulid-primary-keys.md)）
 - 全ユーザーデータは `user_id` でスコープ（[ADR-0002](../adr/0002-user-scoped-single-user-domain.md)）
 - 運用環境は最初は dev / prod のみ。test 環境は後で追加
 - 本番: Laravel Cloud。監視（Sentry）は後日導入（本ドキュメント時点では未着手）

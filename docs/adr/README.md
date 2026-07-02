@@ -7,7 +7,7 @@
 
 | # | タイトル | 状態 |
 |---|---|---|
-| [0001](./0001-ulid-primary-keys.md) | 主キーに ULID を採用する | 承認済み |
+| [0001](./0001-ulid-primary-keys.md) | 新規ドメインテーブルの主キーに ULID を採用する（users は BIGINT 維持） | 承認済み |
 | [0002](./0002-user-scoped-single-user-domain.md) | user_id スコープ・シングルユーザードメインとする | 承認済み |
 | [0003](./0003-single-top-matrix-without-history.md) | TOP Matrix はユーザーごと 1 つ・履歴を持たない | 承認済み |
 | [0004](./0004-ui-built-with-html-css-vue.md) | UI は画像一枚に頼らず HTML/CSS/Vue で構成する | 承認済み |

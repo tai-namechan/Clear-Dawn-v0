@@ -2,11 +2,14 @@
 
 全テーブル・全モジュール共通の規約。個別テーブルは [tables.md](./tables.md) を参照。
 
-## 主キー: ULID
+## 主キーと FK の型
 
-- 各テーブルの主キーは ULID で統一する（[ADR-0001](../adr/0001-ulid-primary-keys.md)）
-- 理由: URL や API レスポンスに ID が露出しても推測されにくく、時系列順に並びやすい
-- BIGINT auto increment は採用しない。UUID ではなく ULID を優先する
+- **新規ドメインテーブル**の主キーは ULID とする（[ADR-0001](../adr/0001-ulid-primary-keys.md)）
+- **既存 `users` テーブル**は Laravel 標準の BIGINT auto-increment を維持する（ULID 化しない）
+- `users` を参照する `user_id` FK は **bigint unsigned** とする
+- **ドメインテーブル間**の FK（life_area_id, matrix_cell_id 等）は ULID とする
+- 理由: URL や API レスポンスにドメイン ID が露出しても推測されにくく、時系列順に並びやすい。
+  認証基盤（Fortify / passkeys / sessions）との整合を保つため users は BIGINT のままとする
 
 ## user_id スコープ
 
@@ -52,8 +55,9 @@
 
 ## Export 前提
 
-- v1 移行のため、全テーブルのデータは Export API で完全出力できる形を保つ
+- v1 移行のため、ドメインデータは Export API で出力できる形を保つ
   （[../api/export-api.md](../api/export-api.md)）
+- Export は allowlist（ExportResource / DTO）方式とする。DB 全カラムの素通しは禁止
 - スキーマ変更時は Export スキーマの `schema_version` を上げる
 
 ## パフォーマンス基準
