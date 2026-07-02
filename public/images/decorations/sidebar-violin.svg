@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 520" fill="none" role="presentation" aria-hidden="true">
+    <!--
+        Clear Dawn sidebar decoration
+        Delicate violin line drawing with a restrained bow, drawn as thin strokes.
+        Intended for the lower part of the sidebar. Colour inherits from currentColor
+        so opacity / tint can be controlled from CSS.
+    -->
+    <g stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <!-- ===== violin body (classic hourglass outline) ===== -->
+        <path d="M100 210
+                 C 74 210, 56 224, 56 252
+                 C 56 272, 66 282, 66 296
+                 C 66 310, 52 318, 52 344
+                 C 52 386, 74 410, 100 410
+                 C 126 410, 148 386, 148 344
+                 C 148 318, 134 310, 134 296
+                 C 134 282, 144 272, 144 252
+                 C 144 224, 126 210, 100 210 Z" />
+
+        <!-- ===== neck ===== -->
+        <line x1="94" y1="210" x2="94" y2="120" />
+        <line x1="106" y1="210" x2="106" y2="120" />
+
+        <!-- ===== pegbox and scroll (spiral) ===== -->
+        <path d="M94 120 C 94 104, 92 96, 96 88" />
+        <path d="M106 120 C 106 104, 108 96, 104 88" />
+        <path d="M96 88
+                 C 92 76, 98 66, 108 68
+                 C 116 70, 118 80, 112 84
+                 C 107 87, 102 83, 104 78
+                 C 105 75, 109 75, 110 78" />
+        <!-- pegs -->
+        <line x1="86" y1="100" x2="96" y2="102" />
+        <line x1="114" y1="106" x2="104" y2="108" />
+        <line x1="86" y1="112" x2="96" y2="112" />
+
+        <!-- ===== strings ===== -->
+        <g stroke-width="0.8">
+            <line x1="96" y1="122" x2="96" y2="368" />
+            <line x1="98.7" y1="122" x2="98.7" y2="368" />
+            <line x1="101.4" y1="122" x2="101.4" y2="368" />
+            <line x1="104" y1="122" x2="104" y2="368" />
+        </g>
+
+        <!-- fingerboard end -->
+        <line x1="92" y1="238" x2="108" y2="238" />
+
+        <!-- ===== bridge ===== -->
+        <path d="M88 330 L 88 322 L 112 322 L 112 330" />
+
+        <!-- ===== f-holes ===== -->
+        <path d="M76 302 C 72 312, 74 326, 80 334" />
+        <circle cx="76.5" cy="300" r="2" stroke-width="1" />
+        <circle cx="80.5" cy="336" r="2" stroke-width="1" />
+        <line x1="74" y1="318" x2="80" y2="318" stroke-width="0.9" />
+
+        <path d="M124 302 C 128 312, 126 326, 120 334" />
+        <circle cx="123.5" cy="300" r="2" stroke-width="1" />
+        <circle cx="119.5" cy="336" r="2" stroke-width="1" />
+        <line x1="120" y1="318" x2="126" y2="318" stroke-width="0.9" />
+
+        <!-- ===== tailpiece ===== -->
+        <path d="M95 368 L 92 396 L 108 396 L 105 368 Z" />
+        <line x1="100" y1="396" x2="100" y2="408" stroke-width="1" />
+
+        <!-- ===== chin rest hint (subtle arc) ===== -->
+        <path d="M112 398 C 122 396, 130 388, 133 378" stroke-width="0.9" />
+
+        <!-- ===== bow, leaning diagonally behind the violin ===== -->
+        <g stroke-width="1">
+            <!-- stick with a slight camber -->
+            <path d="M38 168 C 74 262, 118 380, 158 470" />
+            <!-- hair: straight line slightly offset from the stick -->
+            <line x1="44" y1="166" x2="163" y2="466" stroke-width="0.7" />
+            <!-- tip -->
+            <path d="M38 168 L 44 166" />
+            <!-- frog -->
+            <path d="M155 470 L 161 466 L 166 476 L 160 480 Z" />
+            <line x1="160" y1="480" x2="164" y2="488" />
+        </g>
+    </g>
+</svg>

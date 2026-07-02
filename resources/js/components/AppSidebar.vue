@@ -40,7 +40,29 @@ const footerNavItems: NavItem[] = [
 </script>
 
 <template>
-    <Sidebar collapsible="icon" variant="inset">
+    <Sidebar collapsible="icon" variant="inset" class="cd-sidebar">
+        <div
+            aria-hidden="true"
+            class="pointer-events-none absolute inset-0 overflow-hidden group-data-[collapsible=icon]:hidden"
+        >
+            <img
+                src="/images/decorations/stars-soft.png"
+                alt=""
+                class="absolute inset-x-0 top-0 w-full opacity-40"
+            />
+            <img
+                src="/images/decorations/moon-glow.png"
+                alt=""
+                class="absolute top-16 right-3 w-16 opacity-80"
+            />
+            <!-- Darkens the lower gradient so footer text stays readable -->
+            <div
+                class="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-cd-dawn-soft/50 to-transparent"
+            />
+            <div
+                class="cd-mask-violin absolute bottom-28 left-1/2 h-60 w-24 -translate-x-1/2 text-white/30"
+            />
+        </div>
         <SidebarHeader>
             <SidebarMenu>
                 <SidebarMenuItem>
