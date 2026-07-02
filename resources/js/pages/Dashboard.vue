@@ -58,19 +58,25 @@ const today = [
     <Head title="Dashboard" />
 
     <div
-        class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
+        class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-10 md:pb-8"
     >
-        <div class="flex items-start justify-between gap-4">
-            <PageTitleOrnament title="Clear Dawn" align="left" />
+        <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4">
+            <div class="flex items-start justify-between gap-4">
+                <PageTitleOrnament title="Clear Dawn" align="left" />
 
-            <p
-                class="flex items-center gap-2 pt-4 font-serif text-lg tracking-[0.12em] text-cd-ink lining-nums"
-            >
-                {{ today }}
-                <Calendar :size="19" :stroke-width="1.6" aria-hidden="true" />
-            </p>
+                <p
+                    class="flex items-center gap-2 pt-5 font-serif text-base tracking-[0.12em] text-cd-ink-muted lining-nums"
+                >
+                    {{ today }}
+                    <Calendar
+                        :size="17"
+                        :stroke-width="1.6"
+                        aria-hidden="true"
+                    />
+                </p>
+            </div>
+
+            <MatrixSheet :areas="matrixAreas" :rows="matrixRows" />
         </div>
-
-        <MatrixSheet :areas="matrixAreas" :rows="matrixRows" />
     </div>
 </template>

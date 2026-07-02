@@ -50,10 +50,10 @@ const { isCurrentUrl } = useCurrentUrl();
             <img
                 src="/images/decorations/moon-glow.png"
                 alt=""
-                class="absolute top-28 right-8 w-24 opacity-90"
+                class="absolute top-28 right-4 w-20 opacity-90"
             />
             <div
-                class="cd-mask-violin absolute bottom-10 left-1/2 h-80 w-48 -translate-x-1/2 text-cd-gilt/75"
+                class="cd-mask-violin absolute bottom-14 left-1/2 h-56 w-40 -translate-x-1/2 -rotate-12 text-cd-gilt/80"
             />
         </div>
 
@@ -77,7 +77,7 @@ const { isCurrentUrl } = useCurrentUrl();
         <SidebarContent class="relative z-10 overflow-visible">
             <nav
                 aria-label="メインメニュー"
-                class="mt-36 flex flex-col items-center gap-14 group-data-[collapsible=icon]:mt-8 group-data-[collapsible=icon]:gap-7"
+                class="mt-28 flex flex-col items-center gap-12 group-data-[collapsible=icon]:mt-8 group-data-[collapsible=icon]:gap-7"
             >
                 <template v-for="item in navItems" :key="item.title">
                     <Link

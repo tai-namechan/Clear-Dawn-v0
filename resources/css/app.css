@@ -156,7 +156,7 @@
     --cd-ink: hsl(227 23% 22%); /* body text: navy grey */
     --cd-ink-muted: hsl(232 12% 46%); /* secondary text */
     --cd-line: hsl(260 11% 86%); /* hairline borders */
-    --cd-surface: hsl(40 25% 99%); /* warm paper-white card surface */
+    --cd-surface: hsl(40 45% 97.5%); /* warm ecru paper card surface */
     --cd-gilt: hsl(43 33% 66%); /* restrained pale gold accent */
     --cd-sunrise: hsl(22 62% 61%); /* dawn accent (design-system --cd-accent) */
     --cd-sunrise-soft: hsl(
@@ -217,7 +217,7 @@
     .cd-paper-bg {
         background-color: var(--background);
         background-image:
-            linear-gradient(hsl(40 30% 98% / 0.45), hsl(40 30% 98% / 0.45)),
+            linear-gradient(hsl(40 30% 98% / 0.52), hsl(40 30% 98% / 0.52)),
             url('/images/backgrounds/paper-marble-mist.png');
         background-size: cover;
         background-position: center;
@@ -280,6 +280,16 @@
             var(--cd-sunrise-soft) 100%
         );
     }
+}
+
+/*
+ * Clear Dawn sidebar width (168px per design-system layout spec).
+ * The ui/sidebar provider sets --sidebar-width as an inline style, so this
+ * scoped !important override is the only way to resize without editing the
+ * shared ui component internals.
+ */
+.group\/sidebar-wrapper:has(.cd-sidebar) {
+    --sidebar-width: 10.5rem !important;
 }
 
 /*

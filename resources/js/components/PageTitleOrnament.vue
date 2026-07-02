@@ -21,7 +21,7 @@ withDefaults(defineProps<Props>(), {
         "
     >
         <h1
-            class="font-serif text-4xl font-normal tracking-[0.18em] text-primary md:text-5xl"
+            class="font-serif text-4xl font-normal tracking-[0.12em] text-primary md:text-5xl"
         >
             {{ title }}
         </h1>
@@ -33,8 +33,12 @@ withDefaults(defineProps<Props>(), {
         </p>
         <div
             aria-hidden="true"
-            class="cd-mask-ornament mt-1 h-8 max-w-full text-cd-ink-muted/70"
-            :class="align === 'center' ? 'w-72' : 'h-6 w-48'"
+            class="cd-mask-ornament mt-1 h-8 max-w-full"
+            :class="
+                align === 'center'
+                    ? 'w-72 text-cd-ink-muted/60'
+                    : 'h-6 w-44 text-primary/60'
+            "
         />
     </div>
 </template>

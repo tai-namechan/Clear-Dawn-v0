@@ -25,13 +25,16 @@ defineProps<Props>();
     >
         <table class="h-full w-full table-fixed border-collapse font-serif">
             <thead>
-                <tr class="border-b border-cd-line/80">
-                    <th scope="col" class="w-44 px-4 py-5 md:w-56"></th>
+                <tr class="h-16 border-b border-cd-line/70">
+                    <th
+                        scope="col"
+                        class="w-40 bg-muted/60 px-4 py-4 md:w-52"
+                    ></th>
                     <th
                         v-for="area in areas"
                         :key="area"
                         scope="col"
-                        class="border-l border-cd-line/70 px-4 py-5 text-center text-lg font-normal tracking-[0.24em] text-cd-ink"
+                        class="border-l border-cd-line/60 bg-muted/60 px-4 py-4 text-center text-lg font-normal tracking-[0.24em] text-cd-ink"
                     >
                         {{ area }}
                     </th>
@@ -41,12 +44,12 @@ defineProps<Props>();
                 <tr
                     v-for="row in rows"
                     :key="row.key"
-                    class="border-b border-cd-line/70 last:border-b-0"
+                    class="h-1/3 border-b border-cd-line/60 last:border-b-0"
                     :class="{ 'cd-matrix-row-current': row.isCurrent }"
                 >
                     <th
                         scope="row"
-                        class="px-5 py-8 text-center align-middle font-normal"
+                        class="px-5 py-7 text-center align-middle font-normal"
                         :class="{ 'bg-muted/60': !row.isCurrent }"
                     >
                         <span
@@ -65,11 +68,11 @@ defineProps<Props>();
                     <td
                         v-for="(cell, index) in row.cells"
                         :key="areas[index]"
-                        class="border-l border-cd-line/70 px-5 py-8 align-middle"
+                        class="border-l border-cd-line/60 px-5 py-7 align-middle"
                     >
                         <ul
                             v-if="cell.length > 0"
-                            class="flex flex-col gap-3.5"
+                            class="flex flex-col gap-4"
                             :class="
                                 row.isCheckable
                                     ? 'mx-auto w-fit items-start'
@@ -79,7 +82,7 @@ defineProps<Props>();
                             <li
                                 v-for="item in cell"
                                 :key="item"
-                                class="flex items-start gap-3 text-base leading-relaxed tracking-[0.06em] text-cd-ink lining-nums"
+                                class="flex items-start gap-3 font-sans text-[15px] leading-relaxed tracking-normal text-cd-ink lining-nums"
                             >
                                 <span
                                     v-if="row.isCheckable"
@@ -90,7 +93,7 @@ defineProps<Props>();
                                     :class="
                                         row.isCheckable
                                             ? 'text-left'
-                                            : 'text-center'
+                                            : 'text-center text-balance'
                                     "
                                     >{{ item }}</span
                                 >
