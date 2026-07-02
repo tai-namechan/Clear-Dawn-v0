@@ -1,53 +1,82 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
+import { Calendar } from '@lucide/vue';
+import MatrixSheet from '@/components/MatrixSheet.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
-import PlaceholderPattern from '@/components/PlaceholderPattern.vue';
-import { dashboard } from '@/routes';
 
-defineOptions({
-    layout: {
-        breadcrumbs: [
-            {
-                title: 'Dashboard',
-                href: dashboard(),
-            },
+// M0-2: static display data only. Replaced by GetMatrixBoardQuery in M1.
+const matrixAreas = ['仕事', '野球', 'バイオリン', 'プライベート'];
+
+const matrixRows = [
+    {
+        key: 'monthly',
+        label: '1ヶ月くらいの間でやるべきこと',
+        isCurrent: false,
+        isCheckable: false,
+        cells: [
+            ['移行に必要なタスクを完了', '負債対策'],
+            ['身体を元に戻す'],
+            [],
+            [],
         ],
     },
-});
+    {
+        key: 'current',
+        label: '今やるべきこと',
+        isCurrent: true,
+        isCheckable: true,
+        cells: [
+            ['受注バグ修正', '課題の整理', '上野さん依頼対応', 'WEB注文変更'],
+            ['死なない。', '生きて夢を追う。'],
+            ['少しだけ', '1曲だけ弾く。'],
+            [],
+        ],
+    },
+    {
+        key: 'future',
+        label: '将来どうなっていたいか',
+        isCurrent: false,
+        isCheckable: false,
+        cells: [
+            ['残りシート、行列担当 完了', 'サンドボックス バグ修正'],
+            ['最低限の筋トレ', '最低限のピッチング'],
+            [],
+            [],
+        ],
+    },
+];
+
+const now = new Date();
+const today = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+].join('/');
 </script>
 
 <template>
     <Head title="Dashboard" />
 
     <div
-        class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4"
+        class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
     >
-        <PageTitleOrnament
-            title="Clear Dawn"
-            subtitle="夜明け前の静けさの中で、今日やるべきことを決める"
-        />
+        <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4">
+            <div class="flex items-start justify-between gap-4">
+                <PageTitleOrnament title="Clear Dawn" align="left" />
 
-        <div class="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div
-                class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border"
-            >
-                <PlaceholderPattern />
+                <p
+                    class="flex items-center gap-2 pt-5 font-serif text-base tracking-[0.12em] text-cd-ink-muted lining-nums"
+                >
+                    {{ today }}
+                    <Calendar
+                        :size="17"
+                        :stroke-width="1.6"
+                        aria-hidden="true"
+                    />
+                </p>
             </div>
-            <div
-                class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border"
-            >
-                <PlaceholderPattern />
-            </div>
-            <div
-                class="relative aspect-video overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border"
-            >
-                <PlaceholderPattern />
-            </div>
-        </div>
-        <div
-            class="relative min-h-[100vh] flex-1 rounded-xl border border-sidebar-border/70 md:min-h-min dark:border-sidebar-border"
-        >
-            <PlaceholderPattern />
+
+            <MatrixSheet :areas="matrixAreas" :rows="matrixRows" />
         </div>
     </div>
 </template>

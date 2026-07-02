@@ -1,82 +1,160 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 520" fill="none" role="presentation" aria-hidden="true">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 1000" fill="none" role="presentation" aria-hidden="true">
     <!--
-        Clear Dawn sidebar decoration
-        Delicate violin line drawing with a restrained bow, drawn as thin strokes.
-        Intended for the lower part of the sidebar. Colour inherits from currentColor
-        so opacity / tint can be controlled from CSS.
+        Clear Dawn sidebar decoration (v2, from user-supplied artwork)
+        Violin line drawing surrounded by botanical flourishes, crescents,
+        sparkles and dots. Strokes inherit currentColor so tint / opacity
+        are controlled from CSS (used via mask-image in .cd-mask-violin).
     -->
-    <g stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-        <!-- ===== violin body (classic hourglass outline) ===== -->
-        <path d="M100 210
-                 C 74 210, 56 224, 56 252
-                 C 56 272, 66 282, 66 296
-                 C 66 310, 52 318, 52 344
-                 C 52 386, 74 410, 100 410
-                 C 126 410, 148 386, 148 344
-                 C 148 318, 134 310, 134 296
-                 C 134 282, 144 272, 144 252
-                 C 144 224, 126 210, 100 210 Z" />
+    <g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
 
-        <!-- ===== neck ===== -->
-        <line x1="94" y1="210" x2="94" y2="120" />
-        <line x1="106" y1="210" x2="106" y2="120" />
-
-        <!-- ===== pegbox and scroll (spiral) ===== -->
-        <path d="M94 120 C 94 104, 92 96, 96 88" />
-        <path d="M106 120 C 106 104, 108 96, 104 88" />
-        <path d="M96 88
-                 C 92 76, 98 66, 108 68
-                 C 116 70, 118 80, 112 84
-                 C 107 87, 102 83, 104 78
-                 C 105 75, 109 75, 110 78" />
-        <!-- pegs -->
-        <line x1="86" y1="100" x2="96" y2="102" />
-        <line x1="114" y1="106" x2="104" y2="108" />
-        <line x1="86" y1="112" x2="96" y2="112" />
-
-        <!-- ===== strings ===== -->
-        <g stroke-width="0.8">
-            <line x1="96" y1="122" x2="96" y2="368" />
-            <line x1="98.7" y1="122" x2="98.7" y2="368" />
-            <line x1="101.4" y1="122" x2="101.4" y2="368" />
-            <line x1="104" y1="122" x2="104" y2="368" />
+        <!-- ===== scroll (spiral) ===== -->
+        <g stroke-width="5">
+            <path d="M432 208
+                     C 420 178, 428 148, 456 138
+                     C 486 128, 514 148, 512 178
+                     C 510 204, 488 218, 468 210
+                     C 452 204, 448 184, 460 174
+                     C 470 166, 484 172, 484 184
+                     C 484 192, 476 196, 470 192" />
         </g>
 
-        <!-- fingerboard end -->
-        <line x1="92" y1="238" x2="108" y2="238" />
+        <!-- ===== pegbox and pegs ===== -->
+        <g stroke-width="4">
+            <path d="M436 212 C 430 236, 428 258, 428 278" />
+            <path d="M462 216 C 460 238, 458 258, 458 278" />
+            <!-- left pegs -->
+            <circle cx="376" cy="228" r="11" />
+            <line x1="387" y1="230" x2="428" y2="238" />
+            <circle cx="368" cy="268" r="11" />
+            <line x1="379" y1="269" x2="426" y2="272" />
+            <!-- right pegs -->
+            <circle cx="516" cy="222" r="11" />
+            <line x1="505" y1="225" x2="462" y2="234" />
+            <circle cx="524" cy="262" r="11" />
+            <line x1="513" y1="264" x2="460" y2="268" />
+        </g>
 
-        <!-- ===== bridge ===== -->
-        <path d="M88 330 L 88 322 L 112 322 L 112 330" />
+        <!-- ===== neck / fingerboard ===== -->
+        <g stroke-width="4.5">
+            <path d="M428 278 C 424 360, 418 452, 408 548" />
+            <path d="M458 278 C 458 362, 460 456, 466 548" />
+        </g>
 
-        <!-- ===== f-holes ===== -->
-        <path d="M76 302 C 72 312, 74 326, 80 334" />
-        <circle cx="76.5" cy="300" r="2" stroke-width="1" />
-        <circle cx="80.5" cy="336" r="2" stroke-width="1" />
-        <line x1="74" y1="318" x2="80" y2="318" stroke-width="0.9" />
+        <!-- ===== strings ===== -->
+        <g stroke-width="1.8">
+            <line x1="434" y1="284" x2="420" y2="742" />
+            <line x1="442" y1="284" x2="432" y2="742" />
+            <line x1="450" y1="284" x2="444" y2="742" />
+            <line x1="458" y1="284" x2="456" y2="742" />
+        </g>
 
-        <path d="M124 302 C 128 312, 126 326, 120 334" />
-        <circle cx="123.5" cy="300" r="2" stroke-width="1" />
-        <circle cx="119.5" cy="336" r="2" stroke-width="1" />
-        <line x1="120" y1="318" x2="126" y2="318" stroke-width="0.9" />
+        <!-- ===== body (hourglass, slightly asymmetric like the artwork) ===== -->
+        <g stroke-width="5">
+            <path d="M410 548
+                     C 372 522, 330 518, 322 556
+                     C 316 586, 336 606, 334 640
+                     C 332 674, 300 682, 296 738
+                     C 292 812, 336 880, 410 908
+                     C 420 912, 452 912, 462 908
+                     C 536 880, 580 812, 576 738
+                     C 572 682, 540 674, 538 640
+                     C 536 606, 556 586, 550 556
+                     C 542 518, 500 522, 462 548" />
+            <!-- shoulder curls -->
+            <path d="M362 542 C 376 534, 390 534, 400 542" />
+            <path d="M472 542 C 482 534, 496 534, 510 542" />
+        </g>
+
+        <!-- ===== f-hole curls ===== -->
+        <g stroke-width="3.5">
+            <path d="M380 648 C 372 638, 378 626, 390 628 C 398 630, 398 640, 390 642" />
+            <path d="M376 668 C 372 680, 374 692, 382 700" />
+            <path d="M496 648 C 504 638, 498 626, 486 628 C 478 630, 478 640, 486 642" />
+            <path d="M500 668 C 504 680, 502 692, 494 700" />
+        </g>
+
+        <!-- ===== bridge (scalloped) ===== -->
+        <g stroke-width="4">
+            <path d="M368 712 L 368 726" />
+            <path d="M508 712 L 508 726" />
+            <path d="M368 712 L 508 712" />
+            <path d="M368 758 C 380 748, 392 748, 402 756 C 412 764, 424 764, 434 756 C 444 748, 456 748, 466 756 C 476 764, 490 764, 508 758" />
+            <path d="M368 726 L 368 758" stroke-width="3" />
+            <path d="M508 726 L 508 758" stroke-width="3" />
+        </g>
 
         <!-- ===== tailpiece ===== -->
-        <path d="M95 368 L 92 396 L 108 396 L 105 368 Z" />
-        <line x1="100" y1="396" x2="100" y2="408" stroke-width="1" />
+        <g stroke-width="4">
+            <path d="M414 784 L 402 862 C 402 878, 418 888, 438 888 C 458 888, 472 878, 470 862 L 460 784 Z" />
+            <line x1="437" y1="888" x2="438" y2="912" />
+        </g>
 
-        <!-- ===== chin rest hint (subtle arc) ===== -->
-        <path d="M112 398 C 122 396, 130 388, 133 378" stroke-width="0.9" />
+        <!-- ===== side crescents around the body ===== -->
+        <g stroke-width="3.5">
+            <path d="M286 520 C 296 534, 312 540, 326 536" />
+            <path d="M548 516 C 560 528, 576 532, 590 526" />
+            <path d="M268 806 C 282 820, 300 826, 316 822" />
+            <path d="M560 802 C 574 816, 592 822, 608 818" />
+            <path d="M348 776 C 360 788, 376 792, 388 788" />
+            <path d="M486 780 C 498 790, 514 792, 526 788" />
+        </g>
 
-        <!-- ===== bow, leaning diagonally behind the violin ===== -->
-        <g stroke-width="1">
-            <!-- stick with a slight camber -->
-            <path d="M38 168 C 74 262, 118 380, 158 470" />
-            <!-- hair: straight line slightly offset from the stick -->
-            <line x1="44" y1="166" x2="163" y2="466" stroke-width="0.7" />
-            <!-- tip -->
-            <path d="M38 168 L 44 166" />
-            <!-- frog -->
-            <path d="M155 470 L 161 466 L 166 476 L 160 480 Z" />
-            <line x1="160" y1="480" x2="164" y2="488" />
+        <!-- ===== left botanical flourish ===== -->
+        <g stroke-width="3.5">
+            <path d="M158 660 C 130 700, 122 770, 148 828" />
+            <path d="M158 660 C 176 640, 200 630, 226 634" />
+            <!-- leaves -->
+            <path d="M96 566 C 108 590, 128 604, 150 606 C 146 582, 128 566, 96 566 Z" />
+            <path d="M170 618 C 186 636, 208 644, 228 642 C 220 620, 198 608, 170 618 Z" />
+            <path d="M108 690 C 124 702, 144 706, 162 702" />
+            <path d="M104 726 C 122 740, 144 744, 164 738" />
+            <path d="M226 726 C 216 748, 214 772, 222 792" />
+            <!-- lower accents -->
+            <path d="M106 862 C 122 856, 138 856, 152 862" />
+            <path d="M180 900 C 198 892, 218 892, 236 900" />
+        </g>
+
+        <!-- ===== right botanical flourish (mirrored feel) ===== -->
+        <g stroke-width="3.5">
+            <path d="M664 654 C 692 696, 700 766, 674 824" />
+            <path d="M664 654 C 646 636, 622 626, 596 630" />
+            <path d="M726 560 C 714 584, 694 598, 672 600 C 676 576, 694 560, 726 560 Z" />
+            <path d="M652 614 C 636 632, 614 640, 594 638 C 602 616, 624 604, 652 614 Z" />
+            <path d="M714 686 C 698 698, 678 702, 660 698" />
+            <path d="M718 722 C 700 736, 678 740, 658 734" />
+            <path d="M598 722 C 608 744, 610 768, 602 788" />
+            <path d="M716 858 C 700 852, 684 852, 670 858" />
+            <path d="M640 896 C 622 888, 602 888, 584 896" />
+        </g>
+
+        <!-- ===== sparkles (plus) ===== -->
+        <g stroke-width="3.5">
+            <line x1="210" y1="378" x2="210" y2="406" />
+            <line x1="196" y1="392" x2="224" y2="392" />
+            <line x1="630" y1="360" x2="630" y2="388" />
+            <line x1="616" y1="374" x2="644" y2="374" />
+            <line x1="116" y1="492" x2="116" y2="520" />
+            <line x1="102" y1="506" x2="130" y2="506" />
+            <line x1="656" y1="498" x2="682" y2="502" />
+            <line x1="672" y1="486" x2="666" y2="514" />
+            <line x1="176" y1="662" x2="176" y2="684" />
+            <line x1="165" y1="673" x2="187" y2="673" />
+            <line x1="686" y1="656" x2="686" y2="678" />
+            <line x1="675" y1="667" x2="697" y2="667" />
+        </g>
+
+        <!-- ===== dots and small circles ===== -->
+        <g stroke-width="3">
+            <circle cx="270" cy="330" r="4" />
+            <circle cx="584" cy="302" r="4" />
+            <circle cx="688" cy="422" r="4" />
+            <circle cx="172" cy="434" r="4" />
+            <circle cx="122" cy="582" r="5" />
+            <circle cx="730" cy="596" r="5" />
+            <circle cx="252" cy="560" r="3" />
+            <circle cx="560" cy="588" r="3" />
+            <circle cx="330" cy="948" r="4" />
+            <circle cx="500" cy="944" r="4" />
         </g>
     </g>
 </svg>
