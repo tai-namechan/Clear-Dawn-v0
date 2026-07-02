@@ -215,9 +215,9 @@
 @layer components {
     /* Misty paper texture backdrop. Falls back to --background under the overlay. */
     .cd-paper-bg {
-        background-color: var(--background);
+        background-color: hsl(38 16% 88%);
         background-image:
-            linear-gradient(hsl(40 30% 98% / 0.52), hsl(40 30% 98% / 0.52)),
+            linear-gradient(hsl(36 20% 91% / 0.62), hsl(36 20% 91% / 0.62)),
             url('/images/backgrounds/paper-marble-mist.png');
         background-size: cover;
         background-position: center;

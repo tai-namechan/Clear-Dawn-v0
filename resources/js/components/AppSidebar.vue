@@ -50,10 +50,10 @@ const { isCurrentUrl } = useCurrentUrl();
             <img
                 src="/images/decorations/moon-glow.png"
                 alt=""
-                class="absolute top-28 right-4 w-20 opacity-90"
+                class="absolute top-28 right-4 w-20 -scale-x-100 opacity-90"
             />
             <div
-                class="cd-mask-violin absolute bottom-14 left-1/2 h-56 w-40 -translate-x-1/2 -rotate-12 text-cd-gilt/80"
+                class="cd-mask-violin absolute bottom-14 left-1/2 h-56 w-40 -translate-x-1/2 rotate-12 text-cd-gilt/80"
             />
         </div>
 

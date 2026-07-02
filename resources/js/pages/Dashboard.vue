@@ -58,9 +58,9 @@ const today = [
     <Head title="Dashboard" />
 
     <div
-        class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-10 md:pb-8"
+        class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
     >
-        <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4">
+        <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4">
             <div class="flex items-start justify-between gap-4">
                 <PageTitleOrnament title="Clear Dawn" align="left" />
 

@@ -21,7 +21,7 @@ defineProps<Props>();
 <template>
     <section
         aria-label="TOP Matrix"
-        class="cd-shadow-soft flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-xl border border-cd-line bg-cd-surface"
+        class="cd-shadow-soft flex min-h-[28rem] w-full flex-1 flex-col overflow-hidden rounded-xl border border-cd-line bg-cd-surface md:min-h-[32rem]"
     >
         <table class="h-full w-full table-fixed border-collapse font-serif">
             <thead>
