@@ -1,0 +1,65 @@
+---
+description: プロジェクト固有の環境・運用ルール（プロジェクトごとに記入する）
+alwaysApply: true
+---
+
+# プロジェクト固有ルール
+
+## 開発環境
+
+- **スタック**: Laravel 13 + Inertia.js v3 + Vue 3 + TypeScript + Tailwind CSS v4
+- **PHP**: ^8.3
+- **DB（ローカル既定）**: SQLite（`database/database.sqlite`）
+- **フロントエンドビルド**: Vite 8（`vite.config.ts`）
+- **ルート生成**: Laravel Wayfinder（`resources/js/routes/` と `resources/js/actions/` は自動生成・`.gitignore` 対象）
+
+### 起動・開発コマンド
+
+| 用途 | コマンド |
+|---|---|
+| 開発サーバー（Laravel + Vite 同時起動） | `composer dev` |
+| 初回セットアップ | `composer setup` |
+| フロント dev server のみ | `npm run dev` |
+| フロントビルド | `npm run build` |
+
+- ビルド・dev server 関連で AI が実行してはいけないコマンド:
+  - （要確認: `npm run build` を dev server 稼働中に実行してよいか）
+  - （要確認: その他禁止コマンドがあれば記載）
+- 画面が表示されない場合の対処手順:
+  - （要確認: `public/build/` 削除 → 再起動等の手順があれば記載）
+  - Wayfinder 生成物が無い場合: `php artisan wayfinder:generate`（または `composer dev` / ビルド時に自動生成）
+
+### テスト・Lint コマンド
+
+| 用途 | コマンド |
+|---|---|
+| 全テスト（Lint + PHPStan + PHPUnit） | `composer test` |
+| PHPUnit のみ | `php artisan test` |
+| PHP Lint（Pint） | `composer lint` / `composer lint:check` |
+| PHP 静的解析（PHPStan） | `composer types:check` |
+| フロント Lint（ESLint） | `npm run lint` / `npm run lint:check` |
+| フロント型チェック | `npm run types:check` |
+| CI 相当チェック | `composer ci:check` |
+
+- **Vitest**: 現時点では未導入（フロントエンド単体テストは PHPUnit Feature Test のみ）
+
+## 環境復旧手順
+
+<!-- PC再起動後・コンテナ再作成後の起動手順、よくあるエラーと対処を記載する -->
+
+- Docker / Sail: `laravel/sail` は dev 依存に含まれるが、リポジトリ内に `docker-compose.yml` は未配置
+  - （要確認: Sail を使用しているか、別の Docker 構成か、ローカル PHP 直実行か）
+
+## Git 運用
+
+- コミットメッセージに `Made-with: Cursor` 等のトレーラーを付与しない
+<!-- ブランチ命名規則・コミットメッセージ規約があれば記載する -->
+
+## その他
+
+- **UI コンポーネント**: `resources/js/components/ui/`（reka-ui ベース）。共通部品の内部改変は原則禁止
+- **レイアウト**: `resources/js/layouts/` で Inertia ページレイアウトを管理（`app.ts` の `layout` 関数で自動割当）
+- **Service / Repository 層**: 現時点では未導入（Controller + Request + Model パターン）。将来追加時は `architecture-layers.mdc` に従う
+
+<!-- 外部サービス（AWS / 決済 / メール等）に関する注意事項、
+     本番アクセスの禁止事項などを記載する -->

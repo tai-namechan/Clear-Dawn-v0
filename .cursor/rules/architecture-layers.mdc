@@ -1,0 +1,59 @@
+---
+description: レイヤー構造と責務 - Controller / Service / Repository / Request / Resource の配置
+alwaysApply: true
+---
+
+# アーキテクチャ基準（Laravel + Inertia）
+
+## 基本思想
+
+### 1. 「動く」と「運用に耐える」は別物
+- ミニマムで動くだけのコードでは不十分
+- 本番データ規模（数百〜数万件）で破綻しないか常に考える
+- エッジケース（null、空配列、権限外データの混入）を意識する
+
+### 2. フレームワークを信頼する
+- Laravel / Vue が提供する機能を理解し、自前実装を避ける
+- **FW が自動でやることを手動で再実装しない**
+  - 例: Eloquent の `timestamps` が自動設定するのに手動で `created_at` を代入する
+  - 例: Laravel のバリデーションが処理するのに Controller で二重チェックする
+
+### 3. コードの「意図」を読む
+- 一見非効率に見えるコードにも理由がある可能性を考える
+- 「なぜこう書いたのか分からない」場合は、書き換える前にユーザーに確認する
+- 既存コードの命名・構造パターンを踏襲する（独自の命名規則を持ち込まない）
+
+## レイヤー構造（厳守）
+
+```
+Controller（薄く）
+ ↓ 認可 → Request による入力確定 → Service/Repository 呼び出し → Resource 整形 → Inertia 返却
+Service（ビジネスロジック）
+ ↓ Repository を組み合わせて業務要件を実現
+Repository（DB操作のみ）
+ ↓ クエリビルダー・Eloquent 操作
+```
+
+- **Controller にビジネスロジックを書かない**
+- **Service に DB クエリを直接書かない**（Repository 経由）
+- **Repository にビジネス判断を入れない**（条件の組み立ては Service が行い、Repository はそれを受け取る）
+- 例外: 簡単な取得は Controller から Repository を直接呼んでよい（既存パターンがある場合は踏襲。迷ったら Service 経由）
+
+## 配置ルール
+
+- Controller / Request / Resource の配置は既存のディレクトリ構成に従う（領域分割がある場合はそれを踏襲する）
+- バリデーションは Request に集約する（Controller で二重チェックしない）
+- Inertia に渡す props は **Resource 経由を優先**（配列直書きを増やさない）
+- Model は `app/Models`。既存の Relation / Accessor / Scope を優先して使う
+- Enum / 定数は既存の定義を使う。重複定義しない
+
+## コード品質
+
+- Collection メソッド（`map`, `flatMap`, `filter`, `unique`, `values`）を活用し、foreach ループを減らす
+- `when()` で条件分岐を表現し、if-else の分岐を減らす
+- SQL / メモリの判断は `sql-memory-performance.mdc`、テストは `test-quality-standards.mdc` に従う
+
+## レビューに耐えるコードを書く
+
+AI が生成するコードは、人間のレビューを通る前提で書く。
+説明できないコード（なぜこう書いたか答えられない部分）はユーザーに確認を求める。

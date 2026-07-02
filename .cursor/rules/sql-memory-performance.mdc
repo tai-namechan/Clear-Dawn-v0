@@ -1,0 +1,91 @@
+---
+description: SQL / DB / メモリ パフォーマンス基準 - JOIN優先・チャンク分割・N+1防止・マイグレーション安全性
+alwaysApply: true
+---
+
+# SQL / DB / メモリ パフォーマンス基準
+
+## 原則：「本番で何千件のデータが流れるか」を常に想像する
+
+## 1. クエリ設計
+
+### JOIN vs サブクエリ
+- **関連テーブルの結合は JOIN（`JoinClause`）を優先する**
+  - サブクエリ（`whereIn` + サブSELECT）は件数が増えると遅くなる
+  - ただし、サブクエリの方が可読性が高い場合は許容（件数が少ないことが明らかな場合）
+- **`when()` で条件分岐し、不要な WHERE 句を生成しない**
+
+```php
+// Good: 条件があるときだけ WHERE を追加
+->when($end != null, function(JoinClause $join) use ($end) {
+    $join->whereDate('orders.delivery_date', '<=', $end);
+})
+
+// Bad: 常に WHERE を追加し、null チェックをSQL側に押し付ける
+->whereDate('orders.delivery_date', '<=', $end ?? '9999-12-31')
+```
+
+### スコープの徹底
+- **アクセス範囲を限定する条件（所有者・権限・対象期間等）は必ず WHERE に含める**（全テーブルスキャンとデータ混入を防ぐ）
+- 複数テーブルを JOIN する場合、最も絞り込み効果が高い条件を JOIN ON に含める
+
+### N+1 クエリの防止
+- リレーション取得は `with()` で Eager Load する
+- ループ内で `$model->relation` を初めてアクセスするパターンは禁止
+- `select()` でカラムを絞っている場合、リレーションに必要な外部キーを含めること
+
+## 2. メモリ考慮
+
+### 大量データの処理
+- **1000件以上になり得るデータの全件取得 (`get()`, `all()`) は避ける**
+  - `chunk()` / `chunkById()` / `cursor()` / `lazy()` を使う
+  - または `limit` + ページネーションで分割する
+- **Bulk Insert は `chunk` で分割する**（500件単位が目安）
+
+```php
+// Good: チャンク分割
+collect($data)->chunk(500)->each(function ($chunk) {
+    DB::table('target')->insert($chunk->toArray());
+});
+```
+
+### コレクション操作
+- `pluck('id')->all()` で ID リストを取得してから `whereIn` に渡す場合、件数が多いと MySQL の `max_allowed_packet` に抵触する
+- **数千件以上の ID リストはチャンク分割で `whereIn` を複数回に分ける**
+
+## 3. マイグレーション
+
+### カラム追加
+- `->after('column_name')` は MySQL でのみ有効（DB が MySQL なら使用してよい）
+- テーブルの DROP → 再作成でカラム順を変えるのは禁止（データ喪失リスク）
+
+### テーブル変更の安全性
+- `dropColumn` と `addColumn` を同じ `Schema::table` クロージャ内で行わない（SQLite テスト環境で失敗する）
+- 別々の `Schema::table` 呼び出しに分ける
+
+```php
+// Good: 分離
+Schema::table('shops', function (Blueprint $table) {
+    $table->dropColumn('old_column');
+});
+Schema::table('shops', function (Blueprint $table) {
+    $table->string('new_column')->nullable()->after('other_column');
+});
+```
+
+## 4. 分割実行 vs 一括実行の判断基準
+
+| 件数目安 | 方針 |
+|---|---|
+| 〜100件 | 一括で問題なし |
+| 100〜1000件 | 一括可だがメモリ監視を推奨 |
+| 1000件〜 | チャンク分割必須 |
+| 業務上の論理単位がある場合 | 論理単位ごとに分割（トランザクション単位を小さく保つ） |
+
+## 5. 修正提案時の報告義務
+
+SQL/DB 操作を含む変更の修正提案に以下を含める：
+- **想定データ件数**: このクエリが扱うデータは何件規模か
+- **メモリ影響**: 全件取得していないか、チャンク分割が必要ではないか
+- **インデックス利用**: WHERE / JOIN の条件がインデックスを利用できるか
+- **N+1リスク**: ループ内でリレーションを遅延取得していないか
