@@ -70,6 +70,9 @@
     --color-cd-line: var(--cd-line);
     --color-cd-surface: var(--cd-surface);
     --color-cd-gilt: var(--cd-gilt);
+    --color-cd-sunrise: var(--cd-sunrise);
+    --color-cd-sunrise-soft: var(--cd-sunrise-soft);
+    --color-cd-sunrise-mist: var(--cd-sunrise-mist);
 }
 
 /*
@@ -150,6 +153,13 @@
     --cd-line: hsl(260 11% 86%); /* hairline borders */
     --cd-surface: hsl(40 25% 99%); /* warm paper-white card surface */
     --cd-gilt: hsl(43 33% 66%); /* restrained pale gold accent */
+    --cd-sunrise: hsl(22 62% 61%); /* dawn accent (design-system --cd-accent) */
+    --cd-sunrise-soft: hsl(
+        27 67% 92%
+    ); /* pale sunrise wash (--cd-accent-soft) */
+    --cd-sunrise-mist: hsl(
+        28 81% 96%
+    ); /* faintest sunrise tint (--cd-accent-light) */
 }
 
 .dark {
@@ -255,6 +265,15 @@
     .cd-mask-violin {
         mask-image: url('/images/decorations/sidebar-violin.svg');
         -webkit-mask-image: url('/images/decorations/sidebar-violin.svg');
+    }
+
+    /* Pale sunrise wash highlighting the 「今やるべきこと」 matrix row. */
+    .cd-matrix-row-current {
+        background: linear-gradient(
+            90deg,
+            var(--cd-sunrise-mist) 0%,
+            var(--cd-sunrise-soft) 100%
+        );
     }
 }
 
