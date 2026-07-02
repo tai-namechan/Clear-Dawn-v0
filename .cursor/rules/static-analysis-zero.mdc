@@ -1,0 +1,48 @@
+---
+description: 静的解析エラーゼロ方針 - 型宣言・PHPDoc・any禁止・await必須
+alwaysApply: true
+---
+
+# 静的解析エラーゼロ方針
+
+## 原則：「エディタ上でエラーが出るコードはコミットしない」
+
+## PHP
+
+### 1. 型宣言
+- メソッドの引数・戻り値には型宣言を付ける（PHP 8.x の Union Type / Nullable 含む）
+- 型が複雑な場合は `@param` / `@return` PHPDoc で補完する
+
+### 2. PHPDoc アノテーション
+- コレクションの中身が重要な場合は `@var` で型を明示する
+- Facade のリアルタイム実体等、IDE が型推論できないものは戻り値に `@var` を付ける
+- Mockery モックには `@var ClassName&\Mockery\MockInterface` を付ける
+
+### 3. use 文
+- 使用していない `use` 文を残さない
+- グループ化 `use` (`App\Models\{A, B, C}`) は既存パターンに合わせる
+
+### 4. null 安全
+- `?->` (nullsafe operator) を適切に使う
+- `??` でデフォルト値を設定する
+
+## TypeScript / Vue
+
+### 1. 型定義
+- `any` の使用は禁止。型が不明な場合は `unknown` を使い、型ガードで絞り込む
+- Props の型は `defineProps<T>()` のジェネリクスで定義する
+- emit の型は `defineEmits<T>()` で定義する
+
+### 2. async / await
+- **`async` 関数内で Promise を返す呼び出しには必ず `await` を付ける**
+- `await` なしで Promise を呼ぶと、テストが非同期処理の完了前にアサーションを実行し、偽の成功になる
+
+### 3. import
+- 使用していない import を残さない
+- TypeScript の型のみの import は `import type { ... }` を使う
+
+## 自動チェック
+
+- コード変更後は Lint / 静的解析で対象ファイルのエラーを確認する
+- エラーがあれば修正してからコミットする
+- **自分が導入したエラーは必ず修正する。既存エラーは報告のみでよい**
