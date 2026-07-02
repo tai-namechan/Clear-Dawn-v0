@@ -6,7 +6,7 @@ interface MatrixRow {
     label: string;
     isCurrent: boolean;
     isCheckable: boolean;
-    /** Cell items aligned with the order of `areas`. */
+    /** Cell items aligned with the order of `areas`. Empty cells are allowed. */
     cells: string[][];
 }
 
@@ -21,17 +21,17 @@ defineProps<Props>();
 <template>
     <section
         aria-label="TOP Matrix"
-        class="cd-frost cd-shadow-soft mx-auto w-full max-w-7xl overflow-hidden rounded-2xl border border-cd-line/70"
+        class="cd-shadow-soft flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-xl border border-cd-line bg-cd-surface"
     >
-        <table class="w-full table-fixed border-collapse">
+        <table class="h-full w-full table-fixed border-collapse font-serif">
             <thead>
-                <tr class="border-b border-cd-line/70">
-                    <th scope="col" class="w-40 px-5 py-6 md:w-60"></th>
+                <tr class="border-b border-cd-line/80">
+                    <th scope="col" class="w-44 px-4 py-5 md:w-56"></th>
                     <th
                         v-for="area in areas"
                         :key="area"
                         scope="col"
-                        class="border-l border-cd-line/40 px-5 py-6 text-center font-serif text-lg font-normal tracking-[0.2em] text-cd-ink"
+                        class="border-l border-cd-line/70 px-4 py-5 text-center text-lg font-normal tracking-[0.24em] text-cd-ink"
                     >
                         {{ area }}
                     </th>
@@ -41,22 +41,23 @@ defineProps<Props>();
                 <tr
                     v-for="row in rows"
                     :key="row.key"
-                    class="border-b border-cd-line/50 last:border-b-0"
+                    class="border-b border-cd-line/70 last:border-b-0"
                     :class="{ 'cd-matrix-row-current': row.isCurrent }"
                 >
                     <th
                         scope="row"
-                        class="px-5 py-10 text-left align-middle font-normal md:px-6"
+                        class="px-5 py-8 text-center align-middle font-normal"
+                        :class="{ 'bg-muted/60': !row.isCurrent }"
                     >
                         <span
-                            class="flex items-start gap-2 font-serif text-base leading-relaxed tracking-[0.06em] text-cd-ink lining-nums"
+                            class="inline-flex items-center justify-center gap-2 text-base leading-loose tracking-[0.1em] text-cd-ink lining-nums md:text-lg"
                         >
                             <Sunrise
                                 v-if="row.isCurrent"
                                 :size="20"
                                 :stroke-width="1.6"
                                 aria-hidden="true"
-                                class="mt-1.5 shrink-0 text-cd-sunrise"
+                                class="shrink-0 text-cd-sunrise"
                             />
                             {{ row.label }}
                         </span>
@@ -64,25 +65,35 @@ defineProps<Props>();
                     <td
                         v-for="(cell, index) in row.cells"
                         :key="areas[index]"
-                        class="border-l border-cd-line/40 px-5 py-10 align-middle md:px-7"
+                        class="border-l border-cd-line/70 px-5 py-8 align-middle"
                     >
-                        <ul class="flex flex-col gap-3.5">
+                        <ul
+                            v-if="cell.length > 0"
+                            class="flex flex-col gap-3.5"
+                            :class="
+                                row.isCheckable
+                                    ? 'mx-auto w-fit items-start'
+                                    : 'items-center'
+                            "
+                        >
                             <li
                                 v-for="item in cell"
                                 :key="item"
-                                class="flex items-start gap-2.5 text-sm leading-relaxed tracking-[0.02em] text-cd-ink"
+                                class="flex items-start gap-3 text-base leading-relaxed tracking-[0.06em] text-cd-ink lining-nums"
                             >
                                 <span
                                     v-if="row.isCheckable"
                                     aria-hidden="true"
-                                    class="mt-0.5 inline-block size-4 shrink-0 rounded-[5px] border border-cd-sunrise/55 bg-cd-surface/80 shadow-[inset_0_1px_2px_hsl(22_62%_61%/0.08)]"
+                                    class="mt-1.5 inline-block size-4 shrink-0 rounded-[3px] border border-cd-ink-muted/70 bg-white/70"
                                 />
                                 <span
-                                    v-else
-                                    aria-hidden="true"
-                                    class="mt-2.5 inline-block size-1 shrink-0 rounded-full bg-cd-ink-muted/50"
-                                />
-                                <span>{{ item }}</span>
+                                    :class="
+                                        row.isCheckable
+                                            ? 'text-left'
+                                            : 'text-center'
+                                    "
+                                    >{{ item }}</span
+                                >
                             </li>
                         </ul>
                     </td>

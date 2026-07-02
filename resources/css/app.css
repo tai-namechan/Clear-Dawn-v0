@@ -152,7 +152,7 @@
     --cd-dawn-deep: hsl(237 32% 16%); /* sidebar top: deep pre-dawn purple */
     --cd-dawn-mid: hsl(240 29% 24%);
     --cd-dawn-soft: hsl(251 17% 40%);
-    --cd-lavender-mist: hsl(255 18% 65%); /* sidebar bottom: greyish lavender */
+    --cd-lavender-mist: hsl(255 24% 76%); /* sidebar bottom: pale lavender */
     --cd-ink: hsl(227 23% 22%); /* body text: navy grey */
     --cd-ink-muted: hsl(232 12% 46%); /* secondary text */
     --cd-line: hsl(260 11% 86%); /* hairline borders */
@@ -304,9 +304,19 @@
         linear-gradient(
             180deg,
             var(--cd-dawn-deep) 0%,
-            var(--cd-dawn-mid) 36%,
+            var(--cd-dawn-deep) 22%,
+            var(--cd-dawn-mid) 46%,
             var(--cd-dawn-soft) 72%,
             var(--cd-lavender-mist) 100%
         );
     color: var(--sidebar-foreground);
+}
+
+/* Footer (user menu) sits on the pale lavender end of the gradient,
+   so its text and hover tokens flip to dark ink for readability. */
+.cd-sidebar [data-sidebar='footer'] {
+    --sidebar-foreground: var(--cd-dawn-deep);
+    --sidebar-accent: hsl(237 32% 16% / 0.08);
+    --sidebar-accent-foreground: var(--cd-dawn-deep);
+    color: var(--cd-dawn-deep);
 }
