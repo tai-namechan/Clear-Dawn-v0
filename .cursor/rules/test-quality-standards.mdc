@@ -1,0 +1,122 @@
+---
+description: テスト品質基準 - Unit/Feature の使い分け・Mock 規律・テスト独立性・アサーション選択
+alwaysApply: true
+---
+
+# テスト品質基準
+
+## 原則：「このテストは何を証明しているか」が一読で分かること
+
+テストの各メソッドは **1つのビジネスルール** を検証する。構造の網羅ではなく、仕様の証明を書く。
+
+## PHPUnit（Laravel Feature / Unit）
+
+### 1. Unit Test と Feature Test の使い分け
+
+| 種別 | 目的 | DB | 依存 |
+|---|---|---|---|
+| Unit Test | Service のビジネスロジック分岐を検証 | 使わない | Mockery でモック |
+| Feature Test (Query) | クエリが正しいデータを返すか検証 | `RefreshDatabase` | 実DB |
+| Feature Test (Controller) | HTTP リクエスト → レスポンスの統合検証 | `RefreshDatabase` | 実DB + 認証 |
+
+### 2. Mock のルール（Unit Test）
+
+- **`andReturn()` は実コードが戻り値を使う場合のみ設定する**
+  - 実コードが戻り値を無視するなら `->once()` だけで十分
+- **モックの戻り値を後続のアサーションに使う場合、その値に意味があること**
+  - 意味のない `'dummy'` や `0` を返してそれをアサートするのは禁止
+- **呼び出し回数 (`once()`, `twice()`, `times(N)`) を正確に設定する**
+  - 「とりあえず `once()`」ではなく、実コードの呼び出しパスに合わせる
+
+### 3. Feature Test のデータセットアップ
+
+- **プロジェクト既存の Factory ヘルパーを最大限活用する**
+  - 手動で複数 Factory を組み立てる前に、既存ヘルパーが使えないか確認する
+- **テスト対象外のデータも作り、スコープの正しさを証明する**
+  - 例: `user_id` でフィルタするなら「他ユーザーのデータが返らないこと」もアサートする
+  - 例: 日付範囲なら「範囲外の日付のデータが返らないこと」もアサートする
+- **`assertDatabaseCount` のハードコード件数に注意**
+  - Factory ヘルパーが内部でレコードを作る場合がある。`$cntBefore = Model::count()` で取得してから差分で検証する
+
+### 4. Controller テストの構造
+
+プロジェクトの既存 Controller テストの構成順序に準拠する（典型例）:
+1. ミドルウェアテスト（未認証 → `assertUnauthorized()`）
+2. 権限ありテスト（正常系のレスポンス検証）
+3. 権限による表示制限テスト（アクセス可否 + 表示制限）
+4. 権限外・範囲外アクセステスト（`assertForbidden()`）
+
+### 5. テスト間の独立性（絶対ルール）
+
+- **テストAの Mock 戻り値やセットアップデータを、テストBの期待値として流用しない**
+- **各テストメソッドは実行順序に依存しない**（単体実行でも全体実行でも同じ結果）
+- **`setUp` でのデータ共有ルール**
+  - 共有するのは「認証ユーザー」「基本的なファクトリデータ」等の共通基盤のみ
+  - テスト固有の検証データは各テストメソッド内で作る
+
+### 6. 禁止事項
+
+- **async 関数の呼び出しで `await` を省略しない**（Vitest / フロントテスト）
+- **`$this->assertTrue(true)` を「テスト通過」の証拠にしない**
+- **テスト内でプロダクションコードのロジックを再実装しない**（期待値は固定値かファクトリの値を使う）
+- **1つのテストメソッドに無関係な複数のアサーションを詰め込まない**
+- **エラー握りつぶしでテストを通す提案は禁止**（try/catch で無視、成功扱い、ダミー返却など）
+
+## Mockery のクロージャ引数マッチング
+
+クロージャを引数に取る `where` 等のメソッドをモックする際:
+
+1. **`M::on()` でクロージャの中身まで検証する**（最も推奨）
+
+```php
+$inner = M::mock(Builder::class);
+$inner->shouldReceive('where')->with('end_date', '>=', M::type(Carbon::class))->once()->andReturnSelf();
+$inner->shouldReceive('orWhereNull')->with('end_date')->once()->andReturnSelf();
+
+$query->shouldReceive('where')
+    ->with(M::on(function ($callback) use ($inner) {
+        $callback($inner);
+        return true;
+    }))
+    ->once()
+    ->andReturnSelf();
+```
+
+2. **`M::type('callable')` で型だけ確認する**（中身検証が不要な場合の簡易パターン）
+
+※ どちらを使うかは既存テストのパターンに合わせる。
+
+## Vitest（Vue / TypeScript）
+
+- `mount` / `shallowMount` / `render` の使い分けは既存テストに合わせる
+- Props のテストデータは `__tests__` 内の共通ファイルから取得する（既存パターン準拠）
+- **Promise を返す関数は必ず `await` する**
+- `nextTick()` が必要な場合は `await nextTick()` で明示的に待つ
+- `vi.spyOn` のモックは `mockClear()` / `mockReset()` でテスト間の漏れを防ぐ
+
+## アサーション選択の基準（Feature Test）
+
+### 必須フロー
+1. テストを書く前に、**同一ファイル内の既存テストメソッドを最低2つ Read する**
+2. 使われているアサーションパターンを列挙する
+3. 新しいテストでは、そのパターンの中から選んで書く
+4. 既存テストで使われていないアサーションを使う場合は、**なぜ既存パターンでは不十分かを報告する**
+
+### 典型的な使い分け
+
+| 検証したいこと | 推奨アサーション |
+|---|---|
+| 取得件数 | `assertCount($expected, $actual)` |
+| 取得結果の特定レコード | `assertEquals($expected->id, $actual->first()->id)` |
+| 全件が条件を満たす | `assertTrue($actual->every(fn ($item) => ...))` |
+| DBにデータが存在する | `assertDatabaseHas('table', [...])` |
+| DBにデータが存在しない | `assertDatabaseMissing('table', [...])` |
+| ソフトデリート | `assertSoftDeleted('table', [...])` |
+| 返却型 | `assertInstanceOf(Collection::class, $actual)` |
+
+## 修正提案時の報告義務
+
+テストを書いた/修正した場合、修正提案に以下を含める：
+- **テスト戦略**: Unit / Feature のどちらで書いたか、その理由
+- **境界条件**: どの境界をテストしているか（日付範囲、スコープ、権限）
+- **Mock の意図**: 何をモックしたか、戻り値を設定した場合はその理由

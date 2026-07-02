@@ -1,0 +1,64 @@
+---
+description: サイト全体のデザイン統一ルール - Tailwind CSS v4 デザイントークン一元管理
+alwaysApply: true
+---
+
+# サイト全体のデザイン統一ルール
+
+複数の開発者が関わるプロジェクトで、ページごとにデザインがバラつくのを防ぐためのルール。
+
+## 前提
+
+- 本プロジェクトは **Tailwind CSS v4** を使用する
+- Bootstrap / SCSS は採用していない。SCSS 変数や Bootstrap 前提のルールを持ち込まない
+- デザイントークンの正（単一の情報源）は **`resources/css/app.css`**
+
+## 原則
+
+1. **トークンファーストで設計する**
+   - 色、フォント、角丸、余白等は `resources/css/app.css` の CSS カスタムプロパティ（`:root` / `.dark` / `@theme inline`）で一元定義する
+   - Vue コンポーネントや Blade でマジックナンバー（直書きの `#hex`, `0.85rem` 等）を使わない
+   - 新しい値が必要な場合は `app.css` にトークンを追加してから Tailwind ユーティリティで使う
+
+2. **Tailwind ユーティリティを優先する**
+   - 色: `bg-background`, `text-foreground`, `border-border` 等（`@theme inline` でマッピング済み）
+   - 角丸: `rounded-lg`, `rounded-md`, `rounded-sm`（`--radius` 系から派生）
+   - インライン style や直書き hex 値を避ける
+
+3. **デザイントークン一覧**（正: `resources/css/app.css`）
+
+   | 用途 | CSS カスタムプロパティ | Tailwind 例 |
+   |---|---|---|
+   | 基準フォント | `--font-sans`（Instrument Sans） | `font-sans` |
+   | 背景 / 文字 | `--background` / `--foreground` | `bg-background` / `text-foreground` |
+   | プライマリ | `--primary` / `--primary-foreground` | `bg-primary` / `text-primary-foreground` |
+   | セカンダリ | `--secondary` / `--secondary-foreground` | `bg-secondary` |
+   | ミュート | `--muted` / `--muted-foreground` | `bg-muted` / `text-muted-foreground` |
+   | ボーダー / 入力 / リング | `--border` / `--input` / `--ring` | `border-border` / `ring-ring` |
+   | 角丸 | `--radius` | `rounded-lg` 等 |
+   | サイドバー | `--sidebar-background` 等 | `bg-sidebar` 等 |
+   | ダークモード | `.dark` 配下で上記を上書き | `dark:` 修飾子 |
+
+   トークンを追加・変更したら `app.css` とこの一覧の両方を更新する。
+
+4. **ページ固有のスタイルを追加する前のチェックリスト**
+   - [ ] 同じ要素に対する既存の共通スタイルはないか？
+   - [ ] `app.css` に該当トークンは定義済みか？
+   - [ ] 他のページで同じ要素がどうスタイルされているか確認したか？
+   - [ ] 追加するスタイルが他ページと矛盾しないか？
+
+5. **既存の CSS クラスを削除しない**
+   - テンプレートに付与されている既存クラスは削除せず、クラスの追加や既存クラスのスタイル調整で対応する
+   - 理由: 既存クラスを削除するとテストのアサーション（classList のチェック等）が通らなくなる恐れがある
+   - クラスを外す必要がある場合は、テストへの影響を事前に確認し、提案時に影響範囲を報告する
+
+## 新しいデザインパターンを追加するとき
+
+1. まず既存の Tailwind ユーティリティと `components/ui/` で対応できないか検討する
+2. 対応できない場合、`resources/css/app.css` にトークンを追加し、`@theme inline` で Tailwind にマッピングする
+3. ページ固有の Vue コンポーネントには「そのページでしか使わないレイアウト調整」のみ書く
+
+## UI コンポーネント
+
+- `resources/js/components/ui/` は reka-ui + shadcn パターン
+- 共通 UI コンポーネントの内部改変は原則禁止（ラッパー or ページ側で対応）

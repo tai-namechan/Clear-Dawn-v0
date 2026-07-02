@@ -1,0 +1,11 @@
+---
+description: 事故防止（HTTP関連）- テストでの外部HTTP禁止・fake設定の統一
+alwaysApply: true
+---
+
+# 事故防止（HTTP関連）
+
+- テストは外部HTTPを絶対に投げない（stray request禁止）
+- HTTP変更が絡む場合は、テスト側で `Http::preventStrayRequests()` 相当のガードを必須にする
+- `Http::fake` の対象ドメイン/URLは必ず実コードと同じ設定値（config/env/helper）を参照し、テスト独自定義は禁止
+- fake漏れの可能性がある場合、実装せずに「原因/統一案/影響範囲/追加テスト」を提案する

@@ -1,0 +1,76 @@
+---
+description: レイヤー構造と責務 - Controller / Query / Service / Policy / FormRequest / Resource
+alwaysApply: true
+---
+
+# アーキテクチャ基準（Laravel + Inertia / Clear Dawn）
+
+## 基本思想
+
+### 1. 「動く」と「運用に耐える」は別物
+- ミニマムで動くだけのコードでは不十分
+- 本番データ規模（数百〜数万件）で破綻しないか常に考える
+- エッジケース（null、空配列、権限外データの混入）を意識する
+
+### 2. フレームワークを信頼する
+- Laravel / Vue が提供する機能を理解し、自前実装を避ける
+- **FW が自動でやることを手動で再実装しない**
+  - 例: Eloquent の `timestamps` が自動設定するのに手動で `created_at` を代入する
+  - 例: Laravel のバリデーションが処理するのに Controller で二重チェックする
+
+### 3. コードの「意図」を読む
+- 一見非効率に見えるコードにも理由がある可能性を考える
+- 「なぜこう書いたのか分からない」場合は、書き換える前にユーザーに確認する
+- 既存コードの命名・構造パターンを踏襲する（独自の命名規則を持ち込まない）
+
+## レイヤー構造（Clear Dawn 基本方針）
+
+```
+Controller（薄く）
+ ↓ Policy 認可 → FormRequest 入力検証 → Query（表示取得）/ Service（更新処理）→ Resource 整形 → Inertia 返却
+Query（表示・一覧取得）
+ ↓ Eloquent / クエリビルダー（読み取り）
+Service（更新・業務ロジック）
+ ↓ トランザクション・複数モデル更新・副作用
+Policy（認可）
+FormRequest（入力検証）
+```
+
+### 責務分担
+
+| レイヤー | 責務 | 必須 |
+|---|---|---|
+| Controller | HTTP 入出力、Policy 呼び出し、Query/Service 委譲、Inertia 返却 | はい |
+| FormRequest | 入力バリデーション | はい（入力がある場合） |
+| Policy | 認可（`authorize()` / `can()`） | はい（権限が絡む場合） |
+| Query | 表示・一覧・詳細のデータ取得 | 取得処理を分離する場合 |
+| Service | 更新・作成・削除・複合業務ロジック | 更新処理を分離する場合 |
+| Resource | Inertia props の整形 | 推奨 |
+
+### 重要な制約
+
+- **Repository Pattern は必須ではない**。導入済み領域があれば踏襲するが、未導入領域に勝手に追加しない
+- **Service 層も未導入の領域がある**。現行コードが Controller 直書きなら、まず既存パターンに合わせる
+- **Controller に更新ロジックを肥大化させない**。複雑化したら Service へ切り出す
+- **Query に更新処理を書かない**（読み取り専用）
+- **データスコープ**: ユーザー固有データは `user_id` で所有者を限定する（WHERE に必ず含める）
+- **持ち込まない概念**: `Admin` / `Shop` / `tenant_id` / 組織・店舗前提のマルチテナント設計
+
+## 配置ルール
+
+- Controller / FormRequest / Policy の配置は既存のディレクトリ構成に従う
+- バリデーションは FormRequest に集約する（Controller で二重チェックしない）
+- Inertia に渡す props は **Resource 経由を優先**（配列直書きを増やさない）
+- Model は `app/Models`。既存の Relation / Accessor / Scope を優先して使う
+- Enum / 定数は既存の定義を使う。重複定義しない
+
+## コード品質
+
+- Collection メソッド（`map`, `flatMap`, `filter`, `unique`, `values`）を活用し、foreach ループを減らす
+- `when()` で条件分岐を表現し、if-else の分岐を減らす
+- SQL / メモリの判断は `sql-memory-performance.mdc`、テストは `test-quality-standards.mdc` に従う
+
+## レビューに耐えるコードを書く
+
+AI が生成するコードは、人間のレビューを通る前提で書く。
+説明できないコード（なぜこう書いたか答えられない部分）はユーザーに確認を求める。

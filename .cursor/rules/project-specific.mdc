@@ -1,0 +1,133 @@
+---
+description: プロジェクト固有の環境・運用ルール（Clear Dawn）
+alwaysApply: true
+---
+
+# プロジェクト固有ルール（Clear Dawn）
+
+## 開発環境
+
+- **スタック**: Laravel 13 + Inertia.js v3 + Vue 3 + TypeScript + Tailwind CSS v4
+- **PHP**: ^8.3
+- **作業環境**: Cursor Cloud Agent で作業・PR 作成・差分確認を行う
+- **リポジトリ管理**: GitHub（ブランチ + Pull Request）
+- **本番環境**: Laravel Cloud（production のみ）
+- **ローカル Sail / Docker**: 正式構築前。勝手に追加・変更しない
+- **ローカル DB**: リポジトリ内 SQLite は Starter Kit 既定。Clear Dawn の恒久的なローカル DB 方針は未確定
+- **将来計画**: ローカル開発環境構築時に Sail / MySQL を別途設計する（AI が先行実装しない）
+
+### 起動・開発コマンド
+
+| 用途 | コマンド |
+|---|---|
+| 開発サーバー（Laravel + Vite 同時起動） | `composer dev` |
+| 初回セットアップ | `composer setup` |
+| フロント dev server のみ | `npm run dev` |
+| フロントビルド | `npm run build` |
+
+- **ルート生成**: Laravel Wayfinder（`resources/js/routes/` と `resources/js/actions/` は自動生成・`.gitignore` 対象）
+- Wayfinder 生成物が無い場合: `php artisan wayfinder:generate`（または `composer dev` / ビルド時に自動生成）
+
+### テスト・Lint コマンド（明示指示または変更内容に応じて実行可）
+
+| 用途 | コマンド |
+|---|---|
+| 全テスト（Lint + PHPStan + PHPUnit） | `composer test` |
+| PHPUnit のみ | `php artisan test` |
+| PHP Lint（Pint） | `composer lint` / `composer lint:check` |
+| PHP 静的解析（PHPStan） | `composer types:check` |
+| フロント Lint（ESLint） | `npm run lint` / `npm run lint:check` |
+| フロント型チェック | `npm run types:check` |
+| CI 相当チェック | `composer ci:check` |
+
+- **Vitest**: 現時点では未導入（フロントエンド単体テストは PHPUnit Feature Test のみ）
+- 実行できない場合や環境を壊す懸念がある場合は、先に報告する
+
+## AI が実行してはいけないコマンド（明示指示なし）
+
+### DB 破壊・データ変更
+
+- `php artisan migrate:fresh`
+- `php artisan migrate:reset`
+- `php artisan db:wipe`
+- `php artisan db:seed` / `php artisan db:seed --force`
+- `php artisan migrate --force`
+- 実データを変更する可能性がある `php artisan tinker`
+- production DB への操作
+
+### Git 破壊的操作
+
+- `git push --force`
+- `git reset --hard`
+- `git clean -fd`
+- ブランチ削除
+
+### 環境・依存関係の破壊
+
+- `rm -rf` を含む削除操作
+- `node_modules` / `vendor` / `public/build` / 設定キャッシュの勝手な削除
+- `composer update` / `npm update`
+- package の追加・削除・更新
+
+### 外部サービス設定
+
+- Laravel Cloud、GitHub、Sentry の設定変更
+- Deploy Hook、環境変数、DSN、トークンの作成・変更・出力
+
+## 画面が表示されない場合
+
+削除・再インストール・キャッシュ全消去を**自動で行わない**。まず以下を確認して報告する。
+
+1. 実行したコマンドと標準出力・エラー
+2. Laravel ログ、Vite の出力、ブラウザ上のエラー
+3. 直前の変更ファイルと `git diff`
+4. `package.json`、Vite 設定、ルート、Inertia Page の整合性
+5. production なら Laravel Cloud のログ
+
+## 環境復旧手順
+
+ローカル開発環境の正式構築後に、起動・停止・復旧手順を追記する。
+
+## Git 運用
+
+- `main` は Laravel Cloud production へ反映されるブランチ。**`main` へ直接 push しない**
+- `develop` を統合ブランチとして使う
+- 作業は `feature/<milestone>-<short-name>` ブランチで行う
+- 原則は `feature/* → develop → main` の Pull Request 運用
+- force push、履歴改変、ブランチ削除は明示的な指示なしに行わない
+- コミットメッセージに `Made-with: Cursor` 等のトレーラーを付与しない
+- **commit / push / Pull Request 作成は、各タスクで明示的に許可された場合だけ行う**
+
+## 外部サービス
+
+| サービス | 状態 |
+|---|---|
+| GitHub | 利用中（リポジトリ・PR 管理） |
+| Laravel Cloud production | 利用中 |
+| Laravel Cloud MySQL production | 利用中 |
+| Sentry | 後日導入予定。**今回設定・実装しない** |
+
+外部サービスの設定、課金、環境変数、Deploy Hook、DB 接続情報には触れない。
+
+## アーキテクチャ・ドメイン方針
+
+- **Query / Service / Repository**: Repository Pattern は必須ではない。Service 層も未導入の領域がある
+- **基本方針**（`architecture-layers.mdc` 参照）:
+  - 表示・取得 → Query（または Controller 内の取得処理。既存パターンを踏襲）
+  - 更新処理 → Service
+  - 認可 → Policy
+  - 入力検証 → FormRequest
+- **データスコープ**: ユーザー固有データは `user_id` で所有者を明確にする
+- **持ち込まない概念**: `Admin` / `Shop` / `tenant_id` / 組織・店舗前提のマルチテナント設計
+
+## UI・スタイリング
+
+- **Tailwind CSS v4** を前提とする（Bootstrap / SCSS 前提を持ち込まない）
+- デザイントークン: `resources/css/app.css`（`design-consistency.mdc` 参照）
+- **UI コンポーネント**: `resources/js/components/ui/`（reka-ui ベース）。共通部品の内部改変は原則禁止
+- **レイアウト**: `resources/js/layouts/`（`app.ts` の `layout` 関数で自動割当）
+
+## Docker / Sail / ローカル DB
+
+- Docker、Sail、ローカル DB 構成を**勝手に追加・変更しない**
+- `laravel/sail` は dev 依存に含まれるが、リポジトリ内に `docker-compose.yml` は未配置
