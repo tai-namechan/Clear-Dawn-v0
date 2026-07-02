@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 40" fill="none" role="presentation" aria-hidden="true">
+    <!--
+        Clear Dawn title ornament
+        Thin navy-grey horizontal rule with a restrained classical centre motif.
+        Colour is inherited from CSS via currentColor.
+    -->
+    <g stroke="currentColor" stroke-width="1" stroke-linecap="round">
+        <!-- left rule -->
+        <line x1="8" y1="20" x2="176" y2="20" />
+        <!-- right rule -->
+        <line x1="304" y1="20" x2="472" y2="20" />
+
+        <!-- inner flourish curls, left -->
+        <path d="M176 20 C 190 20, 196 13, 205 13 C 212 13, 216 17, 216 20 C 216 23, 212 27, 205 27 C 196 27, 190 20, 176 20 Z" fill="none" />
+        <!-- inner flourish curls, right -->
+        <path d="M304 20 C 290 20, 284 13, 275 13 C 268 13, 264 17, 264 20 C 264 23, 268 27, 275 27 C 284 27, 290 20, 304 20 Z" fill="none" />
+
+        <!-- centre diamond bud -->
+        <path d="M240 11 L 246.5 20 L 240 29 L 233.5 20 Z" fill="none" />
+        <!-- tiny vertical accents above / below the bud -->
+        <line x1="240" y1="5" x2="240" y2="8" />
+        <line x1="240" y1="32" x2="240" y2="35" />
+    </g>
+    <!-- centre dot inside the diamond -->
+    <circle cx="240" cy="20" r="1.6" fill="currentColor" />
+    <!-- small dots at the meeting points -->
+    <circle cx="222" cy="20" r="1.2" fill="currentColor" />
+    <circle cx="258" cy="20" r="1.2" fill="currentColor" />
+</svg>
