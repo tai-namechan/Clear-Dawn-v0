@@ -11,6 +11,7 @@
 | [0002](./0002-user-scoped-single-user-domain.md) | user_id スコープ・シングルユーザードメインとする | 承認済み |
 | [0003](./0003-single-top-matrix-without-history.md) | TOP Matrix はユーザーごと 1 つ・履歴を持たない | 承認済み |
 | [0004](./0004-ui-built-with-html-css-vue.md) | UI は画像一枚に頼らず HTML/CSS/Vue で構成する | 承認済み |
+| [0005](./0005-query-service-eloquent-layering.md) | Query / Service / Eloquent レイヤリング（Repository 不採用） | 承認済み |
 
 ## フォーマット
 
