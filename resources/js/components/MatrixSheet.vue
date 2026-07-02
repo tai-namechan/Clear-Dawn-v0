@@ -21,17 +21,17 @@ defineProps<Props>();
 <template>
     <section
         aria-label="TOP Matrix"
-        class="cd-frost cd-shadow-soft mx-auto w-full max-w-6xl overflow-hidden rounded-2xl border border-cd-line/70"
+        class="cd-frost cd-shadow-soft mx-auto w-full max-w-7xl overflow-hidden rounded-2xl border border-cd-line/70"
     >
         <table class="w-full table-fixed border-collapse">
             <thead>
-                <tr class="border-b border-cd-line/60">
-                    <th scope="col" class="w-40 px-4 py-5 md:w-56"></th>
+                <tr class="border-b border-cd-line/70">
+                    <th scope="col" class="w-40 px-5 py-6 md:w-60"></th>
                     <th
                         v-for="area in areas"
                         :key="area"
                         scope="col"
-                        class="border-l border-cd-line/40 px-4 py-5 text-center font-serif text-base font-normal tracking-[0.12em] text-cd-ink"
+                        class="border-l border-cd-line/40 px-5 py-6 text-center font-serif text-lg font-normal tracking-[0.2em] text-cd-ink"
                     >
                         {{ area }}
                     </th>
@@ -46,17 +46,17 @@ defineProps<Props>();
                 >
                     <th
                         scope="row"
-                        class="px-4 py-8 text-left align-middle font-normal md:px-5"
+                        class="px-5 py-10 text-left align-middle font-normal md:px-6"
                     >
                         <span
-                            class="flex items-center gap-2 font-serif text-sm leading-relaxed tracking-wide text-cd-ink"
+                            class="flex items-start gap-2 font-serif text-base leading-relaxed tracking-[0.06em] text-cd-ink lining-nums"
                         >
                             <Sunrise
                                 v-if="row.isCurrent"
-                                :size="18"
+                                :size="20"
                                 :stroke-width="1.6"
                                 aria-hidden="true"
-                                class="shrink-0 text-cd-sunrise"
+                                class="mt-1.5 shrink-0 text-cd-sunrise"
                             />
                             {{ row.label }}
                         </span>
@@ -64,18 +64,23 @@ defineProps<Props>();
                     <td
                         v-for="(cell, index) in row.cells"
                         :key="areas[index]"
-                        class="border-l border-cd-line/40 px-4 py-8 align-middle md:px-6"
+                        class="border-l border-cd-line/40 px-5 py-10 align-middle md:px-7"
                     >
-                        <ul class="flex flex-col items-center gap-3">
+                        <ul class="flex flex-col gap-3.5">
                             <li
                                 v-for="item in cell"
                                 :key="item"
-                                class="flex items-start gap-2 text-sm leading-relaxed text-cd-ink"
+                                class="flex items-start gap-2.5 text-sm leading-relaxed tracking-[0.02em] text-cd-ink"
                             >
                                 <span
                                     v-if="row.isCheckable"
                                     aria-hidden="true"
-                                    class="mt-1 inline-block size-3.5 shrink-0 rounded-sm border border-cd-sunrise/60 bg-cd-surface/70"
+                                    class="mt-0.5 inline-block size-4 shrink-0 rounded-[5px] border border-cd-sunrise/55 bg-cd-surface/80 shadow-[inset_0_1px_2px_hsl(22_62%_61%/0.08)]"
+                                />
+                                <span
+                                    v-else
+                                    aria-hidden="true"
+                                    class="mt-2.5 inline-block size-1 shrink-0 rounded-full bg-cd-ink-muted/50"
                                 />
                                 <span>{{ item }}</span>
                             </li>

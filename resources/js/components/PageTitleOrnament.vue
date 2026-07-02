@@ -10,11 +10,14 @@ defineProps<Props>();
 <template>
     <div class="flex flex-col items-center gap-2 py-4 text-center">
         <h1
-            class="font-serif text-3xl font-normal tracking-[0.14em] text-primary"
+            class="font-serif text-4xl font-normal tracking-[0.18em] text-primary md:text-5xl"
         >
             {{ title }}
         </h1>
-        <p v-if="subtitle" class="text-sm tracking-wide text-muted-foreground">
+        <p
+            v-if="subtitle"
+            class="font-serif text-sm tracking-[0.12em] text-muted-foreground"
+        >
             {{ subtitle }}
         </p>
         <div

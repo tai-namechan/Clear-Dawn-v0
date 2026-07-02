@@ -26,10 +26,10 @@ const matrixRows = [
         isCurrent: false,
         isCheckable: false,
         cells: [
-            ['面接対策を進める'],
-            ['スクワットを継続する'],
-            ['音階を丁寧に弾く'],
-            ['部屋を片付ける'],
+            ['M1設計を確定する', '面接対策を進める'],
+            ['スクワットを継続する', '遠投で肩を強くする'],
+            ['音階を丁寧に弾く', '課題曲の譜読みを進める'],
+            ['部屋を片付ける', '家計を見直す'],
         ],
     },
     {
@@ -38,7 +38,7 @@ const matrixRows = [
         isCurrent: true,
         isCheckable: true,
         cells: [
-            ['M1設計を確定する'],
+            ['今日の設計論点をまとめる'],
             ['ブルペンで投球確認'],
             ['開放弦の基礎練習'],
             ['睡眠リズムを整える'],
@@ -58,31 +58,36 @@ const matrixRows = [
     },
 ];
 
-const today = new Intl.DateTimeFormat('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-}).format(new Date());
+const now = new Date();
+const weekday = new Intl.DateTimeFormat('ja-JP', { weekday: 'short' }).format(
+    now,
+);
+const today = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+].join('.');
 </script>
 
 <template>
     <Head title="Dashboard" />
 
     <div
-        class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4 pb-10 md:px-8"
+        class="flex h-full flex-1 flex-col gap-5 overflow-x-auto rounded-xl p-4 pb-12 md:px-10"
     >
-        <PageTitleOrnament
-            title="Clear Dawn"
-            subtitle="夜明け前の静けさの中で、今日やるべきことを決める"
-        />
+        <div class="relative">
+            <p
+                class="flex items-center justify-end gap-1.5 pt-2 font-serif text-sm tracking-[0.14em] text-cd-ink-muted lining-nums md:absolute md:top-3 md:right-0"
+            >
+                <Calendar :size="15" :stroke-width="1.6" aria-hidden="true" />
+                {{ today }}（{{ weekday }}）
+            </p>
 
-        <p
-            class="flex items-center justify-center gap-1.5 text-xs tracking-wide text-muted-foreground"
-        >
-            <Calendar :size="14" :stroke-width="1.6" aria-hidden="true" />
-            {{ today }}
-        </p>
+            <PageTitleOrnament
+                title="Clear Dawn"
+                subtitle="夜明け前の静けさの中で、今日やるべきことを決める"
+            />
+        </div>
 
         <MatrixSheet :areas="matrixAreas" :rows="matrixRows" />
     </div>
