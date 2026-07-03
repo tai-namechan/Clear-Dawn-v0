@@ -13,8 +13,8 @@ class DashboardController extends Controller
     /**
      * TOP Matrix（Dashboard）を表示する。
      *
-     * 初回到達時のみ InitializeMatrixBoardService が初期 Life Area とセルを生成する
-     * （2 回目以降は exists 判定 1 クエリだけで書き込みは発生しない）。
+     * InitializeMatrixBoardService が固定行・初期 Life Area・セル欠損を自己修復する
+     * （整合済みなら軽量な読み取り判定のみで書き込みは発生しない）。
      */
     public function index(
         Request $request,
