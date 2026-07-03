@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\MatrixCellItem;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -24,6 +26,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        // activity_logs は不変ログのため、subject_type にクラス名ではなく
+        // 安定した alias を保存する（クラスのリネームでログが壊れないようにする）
+        Relation::enforceMorphMap([
+            'matrix_cell_item' => MatrixCellItem::class,
+        ]);
     }
 
     /**
