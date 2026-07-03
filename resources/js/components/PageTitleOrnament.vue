@@ -13,15 +13,20 @@ withDefaults(defineProps<Props>(), {
 
 <template>
     <div
-        class="flex flex-col gap-2 py-2"
+        class="flex flex-col gap-2"
         :class="
             align === 'center'
                 ? 'items-center py-4 text-center'
-                : 'items-start text-left'
+                : 'items-start py-1 text-left'
         "
     >
         <h1
-            class="font-serif text-4xl font-normal tracking-[0.12em] text-primary md:text-5xl"
+            class="font-serif font-normal text-primary"
+            :class="
+                align === 'center'
+                    ? 'text-4xl tracking-[0.12em] md:text-5xl'
+                    : 'text-3xl leading-tight tracking-[0.14em] md:text-4xl'
+            "
         >
             {{ title }}
         </h1>
@@ -33,11 +38,11 @@ withDefaults(defineProps<Props>(), {
         </p>
         <div
             aria-hidden="true"
-            class="cd-mask-ornament mt-1 h-8 max-w-full"
+            class="max-w-full"
             :class="
                 align === 'center'
-                    ? 'w-72 text-cd-ink-muted/60'
-                    : 'h-6 w-44 text-primary/60'
+                    ? 'cd-mask-ornament mt-1 h-8 w-72 text-cd-ink-muted/60'
+                    : 'cd-title-rule w-40'
             "
         />
     </div>
