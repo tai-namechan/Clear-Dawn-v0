@@ -78,6 +78,108 @@ class DashboardTest extends TestCase
         $this->assertSame(1, LifeArea::query()->where('user_id', $user->id)->count());
     }
 
+    public function test_dashboard_repairs_missing_matrix_rows_when_the_seeder_was_not_run()
+    {
+        // seed 漏れ（matrix_rows が空）の本番状態を再現する
+        MatrixRow::query()->delete();
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Dashboard')
+                ->has('rows', 3)
+            );
+
+        $this->assertSame(3, MatrixRow::query()->count());
+        $this->assertSame(12, MatrixCell::query()->where('user_id', $user->id)->count());
+    }
+
+    public function test_dashboard_repairs_missing_cells_for_an_existing_area()
+    {
+        $user = User::factory()->create();
+        // セルを持たない領域（過去データのセル欠損を再現）
+        $area = LifeArea::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)->get(route('dashboard'))->assertOk();
+
+        // 固定 3 行ぶんのセルが補完され、デフォルト 4 領域は再生成されない
+        $this->assertSame(3, MatrixCell::query()->where('life_area_id', $area->id)->count());
+        $this->assertSame(1, LifeArea::query()->where('user_id', $user->id)->count());
+    }
+
+    public function test_dashboard_repairs_missing_cells_for_inactive_areas()
+    {
+        $user = User::factory()->create();
+        $area = LifeArea::factory()->inactive()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)->get(route('dashboard'))->assertOk();
+
+        // 非表示でも soft delete されていない領域はセルを補完する（再表示に備える）
+        $this->assertSame(3, MatrixCell::query()->where('life_area_id', $area->id)->count());
+    }
+
+    public function test_dashboard_does_not_repair_or_reinitialize_soft_deleted_areas()
+    {
+        $user = User::factory()->create();
+        $area = LifeArea::factory()->create(['user_id' => $user->id]);
+        $area->delete();
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Dashboard')
+                ->has('areas', 0)
+            );
+
+        // soft delete 済み領域にはセルを作らず、デフォルト 4 領域も再生成しない
+        $this->assertSame(0, MatrixCell::query()->where('life_area_id', $area->id)->count());
+        $this->assertSame(0, LifeArea::query()->where('user_id', $user->id)->count());
+    }
+
+    public function test_cell_repair_does_not_change_existing_cells_and_items()
+    {
+        $user = User::factory()->create();
+        $area = LifeArea::factory()->create(['user_id' => $user->id]);
+        // current 行のセルだけ存在し、monthly / future 行のセルが欠損している状態
+        $cell = MatrixCell::factory()->create([
+            'user_id' => $user->id,
+            'life_area_id' => $area->id,
+        ]);
+        $completedItem = MatrixCellItem::factory()->completed()->create([
+            'matrix_cell_id' => $cell->id,
+            'title' => '完了済みの項目',
+            'sort_order' => 1,
+        ]);
+        MatrixCellItem::factory()->create([
+            'matrix_cell_id' => $cell->id,
+            'title' => '未完了の項目',
+            'sort_order' => 2,
+        ]);
+
+        $this->actingAs($user)->get(route('dashboard'))->assertOk();
+
+        // 欠損していた 2 セルのみ補完され、既存セルは置き換わらない
+        $this->assertSame(3, MatrixCell::query()->where('life_area_id', $area->id)->count());
+        $this->assertSame(
+            $cell->id,
+            MatrixCell::query()
+                ->where('life_area_id', $area->id)
+                ->where('matrix_row_id', $cell->matrix_row_id)
+                ->firstOrFail()
+                ->id,
+        );
+
+        // 既存の項目・完了状態・並び順は変更されない
+        $this->assertSame(2, $cell->items()->count());
+        $completedItem->refresh();
+        $this->assertTrue($completedItem->is_completed);
+        $this->assertSame(1, $completedItem->sort_order);
+    }
+
     public function test_dashboard_shows_only_the_authenticated_users_data()
     {
         $user = User::factory()->create();

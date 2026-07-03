@@ -2,27 +2,19 @@
 
 namespace Database\Seeders;
 
-use App\Enums\MatrixRowKey;
-use App\Models\MatrixRow;
+use App\Services\EnsureMatrixRowsService;
 use Illuminate\Database\Seeder;
 
 class MatrixRowSeeder extends Seeder
 {
     /**
      * 固定 3 行の matrix_rows を冪等に投入する。
-     * key を一意キーに updateOrCreate するため、何度実行しても 3 行のまま。
+     *
+     * 実体は EnsureMatrixRowsService（Dashboard 初回アクセスの自己修復と同一ロジック）。
+     * 本番での seed 実行は補助であり、未実行でもアプリ側で復旧する。
      */
-    public function run(): void
+    public function run(EnsureMatrixRowsService $ensureMatrixRowsService): void
     {
-        foreach (MatrixRowKey::cases() as $key) {
-            MatrixRow::query()->updateOrCreate(
-                ['key' => $key->value],
-                [
-                    'label' => $key->label(),
-                    'sort_order' => $key->sortOrder(),
-                    'is_checkable' => $key->isCheckable(),
-                ],
-            );
-        }
+        $ensureMatrixRowsService->handle();
     }
 }

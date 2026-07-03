@@ -276,6 +276,17 @@
         -webkit-mask-image: url('/images/decorations/sidebar-violin.svg');
     }
 
+    /* Quiet underline for left-aligned page titles: gilt fading into the paper. */
+    .cd-title-rule {
+        height: 1px;
+        background: linear-gradient(
+            90deg,
+            var(--cd-gilt) 0%,
+            var(--cd-line) 60%,
+            transparent 100%
+        );
+    }
+
     /* Pale sunrise wash highlighting the 「今やるべきこと」 matrix row. */
     .cd-matrix-row-current {
         background: linear-gradient(
