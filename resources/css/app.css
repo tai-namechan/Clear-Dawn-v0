@@ -78,6 +78,8 @@
     --color-cd-sunrise: var(--cd-sunrise);
     --color-cd-sunrise-soft: var(--cd-sunrise-soft);
     --color-cd-sunrise-mist: var(--cd-sunrise-mist);
+    --color-cd-moss: var(--cd-moss);
+    --color-cd-mist: var(--cd-mist);
 }
 
 /*
@@ -165,6 +167,8 @@
     --cd-sunrise-mist: hsl(
         28 81% 96%
     ); /* faintest sunrise tint (--cd-accent-light) */
+    --cd-moss: hsl(125 13% 50%); /* quiet green (--cd-success family) */
+    --cd-mist: hsl(210 29% 56%); /* soft blue-grey (--cd-info family) */
 }
 
 .dark {
