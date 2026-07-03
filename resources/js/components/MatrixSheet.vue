@@ -67,20 +67,23 @@ function toggleCompletion(item: MatrixCellItem): void {
                             {{ row.label }}
                         </span>
                     </th>
+                    <!-- セル全体をタップ / クリックで編集モーダルを開く（iPad 等のタッチ端末対応）。
+                         キーボード操作は内側の鉛筆ボタンで担保する -->
                     <td
                         v-for="(cell, areaIndex) in row.cells"
                         :key="areas[areaIndex].id"
-                        class="group/cell relative border-l border-cd-line/60 px-5 py-7 align-middle"
+                        class="group/cell relative cursor-pointer border-l border-cd-line/60 px-5 py-7 align-middle transition-colors hover:bg-cd-sunrise-mist/50"
+                        @click="emit('edit', { rowIndex, areaIndex })"
                     >
                         <button
                             type="button"
-                            class="absolute top-2 right-2 rounded-md p-1.5 text-cd-ink-muted/70 opacity-0 transition-opacity group-hover/cell:opacity-100 hover:bg-muted/70 hover:text-cd-ink focus-visible:opacity-100"
+                            class="absolute top-2 right-2 rounded-md border border-cd-line/80 bg-cd-surface/90 p-1.5 text-cd-ink-muted shadow-xs transition-colors group-hover/cell:text-cd-ink hover:bg-muted/70 hover:text-cd-ink"
                             :aria-label="`${areas[areaIndex].name} × ${row.label} を編集`"
-                            @click="emit('edit', { rowIndex, areaIndex })"
+                            @click.stop="emit('edit', { rowIndex, areaIndex })"
                         >
                             <Pencil
-                                :size="15"
-                                :stroke-width="1.6"
+                                :size="16"
+                                :stroke-width="1.7"
                                 aria-hidden="true"
                             />
                         </button>
@@ -111,7 +114,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                                             ? 'border-cd-sunrise bg-cd-sunrise text-white'
                                             : 'border-cd-ink-muted/70 bg-white/70'
                                     "
-                                    @click="toggleCompletion(item)"
+                                    @click.stop="toggleCompletion(item)"
                                 >
                                     <Check
                                         v-if="item.is_completed"

@@ -38,6 +38,12 @@ const editingRowLabel = computed(() =>
         : '',
 );
 
+const editingRowIsCheckable = computed(() =>
+    editing.value !== null
+        ? (props.rows[editing.value.rowIndex]?.is_checkable ?? false)
+        : false,
+);
+
 function openCellEditor(payload: { rowIndex: number; areaIndex: number }) {
     editing.value = payload;
 }
@@ -93,6 +99,7 @@ const today = [
                 :cell="editingCell"
                 :area-name="editingAreaName"
                 :row-label="editingRowLabel"
+                :is-checkable="editingRowIsCheckable"
                 @update:open="(value) => (editing = value ? editing : null)"
             />
         </div>
