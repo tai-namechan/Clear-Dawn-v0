@@ -1,50 +1,46 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
-import { Calendar } from '@lucide/vue';
+import { Head, Link } from '@inertiajs/vue3';
+import { Calendar, SlidersHorizontal } from '@lucide/vue';
+import { computed, ref } from 'vue';
+import MatrixCellEditModal from '@/components/MatrixCellEditModal.vue';
 import MatrixSheet from '@/components/MatrixSheet.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
+import { index as lifeAreasIndex } from '@/routes/life-areas';
+import type { LifeArea, MatrixRow } from '@/types/matrix';
 
-// M0-2: static display data only. Replaced by GetMatrixBoardQuery in M1.
-const matrixAreas = ['仕事', '野球', 'バイオリン', 'プライベート'];
+interface Props {
+    areas: LifeArea[];
+    rows: MatrixRow[];
+}
 
-const matrixRows = [
-    {
-        key: 'monthly',
-        label: '1ヶ月くらいの間でやるべきこと',
-        isCurrent: false,
-        isCheckable: false,
-        cells: [
-            ['移行に必要なタスクを完了', '負債対策'],
-            ['身体を元に戻す'],
-            [],
-            [],
-        ],
-    },
-    {
-        key: 'current',
-        label: '今やるべきこと',
-        isCurrent: true,
-        isCheckable: true,
-        cells: [
-            ['受注バグ修正', '課題の整理', '上野さん依頼対応', 'WEB注文変更'],
-            ['死なない。', '生きて夢を追う。'],
-            ['少しだけ', '1曲だけ弾く。'],
-            [],
-        ],
-    },
-    {
-        key: 'future',
-        label: '将来どうなっていたいか',
-        isCurrent: false,
-        isCheckable: false,
-        cells: [
-            ['残りシート、行列担当 完了', 'サンドボックス バグ修正'],
-            ['最低限の筋トレ', '最低限のピッチング'],
-            [],
-            [],
-        ],
-    },
-];
+const props = defineProps<Props>();
+
+const editing = ref<{ rowIndex: number; areaIndex: number } | null>(null);
+
+// モーダル表示中も Inertia の props 更新（項目追加・編集・削除）を反映するため、
+// セルはスナップショットではなく props から都度導出する
+const editingCell = computed(() =>
+    editing.value !== null
+        ? (props.rows[editing.value.rowIndex]?.cells[editing.value.areaIndex] ??
+          null)
+        : null,
+);
+
+const editingAreaName = computed(() =>
+    editing.value !== null
+        ? (props.areas[editing.value.areaIndex]?.name ?? '')
+        : '',
+);
+
+const editingRowLabel = computed(() =>
+    editing.value !== null
+        ? (props.rows[editing.value.rowIndex]?.label ?? '')
+        : '',
+);
+
+function openCellEditor(payload: { rowIndex: number; areaIndex: number }) {
+    editing.value = payload;
+}
 
 const now = new Date();
 const today = [
@@ -64,19 +60,41 @@ const today = [
             <div class="flex items-start justify-between gap-4">
                 <PageTitleOrnament title="Clear Dawn" align="left" />
 
-                <p
-                    class="flex items-center gap-2 pt-5 font-serif text-base tracking-[0.12em] text-cd-ink-muted lining-nums"
-                >
-                    {{ today }}
-                    <Calendar
-                        :size="17"
-                        :stroke-width="1.6"
-                        aria-hidden="true"
-                    />
-                </p>
+                <div class="flex items-center gap-4 pt-5">
+                    <p
+                        class="flex items-center gap-2 font-serif text-base tracking-[0.12em] text-cd-ink-muted lining-nums"
+                    >
+                        {{ today }}
+                        <Calendar
+                            :size="17"
+                            :stroke-width="1.6"
+                            aria-hidden="true"
+                        />
+                    </p>
+                    <Link
+                        :href="lifeAreasIndex()"
+                        aria-label="領域管理"
+                        class="flex items-center gap-2 rounded-md px-2 py-1.5 font-serif text-sm tracking-[0.12em] text-cd-ink-muted transition-colors hover:bg-muted/70 hover:text-cd-ink"
+                    >
+                        <SlidersHorizontal
+                            :size="16"
+                            :stroke-width="1.6"
+                            aria-hidden="true"
+                        />
+                        領域管理
+                    </Link>
+                </div>
             </div>
 
-            <MatrixSheet :areas="matrixAreas" :rows="matrixRows" />
+            <MatrixSheet :areas="areas" :rows="rows" @edit="openCellEditor" />
+
+            <MatrixCellEditModal
+                :open="editing !== null"
+                :cell="editingCell"
+                :area-name="editingAreaName"
+                :row-label="editingRowLabel"
+                @update:open="(value) => (editing = value ? editing : null)"
+            />
         </div>
     </div>
 </template>
