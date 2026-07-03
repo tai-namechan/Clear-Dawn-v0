@@ -60,7 +60,7 @@ const today = [
             <div class="flex items-start justify-between gap-4">
                 <PageTitleOrnament title="Clear Dawn" align="left" />
 
-                <div class="flex items-center gap-4 pt-5">
+                <div class="flex items-center gap-4 pt-2.5">
                     <p
                         class="flex items-center gap-2 font-serif text-base tracking-[0.12em] text-cd-ink-muted lining-nums"
                     >

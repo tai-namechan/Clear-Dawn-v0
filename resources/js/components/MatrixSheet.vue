@@ -23,7 +23,7 @@ function toggleCompletion(item: MatrixCellItem): void {
 <template>
     <section
         aria-label="TOP Matrix"
-        class="cd-shadow-soft flex min-h-[28rem] w-full flex-1 flex-col overflow-hidden rounded-xl border border-cd-line bg-cd-surface md:min-h-[32rem]"
+        class="cd-shadow-soft flex min-h-[30rem] w-full flex-1 flex-col overflow-hidden rounded-xl border border-cd-line bg-cd-surface md:min-h-[34rem]"
     >
         <table class="h-full w-full table-fixed border-collapse font-serif">
             <thead>
