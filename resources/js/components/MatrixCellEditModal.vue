@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Form, router } from '@inertiajs/vue3';
-import { Pencil, Plus, Trash2 } from '@lucide/vue';
+import { Check, Pencil, Plus, Trash2 } from '@lucide/vue';
 import { ref, watch } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -12,14 +12,15 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { destroy, store, update } from '@/routes/matrix-cell-items';
-import type { MatrixCell } from '@/types/matrix';
+import { destroy, store, toggle, update } from '@/routes/matrix-cell-items';
+import type { MatrixCell, MatrixCellItem } from '@/types/matrix';
 
 interface Props {
     open: boolean;
     cell: MatrixCell | null;
     areaName: string;
     rowLabel: string;
+    isCheckable: boolean;
 }
 
 const props = defineProps<Props>();
@@ -29,13 +30,19 @@ const emit = defineEmits<{
 }>();
 
 const editingItemId = ref<string | null>(null);
+const showAddForm = ref(false);
 
 watch(
     () => props.open,
     () => {
         editingItemId.value = null;
+        showAddForm.value = false;
     },
 );
+
+function toggleCompletion(item: MatrixCellItem): void {
+    router.patch(toggle.url(item.id), {}, { preserveScroll: true });
+}
 
 function deleteItem(itemId: string): void {
     router.delete(destroy.url(itemId), { preserveScroll: true });
@@ -44,21 +51,32 @@ function deleteItem(itemId: string): void {
 
 <template>
     <Dialog :open="open" @update:open="emit('update:open', $event)">
-        <DialogContent class="max-h-[85vh] overflow-y-auto sm:max-w-xl">
-            <DialogHeader>
-                <DialogTitle class="font-serif text-xl tracking-[0.12em]">
-                    {{ areaName }}
+        <DialogContent
+            class="max-h-[85vh] overflow-y-auto bg-cd-surface sm:max-w-xl"
+        >
+            <DialogHeader class="items-center gap-1 text-center sm:text-center">
+                <DialogTitle
+                    class="font-serif text-xl font-normal tracking-[0.16em] text-primary"
+                >
+                    {{ areaName }} / {{ rowLabel }}
                 </DialogTitle>
-                <DialogDescription class="font-serif tracking-[0.08em]">
-                    {{ rowLabel }}
+                <DialogDescription class="sr-only">
+                    {{ areaName }} × {{ rowLabel }} のセル項目を編集する
                 </DialogDescription>
+                <div
+                    aria-hidden="true"
+                    class="cd-mask-ornament mt-1 h-4 w-28 text-cd-ink-muted/50"
+                />
             </DialogHeader>
 
-            <ul v-if="cell && cell.items.length > 0" class="flex flex-col">
+            <ul
+                v-if="cell && cell.items.length > 0"
+                class="flex flex-col rounded-md border border-cd-line/70 bg-white/60"
+            >
                 <li
                     v-for="item in cell.items"
                     :key="item.id"
-                    class="border-b border-cd-line/60 py-3 last:border-b-0"
+                    class="border-b border-cd-line/60 px-4 py-3 last:border-b-0"
                 >
                     <Form
                         v-if="editingItemId === item.id"
@@ -122,7 +140,7 @@ function deleteItem(itemId: string): void {
                                 {{ item.memo }}
                             </p>
                         </div>
-                        <div class="flex shrink-0 gap-1">
+                        <div class="flex shrink-0 items-center gap-1">
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -142,45 +160,95 @@ function deleteItem(itemId: string): void {
                             >
                                 <Trash2 :size="15" :stroke-width="1.6" />
                             </Button>
+                            <button
+                                v-if="isCheckable"
+                                type="button"
+                                role="checkbox"
+                                :aria-checked="item.is_completed"
+                                :aria-label="`${item.title} を${item.is_completed ? '再開' : '完了'}にする`"
+                                class="ml-2 inline-flex size-5 shrink-0 items-center justify-center rounded-[3px] border transition-colors"
+                                :class="
+                                    item.is_completed
+                                        ? 'border-primary bg-primary text-primary-foreground'
+                                        : 'border-cd-ink-muted/60 bg-white'
+                                "
+                                @click="toggleCompletion(item)"
+                            >
+                                <Check
+                                    v-if="item.is_completed"
+                                    :size="13"
+                                    :stroke-width="2.4"
+                                    aria-hidden="true"
+                                />
+                            </button>
                         </div>
                     </div>
                 </li>
             </ul>
 
-            <p v-else class="py-2 text-sm text-cd-ink-muted">
+            <p v-else class="py-1 text-center text-sm text-cd-ink-muted">
                 まだ項目がありません。
             </p>
 
-            <Form
-                v-if="cell?.id"
-                v-bind="store.form(cell.id)"
-                :options="{ preserveScroll: true }"
-                reset-on-success
-                class="flex flex-col gap-2 border-t border-cd-line/60 pt-4"
-                v-slot="{ errors, processing }"
-            >
-                <Input
-                    name="title"
-                    required
-                    maxlength="255"
-                    placeholder="新しい項目"
-                />
-                <InputError :message="errors.title" />
-                <textarea
-                    name="memo"
-                    rows="2"
-                    maxlength="2000"
-                    placeholder="補足メモ（任意）"
-                    class="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                ></textarea>
-                <InputError :message="errors.memo" />
-                <div class="flex justify-end">
-                    <Button type="submit" size="sm" :disabled="processing">
-                        <Plus :size="15" :stroke-width="1.8" />
-                        追加
-                    </Button>
-                </div>
-            </Form>
+            <template v-if="cell?.id">
+                <button
+                    v-if="!showAddForm"
+                    type="button"
+                    class="w-full rounded-md border border-dashed border-cd-ink-muted/40 py-2.5 font-serif text-sm tracking-[0.14em] text-cd-ink-muted transition-colors hover:border-cd-ink-muted/70 hover:bg-muted/50 hover:text-cd-ink"
+                    @click="showAddForm = true"
+                >
+                    ＋ 項目を追加
+                </button>
+
+                <Form
+                    v-else
+                    v-bind="store.form(cell.id)"
+                    :options="{ preserveScroll: true }"
+                    reset-on-success
+                    class="flex flex-col gap-2 rounded-md border border-cd-line/70 bg-white/60 p-3"
+                    v-slot="{ errors, processing }"
+                >
+                    <Input
+                        name="title"
+                        required
+                        maxlength="255"
+                        placeholder="新しい項目"
+                    />
+                    <InputError :message="errors.title" />
+                    <textarea
+                        name="memo"
+                        rows="2"
+                        maxlength="2000"
+                        placeholder="補足メモ（任意）"
+                        class="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    ></textarea>
+                    <InputError :message="errors.memo" />
+                    <div class="flex justify-end gap-2">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            @click="showAddForm = false"
+                        >
+                            キャンセル
+                        </Button>
+                        <Button type="submit" size="sm" :disabled="processing">
+                            <Plus :size="15" :stroke-width="1.8" />
+                            追加
+                        </Button>
+                    </div>
+                </Form>
+            </template>
+
+            <div class="flex justify-center pt-1">
+                <Button
+                    type="button"
+                    class="min-w-32 font-serif tracking-[0.2em]"
+                    @click="emit('update:open', false)"
+                >
+                    閉じる
+                </Button>
+            </div>
         </DialogContent>
     </Dialog>
 </template>
