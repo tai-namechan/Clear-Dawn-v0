@@ -6,6 +6,7 @@ import {
     ArrowUp,
     Eye,
     EyeOff,
+    GripVertical,
     Pencil,
     Plus,
 } from '@lucide/vue';
@@ -18,9 +19,9 @@ import {
     lifeAreaColorClasses,
     lifeAreaColorOptions,
 } from '@/lib/lifeAreaColors';
+import type { LifeArea, LifeAreaColor } from '@/types/matrix';
 import { dashboard } from '@/routes';
 import { destroy, reorder, restore, store, update } from '@/routes/life-areas';
-import type { LifeArea, LifeAreaColor } from '@/types/matrix';
 
 interface Props {
     lifeAreas: LifeArea[];
@@ -69,13 +70,13 @@ function reactivate(area: LifeArea): void {
             <div class="flex items-start justify-between gap-4">
                 <PageTitleOrnament
                     title="領域管理"
-                    subtitle="TOP Matrix の横軸をととのえる"
+                    subtitle="人生を構成する領域を整え、優先順位とバランスを明確にしましょう。"
                     align="left"
                 />
 
                 <Link
                     :href="dashboard()"
-                    class="flex items-center gap-2 rounded-md px-2 py-1.5 pt-5 font-serif text-sm tracking-[0.12em] text-cd-ink-muted transition-colors hover:text-cd-ink"
+                    class="mt-2 flex shrink-0 items-center gap-2 rounded-full border border-cd-line/80 bg-white/60 px-3.5 py-1.5 font-sans text-sm text-cd-ink-muted transition-colors hover:border-cd-line hover:text-cd-ink"
                 >
                     <ArrowLeft
                         :size="16"
@@ -87,9 +88,14 @@ function reactivate(area: LifeArea): void {
             </div>
 
             <section
-                aria-label="領域一覧"
-                class="cd-shadow-soft rounded-xl border border-cd-line bg-cd-surface"
+                aria-label="登録済みの領域"
+                class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface"
             >
+                <h2
+                    class="border-b border-cd-line/60 px-5 py-4 font-serif text-base tracking-[0.12em] text-cd-ink"
+                >
+                    登録済みの領域
+                </h2>
                 <ul class="flex flex-col">
                     <li
                         v-for="(area, index) in lifeAreas"
@@ -171,19 +177,38 @@ function reactivate(area: LifeArea): void {
                             <div class="flex min-w-0 items-center gap-3">
                                 <span
                                     aria-hidden="true"
+                                    class="shrink-0 cursor-grab text-cd-ink-muted/40"
+                                >
+                                    <GripVertical
+                                        :size="16"
+                                        :stroke-width="1.6"
+                                    />
+                                </span>
+                                <span
+                                    aria-hidden="true"
                                     class="size-4 shrink-0 rounded-full border border-cd-line"
                                     :class="lifeAreaColorClasses[area.color]"
                                 />
                                 <span
-                                    class="truncate font-serif text-base tracking-[0.08em] text-cd-ink"
+                                    class="min-w-0 truncate font-serif text-base tracking-[0.08em] text-cd-ink"
                                 >
                                     {{ area.name }}
                                 </span>
                                 <span
-                                    v-if="!area.is_active"
-                                    class="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-cd-ink-muted"
+                                    class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+                                    :class="
+                                        area.is_active
+                                            ? 'bg-cd-moss/15 text-cd-moss'
+                                            : 'bg-muted text-cd-ink-muted'
+                                    "
                                 >
-                                    非表示
+                                    <component
+                                        :is="area.is_active ? Eye : EyeOff"
+                                        :size="12"
+                                        :stroke-width="1.8"
+                                        aria-hidden="true"
+                                    />
+                                    {{ area.is_active ? '公開中' : '非公開' }}
                                 </span>
                             </div>
 
@@ -244,13 +269,13 @@ function reactivate(area: LifeArea): void {
             </section>
 
             <section
-                aria-label="領域を追加"
-                class="cd-shadow-soft rounded-xl border border-cd-line bg-cd-surface px-5 py-4"
+                aria-label="新しい領域を追加"
+                class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface px-5 py-5"
             >
                 <h2
-                    class="mb-3 font-serif text-base tracking-[0.12em] text-cd-ink"
+                    class="mb-4 font-serif text-base tracking-[0.12em] text-cd-ink"
                 >
-                    領域を追加
+                    新しい領域を追加
                 </h2>
                 <Form
                     v-bind="store.form()"
@@ -268,6 +293,9 @@ function reactivate(area: LifeArea): void {
                     <InputError :message="errors.name" />
 
                     <input type="hidden" name="color" :value="newColor" />
+                    <p class="font-sans text-sm text-cd-ink-muted">
+                        カラーを選択
+                    </p>
                     <div
                         class="flex flex-wrap gap-2"
                         role="radiogroup"
@@ -292,10 +320,14 @@ function reactivate(area: LifeArea): void {
                     </div>
                     <InputError :message="errors.color" />
 
-                    <div class="flex justify-end">
-                        <Button type="submit" size="sm" :disabled="processing">
-                            <Plus :size="15" :stroke-width="1.8" />
-                            追加
+                    <div class="flex justify-end pt-1">
+                        <Button
+                            type="submit"
+                            class="font-sans tracking-[0.08em]"
+                            :disabled="processing"
+                        >
+                            <Plus :size="16" :stroke-width="1.8" />
+                            追加する
                         </Button>
                     </div>
                 </Form>
