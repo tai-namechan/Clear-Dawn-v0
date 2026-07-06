@@ -287,6 +287,12 @@
         );
     }
 
+    /* Vertical separator between dashboard meta actions and account menu. */
+    .cd-header-divider {
+        width: 1px;
+        background: var(--cd-line);
+    }
+
     /* Pale sunrise wash highlighting the 「今やるべきこと」 matrix row. */
     .cd-matrix-row-current {
         background: linear-gradient(
