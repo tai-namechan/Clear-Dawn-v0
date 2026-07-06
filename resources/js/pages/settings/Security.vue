@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
-import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import Heading from '@/components/Heading.vue';
 import InputError from '@/components/InputError.vue';
 import type { Props as ManagePasskeysProps } from '@/components/ManagePasskeys.vue';
@@ -10,6 +9,7 @@ import ManageTwoFactor from '@/components/ManageTwoFactor.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import { edit } from '@/routes/security';
 
 type Props = {
@@ -23,7 +23,7 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Security settings',
+                title: 'セキュリティ設定',
                 href: edit(),
             },
         ],
@@ -32,15 +32,15 @@ defineOptions({
 </script>
 
 <template>
-    <Head title="Security settings" />
+    <Head title="セキュリティ設定" />
 
-    <h1 class="sr-only">Security settings</h1>
+    <h1 class="sr-only">セキュリティ設定</h1>
 
     <div class="space-y-6">
         <Heading
             variant="small"
-            title="Update password"
-            description="Ensure your account is using a long, random password to stay secure"
+            title="パスワードの変更"
+            description="安全のため、長くランダムなパスワードを設定してください。"
         />
 
         <Form
@@ -58,38 +58,44 @@ defineOptions({
             v-slot="{ errors, processing }"
         >
             <div class="grid gap-2">
-                <Label for="current_password">Current password</Label>
+                <Label for="current_password" class="text-cd-ink"
+                    >現在のパスワード</Label
+                >
                 <PasswordInput
                     id="current_password"
                     name="current_password"
                     class="mt-1 block w-full"
                     autocomplete="current-password"
-                    placeholder="Current password"
+                    placeholder="現在のパスワード"
                 />
                 <InputError :message="errors.current_password" />
             </div>
 
             <div class="grid gap-2">
-                <Label for="password">New password</Label>
+                <Label for="password" class="text-cd-ink"
+                    >新しいパスワード</Label
+                >
                 <PasswordInput
                     id="password"
                     name="password"
                     class="mt-1 block w-full"
                     autocomplete="new-password"
-                    placeholder="New password"
+                    placeholder="新しいパスワード"
                     :passwordrules="props.passwordRules"
                 />
                 <InputError :message="errors.password" />
             </div>
 
             <div class="grid gap-2">
-                <Label for="password_confirmation">Confirm password</Label>
+                <Label for="password_confirmation" class="text-cd-ink"
+                    >新しいパスワード（確認）</Label
+                >
                 <PasswordInput
                     id="password_confirmation"
                     name="password_confirmation"
                     class="mt-1 block w-full"
                     autocomplete="new-password"
-                    placeholder="Confirm password"
+                    placeholder="新しいパスワード（確認）"
                     :passwordrules="props.passwordRules"
                 />
                 <InputError :message="errors.password_confirmation" />
@@ -98,9 +104,10 @@ defineOptions({
             <div class="flex items-center gap-4">
                 <Button
                     :disabled="processing"
+                    class="font-sans tracking-[0.08em]"
                     data-test="update-password-button"
                 >
-                    Save
+                    保存する
                 </Button>
             </div>
         </Form>
