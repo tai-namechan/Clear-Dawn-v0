@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Form, router } from '@inertiajs/vue3';
-import { Check, Pencil, Plus, Trash2 } from '@lucide/vue';
+import { Check, GripVertical, Pencil, Plus, Trash2 } from '@lucide/vue';
 import { ref, watch } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
@@ -12,14 +12,15 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { destroy, store, toggle, update } from '@/routes/matrix-cell-items';
 import type { MatrixCell, MatrixCellItem } from '@/types/matrix';
+import { destroy, store, toggle, update } from '@/routes/matrix-cell-items';
 
 interface Props {
     open: boolean;
     cell: MatrixCell | null;
     areaName: string;
     rowLabel: string;
+    description: string;
     isCheckable: boolean;
 }
 
@@ -54,29 +55,31 @@ function deleteItem(itemId: string): void {
         <DialogContent
             class="max-h-[85vh] overflow-y-auto bg-cd-surface sm:max-w-xl"
         >
-            <DialogHeader class="items-center gap-1 text-center sm:text-center">
+            <DialogHeader class="items-center gap-2 text-center sm:text-center">
                 <DialogTitle
                     class="font-serif text-xl font-normal tracking-[0.16em] text-primary"
                 >
                     {{ areaName }} / {{ rowLabel }}
                 </DialogTitle>
-                <DialogDescription class="sr-only">
-                    {{ areaName }} × {{ rowLabel }} のセル項目を編集する
-                </DialogDescription>
                 <div
                     aria-hidden="true"
-                    class="cd-mask-ornament mt-1 h-4 w-28 text-cd-ink-muted/50"
+                    class="cd-mask-ornament h-4 w-32 text-cd-gilt"
                 />
+                <DialogDescription
+                    class="max-w-sm font-sans text-sm leading-relaxed whitespace-pre-line text-cd-ink-muted"
+                >
+                    {{ description }}
+                </DialogDescription>
             </DialogHeader>
 
             <ul
                 v-if="cell && cell.items.length > 0"
-                class="flex flex-col rounded-md border border-cd-line/70 bg-white/60"
+                class="flex flex-col gap-2"
             >
                 <li
                     v-for="item in cell.items"
                     :key="item.id"
-                    class="border-b border-cd-line/60 px-4 py-3 last:border-b-0"
+                    class="rounded-lg border border-cd-line/70 bg-white/70 px-3 py-3"
                 >
                     <Form
                         v-if="editingItemId === item.id"
@@ -122,8 +125,14 @@ function deleteItem(itemId: string): void {
                         </div>
                     </Form>
 
-                    <div v-else class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
+                    <div v-else class="flex items-start gap-2">
+                        <span
+                            aria-hidden="true"
+                            class="mt-0.5 shrink-0 cursor-grab text-cd-ink-muted/40"
+                        >
+                            <GripVertical :size="16" :stroke-width="1.6" />
+                        </span>
+                        <div class="min-w-0 flex-1">
                             <p
                                 class="text-[15px] leading-relaxed text-cd-ink"
                                 :class="{
@@ -194,10 +203,11 @@ function deleteItem(itemId: string): void {
                 <button
                     v-if="!showAddForm"
                     type="button"
-                    class="w-full rounded-md border border-dashed border-cd-ink-muted/40 py-2.5 font-serif text-sm tracking-[0.14em] text-cd-ink-muted transition-colors hover:border-cd-ink-muted/70 hover:bg-muted/50 hover:text-cd-ink"
+                    class="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-cd-ink-muted/40 py-2.5 font-sans text-sm text-cd-ink-muted transition-colors hover:border-cd-ink-muted/70 hover:bg-muted/40 hover:text-cd-ink"
                     @click="showAddForm = true"
                 >
-                    ＋ 項目を追加
+                    <Plus :size="15" :stroke-width="1.8" aria-hidden="true" />
+                    項目を追加
                 </button>
 
                 <Form
@@ -240,10 +250,12 @@ function deleteItem(itemId: string): void {
                 </Form>
             </template>
 
-            <div class="flex justify-center pt-1">
+            <div
+                class="sticky bottom-0 -mx-6 -mb-6 flex justify-end gap-3 border-t border-cd-line/70 bg-cd-surface/95 px-6 py-4 backdrop-blur-sm"
+            >
                 <Button
                     type="button"
-                    class="min-w-32 font-serif tracking-[0.2em]"
+                    class="min-w-32 font-sans tracking-[0.08em]"
                     @click="emit('update:open', false)"
                 >
                     閉じる
