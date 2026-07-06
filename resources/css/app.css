@@ -258,7 +258,6 @@
             url('/images/backgrounds/dairiseki.png');
         background-size: cover;
         background-position: center;
-        background-attachment: fixed;
     }
 
     .dark .cd-paper-bg {
