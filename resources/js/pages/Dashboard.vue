@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { Calendar, SlidersHorizontal } from '@lucide/vue';
+import { SlidersHorizontal } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import HeaderUserMenu from '@/components/HeaderUserMenu.vue';
 import MatrixCellEditModal from '@/components/MatrixCellEditModal.vue';
 import MatrixSheet from '@/components/MatrixSheet.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
-import { index as lifeAreasIndex } from '@/routes/life-areas';
 import type { LifeArea, MatrixRow } from '@/types/matrix';
+import { index as lifeAreasIndex } from '@/routes/life-areas';
 
 interface Props {
     areas: LifeArea[];
@@ -54,6 +55,11 @@ const today = [
     String(now.getMonth() + 1).padStart(2, '0'),
     String(now.getDate()).padStart(2, '0'),
 ].join('/');
+const todayIso = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+].join('-');
 </script>
 
 <template>
@@ -63,32 +69,45 @@ const today = [
         class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
     >
         <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4">
-            <div class="flex items-start justify-between gap-4">
-                <PageTitleOrnament title="Clear Dawn" align="left" />
+            <div class="flex items-start justify-between gap-6">
+                <PageTitleOrnament
+                    title="Clear Dawn"
+                    align="left"
+                    size="prominent"
+                />
 
-                <div class="flex items-center gap-4 pt-2.5">
-                    <p
-                        class="flex items-center gap-2 font-serif text-base tracking-[0.12em] text-cd-ink-muted lining-nums"
+                <div
+                    class="flex shrink-0 flex-wrap items-center justify-end gap-x-5 gap-y-2 pt-1.5 md:pt-2"
+                >
+                    <time
+                        :datetime="todayIso"
+                        class="font-serif text-lg tracking-[0.12em] text-cd-ink-muted lining-nums select-none"
                     >
                         {{ today }}
-                        <Calendar
-                            :size="17"
-                            :stroke-width="1.6"
-                            aria-hidden="true"
-                        />
-                    </p>
+                    </time>
+
                     <Link
                         :href="lifeAreasIndex()"
                         aria-label="領域管理"
-                        class="flex items-center gap-2 rounded-md px-2 py-1.5 font-serif text-sm tracking-[0.12em] text-cd-ink-muted transition-colors hover:bg-muted/70 hover:text-cd-ink"
+                        class="group flex items-center gap-1.5 font-serif text-base tracking-[0.12em] text-cd-ink-muted transition-colors hover:text-cd-ink"
                     >
                         <SlidersHorizontal
                             :size="16"
                             :stroke-width="1.6"
+                            class="opacity-75 transition-opacity group-hover:opacity-100"
                             aria-hidden="true"
                         />
-                        領域管理
+                        <span class="underline-offset-4 group-hover:underline">
+                            領域管理
+                        </span>
                     </Link>
+
+                    <div
+                        aria-hidden="true"
+                        class="cd-header-divider hidden h-5 sm:block"
+                    />
+
+                    <HeaderUserMenu />
                 </div>
             </div>
 

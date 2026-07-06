@@ -2,7 +2,6 @@
 import { Link } from '@inertiajs/vue3';
 import { Home, Notebook, Pencil, Settings } from '@lucide/vue';
 import type { Component } from 'vue';
-import NavUser from '@/components/NavUser.vue';
 import {
     Sidebar,
     SidebarContent,
@@ -10,9 +9,9 @@ import {
     SidebarHeader,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
+import type { NavItem } from '@/types';
 import { dashboard } from '@/routes';
 import { edit as editProfile } from '@/routes/profile';
-import type { NavItem } from '@/types';
 
 interface CdNavItem {
     title: string;
@@ -120,9 +119,7 @@ const { isCurrentUrl } = useCurrentUrl();
             </nav>
         </SidebarContent>
 
-        <SidebarFooter class="relative z-10">
-            <NavUser />
-        </SidebarFooter>
+        <SidebarFooter class="relative z-10 min-h-20 pb-6" aria-hidden="true" />
     </Sidebar>
     <slot />
 </template>
