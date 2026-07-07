@@ -30,14 +30,14 @@ const todayIso = [
             class="col-start-2 row-start-1 flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4"
         >
             <h1
-                class="font-serif text-[2rem] leading-none font-normal tracking-[0.14em] text-cd-dawn-deep md:text-[2.5rem]"
+                class="font-serif text-[2rem] leading-none font-normal tracking-[0.16em] text-cd-dawn-deep md:text-[2.5rem]"
             >
                 Clear Dawn
             </h1>
 
             <div class="flex shrink-0 items-center gap-3 md:gap-4">
                 <div
-                    class="cd-frost flex items-center gap-3 rounded-full border border-cd-line/80 px-4 py-2 shadow-sm md:gap-4 md:px-5"
+                    class="cd-frost flex items-center gap-3 rounded-full border border-cd-line px-4 py-2 shadow-sm md:gap-4 md:px-5"
                 >
                     <time
                         :datetime="todayIso"
