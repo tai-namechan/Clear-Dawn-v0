@@ -23,11 +23,11 @@ function toggleCompletion(item: MatrixCellItem): void {
 <template>
     <section
         aria-label="TOP Matrix"
-        class="cd-shadow-soft flex min-h-[30rem] w-full flex-1 flex-col overflow-hidden rounded-[1.25rem] border border-cd-matrix-line bg-cd-matrix-surface md:min-h-[34rem]"
+        class="cd-shadow-soft flex min-h-[30rem] w-full flex-1 flex-col overflow-hidden rounded-[1.25rem] border border-cd-matrix-line/70 bg-cd-matrix-surface md:min-h-[34rem]"
     >
         <table class="h-full w-full table-fixed border-collapse">
             <thead>
-                <tr class="h-[3.75rem] border-b border-cd-matrix-line">
+                <tr class="h-[3.75rem] border-b border-cd-matrix-line/70">
                     <th
                         scope="col"
                         class="w-40 bg-cd-matrix-column-header px-4 py-4 md:w-56"
@@ -50,7 +50,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                 <tr
                     v-for="(row, rowIndex) in rows"
                     :key="row.key"
-                    class="h-1/3 border-b border-cd-matrix-line/60 last:border-b-0"
+                    class="h-1/3 border-b border-cd-matrix-line/70 last:border-b-0"
                     :class="{ 'cd-matrix-row-current': row.key === 'current' }"
                 >
                     <th
@@ -63,7 +63,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                         "
                     >
                         <span
-                            class="inline-flex items-center justify-center gap-2 font-matrix text-base leading-snug lining-nums md:text-lg"
+                            class="inline-flex items-center justify-center gap-2 font-matrix text-[1.0625rem] leading-snug font-medium lining-nums md:text-[1.125rem]"
                         >
                             <Sunrise
                                 v-if="row.key === 'current'"
@@ -78,7 +78,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                     <td
                         v-for="(cell, areaIndex) in row.cells"
                         :key="areas[areaIndex].id"
-                        class="cd-matrix-cell group/cell relative cursor-pointer border-l border-cd-matrix-line px-5 py-6 align-middle"
+                        class="cd-matrix-cell group/cell relative cursor-pointer border-l border-cd-matrix-line/70 px-5 py-6 align-middle"
                         @click="emit('edit', { rowIndex, areaIndex })"
                     >
                         <button
@@ -114,7 +114,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                                     role="checkbox"
                                     :aria-checked="item.is_completed"
                                     :aria-label="`${item.title} を${item.is_completed ? '再開' : '完了'}にする`"
-                                    class="mt-1.5 inline-flex size-4 shrink-0 items-center justify-center rounded-[3px] border transition-colors"
+                                    class="mt-1 inline-flex size-5 shrink-0 items-center justify-center rounded-[3px] border transition-colors"
                                     :class="
                                         item.is_completed
                                             ? 'border-cd-matrix-accent bg-cd-matrix-accent-soft text-cd-matrix-accent'
@@ -124,7 +124,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                                 >
                                     <Check
                                         v-if="item.is_completed"
-                                        :size="12"
+                                        :size="14"
                                         :stroke-width="2.4"
                                         aria-hidden="true"
                                     />
