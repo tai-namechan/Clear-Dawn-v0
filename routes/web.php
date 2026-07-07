@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LifeAreaController;
 use App\Http\Controllers\MatrixCellItemController;
+use App\Http\Controllers\VideoController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -34,6 +35,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('matrix-cell-items/{matrixCellItem}', [MatrixCellItemController::class, 'update'])->name('matrix-cell-items.update');
     Route::patch('matrix-cell-items/{matrixCellItem}/toggle', [MatrixCellItemController::class, 'toggle'])->name('matrix-cell-items.toggle');
     Route::delete('matrix-cell-items/{matrixCellItem}', [MatrixCellItemController::class, 'destroy'])->name('matrix-cell-items.destroy');
+
+    Route::post('videos/upload-url', [VideoController::class, 'createUploadUrl'])
+        ->middleware('throttle:10,1')
+        ->name('videos.upload-url');
+    Route::get('videos', [VideoController::class, 'index'])->name('videos.index');
+    Route::post('videos/{video}/upload-url', [VideoController::class, 'refreshUploadUrl'])->name('videos.refresh-upload-url');
+    Route::post('videos/{video}/finalize', [VideoController::class, 'finalize'])->name('videos.finalize');
+    Route::get('videos/{video}/stream-url', [VideoController::class, 'streamUrl'])->name('videos.stream-url');
+    Route::patch('videos/{video}', [VideoController::class, 'update'])->name('videos.update');
+    Route::delete('videos/{video}', [VideoController::class, 'destroy'])->name('videos.destroy');
 });
 
 require __DIR__.'/settings.php';
