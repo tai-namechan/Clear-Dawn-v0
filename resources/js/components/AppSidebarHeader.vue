@@ -1,12 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import DashboardPageHeader from '@/components/DashboardPageHeader.vue';
 import HeaderUserMenu from '@/components/HeaderUserMenu.vue';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
-import { dashboard } from '@/routes';
 import type { BreadcrumbItem } from '@/types';
-import { computed } from 'vue';
+import { dashboard } from '@/routes';
 
 withDefaults(
     defineProps<{
