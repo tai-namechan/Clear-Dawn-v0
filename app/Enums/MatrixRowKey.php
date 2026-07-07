@@ -14,7 +14,7 @@ enum MatrixRowKey: string
     public function label(): string
     {
         return match ($this) {
-            self::Monthly => '1ヶ月くらいの間でやるべきこと',
+            self::Monthly => '1ヶ月でやるべきこと',
             self::Current => '今やるべきこと',
             self::Future => '将来どうなっていたいか',
         };
