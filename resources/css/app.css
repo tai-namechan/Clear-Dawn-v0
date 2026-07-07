@@ -84,8 +84,14 @@
     --color-cd-moss: var(--cd-moss);
     --color-cd-mist: var(--cd-mist);
     --color-cd-current: var(--cd-current);
-    --color-cd-row-header: var(--cd-row-header);
+    --color-cd-matrix-surface: var(--cd-matrix-surface);
+    --color-cd-matrix-line: var(--cd-matrix-line);
+    --color-cd-matrix-column-header: var(--cd-matrix-column-header);
+    --color-cd-matrix-row-header: var(--cd-matrix-row-header);
+    --color-cd-matrix-row-current: var(--cd-matrix-row-current);
     --color-cd-matrix-header-foreground: var(--cd-matrix-header-foreground);
+    --color-cd-matrix-accent: var(--cd-matrix-accent);
+    --color-cd-matrix-accent-soft: var(--cd-matrix-accent-soft);
     --color-cd-danger-surface: var(--cd-danger-surface);
     --color-cd-danger-line: var(--cd-danger-line);
     --color-cd-danger-ink: var(--cd-danger-ink);
@@ -164,28 +170,53 @@
     --cd-dawn-mid: hsl(240 29% 24%);
     --cd-dawn-soft: hsl(251 17% 40%);
     --cd-lavender-mist: hsl(255 24% 76%); /* sidebar bottom: pale lavender */
-    --cd-ink: hsl(248 19% 19%); /* body text (#29253C) */
-    --cd-ink-pen: hsl(248 22% 15%); /* ballpoint ink: deep blue-black */
-    --cd-ink-muted: hsl(280 4% 46%); /* secondary text (#756F78) */
-    --cd-line: hsl(37 33% 84%); /* hairline borders (#E4D9C7) */
-    --cd-surface: hsl(43 56% 97%); /* warm ivory card surface (#FCF9F1) */
-    --cd-row-header: hsl(37 45% 93%); /* row label column (#F7F0E4) */
-    --cd-matrix-header-foreground: hsl(40 30% 98%); /* table header text */
+    --cd-ink: hsl(227 23% 22%); /* body text: navy grey */
+    --cd-ink-pen: hsl(228 36% 13%); /* ballpoint ink: deep blue-black */
+    --cd-ink-muted: hsl(232 12% 46%); /* secondary text */
+    --cd-line: hsl(260 11% 86%); /* hairline borders */
+    --cd-surface: hsl(40 45% 97.5%); /* warm ecru paper card surface */
     --cd-gilt: hsl(43 33% 66%); /* restrained pale gold accent */
-    --cd-sunrise: hsl(28 49% 53%); /* action accent orange (#C98245) */
-    --cd-sunrise-soft: hsl(33 67% 90%); /* pale accent wash (#F7E7D5) */
-    --cd-sunrise-mist: hsl(33 67% 94%); /* faintest accent tint */
+    --cd-sunrise: hsl(22 62% 61%); /* dawn accent (design-system --cd-accent) */
+    --cd-sunrise-soft: hsl(
+        27 67% 92%
+    ); /* pale sunrise wash (--cd-accent-soft) */
+    --cd-sunrise-mist: hsl(
+        28 81% 96%
+    ); /* faintest sunrise tint (--cd-accent-light) */
     --cd-moss: hsl(125 13% 50%); /* quiet green (--cd-success family) */
     --cd-mist: hsl(210 29% 56%); /* soft blue-grey (--cd-info family) */
 
-    /* Interactive surface tints — ivory paper, quiet brighten on hover */
-    --cd-cell: hsl(43 50% 99%); /* near-white ivory cell base */
-    --cd-cell-hover: hsl(43 56% 99%); /* subtle ivory brighten */
-    --cd-cell-hover-line: hsl(37 33% 88%); /* soft beige hover border */
-    --cd-current: hsl(33 67% 94%); /* faintest accent wash for action row */
-    --cd-current-strong: hsl(33 67% 90%); /* accent soft (#F7E7D5) */
-    --cd-current-hover: hsl(43 56% 99%); /* action row cell hover */
-    --cd-current-hover-line: hsl(37 33% 88%);
+    /* Interactive surface tints — readability first, quiet lavender feedback */
+    --cd-cell: hsl(45 33% 99%); /* near-white ivory cell base (#FCFBF9) */
+    --cd-cell-hover: hsl(255 47% 96%); /* pale lavender hover (#F3F0FA) */
+    --cd-cell-hover-line: hsl(
+        258 42% 87%
+    ); /* lavender hover border (#D7CFEA) */
+    --cd-current: hsl(24 100% 95%); /* dawn peach — 今やるべきこと (#FFF1E8) */
+    --cd-current-strong: hsl(
+        23 92% 92%
+    ); /* slightly deeper peach for contrast */
+    --cd-current-hover: hsl(
+        305 42% 95%
+    ); /* peach veiled with lavender (#F7EDF7) */
+    --cd-current-hover-line: hsl(
+        325 28% 83%
+    ); /* rose-lavender border (#DEC9D6) */
+
+    /*
+     * Dashboard matrix only — ivory / beige palette from the redesign spec.
+     * Scoped tokens so settings / life-areas cards keep the global greige surface.
+     */
+    --cd-matrix-surface: #fcf9f1; /* card shell */
+    --cd-matrix-line: #5b5577; /* grid borders */
+    --cd-matrix-column-header: #5b5577; /* column headers (仕事 / 野球 …) */
+    --cd-matrix-row-header: #d6d3de; /* monthly / future row labels */
+    --cd-matrix-row-current: #f5efe5; /* 今やるべきこと row label */
+    --cd-matrix-header-foreground: hsl(40 30% 98%); /* column header text */
+    --cd-matrix-cell: hsl(40 22% 99%); /* near-white cell body */
+    --cd-matrix-cell-hover: #d6d3de; /* cell hover */
+    --cd-matrix-accent: hsl(28 49% 53%); /* action orange (#C98245) */
+    --cd-matrix-accent-soft: hsl(33 67% 90%); /* accent wash (#F7E7D5) */
     --cd-danger-surface: hsl(2 65% 97%); /* pale rose danger card */
     --cd-danger-line: hsl(4 58% 88%); /* soft red hairline */
     --cd-danger-ink: hsl(4 55% 44%); /* readable danger text */
@@ -331,7 +362,7 @@
      */
     .cd-matrix-row-current-label {
         position: relative;
-        background-color: var(--cd-current);
+        background-color: var(--cd-matrix-row-current);
     }
 
     .cd-matrix-row-current-label::before {
@@ -341,33 +372,20 @@
         inset-inline-start: 0;
         width: 3px;
         border-radius: 0 2px 2px 0;
-        background-color: var(--cd-sunrise);
+        background-color: var(--cd-matrix-accent);
     }
 
     /*
-     * Matrix cells: ivory paper that brightens subtly on hover.
+     * Matrix cells: near-white ivory; hover lifts to #d6d3de.
      * Edit affordance is hidden until hover (see MatrixSheet.vue).
      */
     .cd-matrix-cell {
-        background-color: var(--cd-cell);
-        transition:
-            background-color 180ms ease,
-            border-color 180ms ease,
-            box-shadow 180ms ease;
+        background-color: var(--cd-matrix-cell);
+        transition: background-color 180ms ease;
     }
 
     .cd-matrix-cell:hover {
-        background-color: var(--cd-cell-hover);
-        box-shadow: inset 0 0 0 1px var(--cd-cell-hover-line);
-    }
-
-    .cd-matrix-row-current .cd-matrix-cell {
-        background-color: var(--cd-cell);
-    }
-
-    .cd-matrix-row-current .cd-matrix-cell:hover {
-        background-color: var(--cd-current-hover);
-        box-shadow: inset 0 0 0 1px var(--cd-current-hover-line);
+        background-color: var(--cd-matrix-cell-hover);
     }
 
     /*
