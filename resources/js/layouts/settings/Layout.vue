@@ -50,8 +50,10 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
                 description="アカウントなどの各種設定を管理します。"
             />
 
-            <div class="flex flex-col gap-8 lg:flex-row lg:gap-12">
-                <aside class="w-full lg:w-64 lg:shrink-0">
+            <div
+                class="mt-8 grid grid-cols-1 items-start gap-8 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-10 xl:gap-12"
+            >
+                <aside class="w-full lg:w-auto">
                     <nav
                         aria-label="設定メニュー"
                         class="cd-shadow-soft flex flex-col gap-1 rounded-2xl border border-cd-line bg-cd-surface p-2"
@@ -60,10 +62,10 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
                             v-for="item in sidebarNavItems"
                             :key="toUrl(item.href)"
                             :href="item.href"
-                            class="flex items-start gap-3 rounded-xl px-3 py-3 transition-colors"
+                            class="flex items-start gap-3 rounded-xl border border-transparent px-3 py-3 transition-colors"
                             :class="
                                 isCurrentOrParentUrl(item.href)
-                                    ? 'bg-cd-lavender-mist/25 text-cd-dawn-deep'
+                                    ? 'border-cd-lavender-mist/40 bg-cd-lavender-mist/30 text-cd-dawn-deep'
                                     : 'text-cd-ink hover:bg-muted/50'
                             "
                         >
@@ -86,7 +88,12 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
                                     {{ item.title }}
                                 </span>
                                 <span
-                                    class="font-sans text-xs text-cd-ink-muted"
+                                    class="font-sans text-xs"
+                                    :class="
+                                        isCurrentOrParentUrl(item.href)
+                                            ? 'text-cd-dawn-deep/70'
+                                            : 'text-cd-ink-muted'
+                                    "
                                 >
                                     {{ item.description }}
                                 </span>
@@ -97,7 +104,7 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
 
                 <Separator class="lg:hidden" />
 
-                <div class="flex-1">
+                <div class="min-w-0">
                     <section class="max-w-2xl space-y-12">
                         <slot />
                     </section>

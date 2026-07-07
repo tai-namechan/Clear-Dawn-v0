@@ -39,14 +39,15 @@ const user = computed(() => page.props.auth.user!);
 
     <h1 class="sr-only">プロフィール設定</h1>
 
-    <div class="flex flex-col space-y-6">
-        <Heading
-            variant="small"
-            title="プロフィール"
-            description="アカウントの基本情報を管理します。"
-        />
-
+    <div class="flex flex-col space-y-12">
         <div class="cd-card p-6 md:p-8">
+            <Heading
+                variant="small"
+                title="プロフィール"
+                description="アカウントの基本情報を管理します。"
+                class="mb-6"
+            />
+
             <Form
                 v-bind="ProfileController.update.form()"
                 class="space-y-6"
@@ -133,7 +134,7 @@ const user = computed(() => page.props.auth.user!);
                 </div>
             </Form>
         </div>
-    </div>
 
-    <DeleteUser />
+        <DeleteUser />
+    </div>
 </template>

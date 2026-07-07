@@ -14,24 +14,23 @@ import { store } from '@/routes/password/confirm';
 
 defineOptions({
     layout: {
-        title: 'Confirm password',
-        description:
-            'This is a secure area of the application. Please confirm your password before continuing.',
+        title: 'パスワードの確認',
+        description: '続行する前に、パスワードを確認してください。',
     },
 });
 </script>
 
 <template>
-    <Head title="Confirm password" />
+    <Head title="パスワードの確認" />
 
     <PasskeyVerify
         :routes="{
             options: confirmOptions(),
             submit: confirmStore(),
         }"
-        label="Confirm with passkey"
-        loading-label="Confirming..."
-        separator="Or confirm with password"
+        label="パスキーで確認する"
+        loading-label="確認中..."
+        separator="またはパスワードで確認"
     />
 
     <Form
@@ -41,7 +40,7 @@ defineOptions({
     >
         <div class="space-y-6">
             <div class="grid gap-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">パスワード</Label>
                 <PasswordInput
                     id="password"
                     name="password"
@@ -49,6 +48,7 @@ defineOptions({
                     required
                     autocomplete="current-password"
                     autofocus
+                    placeholder="パスワード"
                 />
 
                 <InputError :message="errors.password" />
@@ -56,12 +56,12 @@ defineOptions({
 
             <div class="flex items-center">
                 <Button
-                    class="w-full"
+                    class="w-full font-sans tracking-[0.08em]"
                     :disabled="processing"
                     data-test="confirm-password-button"
                 >
                     <Spinner v-if="processing" />
-                    Confirm password
+                    パスワードを確認
                 </Button>
             </div>
         </div>

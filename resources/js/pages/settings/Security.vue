@@ -36,14 +36,15 @@ defineOptions({
 
     <h1 class="sr-only">セキュリティ設定</h1>
 
-    <div class="space-y-6">
-        <Heading
-            variant="small"
-            title="パスワードの変更"
-            description="安全のため、長くランダムなパスワードを設定してください。"
-        />
-
+    <div class="space-y-12">
         <div class="cd-card p-6 md:p-8">
+            <Heading
+                variant="small"
+                title="パスワードの変更"
+                description="安全のため、長くランダムなパスワードを設定してください。"
+                class="mb-6"
+            />
+
             <Form
                 v-bind="SecurityController.update.form()"
                 :options="{
@@ -56,7 +57,7 @@ defineOptions({
                     'current_password',
                 ]"
                 class="space-y-6"
-                v-slot="{ errors, processing }"
+                v-slot="{ errors, processing, recentlySuccessful }"
             >
                 <div class="grid gap-2">
                     <Label for="current_password" class="text-cd-ink"
@@ -110,19 +111,36 @@ defineOptions({
                     >
                         保存する
                     </Button>
+                    <Transition
+                        enter-active-class="transition ease-in-out"
+                        enter-from-class="opacity-0"
+                        leave-active-class="transition ease-in-out"
+                        leave-to-class="opacity-0"
+                    >
+                        <p
+                            v-show="recentlySuccessful"
+                            class="text-sm text-cd-ink-muted"
+                        >
+                            保存しました。
+                        </p>
+                    </Transition>
                 </div>
             </Form>
         </div>
+
+        <div v-if="canManageTwoFactor" class="cd-card p-6 md:p-8">
+            <ManageTwoFactor
+                :canManageTwoFactor="canManageTwoFactor"
+                :requiresConfirmation="requiresConfirmation"
+                :twoFactorEnabled="twoFactorEnabled"
+            />
+        </div>
+
+        <div v-if="canManagePasskeys" class="cd-card p-6 md:p-8">
+            <ManagePasskeys
+                :canManagePasskeys="canManagePasskeys"
+                :passkeys="passkeys"
+            />
+        </div>
     </div>
-
-    <ManageTwoFactor
-        :canManageTwoFactor="canManageTwoFactor"
-        :requiresConfirmation="requiresConfirmation"
-        :twoFactorEnabled="twoFactorEnabled"
-    />
-
-    <ManagePasskeys
-        :canManagePasskeys="canManagePasskeys"
-        :passkeys="passkeys"
-    />
 </template>
