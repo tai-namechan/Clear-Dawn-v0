@@ -19,9 +19,9 @@ import {
     lifeAreaColorClasses,
     lifeAreaColorOptions,
 } from '@/lib/lifeAreaColors';
-import type { LifeArea, LifeAreaColor } from '@/types/matrix';
 import { dashboard } from '@/routes';
 import { destroy, reorder, restore, store, update } from '@/routes/life-areas';
+import type { LifeArea, LifeAreaColor } from '@/types/matrix';
 
 interface Props {
     lifeAreas: LifeArea[];

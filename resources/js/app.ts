@@ -26,7 +26,7 @@ createInertiaApp({
     },
 });
 
-// This will set light / dark mode on page load...
+// Clear Dawn v0 is light-mode only.
 initializeTheme();
 
 // This will listen for flash toast data from the server...

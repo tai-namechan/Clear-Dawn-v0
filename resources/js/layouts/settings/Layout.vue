@@ -1,16 +1,15 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { Palette, ShieldCheck, SlidersHorizontal, User } from '@lucide/vue';
+import { ShieldCheck, SlidersHorizontal, User } from '@lucide/vue';
 import type { Component } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { toUrl } from '@/lib/utils';
-import type { NavItem } from '@/types';
-import { edit as editAppearance } from '@/routes/appearance';
 import { index as lifeAreasIndex } from '@/routes/life-areas';
 import { edit as editProfile } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
+import type { NavItem } from '@/types';
 
 interface SettingsNavItem {
     title: string;
@@ -33,12 +32,6 @@ const sidebarNavItems: SettingsNavItem[] = [
         href: editSecurity(),
     },
     {
-        title: '表示設定',
-        description: 'テーマや表示オプション',
-        icon: Palette,
-        href: editAppearance(),
-    },
-    {
         title: '領域管理',
         description: '領域の作成・編集・削除',
         icon: SlidersHorizontal,
@@ -54,7 +47,7 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
         <div class="mx-auto w-full max-w-5xl">
             <Heading
                 title="設定"
-                description="アカウントや表示などの各種設定を管理します。"
+                description="アカウントなどの各種設定を管理します。"
             />
 
             <div class="flex flex-col gap-8 lg:flex-row lg:gap-12">
