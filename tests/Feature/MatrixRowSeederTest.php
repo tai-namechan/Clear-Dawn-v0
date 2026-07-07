@@ -20,7 +20,7 @@ class MatrixRowSeederTest extends TestCase
 
         $this->assertDatabaseHas('matrix_rows', [
             'key' => 'monthly',
-            'label' => '1ヶ月くらいの間でやるべきこと',
+            'label' => '1ヶ月でやるべきこと',
             'sort_order' => 1,
             'is_checkable' => false,
         ]);

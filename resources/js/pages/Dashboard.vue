@@ -66,10 +66,10 @@ function openCellEditor(payload: { rowIndex: number; areaIndex: number }) {
     <Head title="ダッシュボード" />
 
     <div
-        class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
+        class="flex h-full flex-1 flex-col overflow-x-auto p-4 md:px-6 md:pb-8"
     >
         <div
-            class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-7 pt-4 md:gap-8 md:pt-6"
+            class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 md:gap-7"
         >
             <MatrixSheet :areas="areas" :rows="rows" @edit="openCellEditor" />
 

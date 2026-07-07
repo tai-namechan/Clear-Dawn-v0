@@ -84,6 +84,8 @@
     --color-cd-moss: var(--cd-moss);
     --color-cd-mist: var(--cd-mist);
     --color-cd-current: var(--cd-current);
+    --color-cd-row-header: var(--cd-row-header);
+    --color-cd-matrix-header-foreground: var(--cd-matrix-header-foreground);
     --color-cd-danger-surface: var(--cd-danger-surface);
     --color-cd-danger-line: var(--cd-danger-line);
     --color-cd-danger-ink: var(--cd-danger-ink);
@@ -162,38 +164,28 @@
     --cd-dawn-mid: hsl(240 29% 24%);
     --cd-dawn-soft: hsl(251 17% 40%);
     --cd-lavender-mist: hsl(255 24% 76%); /* sidebar bottom: pale lavender */
-    --cd-ink: hsl(227 23% 22%); /* body text: navy grey */
-    --cd-ink-pen: hsl(228 36% 13%); /* ballpoint ink: deep blue-black */
-    --cd-ink-muted: hsl(232 12% 46%); /* secondary text */
-    --cd-line: hsl(260 11% 86%); /* hairline borders */
-    --cd-surface: hsl(40 45% 97.5%); /* warm ecru paper card surface */
+    --cd-ink: hsl(248 19% 19%); /* body text (#29253C) */
+    --cd-ink-pen: hsl(248 22% 15%); /* ballpoint ink: deep blue-black */
+    --cd-ink-muted: hsl(280 4% 46%); /* secondary text (#756F78) */
+    --cd-line: hsl(37 33% 84%); /* hairline borders (#E4D9C7) */
+    --cd-surface: hsl(43 56% 97%); /* warm ivory card surface (#FCF9F1) */
+    --cd-row-header: hsl(37 45% 93%); /* row label column (#F7F0E4) */
+    --cd-matrix-header-foreground: hsl(40 30% 98%); /* table header text */
     --cd-gilt: hsl(43 33% 66%); /* restrained pale gold accent */
-    --cd-sunrise: hsl(22 62% 61%); /* dawn accent (design-system --cd-accent) */
-    --cd-sunrise-soft: hsl(
-        27 67% 92%
-    ); /* pale sunrise wash (--cd-accent-soft) */
-    --cd-sunrise-mist: hsl(
-        28 81% 96%
-    ); /* faintest sunrise tint (--cd-accent-light) */
+    --cd-sunrise: hsl(28 49% 53%); /* action accent orange (#C98245) */
+    --cd-sunrise-soft: hsl(33 67% 90%); /* pale accent wash (#F7E7D5) */
+    --cd-sunrise-mist: hsl(33 67% 94%); /* faintest accent tint */
     --cd-moss: hsl(125 13% 50%); /* quiet green (--cd-success family) */
     --cd-mist: hsl(210 29% 56%); /* soft blue-grey (--cd-info family) */
 
-    /* Interactive surface tints — readability first, quiet lavender feedback */
-    --cd-cell: hsl(45 33% 99%); /* near-white ivory cell base (#FCFBF9) */
-    --cd-cell-hover: hsl(255 47% 96%); /* pale lavender hover (#F3F0FA) */
-    --cd-cell-hover-line: hsl(
-        258 42% 87%
-    ); /* lavender hover border (#D7CFEA) */
-    --cd-current: hsl(24 100% 95%); /* dawn peach — 今やるべきこと (#FFF1E8) */
-    --cd-current-strong: hsl(
-        23 92% 92%
-    ); /* slightly deeper peach for contrast */
-    --cd-current-hover: hsl(
-        305 42% 95%
-    ); /* peach veiled with lavender (#F7EDF7) */
-    --cd-current-hover-line: hsl(
-        325 28% 83%
-    ); /* rose-lavender border (#DEC9D6) */
+    /* Interactive surface tints — ivory paper, quiet brighten on hover */
+    --cd-cell: hsl(43 50% 99%); /* near-white ivory cell base */
+    --cd-cell-hover: hsl(43 56% 99%); /* subtle ivory brighten */
+    --cd-cell-hover-line: hsl(37 33% 88%); /* soft beige hover border */
+    --cd-current: hsl(33 67% 94%); /* faintest accent wash for action row */
+    --cd-current-strong: hsl(33 67% 90%); /* accent soft (#F7E7D5) */
+    --cd-current-hover: hsl(43 56% 99%); /* action row cell hover */
+    --cd-current-hover-line: hsl(37 33% 88%);
     --cd-danger-surface: hsl(2 65% 97%); /* pale rose danger card */
     --cd-danger-line: hsl(4 58% 88%); /* soft red hairline */
     --cd-danger-ink: hsl(4 55% 44%); /* readable danger text */
@@ -333,19 +325,28 @@
         background: var(--cd-line);
     }
 
-    /* Dawn-peach wash marking the 「今やるべきこと」 row as the action anchor. */
-    .cd-matrix-row-current {
-        background: linear-gradient(
-            90deg,
-            var(--cd-current) 0%,
-            var(--cd-current-strong) 100%
-        );
+    /*
+     * 「今やるべきこと」 row — thin orange accent on the left edge only.
+     * No broad fill; cells stay ivory like the rest of the sheet.
+     */
+    .cd-matrix-row-current-label {
+        position: relative;
+        background-color: var(--cd-current);
+    }
+
+    .cd-matrix-row-current-label::before {
+        content: '';
+        position: absolute;
+        inset-block: 0.75rem;
+        inset-inline-start: 0;
+        width: 3px;
+        border-radius: 0 2px 2px 0;
+        background-color: var(--cd-sunrise);
     }
 
     /*
-     * Matrix cells: near-white ivory that lifts to a quiet lavender on hover.
-     * Colour eases over ~180ms; the border turns pale lavender for feedback
-     * without loud shadows, zoom, or heavy purple.
+     * Matrix cells: ivory paper that brightens subtly on hover.
+     * Edit affordance is hidden until hover (see MatrixSheet.vue).
      */
     .cd-matrix-cell {
         background-color: var(--cd-cell);
@@ -360,9 +361,8 @@
         box-shadow: inset 0 0 0 1px var(--cd-cell-hover-line);
     }
 
-    /* On the action row the peach stays; hover only veils it with pale lavender. */
     .cd-matrix-row-current .cd-matrix-cell {
-        background-color: transparent;
+        background-color: var(--cd-cell);
     }
 
     .cd-matrix-row-current .cd-matrix-cell:hover {
