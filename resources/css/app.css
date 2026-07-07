@@ -73,6 +73,7 @@
     --color-cd-dawn-soft: var(--cd-dawn-soft);
     --color-cd-lavender-mist: var(--cd-lavender-mist);
     --color-cd-ink: var(--cd-ink);
+    --color-cd-ink-pen: var(--cd-ink-pen);
     --color-cd-ink-muted: var(--cd-ink-muted);
     --color-cd-line: var(--cd-line);
     --color-cd-surface: var(--cd-surface);
@@ -162,6 +163,7 @@
     --cd-dawn-soft: hsl(251 17% 40%);
     --cd-lavender-mist: hsl(255 24% 76%); /* sidebar bottom: pale lavender */
     --cd-ink: hsl(227 23% 22%); /* body text: navy grey */
+    --cd-ink-pen: hsl(228 36% 13%); /* ballpoint ink: deep blue-black */
     --cd-ink-muted: hsl(232 12% 46%); /* secondary text */
     --cd-line: hsl(260 11% 86%); /* hairline borders */
     --cd-surface: hsl(40 45% 97.5%); /* warm ecru paper card surface */
@@ -389,7 +391,15 @@
 
     .font-matrix {
         font-family: var(--font-matrix);
-        letter-spacing: 0.02em;
+        letter-spacing: 0.015em;
+        color: var(--cd-ink-pen);
+        -webkit-text-stroke: 0.45px currentColor;
+        paint-order: stroke fill;
+    }
+
+    .font-matrix--done {
+        color: var(--cd-ink-muted);
+        -webkit-text-stroke: 0;
     }
 
     /*

@@ -134,11 +134,12 @@ function deleteItem(itemId: string): void {
                         </span>
                         <div class="min-w-0 flex-1">
                             <p
-                                class="font-matrix text-base leading-relaxed text-cd-ink"
-                                :class="{
-                                    'text-cd-ink-muted line-through':
-                                        item.is_completed,
-                                }"
+                                class="text-[17px] leading-relaxed md:text-lg"
+                                :class="
+                                    item.is_completed
+                                        ? 'font-matrix font-matrix--done line-through'
+                                        : 'font-matrix'
+                                "
                             >
                                 {{ item.title }}
                             </p>
