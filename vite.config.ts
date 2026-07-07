@@ -24,6 +24,9 @@ export default defineConfig({
                 bunny('Zen Kaku Gothic New', {
                     weights: [400, 500],
                 }),
+                bunny('Klee One', {
+                    weights: [400, 600],
+                }),
             ],
         }),
         inertia(),

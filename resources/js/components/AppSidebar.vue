@@ -9,9 +9,9 @@ import {
     SidebarHeader,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
-import type { NavItem } from '@/types';
 import { dashboard } from '@/routes';
 import { edit as editProfile } from '@/routes/profile';
+import type { NavItem } from '@/types';
 
 interface CdNavItem {
     title: string;
@@ -90,7 +90,7 @@ const { isCurrentUrl } = useCurrentUrl();
                         :aria-current="
                             isCurrentUrl(item.href) ? 'page' : undefined
                         "
-                        class="flex w-24 flex-col items-center gap-2 rounded-2xl border px-3 py-3 transition-colors group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-2"
+                        class="flex w-24 flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 transition-colors group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-2"
                         :class="
                             isCurrentUrl(item.href)
                                 ? 'border-white/15 bg-white/10 text-white'
@@ -103,14 +103,14 @@ const { isCurrentUrl } = useCurrentUrl();
                             :stroke-width="1.4"
                         />
                         <span
-                            class="font-serif text-xs tracking-[0.2em] group-data-[collapsible=icon]:hidden"
+                            class="font-serif text-xs tracking-[0.2em] whitespace-nowrap group-data-[collapsible=icon]:hidden"
                         >
                             {{ item.title }}
                         </span>
                     </Link>
                     <div
                         v-else
-                        class="flex w-24 cursor-default flex-col items-center gap-2 border border-transparent px-3 py-3 text-white/55 group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:p-2"
+                        class="flex w-24 cursor-default flex-col items-center justify-center gap-2 border border-transparent px-3 py-3 text-white/55 group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:p-2"
                     >
                         <component
                             :is="item.icon"
@@ -118,7 +118,7 @@ const { isCurrentUrl } = useCurrentUrl();
                             :stroke-width="1.4"
                         />
                         <span
-                            class="font-serif text-xs tracking-[0.2em] group-data-[collapsible=icon]:hidden"
+                            class="font-serif text-xs tracking-[0.2em] whitespace-nowrap group-data-[collapsible=icon]:hidden"
                         >
                             {{ item.title }}
                         </span>

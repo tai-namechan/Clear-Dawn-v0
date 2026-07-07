@@ -18,6 +18,8 @@
         'Cormorant Garamond', 'Shippori Mincho', 'Noto Serif JP',
         'Times New Roman', serif;
 
+    --font-matrix: 'Klee One', 'Zen Kaku Gothic New', 'Noto Sans JP', cursive;
+
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
     --radius-sm: calc(var(--radius) - 4px);
@@ -383,6 +385,27 @@
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
+    }
+
+    .font-matrix {
+        font-family: var(--font-matrix);
+    }
+
+    /*
+     * Auth modal — marble backdrop with a warm paper overlay for form legibility.
+     */
+    .cd-auth-modal-bg {
+        background-color: hsl(40 28% 96%);
+        background-image:
+            linear-gradient(
+                160deg,
+                hsl(255 30% 96% / 0.52) 0%,
+                hsl(40 34% 97% / 0.58) 55%,
+                hsl(40 30% 96% / 0.52) 100%
+            ),
+            url('/images/backgrounds/dairiseki.png');
+        background-size: cover;
+        background-position: center;
     }
 }
 
