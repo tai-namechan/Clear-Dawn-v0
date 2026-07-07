@@ -12,8 +12,8 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { destroy, store, toggle, update } from '@/routes/matrix-cell-items';
 import type { MatrixCell, MatrixCellItem } from '@/types/matrix';
+import { destroy, store, toggle, update } from '@/routes/matrix-cell-items';
 
 interface Props {
     open: boolean;
