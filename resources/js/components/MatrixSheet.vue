@@ -1,18 +1,8 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
-import {
-    Briefcase,
-    Check,
-    Home,
-    Music,
-    Pencil,
-    Plus,
-    Sunrise,
-    Volleyball,
-} from '@lucide/vue';
-import type { Component } from 'vue';
-import type { LifeArea, MatrixCellItem, MatrixRow } from '@/types/matrix';
+import { Check, Pencil, Sunrise } from '@lucide/vue';
 import { toggle } from '@/routes/matrix-cell-items';
+import type { LifeArea, MatrixCellItem, MatrixRow } from '@/types/matrix';
 
 interface Props {
     areas: LifeArea[];
@@ -24,21 +14,6 @@ defineProps<Props>();
 const emit = defineEmits<{
     (e: 'edit', payload: { rowIndex: number; areaIndex: number }): void;
 }>();
-
-// 既定の領域名に対応する線画アイコン（ユーザーが改名した領域はアイコン無しで表示）
-const areaIcons: Record<string, Component> = {
-    仕事: Briefcase,
-    野球: Volleyball,
-    バイオリン: Music,
-    プライベート: Home,
-};
-
-// 行キーごとの補助説明（ラベルは backend の MatrixRowKey enum が正）
-const rowDescriptions: Record<MatrixRow['key'], string> = {
-    monthly: '中期的に取り組むこと',
-    current: '今日・今週に集中すること',
-    future: '理想の自分・未来の姿',
-};
 
 function toggleCompletion(item: MatrixCellItem): void {
     router.patch(toggle.url(item.id), {}, { preserveScroll: true });
@@ -64,16 +39,8 @@ function toggleCompletion(item: MatrixCellItem): void {
                         class="border-l border-cd-line/50 bg-muted/50 px-3 py-4 text-center align-middle font-normal"
                     >
                         <span
-                            class="inline-flex items-center justify-center gap-2 font-serif text-base tracking-[0.18em] text-cd-ink md:text-lg"
+                            class="font-serif text-base tracking-[0.18em] text-cd-ink md:text-lg"
                         >
-                            <component
-                                :is="areaIcons[area.name]"
-                                v-if="areaIcons[area.name]"
-                                :size="18"
-                                :stroke-width="1.5"
-                                aria-hidden="true"
-                                class="shrink-0 text-cd-ink-muted"
-                            />
                             {{ area.name }}
                         </span>
                     </th>
@@ -91,28 +58,19 @@ function toggleCompletion(item: MatrixCellItem): void {
                         class="px-5 py-6 text-center align-middle font-normal"
                         :class="{ 'bg-muted/50': row.key !== 'current' }"
                     >
-                        <span class="flex flex-col items-center gap-1.5">
-                            <span
-                                class="inline-flex items-center justify-center gap-2 font-serif text-base leading-snug tracking-[0.1em] text-cd-ink lining-nums md:text-lg"
-                            >
-                                <Sunrise
-                                    v-if="row.key === 'current'"
-                                    :size="20"
-                                    :stroke-width="1.6"
-                                    aria-hidden="true"
-                                    class="shrink-0 text-cd-sunrise"
-                                />
-                                {{ row.label }}
-                            </span>
-                            <span
-                                class="font-sans text-xs leading-relaxed tracking-wide text-cd-ink-muted"
-                            >
-                                {{ rowDescriptions[row.key] }}
-                            </span>
+                        <span
+                            class="inline-flex items-center justify-center gap-2 font-matrix text-base leading-snug tracking-[0.1em] text-cd-ink lining-nums md:text-lg"
+                        >
+                            <Sunrise
+                                v-if="row.key === 'current'"
+                                :size="20"
+                                :stroke-width="1.6"
+                                aria-hidden="true"
+                                class="shrink-0 text-cd-sunrise"
+                            />
+                            {{ row.label }}
                         </span>
                     </th>
-                    <!-- セル全体をタップ / クリックで編集モーダルを開く（iPad 等のタッチ端末対応）。
-                         キーボード操作は内側の鉛筆ボタンで担保する -->
                     <td
                         v-for="(cell, areaIndex) in row.cells"
                         :key="areas[areaIndex].id"
@@ -144,7 +102,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                             <li
                                 v-for="item in cell.items"
                                 :key="item.id"
-                                class="flex items-start gap-3 font-sans text-[15px] leading-relaxed tracking-normal text-cd-ink lining-nums"
+                                class="flex items-start gap-3 font-matrix text-[15px] leading-relaxed tracking-normal text-cd-ink lining-nums"
                             >
                                 <button
                                     v-if="row.is_checkable"
@@ -180,17 +138,6 @@ function toggleCompletion(item: MatrixCellItem): void {
                                 >
                             </li>
                         </ul>
-
-                        <!-- 空セル：未完成感を出しすぎず、次の一手を静かに示す -->
-                        <div v-else class="flex items-center justify-center">
-                            <span
-                                aria-hidden="true"
-                                class="inline-flex items-center gap-1.5 font-sans text-sm text-cd-ink-muted/55 transition-colors group-hover/cell:text-cd-ink-muted"
-                            >
-                                <Plus :size="14" :stroke-width="1.8" />
-                                項目を追加
-                            </span>
-                        </div>
                     </td>
                 </tr>
             </tbody>

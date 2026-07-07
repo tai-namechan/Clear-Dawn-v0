@@ -4,14 +4,19 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LifeAreaController;
 use App\Http\Controllers\MatrixCellItemController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
+use Laravel\Fortify\Features;
 
 Route::get('/', function () {
     if (auth()->check()) {
         return redirect()->route('dashboard');
     }
 
-    return Inertia::render('PublicLandingPage');
+    return Inertia::render('PublicLandingPage', [
+        'canResetPassword' => Features::enabled(Features::resetPasswords()),
+        'passwordRules' => Password::defaults()->toPasswordRulesString(),
+    ]);
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {

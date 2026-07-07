@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useInitials } from '@/composables/useInitials';
+import type { User } from '@/types';
 
 interface Props {
     /** AppSidebarHeader 等、狭いヘッダー行向けのコンパクト表示 */
@@ -21,7 +22,7 @@ withDefaults(defineProps<Props>(), {
 });
 
 const page = usePage();
-const user = computed(() => page.props.auth.user);
+const user = computed(() => page.props.auth.user! as User);
 const { getInitials } = useInitials();
 
 const showAvatar = computed(

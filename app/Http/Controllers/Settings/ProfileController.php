@@ -21,6 +21,7 @@ class ProfileController extends Controller
     {
         return Inertia::render('settings/Profile', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'emailVerified' => $request->user()->hasVerifiedEmail(),
             'status' => $request->session()->get('status'),
         ]);
     }
