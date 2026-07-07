@@ -4,8 +4,15 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LifeAreaController;
 use App\Http\Controllers\MatrixCellItemController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
-Route::inertia('/', 'Welcome')->name('home');
+Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('dashboard');
+    }
+
+    return Inertia::render('PublicLandingPage');
+})->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
