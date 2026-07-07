@@ -18,7 +18,8 @@
         'Cormorant Garamond', 'Shippori Mincho', 'Noto Serif JP',
         'Times New Roman', serif;
 
-    --font-matrix: 'Zen Kurenaido', 'Zen Kaku Gothic New', 'Noto Sans JP', cursive;
+    --font-matrix:
+        'Zen Kurenaido', 'Zen Kaku Gothic New', 'Noto Sans JP', cursive;
 
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
