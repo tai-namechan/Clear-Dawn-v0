@@ -63,6 +63,7 @@
             "Composer\\Config::disableProcessTimeout",
             "npm run lint:check",
             "npm run format:check",
+            "@php artisan wayfinder:generate --ansi",
             "npm run types:check",
             "@test"
         ],
