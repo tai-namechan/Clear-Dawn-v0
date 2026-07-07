@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { SlidersHorizontal } from '@lucide/vue';
+import { Calendar, SlidersHorizontal } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import HeaderUserMenu from '@/components/HeaderUserMenu.vue';
 import MatrixCellEditModal from '@/components/MatrixCellEditModal.vue';
 import MatrixSheet from '@/components/MatrixSheet.vue';
-import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import type { LifeArea, MatrixRow } from '@/types/matrix';
 import { index as lifeAreasIndex } from '@/routes/life-areas';
 
@@ -45,6 +44,25 @@ const editingRowIsCheckable = computed(() =>
         : false,
 );
 
+// 行キーごとのモーダル導入文（行の意図をやわらかく伝える）
+const modalDescriptions: Record<MatrixRow['key'], string> = {
+    monthly:
+        '中期的に取り組むことを設定しましょう。\n1ヶ月ほどのスパンで、着実に進めていきましょう。',
+    current:
+        '今日・今週に集中することを整理しましょう。\nまずここから、一歩を踏み出しましょう。',
+    future: '理想の自分や未来の姿を描きましょう。\n向かいたい方向を、静かに見据えましょう。',
+};
+
+const editingRowDescription = computed(() => {
+    if (editing.value === null) {
+        return '';
+    }
+
+    const key = props.rows[editing.value.rowIndex]?.key;
+
+    return key ? modalDescriptions[key] : '';
+});
+
 function openCellEditor(payload: { rowIndex: number; areaIndex: number }) {
     editing.value = payload;
 }
@@ -63,49 +81,73 @@ const todayIso = [
 </script>
 
 <template>
-    <Head title="Dashboard" />
+    <Head title="ダッシュボード" />
 
     <div
         class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
     >
-        <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4">
-            <div class="flex items-start justify-between gap-6">
-                <PageTitleOrnament
-                    title="Clear Dawn"
-                    align="left"
-                    size="prominent"
-                />
-
-                <div
-                    class="flex shrink-0 flex-wrap items-center justify-end gap-x-5 gap-y-2 pt-1.5 md:pt-2"
-                >
-                    <time
-                        :datetime="todayIso"
-                        class="font-serif text-lg tracking-[0.12em] text-cd-ink-muted lining-nums select-none"
+        <div
+            class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-7 md:gap-8"
+        >
+            <div
+                class="flex flex-col items-start justify-between gap-6 pt-1 md:flex-row md:pt-3"
+            >
+                <!-- 世界観を伝えるタイトルブロック（ロゴ → 装飾ライン → サブコピー） -->
+                <div class="flex flex-col items-start gap-3">
+                    <h1
+                        class="font-serif text-[2.5rem] leading-none font-normal tracking-[0.14em] text-cd-dawn-deep md:text-[3rem]"
                     >
-                        {{ today }}
-                    </time>
-
-                    <Link
-                        :href="lifeAreasIndex()"
-                        aria-label="領域管理"
-                        class="group flex items-center gap-1.5 font-serif text-base tracking-[0.12em] text-cd-ink-muted transition-colors hover:text-cd-ink"
-                    >
-                        <SlidersHorizontal
-                            :size="16"
-                            :stroke-width="1.6"
-                            class="opacity-75 transition-opacity group-hover:opacity-100"
-                            aria-hidden="true"
-                        />
-                        <span class="underline-offset-4 group-hover:underline">
-                            領域管理
-                        </span>
-                    </Link>
-
+                        Clear Dawn
+                    </h1>
                     <div
                         aria-hidden="true"
-                        class="cd-header-divider hidden h-5 sm:block"
+                        class="cd-mask-ornament h-6 w-64 text-cd-gilt md:w-80"
                     />
+                    <p
+                        class="font-sans text-sm tracking-[0.08em] text-cd-ink-muted md:text-[0.95rem]"
+                    >
+                        多忙な中、思考を整理し、夜明けへ導く。
+                    </p>
+                </div>
+
+                <!-- 操作エリア：日付（情報）と領域管理（操作）を1つのガラス風カードにまとめる -->
+                <div class="flex shrink-0 items-center gap-3 md:gap-4">
+                    <div
+                        class="cd-frost flex items-center gap-3 rounded-full border border-cd-line/80 px-4 py-2 shadow-sm md:gap-4 md:px-5"
+                    >
+                        <time
+                            :datetime="todayIso"
+                            class="flex cursor-default items-center gap-2 font-serif text-base tracking-[0.12em] text-cd-ink lining-nums select-none md:text-lg"
+                        >
+                            {{ today }}
+                            <Calendar
+                                :size="16"
+                                :stroke-width="1.6"
+                                class="text-cd-ink-muted"
+                                aria-hidden="true"
+                            />
+                        </time>
+
+                        <div aria-hidden="true" class="cd-header-divider h-5" />
+
+                        <Link
+                            :href="lifeAreasIndex()"
+                            aria-label="領域管理"
+                            class="group flex items-center gap-1.5 font-serif text-base tracking-[0.12em] text-cd-ink transition-colors hover:text-cd-dawn-deep md:text-lg"
+                        >
+                            <SlidersHorizontal
+                                :size="16"
+                                :stroke-width="1.6"
+                                class="opacity-80 transition-opacity group-hover:opacity-100"
+                                aria-hidden="true"
+                            />
+                            <span
+                                class="underline-offset-4 group-hover:underline"
+                            >
+                                領域管理
+                            </span>
+                        </Link>
+                    </div>
 
                     <HeaderUserMenu />
                 </div>
@@ -118,6 +160,7 @@ const todayIso = [
                 :cell="editingCell"
                 :area-name="editingAreaName"
                 :row-label="editingRowLabel"
+                :description="editingRowDescription"
                 :is-checkable="editingRowIsCheckable"
                 @update:open="(value) => (editing = value ? editing : null)"
             />

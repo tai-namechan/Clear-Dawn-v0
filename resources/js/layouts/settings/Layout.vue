@@ -1,31 +1,47 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
+import { Palette, ShieldCheck, SlidersHorizontal, User } from '@lucide/vue';
+import type { Component } from 'vue';
 import Heading from '@/components/Heading.vue';
-import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { toUrl } from '@/lib/utils';
+import type { NavItem } from '@/types';
 import { edit as editAppearance } from '@/routes/appearance';
 import { index as lifeAreasIndex } from '@/routes/life-areas';
 import { edit as editProfile } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
-import type { NavItem } from '@/types';
 
-const sidebarNavItems: NavItem[] = [
+interface SettingsNavItem {
+    title: string;
+    description: string;
+    icon: Component;
+    href: NavItem['href'];
+}
+
+const sidebarNavItems: SettingsNavItem[] = [
     {
-        title: 'Profile',
+        title: 'プロフィール',
+        description: '名前・メールアドレスなど',
+        icon: User,
         href: editProfile(),
     },
     {
-        title: 'Security',
+        title: 'セキュリティ',
+        description: 'パスワードやログイン設定',
+        icon: ShieldCheck,
         href: editSecurity(),
     },
     {
-        title: 'Appearance',
+        title: '表示設定',
+        description: 'テーマや表示オプション',
+        icon: Palette,
         href: editAppearance(),
     },
     {
         title: '領域管理',
+        description: '領域の作成・編集・削除',
+        icon: SlidersHorizontal,
         href: lifeAreasIndex(),
     },
 ];
@@ -34,42 +50,65 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
 </script>
 
 <template>
-    <div class="px-4 py-6">
-        <Heading
-            title="Settings"
-            description="Manage your profile and account settings"
-        />
+    <div class="px-4 py-6 md:px-6 md:pb-8">
+        <div class="mx-auto w-full max-w-5xl">
+            <Heading
+                title="設定"
+                description="アカウントや表示などの各種設定を管理します。"
+            />
 
-        <div class="flex flex-col lg:flex-row lg:space-x-12">
-            <aside class="w-full max-w-xl lg:w-48">
-                <nav
-                    class="flex flex-col space-y-1 space-x-0"
-                    aria-label="Settings"
-                >
-                    <Button
-                        v-for="item in sidebarNavItems"
-                        :key="toUrl(item.href)"
-                        variant="ghost"
-                        :class="[
-                            'w-full justify-start',
-                            { 'bg-muted': isCurrentOrParentUrl(item.href) },
-                        ]"
-                        as-child
+            <div class="flex flex-col gap-8 lg:flex-row lg:gap-12">
+                <aside class="w-full lg:w-64 lg:shrink-0">
+                    <nav
+                        aria-label="設定メニュー"
+                        class="cd-shadow-soft flex flex-col gap-1 rounded-2xl border border-cd-line bg-cd-surface p-2"
                     >
-                        <Link :href="item.href">
-                            <component :is="item.icon" class="h-4 w-4" />
-                            {{ item.title }}
+                        <Link
+                            v-for="item in sidebarNavItems"
+                            :key="toUrl(item.href)"
+                            :href="item.href"
+                            class="flex items-start gap-3 rounded-xl px-3 py-3 transition-colors"
+                            :class="
+                                isCurrentOrParentUrl(item.href)
+                                    ? 'bg-cd-lavender-mist/25 text-cd-dawn-deep'
+                                    : 'text-cd-ink hover:bg-muted/50'
+                            "
+                        >
+                            <component
+                                :is="item.icon"
+                                :size="18"
+                                :stroke-width="1.6"
+                                aria-hidden="true"
+                                class="mt-0.5 shrink-0"
+                                :class="
+                                    isCurrentOrParentUrl(item.href)
+                                        ? 'text-cd-dawn-deep'
+                                        : 'text-cd-ink-muted'
+                                "
+                            />
+                            <span class="flex min-w-0 flex-col gap-0.5">
+                                <span
+                                    class="font-serif text-sm tracking-[0.06em]"
+                                >
+                                    {{ item.title }}
+                                </span>
+                                <span
+                                    class="font-sans text-xs text-cd-ink-muted"
+                                >
+                                    {{ item.description }}
+                                </span>
+                            </span>
                         </Link>
-                    </Button>
-                </nav>
-            </aside>
+                    </nav>
+                </aside>
 
-            <Separator class="my-6 lg:hidden" />
+                <Separator class="lg:hidden" />
 
-            <div class="flex-1 md:max-w-2xl">
-                <section class="max-w-xl space-y-12">
-                    <slot />
-                </section>
+                <div class="flex-1">
+                    <section class="max-w-2xl space-y-12">
+                        <slot />
+                    </section>
+                </div>
             </div>
         </div>
     </div>
