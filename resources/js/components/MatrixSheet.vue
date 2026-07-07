@@ -59,7 +59,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                         :class="{ 'bg-cd-lavender-mist/30': row.key !== 'current' }"
                     >
                         <span
-                            class="inline-flex items-center justify-center gap-2 font-matrix text-base leading-snug tracking-[0.1em] text-cd-ink lining-nums md:text-lg"
+                            class="inline-flex items-center justify-center gap-2 font-matrix text-base leading-snug text-cd-ink lining-nums md:text-lg"
                         >
                             <Sunrise
                                 v-if="row.key === 'current'"
@@ -102,7 +102,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                             <li
                                 v-for="item in cell.items"
                                 :key="item.id"
-                                class="flex items-start gap-3 font-matrix text-[15px] leading-relaxed tracking-normal text-cd-ink lining-nums"
+                                class="flex items-start gap-3 font-matrix text-base leading-relaxed text-cd-ink lining-nums"
                             >
                                 <button
                                     v-if="row.is_checkable"
