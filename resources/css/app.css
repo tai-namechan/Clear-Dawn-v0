@@ -86,7 +86,9 @@
     --color-cd-current: var(--cd-current);
     --color-cd-matrix-surface: var(--cd-matrix-surface);
     --color-cd-matrix-line: var(--cd-matrix-line);
+    --color-cd-matrix-column-header: var(--cd-matrix-column-header);
     --color-cd-matrix-row-header: var(--cd-matrix-row-header);
+    --color-cd-matrix-row-current: var(--cd-matrix-row-current);
     --color-cd-matrix-header-foreground: var(--cd-matrix-header-foreground);
     --color-cd-matrix-accent: var(--cd-matrix-accent);
     --color-cd-matrix-accent-soft: var(--cd-matrix-accent-soft);
@@ -205,16 +207,14 @@
      * Dashboard matrix only — ivory / beige palette from the redesign spec.
      * Scoped tokens so settings / life-areas cards keep the global greige surface.
      */
-    --cd-matrix-surface: hsl(43 56% 97%); /* card shell (#FCF9F1) */
-    --cd-matrix-line: hsl(37 33% 84%); /* grid hairlines (#E4D9C7) */
-    --cd-matrix-row-header: hsl(37 45% 93%); /* row label column (#F7F0E4) */
+    --cd-matrix-surface: #fcf9f1; /* card shell */
+    --cd-matrix-line: #5b5577; /* grid borders */
+    --cd-matrix-column-header: #5b5577; /* column headers (仕事 / 野球 …) */
+    --cd-matrix-row-header: #d6d3de; /* monthly / future row labels */
+    --cd-matrix-row-current: #f5efe5; /* 今やるべきこと row label */
     --cd-matrix-header-foreground: hsl(40 30% 98%); /* column header text */
-    --cd-matrix-cell: hsl(40 22% 99%); /* near-white cell — cooler than row header */
-    --cd-matrix-cell-hover: hsl(40 28% 99.5%); /* subtle brighten on hover */
-    --cd-matrix-cell-hover-line: hsl(37 28% 88%);
-    --cd-matrix-current-label: hsl(
-        37 38% 94%
-    ); /* faintest warm wash on action row label only */
+    --cd-matrix-cell: hsl(40 22% 99%); /* near-white cell body */
+    --cd-matrix-cell-hover: #d6d3de; /* cell hover */
     --cd-matrix-accent: hsl(28 49% 53%); /* action orange (#C98245) */
     --cd-matrix-accent-soft: hsl(33 67% 90%); /* accent wash (#F7E7D5) */
     --cd-danger-surface: hsl(2 65% 97%); /* pale rose danger card */
@@ -362,7 +362,7 @@
      */
     .cd-matrix-row-current-label {
         position: relative;
-        background-color: var(--cd-matrix-current-label);
+        background-color: var(--cd-matrix-row-current);
     }
 
     .cd-matrix-row-current-label::before {
@@ -376,29 +376,16 @@
     }
 
     /*
-     * Matrix cells: near-white ivory that brightens subtly on hover.
+     * Matrix cells: near-white ivory; hover lifts to #d6d3de.
      * Edit affordance is hidden until hover (see MatrixSheet.vue).
      */
     .cd-matrix-cell {
         background-color: var(--cd-matrix-cell);
-        transition:
-            background-color 180ms ease,
-            border-color 180ms ease,
-            box-shadow 180ms ease;
+        transition: background-color 180ms ease;
     }
 
     .cd-matrix-cell:hover {
         background-color: var(--cd-matrix-cell-hover);
-        box-shadow: inset 0 0 0 1px var(--cd-matrix-cell-hover-line);
-    }
-
-    .cd-matrix-row-current .cd-matrix-cell {
-        background-color: var(--cd-matrix-cell);
-    }
-
-    .cd-matrix-row-current .cd-matrix-cell:hover {
-        background-color: var(--cd-matrix-cell-hover);
-        box-shadow: inset 0 0 0 1px var(--cd-matrix-cell-hover-line);
     }
 
     /*
