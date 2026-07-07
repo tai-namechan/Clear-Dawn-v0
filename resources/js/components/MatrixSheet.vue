@@ -61,7 +61,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                         }"
                     >
                         <span
-                            class="inline-flex items-center justify-center gap-2 font-serif text-[1.05rem] leading-snug font-medium tracking-[0.04em] text-cd-ink lining-nums md:text-lg"
+                            class="inline-flex items-center justify-center gap-2 font-matrix text-base leading-snug lining-nums md:text-lg"
                         >
                             <Sunrise
                                 v-if="row.key === 'current'"
@@ -94,7 +94,7 @@ function toggleCompletion(item: MatrixCellItem): void {
 
                         <ul
                             v-if="cell.items.length > 0"
-                            class="flex flex-col gap-3.5"
+                            class="flex flex-col gap-4"
                             :class="
                                 row.is_checkable
                                     ? 'mx-auto w-fit items-start'
@@ -104,7 +104,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                             <li
                                 v-for="item in cell.items"
                                 :key="item.id"
-                                class="flex items-start gap-3 text-base leading-relaxed lining-nums md:text-[1.05rem]"
+                                class="flex items-start gap-3 text-[17px] leading-relaxed lining-nums md:text-lg"
                             >
                                 <button
                                     v-if="row.is_checkable"
@@ -112,7 +112,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                                     role="checkbox"
                                     :aria-checked="item.is_completed"
                                     :aria-label="`${item.title} を${item.is_completed ? '再開' : '完了'}にする`"
-                                    class="mt-1 inline-flex size-[1.125rem] shrink-0 items-center justify-center rounded-[3px] border transition-colors"
+                                    class="mt-1.5 inline-flex size-4 shrink-0 items-center justify-center rounded-[3px] border transition-colors"
                                     :class="
                                         item.is_completed
                                             ? 'border-cd-sunrise bg-cd-sunrise-soft text-cd-sunrise'
@@ -122,8 +122,8 @@ function toggleCompletion(item: MatrixCellItem): void {
                                 >
                                     <Check
                                         v-if="item.is_completed"
-                                        :size="11"
-                                        :stroke-width="2.5"
+                                        :size="12"
+                                        :stroke-width="2.4"
                                         aria-hidden="true"
                                     />
                                 </button>
@@ -133,8 +133,8 @@ function toggleCompletion(item: MatrixCellItem): void {
                                             ? 'text-left'
                                             : 'text-center text-balance',
                                         item.is_completed
-                                            ? 'font-serif text-cd-ink-muted line-through decoration-cd-ink-muted/50'
-                                            : 'font-serif text-cd-ink',
+                                            ? 'font-matrix font-matrix--done line-through decoration-cd-ink-muted/60'
+                                            : 'font-matrix',
                                     ]"
                                     >{{ item.title }}</span
                                 >
