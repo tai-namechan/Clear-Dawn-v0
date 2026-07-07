@@ -30,12 +30,7 @@ const onDashboard = computed(() => isCurrentUrl(dashboard()));
                 : 'h-16 items-center justify-between gap-2 px-6 group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4'
         "
     >
-        <template v-if="onDashboard">
-            <div class="flex items-start gap-2 px-4 md:px-6">
-                <SidebarTrigger class="mt-3 shrink-0 md:mt-4" />
-                <DashboardPageHeader />
-            </div>
-        </template>
+        <DashboardPageHeader v-if="onDashboard" />
 
         <template v-else>
             <div class="flex min-w-0 flex-1 items-center gap-2">
