@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\TodayTrainingResource;
 use App\Queries\GetMatrixBoardQuery;
+use App\Queries\GetTodayTrainingQuery;
 use App\Services\InitializeMatrixBoardService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -20,16 +22,19 @@ class DashboardController extends Controller
         Request $request,
         InitializeMatrixBoardService $initializeMatrixBoardService,
         GetMatrixBoardQuery $getMatrixBoardQuery,
+        GetTodayTrainingQuery $getTodayTrainingQuery,
     ): Response {
         $user = $request->user();
 
         $initializeMatrixBoardService->handle($user);
 
         $board = $getMatrixBoardQuery->handle($user);
+        $todayTraining = $getTodayTrainingQuery->handle($user);
 
         return Inertia::render('Dashboard', [
             'areas' => $board['areas'],
             'rows' => $board['rows'],
+            'todayTraining' => TodayTrainingResource::make($todayTraining)->resolve(),
         ]);
     }
 }
