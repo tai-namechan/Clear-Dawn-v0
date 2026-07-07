@@ -72,4 +72,12 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->hasMany(ActivityLog::class);
     }
+
+    /**
+     * @return HasMany<Video, $this>
+     */
+    public function videos(): HasMany
+    {
+        return $this->hasMany(Video::class);
+    }
 }
