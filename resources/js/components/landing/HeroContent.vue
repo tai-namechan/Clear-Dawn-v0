@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import StartButton from '@/components/landing/StartButton.vue';
+
+defineEmits<{
+    (e: 'open-login'): void;
+}>();
 </script>
 
 <template>
     <div
-        class="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pb-[16vh] pt-[46vh] md:pb-[14vh] md:pt-[44vh]"
+        class="relative z-10 flex flex-1 flex-col items-center justify-center px-6 pt-[46vh] pb-[16vh] md:pt-[44vh] md:pb-[14vh]"
     >
-        <StartButton />
+        <StartButton @click="$emit('open-login')" />
     </div>
 </template>
