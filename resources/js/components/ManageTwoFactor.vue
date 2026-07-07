@@ -31,23 +31,22 @@ onUnmounted(() => clearTwoFactorAuthData());
     <div v-if="canManageTwoFactor" class="space-y-6">
         <Heading
             variant="small"
-            title="Two-factor authentication"
-            description="Manage your two-factor authentication settings"
+            title="二要素認証"
+            description="二要素認証（2FA）の設定を管理します。"
         />
 
         <div
             v-if="!twoFactorEnabled"
             class="flex flex-col items-start justify-start space-y-4"
         >
-            <p class="text-sm text-muted-foreground">
-                When you enable two-factor authentication, you will be prompted
-                for a secure pin during login. This pin can be retrieved from a
-                TOTP-supported application on your phone.
+            <p class="text-sm text-cd-ink-muted">
+                二要素認証を有効にすると、ログイン時に安全な確認コードの入力を求められます。確認コードは、スマートフォンの
+                TOTP 対応アプリから取得できます。
             </p>
 
             <div>
                 <Button v-if="hasSetupData" @click="showSetupModal = true">
-                    <ShieldCheck />Continue setup
+                    <ShieldCheck />設定を続ける
                 </Button>
                 <Form
                     v-else
@@ -56,17 +55,16 @@ onUnmounted(() => clearTwoFactorAuthData());
                     #default="{ processing }"
                 >
                     <Button type="submit" :disabled="processing">
-                        Enable 2FA
+                        2FA を有効にする
                     </Button>
                 </Form>
             </div>
         </div>
 
         <div v-else class="flex flex-col items-start justify-start space-y-4">
-            <p class="text-sm text-muted-foreground">
-                You will be prompted for a secure, random pin during login,
-                which you can retrieve from the TOTP-supported application on
-                your phone.
+            <p class="text-sm text-cd-ink-muted">
+                ログイン時に、スマートフォンの TOTP
+                対応アプリから取得できる安全な確認コードの入力を求められます。
             </p>
 
             <div class="relative inline">
@@ -76,7 +74,7 @@ onUnmounted(() => clearTwoFactorAuthData());
                         type="submit"
                         :disabled="processing"
                     >
-                        Disable 2FA
+                        2FA を無効にする
                     </Button>
                 </Form>
             </div>

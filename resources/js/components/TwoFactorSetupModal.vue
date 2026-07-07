@@ -21,8 +21,8 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { useAppearance } from '@/composables/useAppearance';
 import { useTwoFactorAuth } from '@/composables/useTwoFactorAuth';
-import { confirm } from '@/routes/two-factor';
 import type { TwoFactorConfigContent } from '@/types';
+import { confirm } from '@/routes/two-factor';
 
 type Props = {
     requiresConfirmation: boolean;
@@ -46,26 +46,27 @@ const pinInputContainerRef = useTemplateRef('pinInputContainerRef');
 const modalConfig = computed<TwoFactorConfigContent>(() => {
     if (props.twoFactorEnabled) {
         return {
-            title: 'Two-factor authentication enabled',
+            title: '二要素認証を有効にしました',
             description:
-                'Two-factor authentication is now enabled. Scan the QR code or enter the setup key in your authenticator app.',
-            buttonText: 'Close',
+                '二要素認証が有効になりました。認証アプリで QR コードをスキャンするか、セットアップキーを入力してください。',
+            buttonText: '閉じる',
         };
     }
 
     if (showVerificationStep.value) {
         return {
-            title: 'Verify authentication code',
-            description: 'Enter the 6-digit code from your authenticator app',
-            buttonText: 'Continue',
+            title: '認証コードを確認',
+            description:
+                '認証アプリに表示される 6 桁のコードを入力してください。',
+            buttonText: '続ける',
         };
     }
 
     return {
-        title: 'Enable two-factor authentication',
+        title: '二要素認証を有効にする',
         description:
-            'To finish enabling two-factor authentication, scan the QR code or enter the setup key in your authenticator app',
-        buttonText: 'Continue',
+            '認証アプリで QR コードをスキャンするか、セットアップキーを入力して、二要素認証の設定を完了してください。',
+        buttonText: '続ける',
     };
 });
 
@@ -197,7 +198,7 @@ watch(
                                 class="absolute inset-0 top-1/2 h-px w-full bg-border"
                             />
                             <span class="relative bg-card px-2 py-1"
-                                >or, enter the code manually</span
+                                >または、コードを手動で入力</span
                             >
                         </div>
 
@@ -279,14 +280,14 @@ watch(
                                     @click="showVerificationStep = false"
                                     :disabled="processing"
                                 >
-                                    Back
+                                    戻る
                                 </Button>
                                 <Button
                                     type="submit"
                                     class="w-auto flex-1"
                                     :disabled="processing || code.length < 6"
                                 >
-                                    Confirm
+                                    確認する
                                 </Button>
                             </div>
                         </div>

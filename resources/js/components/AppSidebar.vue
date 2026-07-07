@@ -56,7 +56,7 @@ const { isCurrentUrl } = useCurrentUrl();
             />
         </div>
 
-        <SidebarHeader class="relative z-10">
+        <SidebarHeader class="relative z-10 items-center">
             <Link
                 :href="dashboard()"
                 aria-label="Clear Dawn ダッシュボード"
@@ -71,22 +71,30 @@ const { isCurrentUrl } = useCurrentUrl();
                     >D</span
                 >
             </Link>
+            <span
+                class="mt-1 font-serif text-[0.7rem] tracking-[0.32em] text-white/70 group-data-[collapsible=icon]:hidden"
+            >
+                Clear Dawn
+            </span>
         </SidebarHeader>
 
         <SidebarContent class="relative z-10 overflow-visible">
             <nav
                 aria-label="メインメニュー"
-                class="mt-28 flex flex-col items-center gap-12 group-data-[collapsible=icon]:mt-8 group-data-[collapsible=icon]:gap-7"
+                class="mt-24 flex flex-col items-center gap-3 group-data-[collapsible=icon]:mt-8 group-data-[collapsible=icon]:gap-5"
             >
                 <template v-for="item in navItems" :key="item.title">
                     <Link
                         v-if="item.href"
                         :href="item.href"
-                        class="flex flex-col items-center gap-3 transition-colors hover:text-white"
+                        :aria-current="
+                            isCurrentUrl(item.href) ? 'page' : undefined
+                        "
+                        class="flex w-24 flex-col items-center gap-2 rounded-2xl border px-3 py-3 transition-colors group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-2"
                         :class="
                             isCurrentUrl(item.href)
-                                ? 'text-white'
-                                : 'text-white/80'
+                                ? 'border-white/15 bg-white/10 text-white'
+                                : 'border-transparent text-white/80 hover:bg-white/5 hover:text-white'
                         "
                     >
                         <component
@@ -102,7 +110,7 @@ const { isCurrentUrl } = useCurrentUrl();
                     </Link>
                     <div
                         v-else
-                        class="flex cursor-default flex-col items-center gap-3 text-white/80"
+                        class="flex w-24 cursor-default flex-col items-center gap-2 border border-transparent px-3 py-3 text-white/55 group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:p-2"
                     >
                         <component
                             :is="item.icon"
