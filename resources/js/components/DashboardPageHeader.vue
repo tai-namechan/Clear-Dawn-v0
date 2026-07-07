@@ -73,19 +73,5 @@ const todayIso = [
                 <HeaderUserMenu compact />
             </div>
         </div>
-
-        <div
-            class="col-start-2 row-start-2 flex flex-col items-start gap-2 pt-2"
-        >
-            <div
-                aria-hidden="true"
-                class="cd-mask-ornament h-5 w-48 text-cd-gilt md:w-64"
-            />
-            <p
-                class="font-sans text-xs tracking-[0.08em] text-cd-ink-muted md:text-sm"
-            >
-                多忙な中、思考を整理し、夜明けへ導く。
-            </p>
-        </div>
     </div>
 </template>

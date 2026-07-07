@@ -30,13 +30,13 @@ function toggleCompletion(item: MatrixCellItem): void {
                 <tr class="h-16 border-b border-cd-line/70">
                     <th
                         scope="col"
-                        class="w-40 bg-muted/50 px-4 py-4 md:w-56"
+                        class="w-40 bg-cd-lavender-mist/30 px-4 py-4 md:w-56"
                     ></th>
                     <th
                         v-for="area in areas"
                         :key="area.id"
                         scope="col"
-                        class="border-l border-cd-line/50 bg-muted/50 px-3 py-4 text-center align-middle font-normal"
+                        class="border-l border-cd-line/50 bg-cd-lavender-mist/30 px-3 py-4 text-center align-middle font-normal"
                     >
                         <span
                             class="font-serif text-base tracking-[0.18em] text-cd-ink md:text-lg"
@@ -56,7 +56,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                     <th
                         scope="row"
                         class="px-5 py-6 text-center align-middle font-normal"
-                        :class="{ 'bg-muted/50': row.key !== 'current' }"
+                        :class="{ 'bg-cd-lavender-mist/30': row.key !== 'current' }"
                     >
                         <span
                             class="inline-flex items-center justify-center gap-2 font-matrix text-base leading-snug tracking-[0.1em] text-cd-ink lining-nums md:text-lg"
