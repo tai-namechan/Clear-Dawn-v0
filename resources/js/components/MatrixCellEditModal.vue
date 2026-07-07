@@ -134,7 +134,7 @@ function deleteItem(itemId: string): void {
                         </span>
                         <div class="min-w-0 flex-1">
                             <p
-                                class="text-[15px] leading-relaxed text-cd-ink"
+                                class="font-matrix text-base leading-relaxed text-cd-ink"
                                 :class="{
                                     'text-cd-ink-muted line-through':
                                         item.is_completed,
