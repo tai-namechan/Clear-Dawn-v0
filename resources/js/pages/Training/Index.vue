@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ChevronLeft, ChevronRight, CirclePlay, Plus } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { CirclePlay, Plus } from '@lucide/vue';
+import { ref } from 'vue';
+import DateNavigator from '@/components/DateNavigator.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import RoutinesHubTabs from '@/components/training/RoutinesHubTabs.vue';
 import { Button } from '@/components/ui/button';
@@ -27,36 +28,6 @@ const props = defineProps<Props>();
 const showCreateModal = ref(false);
 const formTitle = ref('');
 const saving = ref(false);
-
-const formattedDate = computed(() => {
-    const d = new Date(`${props.date}T00:00:00`);
-
-    return d.toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        weekday: 'short',
-    });
-});
-
-const isToday = computed(
-    () => props.date === new Date().toISOString().slice(0, 10),
-);
-
-function shiftDate(days: number): void {
-    const current = new Date(`${props.date}T00:00:00`);
-    current.setDate(current.getDate() + days);
-
-    router.get(
-        '/training',
-        { date: current.toISOString().slice(0, 10) },
-        { preserveState: true, preserveScroll: true },
-    );
-}
-
-function goToday(): void {
-    router.get('/training', {}, { preserveState: true, preserveScroll: true });
-}
 
 function latestRun(plan: TrainingPlan) {
     return plan.runs?.[0] ?? null;
@@ -113,45 +84,7 @@ async function createPlan(): Promise<void> {
 
             <RoutinesHubTabs />
 
-            <div
-                class="flex items-center justify-between gap-3 rounded-2xl border border-cd-line/80 bg-white/60 px-4 py-3"
-            >
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label="前の日"
-                    @click="shiftDate(-1)"
-                >
-                    <ChevronLeft :size="18" :stroke-width="1.6" />
-                </Button>
-
-                <div class="text-center">
-                    <p
-                        class="font-serif text-base tracking-[0.1em] text-cd-ink"
-                    >
-                        {{ formattedDate }}
-                    </p>
-                    <button
-                        v-if="!isToday"
-                        type="button"
-                        class="mt-0.5 font-sans text-xs text-primary underline-offset-2 hover:underline"
-                        @click="goToday"
-                    >
-                        今日に戻る
-                    </button>
-                </div>
-
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label="次の日"
-                    @click="shiftDate(1)"
-                >
-                    <ChevronRight :size="18" :stroke-width="1.6" />
-                </Button>
-            </div>
+            <DateNavigator :date="date" route-url="/training" />
 
             <section
                 aria-label="プラン一覧"

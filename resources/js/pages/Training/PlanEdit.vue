@@ -3,24 +3,13 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { ArrowLeft, CirclePlay, Plus, Trash2 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
+import ReorderControls from '@/components/ReorderControls.vue';
+import ExercisePickerDialog from '@/components/training/ExercisePickerDialog.vue';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { useReorderableList } from '@/composables/useReorderableList';
 import { apiFetch } from '@/lib/apiFetch';
-import { fetchExercisesFromPage } from '@/lib/fetchExercises';
+import { useFetchExercises } from '@/lib/fetchExercises';
 import { purposeChipClasses } from '@/lib/stepPurposeColors';
 import {
     formatDurationSeconds,
@@ -41,6 +30,8 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const { fetchExercises } = useFetchExercises();
+
 const title = ref(props.plan.title);
 const note = ref(props.plan.note ?? '');
 const saving = ref(false);
@@ -54,10 +45,19 @@ const stepRest = ref('60');
 
 const exercises = ref<Exercise[]>([]);
 
+const isDraft = computed(() => props.plan.status === 'draft');
+
+const steps = computed(() => props.plan.steps ?? []);
+
+const { move: moveStep } = useReorderableList(
+    steps,
+    `/training/plans/${props.plan.id}/steps/reorder`,
+);
+
 const canStart = computed(
     () =>
         props.plan.status === 'ready' &&
-        (props.plan.steps?.length ?? 0) > 0 &&
+        steps.value.length > 0 &&
         !activeRun.value,
 );
 
@@ -114,7 +114,7 @@ async function startRun(): Promise<void> {
 }
 
 async function loadExercises(): Promise<void> {
-    exercises.value = await fetchExercisesFromPage();
+    exercises.value = await fetchExercises();
     selectedExerciseId.value = exercises.value[0]?.id ?? '';
 }
 
@@ -240,10 +240,10 @@ function formatStepTarget(step: TrainingPlanStep): string {
                         開始
                     </Button>
                     <Button
-                        v-if="plan.status === 'draft'"
+                        v-if="isDraft"
                         type="button"
                         variant="outline"
-                        :disabled="saving || !plan.steps?.length"
+                        :disabled="saving || !steps.length"
                         @click="markReady"
                     >
                         準備完了にする
@@ -259,6 +259,13 @@ function formatStepTarget(step: TrainingPlanStep): string {
                     </Button>
                 </div>
             </div>
+
+            <p
+                v-if="isDraft"
+                class="rounded-xl border border-cd-line/80 bg-white/60 px-4 py-3 font-sans text-sm text-cd-ink-muted"
+            >
+                下書きのメニューです。ステップを追加したら「準備完了にする」を押してから開始できます。
+            </p>
 
             <section
                 class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface px-5 py-5"
@@ -287,7 +294,12 @@ function formatStepTarget(step: TrainingPlanStep): string {
                 <h2 class="font-serif text-base tracking-[0.12em] text-cd-ink">
                     ステップ
                 </h2>
-                <Button type="button" size="sm" @click="openAddStep">
+                <Button
+                    v-if="isDraft"
+                    type="button"
+                    size="sm"
+                    @click="openAddStep"
+                >
                     <Plus :size="14" :stroke-width="1.8" />
                     追加
                 </Button>
@@ -297,9 +309,9 @@ function formatStepTarget(step: TrainingPlanStep): string {
                 aria-label="ステップ一覧"
                 class="cd-shadow-soft overflow-hidden rounded-2xl border border-cd-line bg-cd-surface"
             >
-                <ul v-if="plan.steps?.length" class="flex flex-col">
+                <ul v-if="steps.length" class="flex flex-col">
                     <li
-                        v-for="(step, index) in plan.steps"
+                        v-for="(step, index) in steps"
                         :key="step.id"
                         class="flex items-center justify-between gap-3 border-b border-cd-line/60 px-5 py-4 last:border-b-0"
                     >
@@ -341,15 +353,27 @@ function formatStepTarget(step: TrainingPlanStep): string {
                                 </span>
                             </p>
                         </div>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label="ステップを削除"
-                            @click="deleteStep(step)"
+                        <div
+                            v-if="isDraft"
+                            class="flex shrink-0 items-center gap-1"
                         >
-                            <Trash2 :size="14" :stroke-width="1.6" />
-                        </Button>
+                            <ReorderControls
+                                :index="index"
+                                :length="steps.length"
+                                :item-label="step.exercise?.name"
+                                @up="moveStep(index, -1)"
+                                @down="moveStep(index, 1)"
+                            />
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label="ステップを削除"
+                                @click="deleteStep(step)"
+                            >
+                                <Trash2 :size="14" :stroke-width="1.6" />
+                            </Button>
+                        </div>
                     </li>
                 </ul>
 
@@ -363,73 +387,14 @@ function formatStepTarget(step: TrainingPlanStep): string {
         </div>
     </div>
 
-    <Dialog
-        :open="showAddStepModal"
-        @update:open="(v) => (showAddStepModal = v)"
-    >
-        <DialogContent class="bg-cd-surface sm:max-w-md">
-            <DialogHeader>
-                <DialogTitle
-                    class="font-serif text-lg tracking-[0.12em] text-cd-ink"
-                >
-                    ステップを追加
-                </DialogTitle>
-            </DialogHeader>
-
-            <div class="flex flex-col gap-3">
-                <Select v-model="selectedExerciseId" :disabled="saving">
-                    <SelectTrigger>
-                        <SelectValue placeholder="種目を選択" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem
-                            v-for="exercise in exercises"
-                            :key="exercise.id"
-                            :value="exercise.id"
-                        >
-                            {{ exercise.name }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-
-                <div class="grid grid-cols-3 gap-2">
-                    <Input
-                        v-model="stepSets"
-                        type="number"
-                        min="1"
-                        placeholder="セット"
-                    />
-                    <Input
-                        v-model="stepReps"
-                        type="number"
-                        min="1"
-                        placeholder="回数"
-                    />
-                    <Input
-                        v-model="stepRest"
-                        type="number"
-                        min="0"
-                        placeholder="休憩(秒)"
-                    />
-                </div>
-            </div>
-
-            <DialogFooter>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    @click="showAddStepModal = false"
-                >
-                    キャンセル
-                </Button>
-                <Button
-                    type="button"
-                    :disabled="!selectedExerciseId"
-                    @click="addStep"
-                >
-                    追加
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
+    <ExercisePickerDialog
+        v-model:open="showAddStepModal"
+        v-model:selected-exercise-id="selectedExerciseId"
+        v-model:sets="stepSets"
+        v-model:reps="stepReps"
+        v-model:rest="stepRest"
+        :exercises="exercises"
+        :saving="saving"
+        @submit="addStep"
+    />
 </template>

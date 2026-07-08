@@ -69,14 +69,27 @@ function openCellEditor(payload: { rowIndex: number; areaIndex: number }) {
     <Head title="ダッシュボード" />
 
     <div
-        class="flex h-full flex-1 flex-col overflow-x-auto p-4 md:px-6 md:pb-8"
+        class="flex h-full flex-1 flex-col overflow-x-auto overflow-y-auto p-4 md:px-6"
     >
-        <div
-            class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 md:gap-7"
-        >
-            <MatrixSheet :areas="areas" :rows="rows" @edit="openCellEditor" />
+        <div class="mx-auto w-full max-w-7xl">
+            <section
+                aria-label="TOP Matrix ボード"
+                class="flex min-h-[calc(100dvh-5rem)] flex-col justify-center py-4 md:py-6"
+            >
+                <MatrixSheet
+                    :areas="areas"
+                    :rows="rows"
+                    :fill-available="false"
+                    @edit="openCellEditor"
+                />
+            </section>
 
-            <TodayTrainingCard :today-training="todayTraining" />
+            <section
+                aria-label="今日のメニュー"
+                class="pb-8 pt-2"
+            >
+                <TodayTrainingCard :today-training="todayTraining" />
+            </section>
 
             <MatrixCellEditModal
                 :open="editing !== null"
