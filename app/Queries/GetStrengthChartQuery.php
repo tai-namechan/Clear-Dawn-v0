@@ -2,9 +2,9 @@
 
 namespace App\Queries;
 
-use App\Enums\ExerciseCategory;
-use App\Enums\TrainingRunStatus;
-use App\Models\TrainingSetLog;
+use App\Enums\RoutineItemCategory;
+use App\Enums\RoutineSessionStatus;
+use App\Models\RoutineBlockLog;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -12,37 +12,37 @@ use Illuminate\Support\Facades\DB;
 class GetStrengthChartQuery
 {
     /**
-     * 筋力種目の重量推移（種目別・日別の最大重量）。
+     * 筋力種目の負荷推移（種目別・日別の最大負荷）。
      *
-     * @return array<int, array{date: string, exercise_name: string, max_weight_kg: string|null}>
+     * @return array<int, array{date: string, item_name: string, max_load_value: string|null}>
      */
-    public function handle(User $user, Carbon $from, Carbon $to, ?string $exerciseId = null): array
+    public function handle(User $user, Carbon $from, Carbon $to, ?string $routineItemId = null): array
     {
-        $query = TrainingSetLog::query()
+        $query = RoutineBlockLog::query()
             ->select([
-                DB::raw('DATE(training_runs.started_at) as date'),
-                'training_run_steps.exercise_name',
-                DB::raw('MAX(training_set_logs.weight_kg) as max_weight_kg'),
+                DB::raw('DATE(routine_sessions.started_at) as date'),
+                'routine_session_steps.item_name',
+                DB::raw('MAX(routine_block_logs.load_value) as max_load_value'),
             ])
-            ->join('training_run_steps', 'training_run_steps.id', '=', 'training_set_logs.training_run_step_id')
-            ->join('training_runs', 'training_runs.id', '=', 'training_run_steps.training_run_id')
-            ->join('exercises', 'exercises.id', '=', 'training_run_steps.exercise_id')
-            ->where('training_runs.user_id', $user->id)
-            ->whereNotNull('training_run_steps.exercise_id')
-            ->where('training_runs.status', TrainingRunStatus::Completed)
-            ->where('exercises.category', ExerciseCategory::Strength)
-            ->whereDate('training_runs.started_at', '>=', $from->toDateString())
-            ->whereDate('training_runs.started_at', '<=', $to->toDateString())
-            ->whereNotNull('training_set_logs.weight_kg')
-            ->when($exerciseId !== null, fn ($q) => $q->where('training_run_steps.exercise_id', $exerciseId))
-            ->groupBy('date', 'training_run_steps.exercise_name')
+            ->join('routine_session_steps', 'routine_session_steps.id', '=', 'routine_block_logs.routine_session_step_id')
+            ->join('routine_sessions', 'routine_sessions.id', '=', 'routine_session_steps.routine_session_id')
+            ->join('routine_items', 'routine_items.id', '=', 'routine_session_steps.routine_item_id')
+            ->where('routine_sessions.user_id', $user->id)
+            ->whereNotNull('routine_session_steps.routine_item_id')
+            ->where('routine_sessions.status', RoutineSessionStatus::Completed)
+            ->where('routine_items.category', RoutineItemCategory::Strength)
+            ->whereDate('routine_sessions.started_at', '>=', $from->toDateString())
+            ->whereDate('routine_sessions.started_at', '<=', $to->toDateString())
+            ->whereNotNull('routine_block_logs.load_value')
+            ->when($routineItemId !== null, fn ($q) => $q->where('routine_session_steps.routine_item_id', $routineItemId))
+            ->groupBy('date', 'routine_session_steps.item_name')
             ->orderBy('date');
 
         return $query->toBase()->get()->map(fn (object $row): array => [
             'date' => (string) $row->date,
-            'exercise_name' => (string) $row->exercise_name,
-            'max_weight_kg' => $row->max_weight_kg !== null
-                ? number_format((float) $row->max_weight_kg, 2, '.', '')
+            'item_name' => (string) $row->item_name,
+            'max_load_value' => $row->max_load_value !== null
+                ? number_format((float) $row->max_load_value, 2, '.', '')
                 : null,
         ])->values()->all();
     }

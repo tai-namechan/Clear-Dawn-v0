@@ -5,13 +5,13 @@ namespace Tests\Feature;
 use App\Enums\ActivityLogEventType;
 use App\Enums\MatrixRowKey;
 use App\Models\ActivityLog;
-use App\Models\Exercise;
 use App\Models\LifeArea;
 use App\Models\MatrixCell;
 use App\Models\MatrixCellItem;
-use App\Models\TrainingPlan;
-use App\Models\TrainingPlanStep;
-use App\Models\TrainingRun;
+use App\Models\RoutineItem;
+use App\Models\RoutinePlan;
+use App\Models\RoutinePlanStep;
+use App\Models\RoutineSession;
 use App\Models\User;
 use Database\Seeders\MatrixRowSeeder;
 use Database\Seeders\MetricSeeder;
@@ -48,17 +48,17 @@ class HistoryTest extends TestCase
         ]);
     }
 
-    private function completeTrainingRun(User $user): TrainingRun
+    private function completeRoutineSession(User $user): RoutineSession
     {
-        $exercise = Exercise::factory()->create(['user_id' => $user->id]);
-        $plan = TrainingPlan::factory()->ready()->create(['user_id' => $user->id]);
-        TrainingPlanStep::factory()->forPlan($plan)->create(['exercise_id' => $exercise->id]);
+        $routineItem = RoutineItem::factory()->create(['user_id' => $user->id]);
+        $plan = RoutinePlan::factory()->ready()->create(['user_id' => $user->id]);
+        RoutinePlanStep::factory()->forPlan($plan)->create(['routine_item_id' => $routineItem->id]);
 
-        $this->actingAs($user)->postJson(route('training-runs.start', $plan))->assertOk();
-        $run = TrainingRun::query()->where('user_id', $user->id)->firstOrFail();
-        $this->actingAs($user)->postJson(route('training-runs.complete', $run))->assertOk();
+        $this->actingAs($user)->postJson(route('routine-sessions.start', $plan))->assertOk();
+        $session = RoutineSession::query()->where('user_id', $user->id)->firstOrFail();
+        $this->actingAs($user)->postJson(route('routine-sessions.complete', $session))->assertOk();
 
-        return $run->refresh();
+        return $session->refresh();
     }
 
     public function test_guests_cannot_access_history(): void
@@ -66,13 +66,13 @@ class HistoryTest extends TestCase
         $this->get(route('history.index'))->assertRedirect(route('login'));
     }
 
-    public function test_index_shows_mixed_matrix_and_training_events_for_the_authenticated_user(): void
+    public function test_index_shows_mixed_matrix_and_routine_session_events_for_the_authenticated_user(): void
     {
         $user = User::factory()->create();
         $item = $this->createCurrentCellItem($user, '完了する項目');
 
         $this->actingAs($user)->patch(route('matrix-cell-items.toggle', $item))->assertRedirect();
-        $this->completeTrainingRun($user);
+        $this->completeRoutineSession($user);
 
         $this->actingAs($user)
             ->get(route('history.index'))
@@ -84,7 +84,7 @@ class HistoryTest extends TestCase
                     fn (array $event): bool => $event['event_type'] === ActivityLogEventType::MatrixItemCompleted->value,
                 ))
                 ->where('history.data', fn ($events) => collect($events)->contains(
-                    fn (array $event): bool => $event['event_type'] === ActivityLogEventType::TrainingRunCompleted->value,
+                    fn (array $event): bool => $event['event_type'] === ActivityLogEventType::RoutineSessionCompleted->value,
                 ))
             );
     }
@@ -118,14 +118,14 @@ class HistoryTest extends TestCase
         $user = User::factory()->create();
         $item = $this->createCurrentCellItem($user);
         $this->actingAs($user)->patch(route('matrix-cell-items.toggle', $item))->assertRedirect();
-        $this->completeTrainingRun($user);
+        $this->completeRoutineSession($user);
 
         $this->actingAs($user)
-            ->get(route('history.index', ['event_type' => ActivityLogEventType::TrainingRunCompleted->value]))
+            ->get(route('history.index', ['event_type' => ActivityLogEventType::RoutineSessionCompleted->value]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->has('history.data', 1)
-                ->where('history.data.0.event_type', ActivityLogEventType::TrainingRunCompleted->value)
+                ->where('history.data.0.event_type', ActivityLogEventType::RoutineSessionCompleted->value)
             );
     }
 

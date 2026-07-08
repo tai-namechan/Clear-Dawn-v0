@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use App\Models\MatrixCellItem;
-use App\Models\TrainingRun;
+use App\Models\RoutineSession;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
@@ -32,7 +32,7 @@ class AppServiceProvider extends ServiceProvider
         // 安定した alias を保存する（クラスのリネームでログが壊れないようにする）
         Relation::enforceMorphMap([
             'matrix_cell_item' => MatrixCellItem::class,
-            'training_run' => TrainingRun::class,
+            'routine_session' => RoutineSession::class,
         ]);
     }
 

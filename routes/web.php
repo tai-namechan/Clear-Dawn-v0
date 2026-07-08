@@ -1,20 +1,26 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ExerciseController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\LifeAreaController;
 use App\Http\Controllers\MatrixCellItemController;
 use App\Http\Controllers\MetricRecordController;
+use App\Http\Controllers\RoutineBlockLogController;
 use App\Http\Controllers\RoutineController;
+use App\Http\Controllers\RoutineItemController;
+use App\Http\Controllers\RoutinePlanController;
+use App\Http\Controllers\RoutinePlanStepController;
+use App\Http\Controllers\RoutineSessionController;
+use App\Http\Controllers\RoutineSessionStepController;
 use App\Http\Controllers\RoutineStepController;
-use App\Http\Controllers\TrainingPlanController;
-use App\Http\Controllers\TrainingPlanStepController;
-use App\Http\Controllers\TrainingRunController;
-use App\Http\Controllers\TrainingRunStepController;
-use App\Http\Controllers\TrainingSetLogController;
+use App\Http\Controllers\TodayController;
 use App\Http\Controllers\VideoController;
 use App\Models\Metric;
+use App\Models\RoutineBlockLog;
+use App\Models\RoutineItem;
+use App\Models\RoutinePlan;
+use App\Models\RoutineSession;
+use App\Models\RoutineSessionStep;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -22,6 +28,26 @@ use Laravel\Fortify\Features;
 
 Route::bind('metric', function (string $value): Metric {
     return Metric::query()->where('key', $value)->firstOrFail();
+});
+
+Route::bind('item', function (string $value): RoutineItem {
+    return RoutineItem::query()->whereKey($value)->firstOrFail();
+});
+
+Route::bind('p', function (string $value): RoutinePlan {
+    return RoutinePlan::query()->whereKey($value)->firstOrFail();
+});
+
+Route::bind('s', function (string $value): RoutineSession {
+    return RoutineSession::query()->whereKey($value)->firstOrFail();
+});
+
+Route::bind('ss', function (string $value): RoutineSessionStep {
+    return RoutineSessionStep::query()->whereKey($value)->firstOrFail();
+});
+
+Route::bind('bl', function (string $value): RoutineBlockLog {
+    return RoutineBlockLog::query()->whereKey($value)->firstOrFail();
 });
 
 Route::get('/', function () {
@@ -60,10 +86,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('videos/{video}', [VideoController::class, 'update'])->name('videos.update');
     Route::delete('videos/{video}', [VideoController::class, 'destroy'])->name('videos.destroy');
 
-    Route::get('exercises', [ExerciseController::class, 'index'])->name('exercises.index');
-    Route::post('exercises', [ExerciseController::class, 'store'])->name('exercises.store');
-    Route::patch('exercises/{exercise}', [ExerciseController::class, 'update'])->name('exercises.update');
-    Route::delete('exercises/{exercise}', [ExerciseController::class, 'destroy'])->name('exercises.destroy');
+    Route::get('routine-items', [RoutineItemController::class, 'index'])->name('routine-items.index');
+    Route::get('routine-items/{item}', [RoutineItemController::class, 'show'])->name('routine-items.show');
+    Route::post('routine-items', [RoutineItemController::class, 'store'])->name('routine-items.store');
+    Route::patch('routine-items/{item}', [RoutineItemController::class, 'update'])->name('routine-items.update');
+    Route::delete('routine-items/{item}', [RoutineItemController::class, 'destroy'])->name('routine-items.destroy');
 
     Route::get('routines', [RoutineController::class, 'index'])->name('routines.index');
     Route::post('routines', [RoutineController::class, 'store'])->name('routines.store');
@@ -75,24 +102,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('routines/{routine}/steps/{routineStep}', [RoutineStepController::class, 'update'])->name('routine-steps.update');
     Route::delete('routines/{routine}/steps/{routineStep}', [RoutineStepController::class, 'destroy'])->name('routine-steps.destroy');
 
-    Route::get('training', [TrainingPlanController::class, 'index'])->name('training.index');
-    Route::post('training/plans', [TrainingPlanController::class, 'store'])->name('training-plans.store');
-    Route::get('training/plans/{trainingPlan}', [TrainingPlanController::class, 'show'])->name('training-plans.show');
-    Route::patch('training/plans/{trainingPlan}', [TrainingPlanController::class, 'update'])->name('training-plans.update');
-    Route::delete('training/plans/{trainingPlan}', [TrainingPlanController::class, 'destroy'])->name('training-plans.destroy');
-    Route::post('training/plans/{trainingPlan}/steps', [TrainingPlanStepController::class, 'store'])->name('training-plan-steps.store');
-    Route::patch('training/plans/{trainingPlan}/steps/reorder', [TrainingPlanStepController::class, 'reorder'])->name('training-plan-steps.reorder');
-    Route::patch('training/plans/{trainingPlan}/steps/{trainingPlanStep}', [TrainingPlanStepController::class, 'update'])->name('training-plan-steps.update');
-    Route::delete('training/plans/{trainingPlan}/steps/{trainingPlanStep}', [TrainingPlanStepController::class, 'destroy'])->name('training-plan-steps.destroy');
+    Route::get('today', [TodayController::class, 'index'])->name('today.index');
+    Route::post('plans', [RoutinePlanController::class, 'store'])->name('routine-plans.store');
+    Route::get('plans/{p}', [RoutinePlanController::class, 'show'])->name('routine-plans.show');
+    Route::patch('plans/{p}', [RoutinePlanController::class, 'update'])->name('routine-plans.update');
+    Route::delete('plans/{p}', [RoutinePlanController::class, 'destroy'])->name('routine-plans.destroy');
+    Route::post('plans/{p}/steps', [RoutinePlanStepController::class, 'store'])->name('routine-plan-steps.store');
+    Route::patch('plans/{p}/steps/reorder', [RoutinePlanStepController::class, 'reorder'])->name('routine-plan-steps.reorder');
+    Route::patch('plans/{p}/steps/{step}', [RoutinePlanStepController::class, 'update'])->name('routine-plan-steps.update');
+    Route::delete('plans/{p}/steps/{step}', [RoutinePlanStepController::class, 'destroy'])->name('routine-plan-steps.destroy');
 
-    Route::post('training/plans/{trainingPlan}/runs', [TrainingRunController::class, 'start'])->name('training-runs.start');
-    Route::get('training/runs/{trainingRun}', [TrainingRunController::class, 'show'])->name('training-runs.show');
-    Route::post('training/runs/{trainingRun}/complete', [TrainingRunController::class, 'complete'])->name('training-runs.complete');
-    Route::post('training/runs/{trainingRun}/abort', [TrainingRunController::class, 'abort'])->name('training-runs.abort');
-    Route::patch('training/runs/{trainingRun}/steps/{trainingRunStep}', [TrainingRunStepController::class, 'update'])->name('training-run-steps.update');
-    Route::post('training/run-steps/{trainingRunStep}/sets', [TrainingSetLogController::class, 'store'])->name('training-set-logs.store');
-    Route::patch('training/sets/{trainingSetLog}', [TrainingSetLogController::class, 'update'])->name('training-set-logs.update');
-    Route::delete('training/sets/{trainingSetLog}', [TrainingSetLogController::class, 'destroy'])->name('training-set-logs.destroy');
+    Route::post('plans/{p}/sessions', [RoutineSessionController::class, 'start'])->name('routine-sessions.start');
+    Route::get('sessions/{s}', [RoutineSessionController::class, 'show'])->name('routine-sessions.show');
+    Route::post('sessions/{s}/complete', [RoutineSessionController::class, 'complete'])->name('routine-sessions.complete');
+    Route::post('sessions/{s}/abort', [RoutineSessionController::class, 'abort'])->name('routine-sessions.abort');
+    Route::patch('sessions/{s}/steps/{ss}', [RoutineSessionStepController::class, 'update'])->name('routine-session-steps.update');
+    Route::post('session-steps/{ss}/blocks', [RoutineBlockLogController::class, 'store'])->name('routine-block-logs.store');
+    Route::patch('blocks/{bl}', [RoutineBlockLogController::class, 'update'])->name('routine-block-logs.update');
+    Route::delete('blocks/{bl}', [RoutineBlockLogController::class, 'destroy'])->name('routine-block-logs.destroy');
 
     Route::get('history', [HistoryController::class, 'index'])->name('history.index');
 

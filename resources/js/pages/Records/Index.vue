@@ -7,7 +7,7 @@ import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiFetch } from '@/lib/apiFetch';
-import type { DailyMetricEntry } from '@/types/training';
+import type { DailyMetricEntry } from '@/types/routine';
 
 interface Props {
     date: string;
@@ -88,7 +88,11 @@ async function saveAll(): Promise<void> {
                 align="left"
             />
 
-            <DateNavigator :date="date" route-url="/records" />
+            <DateNavigator
+                :date="date"
+                route-url="/records"
+                :reload-only="['metrics', 'date']"
+            />
 
             <section
                 aria-label="日次入力"

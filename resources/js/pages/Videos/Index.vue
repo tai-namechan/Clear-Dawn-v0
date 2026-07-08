@@ -25,8 +25,8 @@ import { apiFetch } from '@/lib/apiFetch';
 import {
     formatVideoDuration,
     videoStatusLabels,
-} from '@/lib/trainingConstants';
-import type { Video } from '@/types/training';
+} from '@/lib/routineConstants';
+import type { Video } from '@/types/routine';
 
 interface Props {
     videos: Video[] | { data: Video[] };

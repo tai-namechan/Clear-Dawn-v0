@@ -1,70 +1,80 @@
-# ルーティン / トレーニング / 実行履歴仕様
+# ルーティン実行システム仕様
 
-対象フェーズ: Phase 2（Milestone M3）
+対象フェーズ: Phase 2（Milestone M3）— Routine System 転換後
 
 ## 目的
 
-- ルーティン: 習慣・トレーニングメニューを定義し、迷わず実行できる状態にする
-- 実行履歴: 「やった事実」を時系列で一覧化し、継続を可視化する
+習慣・練習・学習を共通の「ルーティン実行」フローで管理する。
 
-## 画面
+```
+実施項目（部品ライブラリ）
+  ↓ 組み合わせる
+ルーティン（再利用テンプレート）
+  ↓ 日付を付けて生成
+今日の実行プラン（当日版スナップショット）
+  ↓ 開始
+実行セッション（進行中〜完了）
+  ↓ 蓄積
+ブロックログ（不変の事実ログ）
+```
 
-| 画面 | ルート | 実装 MS | 概要 |
+## 画面とルート
+
+| タブ | 画面 | ルート | 役割 |
 |---|---|---|---|
-| ルーティン管理 | GET /routines | M3 | ルーティンの一覧・作成・編集 |
-| ルーティン実行 | GET /routines/{routine}/run | M3 | 当日の実行支援（種目ごとのチェック / 数値入力） |
-| 実行履歴 | GET /history | **M3** | activity_logs の時系列一覧 |
+| 今日の実行 | S1 | GET /today | 当日プラン一覧・日付ナビ |
+| ルーティン | S2/S3 | GET /routines, /routines/{id} | テンプレート一覧・編集（主導線） |
+| 実施項目 | S4/S5 | GET /routine-items, /routine-items/{id} | 部品ライブラリ |
+| 記録 | S8 | GET /history | 実行履歴 |
 
-## ルーティン管理の主要操作
-
-| 操作 | 入力 | 挙動 |
+| 画面 | ルート | 役割 |
 |---|---|---|
-| 作成 | name, life_area_id(nullable), 実施頻度 | ルーティンを作成 |
-| 種目（ステップ）管理 | name, 目標値(nullable), sort_order | ルーティン内の種目を追加・並び替え |
-| 参考動画添付 | video_id | 種目に動画を紐づけ（Phase 3.5 / M6 以降） |
-| 無効化 | is_active = false | 一覧・実行対象から外す。ログは保持 |
+| S6 プラン詳細 | GET /plans/{id} | 当日調整・セッション開始 |
+| S7 実行画面 | GET /sessions/{id} | ブロックログ入力 |
 
-実施頻度は v0 では「毎日 / 曜日指定」の 2 種類から開始する（それ以上の複雑な繰り返しは未対応）。
+## API（主要）
 
-## ルーティン実行の流れ
+| 操作 | ルート |
+|---|---|
+| プラン作成 | POST /plans |
+| プラン編集・削除 | PATCH/DELETE /plans/{p} |
+| プランステップ | POST/PATCH/DELETE /plans/{p}/steps, PATCH reorder |
+| セッション開始 | POST /plans/{p}/sessions |
+| セッション表示・完了・中断 | GET/POST /sessions/{s}/complete・abort |
+| ブロックログ | POST /session-steps/{ss}/blocks, PATCH/DELETE /blocks/{bl} |
+| 実施項目 CRUD | /routine-items |
+| ルーティン CRUD | /routines（変更なし） |
 
-1. 「開始」ボタン（btn-accent）で実行セッションを開始
-2. 種目ごとにチェック、必要なら数値（回数・重量・時間など）を入力
-3. 「完了」で実行ログを確定。activity_logs に `routine_completed` を記録
+## 設計原則
 
-- 途中中断は「未完了のまま保存」を許容する（完遂率も含めて事実を残す）
-- 実行中の画面はシートの世界観を保ちつつ、進行状態を明確に示す
+1. **主導線はルーティン作成。** 実施項目はルーティン編集からインライン作成できる。独立画面は整理用。
+2. **データのつながりを表示。** 実施項目↔ルーティン↔プラン↔履歴の関連を詳細画面に示す。
+3. **実行画面は編集させない。** 実績入力に集中。
+4. **スナップショット原則（ADR-0006 継続）。** プラン・セッションはテンプレ編集の影響を受けない。
 
-## 実行履歴
+## ステータス
 
-実行履歴（GET /history）は **M3** で実装する。M1 から記録されている activity_logs を表示する。
+- ルーティンから生成（ステップ≥1）→ 最初から `ready`
+- 空プラン → `draft`、ステップ1件追加で自動 `ready`
+- 「準備完了にする」ボタンは廃止
 
-| ソース | 記録開始 | 内容 |
-|---|---|---|
-| TOP Matrix 完了ログ | **M1** | `matrix_item_completed` / `matrix_item_reopened` |
-| ルーティン実行ログ | **M3** | `routine_completed` |
+## 記録値（汎用列）
 
-- 絞り込み: 期間 / 領域 / 種別（ルーティン・マトリクス）
-- activity_logs は **不変のイベントログ**。TOP Matrix のスナップショット履歴ではない
+| 概念 | 列 |
+|---|---|
+| 負荷 | target_load + load_unit |
+| 量 | target_amount + amount_unit |
+| ブロック数 | target_blocks |
+| 休憩 | rest_seconds |
 
-## TOP Matrix との接続
+記録方式（TrackingType）は UI 駆動。DB列は共通。
 
-- ルーティンは独立管理とする
-- 当日実施予定のルーティンを TOP に補助表示するかは **未決定**（M3 設計時に判断）
+## データ
 
-## 設計方針
+テーブル: `routine_items`, `routines`, `routine_steps`, `routine_plans`, `routine_plan_steps`, `routine_sessions`, `routine_session_steps`, `routine_block_logs`
 
-- 想定件数: 実行ログは年間数千件級。履歴一覧はページネーション + 期間絞り込み必須
-- ログは soft delete しない（事実の記録として不変にする）
-- 数値入力された実績（重量・回数など）は記録モジュール（筋力）と重複させず、
-  実行ログ側を正とし、記録画面が実行ログを参照する構成を推奨（M4 設計時に確定）
-
-## データ（ドラフト）
-
-テーブル定義は [../../data/tables.md](../../data/tables.md) の
-`routines` / `routine_steps` / `routine_logs` / `routine_step_logs` / `activity_logs` を参照。
-activity_logs テーブル自体は **M1** で作成済み。
+詳細は [routine-system-redesign.md](./routine-system-redesign.md) および [ADR-0007](../adr/0007-routine-system-conversion.md)。
 
 ## 認可
 
-- 自分のルーティン・ログのみ操作可能（Policy）
+自分のデータのみ操作可能（Policy、ADR-0002 継続）。

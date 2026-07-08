@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use App\Enums\ActivityLogEventType;
 use App\Models\ActivityLog;
 use App\Models\MatrixCellItem;
-use App\Models\TrainingRun;
+use App\Models\RoutineSession;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -43,17 +43,17 @@ class ActivityLogResource extends JsonResource
             ];
         }
 
-        if ($subject instanceof TrainingRun) {
+        if ($subject instanceof RoutineSession) {
             return [
-                'type' => 'training_run',
-                'plan_title' => $subject->trainingPlan?->title,
+                'type' => 'routine_session',
+                'plan_title' => $subject->routinePlan?->title,
                 'status' => $subject->status->value,
             ];
         }
 
-        if ($this->event_type === ActivityLogEventType::TrainingRunCompleted) {
+        if ($this->event_type === ActivityLogEventType::RoutineSessionCompleted) {
             return [
-                'type' => 'training_run',
+                'type' => 'routine_session',
             ];
         }
 

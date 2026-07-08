@@ -4,21 +4,24 @@ import { ArrowLeft, Plus, Trash2 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import ReorderableList from '@/components/ReorderableList.vue';
-import ExercisePickerDialog from '@/components/training/ExercisePickerDialog.vue';
-import RoutinesHubTabs from '@/components/training/RoutinesHubTabs.vue';
+import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
+import StepEditorDialog, {
+    type StepEditorPayload,
+} from '@/components/routine/StepEditorDialog.vue';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/apiFetch';
 import { ensureArray } from '@/lib/array';
-import { useFetchExercises } from '@/lib/fetchExercises';
+import { fetchRoutineItemsFromPage } from '@/lib/fetchRoutineItems';
 import { purposeChipClasses } from '@/lib/stepPurposeColors';
 import {
     estimateStepDurationSeconds,
     formatDurationSeconds,
+    formatStepTarget,
     resolveStepPurpose,
     stepPurposeLabels,
     trackingTypeLabels,
-} from '@/lib/trainingConstants';
-import type { Exercise, RoutineEditor, RoutineStep } from '@/types/training';
+} from '@/lib/routineConstants';
+import type { RoutineEditor, RoutineItem, RoutineStep } from '@/types/routine';
 
 interface Props {
     routine: RoutineEditor;
@@ -26,17 +29,15 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const { fetchExercises } = useFetchExercises();
-
 const showAddStepModal = ref(false);
-const selectedExerciseId = ref<string>('');
-const stepSets = ref('3');
-const stepReps = ref('');
+const selectedRoutineItemId = ref<string>('');
+const stepBlocks = ref('3');
+const stepAmount = ref('');
 const stepRest = ref('60');
 const saving = ref(false);
 
-const exercises = ref<Exercise[]>([]);
-const exercisesLoaded = ref(false);
+const routineItems = ref<RoutineItem[]>([]);
+const routineItemsLoaded = ref(false);
 
 const steps = computed(() => ensureArray(props.routine.steps));
 
@@ -45,10 +46,11 @@ const totalDurationSeconds = computed(() =>
         (sum, step) =>
             sum +
             estimateStepDurationSeconds({
-                target_sets: step.target_sets,
-                target_duration_seconds: step.target_duration_seconds,
+                target_blocks: step.target_blocks,
+                target_amount: step.target_amount,
+                amount_unit: step.amount_unit,
                 rest_seconds: step.rest_seconds,
-                tracking_type: step.exercise?.tracking_type,
+                tracking_type: step.routine_item?.tracking_type,
             }),
         0,
     ),
@@ -60,7 +62,7 @@ const purposeSummary = computed(() => {
     for (const step of steps.value) {
         const purpose = resolveStepPurpose(
             step.purpose,
-            step.exercise?.category ?? null,
+            step.routine_item?.category ?? null,
         );
         counts.set(purpose, (counts.get(purpose) ?? 0) + 1);
     }
@@ -71,40 +73,31 @@ const purposeSummary = computed(() => {
     }));
 });
 
-async function loadExercises(): Promise<void> {
-    if (exercisesLoaded.value) {
+async function loadRoutineItems(): Promise<void> {
+    if (routineItemsLoaded.value) {
         return;
     }
 
-    exercises.value = await fetchExercises();
-    exercisesLoaded.value = true;
+    routineItems.value = await fetchRoutineItemsFromPage();
+    routineItemsLoaded.value = true;
 }
 
 async function openAddStep(): Promise<void> {
-    await loadExercises();
-    selectedExerciseId.value = exercises.value[0]?.id ?? '';
-    stepSets.value = '3';
-    stepReps.value = '';
+    await loadRoutineItems();
+    selectedRoutineItemId.value = routineItems.value[0]?.id ?? '';
+    stepBlocks.value = '3';
+    stepAmount.value = '';
     stepRest.value = '60';
     showAddStepModal.value = true;
 }
 
-async function addStep(): Promise<void> {
-    if (!selectedExerciseId.value) {
-        return;
-    }
-
+async function addStep(payload: StepEditorPayload): Promise<void> {
     saving.value = true;
 
     try {
         await apiFetch(`/routines/${props.routine.id}/steps`, {
             method: 'POST',
-            body: JSON.stringify({
-                exercise_id: selectedExerciseId.value,
-                target_sets: stepSets.value ? Number(stepSets.value) : null,
-                target_reps: stepReps.value ? Number(stepReps.value) : null,
-                rest_seconds: stepRest.value ? Number(stepRest.value) : null,
-            }),
+            body: JSON.stringify(payload),
         });
 
         showAddStepModal.value = false;
@@ -128,36 +121,17 @@ async function deleteStep(step: RoutineStep): Promise<void> {
 function stepPurpose(step: RoutineStep): string {
     const purpose = resolveStepPurpose(
         step.purpose,
-        step.exercise?.category ?? null,
+        step.routine_item?.category ?? null,
     );
 
     return stepPurposeLabels[purpose];
 }
 
 function stepPurposeKey(step: RoutineStep) {
-    return resolveStepPurpose(step.purpose, step.exercise?.category ?? null);
-}
-
-function formatStepTarget(step: RoutineStep): string {
-    const parts: string[] = [];
-
-    if (step.target_sets) {
-        parts.push(`${step.target_sets}セット`);
-    }
-
-    if (step.target_reps) {
-        parts.push(`${step.target_reps}回`);
-    }
-
-    if (step.target_weight_kg) {
-        parts.push(`${step.target_weight_kg}kg`);
-    }
-
-    if (step.target_duration_seconds) {
-        parts.push(formatDurationSeconds(step.target_duration_seconds));
-    }
-
-    return parts.join(' · ') || '—';
+    return resolveStepPurpose(
+        step.purpose,
+        step.routine_item?.category ?? null,
+    );
 }
 </script>
 
@@ -175,7 +149,7 @@ function formatStepTarget(step: RoutineStep): string {
                         class="mb-3 inline-flex items-center gap-2 font-sans text-sm text-cd-ink-muted transition-colors hover:text-cd-ink"
                     >
                         <ArrowLeft :size="16" :stroke-width="1.6" />
-                        テンプレート一覧
+                        ルーティン一覧
                     </Link>
                     <PageTitleOrnament
                         :title="routine.name"
@@ -225,7 +199,7 @@ function formatStepTarget(step: RoutineStep): string {
                                 class="border-b border-cd-line/60 bg-white/40 text-xs tracking-[0.06em] text-cd-ink-muted"
                             >
                                 <th class="px-4 py-3 font-medium">#</th>
-                                <th class="px-4 py-3 font-medium">種目</th>
+                                <th class="px-4 py-3 font-medium">実施項目</th>
                                 <th class="px-4 py-3 font-medium">目的</th>
                                 <th class="px-4 py-3 font-medium">目標</th>
                                 <th class="px-4 py-3 font-medium">記録形式</th>
@@ -237,7 +211,7 @@ function formatStepTarget(step: RoutineStep): string {
                             v-if="steps.length"
                             :items="steps"
                             :reorder-url="`/routines/${routine.id}/steps/reorder`"
-                            :item-label="(step) => step.exercise?.name"
+                            :item-label="(step) => step.routine_item?.name"
                             variant="table"
                         >
                             <template #row="{ item: step, index }">
@@ -247,7 +221,7 @@ function formatStepTarget(step: RoutineStep): string {
                                 <td
                                     class="px-4 py-3 font-serif tracking-[0.06em] text-cd-ink"
                                 >
-                                    {{ step.exercise?.name ?? '—' }}
+                                    {{ step.routine_item?.name ?? '—' }}
                                 </td>
                                 <td class="px-4 py-3">
                                     <span
@@ -266,9 +240,10 @@ function formatStepTarget(step: RoutineStep): string {
                                 </td>
                                 <td class="px-4 py-3 text-cd-ink-muted">
                                     {{
-                                        step.exercise
+                                        step.routine_item
                                             ? trackingTypeLabels[
-                                                  step.exercise.tracking_type
+                                                  step.routine_item
+                                                      .tracking_type
                                               ]
                                             : '—'
                                     }}
@@ -277,12 +252,14 @@ function formatStepTarget(step: RoutineStep): string {
                                     {{
                                         formatDurationSeconds(
                                             estimateStepDurationSeconds({
-                                                target_sets: step.target_sets,
-                                                target_duration_seconds:
-                                                    step.target_duration_seconds,
+                                                target_blocks:
+                                                    step.target_blocks,
+                                                target_amount:
+                                                    step.target_amount,
+                                                amount_unit: step.amount_unit,
                                                 rest_seconds: step.rest_seconds,
                                                 tracking_type:
-                                                    step.exercise
+                                                    step.routine_item
                                                         ?.tracking_type,
                                             }),
                                         )
@@ -314,13 +291,13 @@ function formatStepTarget(step: RoutineStep): string {
         </div>
     </div>
 
-    <ExercisePickerDialog
+    <StepEditorDialog
         v-model:open="showAddStepModal"
-        v-model:selected-exercise-id="selectedExerciseId"
-        v-model:sets="stepSets"
-        v-model:reps="stepReps"
-        v-model:rest="stepRest"
-        :exercises="exercises"
+        v-model:selected-routine-item-id="selectedRoutineItemId"
+        v-model:blocks="stepBlocks"
+        v-model:amount="stepAmount"
+        v-model:rest-seconds="stepRest"
+        :routine-items="routineItems"
         :saving="saving"
         @submit="addStep"
     />

@@ -1,4 +1,4 @@
-import type { StepPurpose } from '@/types/training';
+import type { StepPurpose } from '@/types/routine';
 
 export type StepPurposeColorClasses = {
     chip: string;
@@ -30,9 +30,17 @@ export const stepPurposeColorClasses: Record<
         chip: 'border-chart-5/30 bg-chart-5/10 text-chart-5',
         chart: 'text-chart-5',
     },
-    skill: {
+    practice: {
         chip: 'border-primary/30 bg-primary/10 text-primary',
         chart: 'text-primary',
+    },
+    study: {
+        chip: 'border-chart-2/30 bg-chart-2/10 text-chart-2',
+        chart: 'text-chart-2',
+    },
+    review: {
+        chip: 'border-chart-3/30 bg-chart-3/10 text-chart-3',
+        chart: 'text-chart-3',
     },
     other: {
         chip: 'border-cd-line bg-muted text-cd-ink-muted',

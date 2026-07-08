@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\Exercise;
+use App\Models\RoutineItem;
 use App\Models\Routine;
 use App\Models\RoutineStep;
 use App\Models\User;
@@ -35,7 +35,7 @@ class RoutineTest extends TestCase
         $this->get(route('routines.show', $routine))->assertRedirect(route('login'));
         $this->patchJson(route('routines.update', $routine), ['name' => '改ざん'])->assertUnauthorized();
         $this->deleteJson(route('routines.destroy', $routine))->assertUnauthorized();
-        $this->postJson(route('routine-steps.store', $routine), ['exercise_id' => $step->exercise_id])->assertUnauthorized();
+        $this->postJson(route('routine-steps.store', $routine), ['routine_item_id' => $step->routine_item_id])->assertUnauthorized();
     }
 
     public function test_index_shows_only_the_authenticated_users_active_routines(): void
@@ -118,24 +118,25 @@ class RoutineTest extends TestCase
     {
         $user = User::factory()->create();
         $routine = Routine::factory()->create(['user_id' => $user->id]);
-        $exercise = Exercise::factory()->create(['user_id' => $user->id]);
+        $routineItem = RoutineItem::factory()->create(['user_id' => $user->id]);
         $video = Video::factory()->ready()->create([
             'user_id' => $user->id,
-            'exercise_id' => $exercise->id,
+            'routine_item_id' => $routineItem->id,
         ]);
 
         $response = $this->actingAs($user)->postJson(route('routine-steps.store', $routine), [
-            'exercise_id' => $exercise->id,
+            'routine_item_id' => $routineItem->id,
             'video_id' => $video->id,
-            'target_sets' => 3,
-            'target_reps' => 10,
+            'target_blocks' => 3,
+            'target_amount' => 10,
+            'amount_unit' => 'reps',
         ]);
 
-        $response->assertOk()->assertJsonPath('step.exercise_id', $exercise->id);
+        $response->assertOk()->assertJsonPath('step.routine_item_id', $routineItem->id);
 
         $this->assertDatabaseHas('routine_steps', [
             'routine_id' => $routine->id,
-            'exercise_id' => $exercise->id,
+            'routine_item_id' => $routineItem->id,
             'video_id' => $video->id,
             'sort_order' => 1,
         ]);
@@ -148,9 +149,9 @@ class RoutineTest extends TestCase
         $first = RoutineStep::factory()->forRoutine($routine)->create(['sort_order' => 1]);
         $second = RoutineStep::factory()->forRoutine($routine)->create(['sort_order' => 2]);
 
-        $this->actingAs($user)->patchJson(route('routine-steps.reorder', $routine), [
+        $this->actingAs($user)->patch(route('routine-steps.reorder', $routine), [
             'ordered_ids' => [$second->id, $first->id],
-        ])->assertOk();
+        ])->assertRedirect();
 
         $this->assertSame(2, $first->refresh()->sort_order);
         $this->assertSame(1, $second->refresh()->sort_order);
@@ -169,30 +170,30 @@ class RoutineTest extends TestCase
         $this->assertSoftDeleted('routine_steps', ['id' => $step->id]);
     }
 
-    public function test_storing_a_step_rejects_another_users_exercise_id(): void
+    public function test_storing_a_step_rejects_another_users_routine_item_id(): void
     {
         $user = User::factory()->create();
         $routine = Routine::factory()->create(['user_id' => $user->id]);
-        $otherExercise = Exercise::factory()->create();
+        $otherRoutineItem = RoutineItem::factory()->create();
 
         $this->actingAs($user)
             ->postJson(route('routine-steps.store', $routine), [
-                'exercise_id' => $otherExercise->id,
+                'routine_item_id' => $otherRoutineItem->id,
             ])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors('exercise_id');
+            ->assertJsonValidationErrors('routine_item_id');
     }
 
     public function test_storing_a_step_rejects_another_users_video_id(): void
     {
         $user = User::factory()->create();
         $routine = Routine::factory()->create(['user_id' => $user->id]);
-        $exercise = Exercise::factory()->create(['user_id' => $user->id]);
+        $routineItem = RoutineItem::factory()->create(['user_id' => $user->id]);
         $otherVideo = Video::factory()->ready()->create();
 
         $this->actingAs($user)
             ->postJson(route('routine-steps.store', $routine), [
-                'exercise_id' => $exercise->id,
+                'routine_item_id' => $routineItem->id,
                 'video_id' => $otherVideo->id,
             ])
             ->assertUnprocessable()

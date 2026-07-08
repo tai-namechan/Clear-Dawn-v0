@@ -9,4 +9,6 @@ enum TrackingType: string
     case Duration = 'duration';
     case Distance = 'distance';
     case Check = 'check';
+    case Count = 'count';
+    case Text = 'text';
 }

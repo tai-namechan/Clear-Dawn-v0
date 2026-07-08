@@ -2,14 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Enums\ExerciseCategory;
-use App\Models\Exercise;
+use App\Enums\RoutineItemCategory;
 use App\Models\Metric;
 use App\Models\MetricRecord;
-use App\Models\TrainingPlan;
-use App\Models\TrainingPlanStep;
-use App\Models\TrainingRun;
-use App\Models\TrainingSetLog;
+use App\Models\RoutineBlockLog;
+use App\Models\RoutineItem;
+use App\Models\RoutinePlan;
+use App\Models\RoutinePlanStep;
+use App\Models\RoutineSession;
 use App\Models\User;
 use App\Queries\GetMetricChartQuery;
 use App\Queries\GetStrengthChartQuery;
@@ -97,17 +97,17 @@ class MetricChartTest extends TestCase
         $this->assertSame('70.00', $chart->first()['value']);
     }
 
-    public function test_strength_chart_excludes_aborted_runs(): void
+    public function test_strength_chart_excludes_aborted_sessions(): void
     {
         $user = User::factory()->create();
-        $exercise = Exercise::factory()->create([
+        $routineItem = RoutineItem::factory()->create([
             'user_id' => $user->id,
-            'category' => ExerciseCategory::Strength,
+            'category' => RoutineItemCategory::Strength,
             'name' => 'ベンチプレス',
         ]);
 
-        $this->createCompletedStrengthRun($user, $exercise, '2026-07-07', 80);
-        $this->createAbortedStrengthRun($user, $exercise, '2026-07-08', 100);
+        $this->createCompletedStrengthSession($user, $routineItem, '2026-07-07', 80);
+        $this->createAbortedStrengthSession($user, $routineItem, '2026-07-08', 100);
 
         $chart = app(GetStrengthChartQuery::class)->handle(
             $user,
@@ -117,26 +117,28 @@ class MetricChartTest extends TestCase
 
         $this->assertCount(1, $chart);
         $this->assertSame('2026-07-07', $chart[0]['date']);
-        $this->assertSame('80.00', $chart[0]['max_weight_kg']);
+        $this->assertSame('80.00', $chart[0]['max_load_value']);
     }
 
-    public function test_strength_chart_aggregates_daily_max_weight_per_exercise(): void
+    public function test_strength_chart_aggregates_daily_max_load_per_routine_item(): void
     {
         $user = User::factory()->create();
-        $exercise = Exercise::factory()->create([
+        $routineItem = RoutineItem::factory()->create([
             'user_id' => $user->id,
-            'category' => ExerciseCategory::Strength,
+            'category' => RoutineItemCategory::Strength,
             'name' => 'スクワット',
         ]);
 
-        $run = $this->createCompletedStrengthRun($user, $exercise, '2026-07-07', 60);
-        $runStep = $run->steps()->firstOrFail();
+        $session = $this->createCompletedStrengthSession($user, $routineItem, '2026-07-07', 60);
+        $sessionStep = $session->steps()->firstOrFail();
 
-        TrainingSetLog::factory()->create([
-            'training_run_step_id' => $runStep->id,
-            'set_number' => 2,
-            'weight_kg' => 90,
-            'reps' => 5,
+        RoutineBlockLog::factory()->create([
+            'routine_session_step_id' => $sessionStep->id,
+            'block_number' => 2,
+            'load_value' => 90,
+            'load_unit' => 'kg',
+            'amount_value' => 5,
+            'amount_unit' => 'reps',
         ]);
 
         $chart = app(GetStrengthChartQuery::class)->handle(
@@ -146,69 +148,73 @@ class MetricChartTest extends TestCase
         );
 
         $this->assertCount(1, $chart);
-        $this->assertSame('スクワット', $chart[0]['exercise_name']);
-        $this->assertSame('90.00', $chart[0]['max_weight_kg']);
+        $this->assertSame('スクワット', $chart[0]['item_name']);
+        $this->assertSame('90.00', $chart[0]['max_load_value']);
     }
 
-    private function createCompletedStrengthRun(
+    private function createCompletedStrengthSession(
         User $user,
-        Exercise $exercise,
+        RoutineItem $routineItem,
         string $date,
-        float $weightKg,
-    ): TrainingRun {
+        float $loadValue,
+    ): RoutineSession {
         Carbon::setTestNow($date.' 10:00:00');
 
-        $plan = TrainingPlan::factory()->ready()->create(['user_id' => $user->id]);
-        TrainingPlanStep::factory()->forPlan($plan)->create(['exercise_id' => $exercise->id]);
+        $plan = RoutinePlan::factory()->ready()->create(['user_id' => $user->id]);
+        RoutinePlanStep::factory()->forPlan($plan)->create(['routine_item_id' => $routineItem->id]);
 
-        $this->actingAs($user)->postJson(route('training-runs.start', $plan))->assertOk();
+        $this->actingAs($user)->postJson(route('routine-sessions.start', $plan))->assertOk();
 
-        $run = TrainingRun::query()->where('user_id', $user->id)->latest('started_at')->firstOrFail();
-        $runStep = $run->steps()->firstOrFail();
+        $session = RoutineSession::query()->where('user_id', $user->id)->latest('started_at')->firstOrFail();
+        $sessionStep = $session->steps()->firstOrFail();
 
-        TrainingSetLog::query()->where('training_run_step_id', $runStep->id)->delete();
-        TrainingSetLog::factory()->create([
-            'training_run_step_id' => $runStep->id,
-            'set_number' => 1,
-            'weight_kg' => $weightKg,
-            'reps' => 5,
+        RoutineBlockLog::query()->where('routine_session_step_id', $sessionStep->id)->delete();
+        RoutineBlockLog::factory()->create([
+            'routine_session_step_id' => $sessionStep->id,
+            'block_number' => 1,
+            'load_value' => $loadValue,
+            'load_unit' => 'kg',
+            'amount_value' => 5,
+            'amount_unit' => 'reps',
         ]);
 
-        $this->actingAs($user)->postJson(route('training-runs.complete', $run))->assertOk();
+        $this->actingAs($user)->postJson(route('routine-sessions.complete', $session))->assertOk();
 
         Carbon::setTestNow();
 
-        return $run->refresh();
+        return $session->refresh();
     }
 
-    private function createAbortedStrengthRun(
+    private function createAbortedStrengthSession(
         User $user,
-        Exercise $exercise,
+        RoutineItem $routineItem,
         string $date,
-        float $weightKg,
-    ): TrainingRun {
+        float $loadValue,
+    ): RoutineSession {
         Carbon::setTestNow($date.' 10:00:00');
 
-        $plan = TrainingPlan::factory()->ready()->create(['user_id' => $user->id]);
-        TrainingPlanStep::factory()->forPlan($plan)->create(['exercise_id' => $exercise->id]);
+        $plan = RoutinePlan::factory()->ready()->create(['user_id' => $user->id]);
+        RoutinePlanStep::factory()->forPlan($plan)->create(['routine_item_id' => $routineItem->id]);
 
-        $this->actingAs($user)->postJson(route('training-runs.start', $plan))->assertOk();
+        $this->actingAs($user)->postJson(route('routine-sessions.start', $plan))->assertOk();
 
-        $run = TrainingRun::query()->where('user_id', $user->id)->latest('started_at')->firstOrFail();
-        $runStep = $run->steps()->firstOrFail();
+        $session = RoutineSession::query()->where('user_id', $user->id)->latest('started_at')->firstOrFail();
+        $sessionStep = $session->steps()->firstOrFail();
 
-        TrainingSetLog::query()->where('training_run_step_id', $runStep->id)->delete();
-        TrainingSetLog::factory()->create([
-            'training_run_step_id' => $runStep->id,
-            'set_number' => 1,
-            'weight_kg' => $weightKg,
-            'reps' => 5,
+        RoutineBlockLog::query()->where('routine_session_step_id', $sessionStep->id)->delete();
+        RoutineBlockLog::factory()->create([
+            'routine_session_step_id' => $sessionStep->id,
+            'block_number' => 1,
+            'load_value' => $loadValue,
+            'load_unit' => 'kg',
+            'amount_value' => 5,
+            'amount_unit' => 'reps',
         ]);
 
-        $this->actingAs($user)->postJson(route('training-runs.abort', $run))->assertOk();
+        $this->actingAs($user)->postJson(route('routine-sessions.abort', $session))->assertOk();
 
         Carbon::setTestNow();
 
-        return $run->refresh();
+        return $session->refresh();
     }
 }

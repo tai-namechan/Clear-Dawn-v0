@@ -11,12 +11,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { activityLogEventTypeLabels } from '@/lib/trainingConstants';
+import { activityLogEventTypeLabels } from '@/lib/routineConstants';
 import type {
     ActivityLog,
     ActivityLogEventType,
     Paginated,
-} from '@/types/training';
+} from '@/types/routine';
 
 interface Filters {
     event_type: string | null;
@@ -108,11 +108,13 @@ function eventDescription(log: ActivityLog): string {
         return `「${summary.title}」を再開`;
     }
 
-    if (log.event_type === 'training_run_completed') {
+    if (log.event_type === 'routine_session_completed') {
         const title =
-            summary?.type === 'training_run' ? summary.plan_title : null;
+            summary?.type === 'routine_session' ? summary.plan_title : null;
 
-        return title ? `トレーニング「${title}」を完了` : 'トレーニングを完了';
+        return title
+            ? `ルーティン実行「${title}」を完了`
+            : 'ルーティン実行を完了';
     }
 
     return activityLogEventTypeLabels[log.event_type];
@@ -132,7 +134,7 @@ const eventTypeOptions = Object.entries(activityLogEventTypeLabels) as Array<
         <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
             <PageTitleOrnament
                 title="実行履歴"
-                subtitle="マトリクスとトレーニングの活動を時系列で確認できます。"
+                subtitle="マトリクスとルーティン実行の活動を時系列で確認できます。"
                 align="left"
             />
 

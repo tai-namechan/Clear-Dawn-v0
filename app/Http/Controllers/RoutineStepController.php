@@ -14,6 +14,7 @@ use App\Services\DeleteRoutineStepService;
 use App\Services\ReorderRoutineStepsService;
 use App\Services\UpdateRoutineStepService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 
 class RoutineStepController extends Controller
@@ -26,13 +27,13 @@ class RoutineStepController extends Controller
         Gate::authorize('update', $routine);
 
         $validated = $request->validated();
-        /** @var array{exercise_id: string, video_id?: string|null, purpose?: StepPurpose|null, target_sets?: int|null, target_reps?: int|null, target_weight_kg?: float|string|null, target_distance_m?: float|string|null, target_duration_seconds?: int|null, rest_seconds?: int|null, note?: string|null} $attributes */
+        /** @var array{routine_item_id: string, video_id?: string|null, purpose?: StepPurpose|null, target_load?: float|string|null, load_unit?: string|null, target_amount?: float|string|null, amount_unit?: string|null, target_blocks?: int|null, rest_seconds?: int|null, note?: string|null} $attributes */
         $attributes = $this->mapStepAttributes($validated);
 
         $step = $service->handle($routine, $attributes);
 
         return response()->json([
-            'step' => RoutineStepResource::make($step->load(['exercise', 'video']))->resolve(),
+            'step' => RoutineStepResource::make($step->load(['routineItem', 'video']))->resolve(),
         ]);
     }
 
@@ -50,7 +51,7 @@ class RoutineStepController extends Controller
         $updated = $service->handle($routineStep, $attributes);
 
         return response()->json([
-            'step' => RoutineStepResource::make($updated->load(['exercise', 'video']))->resolve(),
+            'step' => RoutineStepResource::make($updated->load(['routineItem', 'video']))->resolve(),
         ]);
     }
 
@@ -70,12 +71,12 @@ class RoutineStepController extends Controller
         ReorderRoutineStepsRequest $request,
         Routine $routine,
         ReorderRoutineStepsService $service,
-    ): JsonResponse {
+    ): RedirectResponse {
         Gate::authorize('update', $routine);
 
         $service->handle($routine, $request->validated()['ordered_ids']);
 
-        return response()->json(['reordered' => true]);
+        return back();
     }
 
     /**

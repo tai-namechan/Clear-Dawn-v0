@@ -9,6 +9,8 @@ enum StepPurpose: string
     case Power = 'power';
     case Strength = 'strength';
     case Care = 'care';
-    case Skill = 'skill';
+    case Practice = 'practice';
+    case Study = 'study';
+    case Review = 'review';
     case Other = 'other';
 }

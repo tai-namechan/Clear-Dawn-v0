@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
  * @property string $id
  * @property int $user_id
  * @property string|null $life_area_id
- * @property string|null $exercise_id
+ * @property string|null $routine_item_id
  * @property string $title
  * @property string|null $description
  * @property VideoStatus $status
@@ -31,7 +31,7 @@ use Illuminate\Support\Carbon;
 #[Fillable([
     'user_id',
     'life_area_id',
-    'exercise_id',
+    'routine_item_id',
     'title',
     'description',
     'status',
@@ -72,10 +72,10 @@ class Video extends Model
     }
 
     /**
-     * @return BelongsTo<Exercise, $this>
+     * @return BelongsTo<RoutineItem, $this>
      */
-    public function exercise(): BelongsTo
+    public function routineItem(): BelongsTo
     {
-        return $this->belongsTo(Exercise::class);
+        return $this->belongsTo(RoutineItem::class);
     }
 }
