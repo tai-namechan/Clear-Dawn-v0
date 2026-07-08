@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ArrowLeft, CirclePlay, Plus, Trash2 } from '@lucide/vue';
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
-import ReorderControls from '@/components/ReorderControls.vue';
+import ReorderableList from '@/components/ReorderableList.vue';
 import StepEditorDialog, {
     type StepEditorPayload,
 } from '@/components/routine/StepEditorDialog.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiFetch } from '@/lib/apiFetch';
-import { useReorderableList } from '@/composables/useReorderableList';
+import { ensureArray } from '@/lib/array';
 import { fetchRoutineItemsFromPage } from '@/lib/fetchRoutineItems';
 import { purposeChipClasses } from '@/lib/stepPurposeColors';
 import {
@@ -32,21 +32,6 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const orderedSteps = ref([...(props.plan.steps ?? [])]);
-
-watch(
-    () => props.plan.steps,
-    (steps) => {
-        orderedSteps.value = [...(steps ?? [])];
-    },
-    { deep: true },
-);
-
-const { move } = useReorderableList({
-    items: orderedSteps,
-    reorderUrl: `/plans/${props.plan.id}/steps/reorder`,
-});
-
 const title = ref(props.plan.title);
 const note = ref(props.plan.note ?? '');
 const saving = ref(false);
@@ -60,8 +45,13 @@ const stepRest = ref('60');
 
 const routineItems = ref<RoutineItem[]>([]);
 
+const steps = computed(() => ensureArray(props.plan.steps));
+
 const canStart = computed(
-    () => props.plan.status === 'ready' && !activeSession.value,
+    () =>
+        props.plan.status === 'ready' &&
+        steps.value.length > 0 &&
+        !activeSession.value,
 );
 
 const activeSession = computed(
@@ -251,57 +241,45 @@ function stepPurposeKey(step: RoutinePlanStep) {
                 aria-label="ステップ一覧"
                 class="cd-shadow-soft overflow-hidden rounded-2xl border border-cd-line bg-cd-surface"
             >
-                <ul v-if="orderedSteps.length" class="flex flex-col">
-                    <li
-                        v-for="(step, index) in orderedSteps"
-                        :key="step.id"
-                        class="flex items-center justify-between gap-3 border-b border-cd-line/60 px-5 py-4 last:border-b-0"
-                    >
-                        <ReorderControls
-                            :index="index"
-                            :length="orderedSteps.length"
-                            @up="move(index, -1)"
-                            @down="move(index, 1)"
-                        />
-                        <div class="min-w-0 flex-1">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span
-                                    class="font-sans text-xs text-cd-ink-muted"
-                                >
-                                    {{ index + 1 }}
-                                </span>
-                                <span
-                                    class="font-serif text-base tracking-[0.06em] text-cd-ink"
-                                >
-                                    {{ step.routine_item?.name ?? '—' }}
-                                </span>
-                                <span
-                                    class="inline-flex rounded-full border px-2 py-0.5 font-sans text-xs"
-                                    :class="
-                                        purposeChipClasses(stepPurposeKey(step))
-                                    "
-                                >
-                                    {{
-                                        stepPurposeLabels[stepPurposeKey(step)]
-                                    }}
-                                </span>
-                            </div>
-                            <p class="mt-1 font-sans text-xs text-cd-ink-muted">
-                                {{ formatStepTarget(step) }}
-                                <span
-                                    class="before:mx-1.5 before:content-['·']"
-                                >
-                                    {{
-                                        step.routine_item
-                                            ? trackingTypeLabels[
-                                                  step.routine_item
-                                                      .tracking_type
-                                              ]
-                                            : ''
-                                    }}
-                                </span>
-                            </p>
+                <ReorderableList
+                    v-if="steps.length"
+                    :items="steps"
+                    :reorder-url="`/plans/${plan.id}/steps/reorder`"
+                    :item-label="(step) => step.routine_item?.name"
+                >
+                    <template #row="{ item: step, index }">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="font-sans text-xs text-cd-ink-muted">
+                                {{ index + 1 }}
+                            </span>
+                            <span
+                                class="font-serif text-base tracking-[0.06em] text-cd-ink"
+                            >
+                                {{ step.routine_item?.name ?? '—' }}
+                            </span>
+                            <span
+                                class="inline-flex rounded-full border px-2 py-0.5 font-sans text-xs"
+                                :class="
+                                    purposeChipClasses(stepPurposeKey(step))
+                                "
+                            >
+                                {{ stepPurposeLabels[stepPurposeKey(step)] }}
+                            </span>
                         </div>
+                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">
+                            {{ formatStepTarget(step) }}
+                            <span class="before:mx-1.5 before:content-['·']">
+                                {{
+                                    step.routine_item
+                                        ? trackingTypeLabels[
+                                              step.routine_item.tracking_type
+                                          ]
+                                        : ''
+                                }}
+                            </span>
+                        </p>
+                    </template>
+                    <template #actions="{ item: step }">
                         <Button
                             type="button"
                             variant="ghost"
@@ -311,8 +289,8 @@ function stepPurposeKey(step: RoutinePlanStep) {
                         >
                             <Trash2 :size="14" :stroke-width="1.6" />
                         </Button>
-                    </li>
-                </ul>
+                    </template>
+                </ReorderableList>
 
                 <div
                     v-else

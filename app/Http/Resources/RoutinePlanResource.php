@@ -29,7 +29,7 @@ class RoutinePlanResource extends JsonResource
                 ? RoutinePlanStepResource::collection($this->steps)->resolve()
                 : [],
             'sessions' => $this->relationLoaded('sessions')
-                ? RoutineSessionResource::collection($this->sessions)->resolve()
+                ? RoutineSessionSummaryResource::collection($this->sessions)->resolve()
                 : [],
             'created_at' => $this->created_at?->toIso8601String(),
         ];

@@ -1,33 +1,31 @@
 <script setup lang="ts">
 import { Form, Head, Link, router } from '@inertiajs/vue3';
 import {
-    ArrowDown,
     ArrowLeft,
-    ArrowUp,
     Eye,
     EyeOff,
-    GripVertical,
     Pencil,
     Plus,
 } from '@lucide/vue';
 import { ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
+import ReorderableList from '@/components/ReorderableList.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
     lifeAreaColorClasses,
     lifeAreaColorOptions,
 } from '@/lib/lifeAreaColors';
+import type { LifeArea, LifeAreaColor } from '@/types/matrix';
 import { dashboard } from '@/routes';
 import { destroy, reorder, restore, store, update } from '@/routes/life-areas';
-import type { LifeArea, LifeAreaColor } from '@/types/matrix';
 
 interface Props {
     lifeAreas: LifeArea[];
 }
 
-const props = defineProps<Props>();
+defineProps<Props>();
 
 const editingId = ref<string | null>(null);
 const editingColor = ref<LifeAreaColor>('dawn');
@@ -36,19 +34,6 @@ const newColor = ref<LifeAreaColor>('dawn');
 function startEditing(area: LifeArea): void {
     editingId.value = area.id;
     editingColor.value = area.color;
-}
-
-function move(index: number, direction: -1 | 1): void {
-    const ids = props.lifeAreas.map((area) => area.id);
-    const target = index + direction;
-
-    if (target < 0 || target >= ids.length) {
-        return;
-    }
-
-    [ids[index], ids[target]] = [ids[target], ids[index]];
-
-    router.patch(reorder.url(), { ordered_ids: ids }, { preserveScroll: true });
 }
 
 function deactivate(area: LifeArea): void {
@@ -96,13 +81,14 @@ function reactivate(area: LifeArea): void {
                 >
                     登録済みの領域
                 </h2>
-                <ul class="flex flex-col">
-                    <li
-                        v-for="(area, index) in lifeAreas"
-                        :key="area.id"
-                        class="border-b border-cd-line/60 px-5 py-4 last:border-b-0"
-                        :class="{ 'opacity-55': !area.is_active }"
-                    >
+                <ReorderableList
+                    :items="lifeAreas"
+                    :reorder-url="reorder.url()"
+                    :item-label="(area) => area.name"
+                    :disabled="editingId !== null"
+                    :item-class="(area) => (!area.is_active ? 'opacity-55' : undefined)"
+                >
+                    <template #row="{ item: area }">
                         <Form
                             v-if="editingId === area.id"
                             v-bind="update.form(area.id)"
@@ -172,100 +158,70 @@ function reactivate(area: LifeArea): void {
 
                         <div
                             v-else
-                            class="flex items-center justify-between gap-3"
+                            class="flex min-w-0 items-center gap-3"
                         >
-                            <div class="flex min-w-0 items-center gap-3">
-                                <span
+                            <span
+                                aria-hidden="true"
+                                class="size-4 shrink-0 rounded-full border border-cd-line"
+                                :class="lifeAreaColorClasses[area.color]"
+                            />
+                            <span
+                                class="min-w-0 truncate font-serif text-base tracking-[0.08em] text-cd-ink"
+                            >
+                                {{ area.name }}
+                            </span>
+                            <span
+                                class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+                                :class="
+                                    area.is_active
+                                        ? 'bg-cd-moss/15 text-cd-moss'
+                                        : 'bg-muted text-cd-ink-muted'
+                                "
+                            >
+                                <component
+                                    :is="area.is_active ? Eye : EyeOff"
+                                    :size="12"
+                                    :stroke-width="1.8"
                                     aria-hidden="true"
-                                    class="shrink-0 cursor-grab text-cd-ink-muted/40"
-                                >
-                                    <GripVertical
-                                        :size="16"
-                                        :stroke-width="1.6"
-                                    />
-                                </span>
-                                <span
-                                    aria-hidden="true"
-                                    class="size-4 shrink-0 rounded-full border border-cd-line"
-                                    :class="lifeAreaColorClasses[area.color]"
                                 />
-                                <span
-                                    class="min-w-0 truncate font-serif text-base tracking-[0.08em] text-cd-ink"
-                                >
-                                    {{ area.name }}
-                                </span>
-                                <span
-                                    class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs"
-                                    :class="
-                                        area.is_active
-                                            ? 'bg-cd-moss/15 text-cd-moss'
-                                            : 'bg-muted text-cd-ink-muted'
-                                    "
-                                >
-                                    <component
-                                        :is="area.is_active ? Eye : EyeOff"
-                                        :size="12"
-                                        :stroke-width="1.8"
-                                        aria-hidden="true"
-                                    />
-                                    {{ area.is_active ? '公開中' : '非公開' }}
-                                </span>
-                            </div>
-
-                            <div class="flex shrink-0 items-center gap-1">
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    :disabled="index === 0"
-                                    :aria-label="`${area.name} を上へ`"
-                                    @click="move(index, -1)"
-                                >
-                                    <ArrowUp :size="15" :stroke-width="1.6" />
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    :disabled="index === lifeAreas.length - 1"
-                                    :aria-label="`${area.name} を下へ`"
-                                    @click="move(index, 1)"
-                                >
-                                    <ArrowDown :size="15" :stroke-width="1.6" />
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    :aria-label="`${area.name} を編集`"
-                                    @click="startEditing(area)"
-                                >
-                                    <Pencil :size="15" :stroke-width="1.6" />
-                                </Button>
-                                <Button
-                                    v-if="area.is_active"
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    :aria-label="`${area.name} を非表示にする`"
-                                    @click="deactivate(area)"
-                                >
-                                    <EyeOff :size="15" :stroke-width="1.6" />
-                                </Button>
-                                <Button
-                                    v-else
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    :aria-label="`${area.name} を再表示する`"
-                                    @click="reactivate(area)"
-                                >
-                                    <Eye :size="15" :stroke-width="1.6" />
-                                </Button>
-                            </div>
+                                {{ area.is_active ? '公開中' : '非公開' }}
+                            </span>
                         </div>
-                    </li>
-                </ul>
+                    </template>
+                    <template #actions="{ item: area }">
+                        <template v-if="editingId !== area.id">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                :aria-label="`${area.name} を編集`"
+                                @click="startEditing(area)"
+                            >
+                                <Pencil :size="15" :stroke-width="1.6" />
+                            </Button>
+                            <Button
+                                v-if="area.is_active"
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                :aria-label="`${area.name} を非表示にする`"
+                                @click="deactivate(area)"
+                            >
+                                <EyeOff :size="15" :stroke-width="1.6" />
+                            </Button>
+                            <Button
+                                v-else
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                :aria-label="`${area.name} を再表示する`"
+                                @click="reactivate(area)"
+                            >
+                                <Eye :size="15" :stroke-width="1.6" />
+                            </Button>
+                        </template>
+                    </template>
+                </ReorderableList>
             </section>
 
             <section

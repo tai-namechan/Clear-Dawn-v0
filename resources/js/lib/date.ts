@@ -1,6 +1,6 @@
 /**
  * ローカルタイムゾーン基準の日付キー（YYYY-MM-DD）ユーティリティ。
- * toISOString() は UTC 変換するため JST では日付がずれる — 使用禁止。
+ * toISOString() は UTC 変換するため日付ナビでは使わない。
  */
 
 export function toDateKey(date: Date): string {
@@ -17,4 +17,24 @@ export function parseDateKey(dateKey: string): Date {
 
 export function todayKey(): string {
     return toDateKey(new Date());
+}
+
+export function shiftDateKey(dateKey: string, days: number): string {
+    const date = parseDateKey(dateKey);
+    date.setDate(date.getDate() + days);
+
+    return toDateKey(date);
+}
+
+export function isTodayKey(dateKey: string): boolean {
+    return dateKey === todayKey();
+}
+
+export function formatDateKeyJa(dateKey: string): string {
+    return parseDateKey(dateKey).toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'short',
+    });
 }

@@ -78,8 +78,8 @@ class DashboardTodayTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->has('todayRoutines.plans', 1)
-                ->where('todayRoutines.plans.0.title', '実施予定')
+                ->has('today.plans', 1)
+                ->where('today.plans.0.title', '実施予定')
             );
 
         Carbon::setTestNow();
@@ -104,8 +104,8 @@ class DashboardTodayTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->has('todayRoutines.plans', 1)
-                ->where('todayRoutines.plans.0.title', '自分のプラン')
+                ->has('today.plans', 1)
+                ->where('today.plans.0.title', '自分のプラン')
             );
 
         Carbon::setTestNow();

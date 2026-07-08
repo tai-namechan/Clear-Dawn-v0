@@ -1,41 +1,34 @@
-import { computed, type ComputedRef, type Ref } from 'vue';
 import { router } from '@inertiajs/vue3';
-import { parseDateKey, todayKey, toDateKey } from '@/lib/date';
+import { computed, type ComputedRef, type Ref } from 'vue';
+import {
+    formatDateKeyJa,
+    isTodayKey,
+    shiftDateKey,
+} from '@/lib/date';
 
-type DateNavigationOptions = {
-    dateProp: Ref<string> | ComputedRef<string>;
+interface UseDateNavigationOptions {
+    date: Ref<string> | ComputedRef<string>;
     routeUrl: string;
+    preserveScroll?: boolean;
     reloadOnly?: string[];
-};
+}
 
 export function useDateNavigation({
-    dateProp,
+    date,
     routeUrl,
+    preserveScroll = true,
     reloadOnly,
-}: DateNavigationOptions) {
-    const formattedDate = computed(() => {
-        const d = parseDateKey(dateProp.value);
-
-        return d.toLocaleDateString('ja-JP', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            weekday: 'short',
-        });
-    });
-
-    const isToday = computed(() => dateProp.value === todayKey());
+}: UseDateNavigationOptions) {
+    const formattedDate = computed(() => formatDateKeyJa(date.value));
+    const isToday = computed(() => isTodayKey(date.value));
 
     function shiftDate(days: number): void {
-        const current = parseDateKey(dateProp.value);
-        current.setDate(current.getDate() + days);
-
         router.get(
             routeUrl,
-            { date: toDateKey(current) },
+            { date: shiftDateKey(date.value, days) },
             {
                 preserveState: true,
-                preserveScroll: true,
+                preserveScroll,
                 ...(reloadOnly ? { only: reloadOnly } : {}),
             },
         );
@@ -47,7 +40,7 @@ export function useDateNavigation({
             {},
             {
                 preserveState: true,
-                preserveScroll: true,
+                preserveScroll,
                 ...(reloadOnly ? { only: reloadOnly } : {}),
             },
         );

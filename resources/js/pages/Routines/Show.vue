@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ArrowLeft, Plus, Trash2 } from '@lucide/vue';
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
-import ReorderControls from '@/components/ReorderControls.vue';
+import ReorderableList from '@/components/ReorderableList.vue';
 import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
 import StepEditorDialog, {
     type StepEditorPayload,
 } from '@/components/routine/StepEditorDialog.vue';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/apiFetch';
-import { useReorderableList } from '@/composables/useReorderableList';
+import { ensureArray } from '@/lib/array';
 import { fetchRoutineItemsFromPage } from '@/lib/fetchRoutineItems';
 import { purposeChipClasses } from '@/lib/stepPurposeColors';
 import {
@@ -29,21 +29,6 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const orderedSteps = ref([...(props.routine.steps ?? [])]);
-
-watch(
-    () => props.routine.steps,
-    (steps) => {
-        orderedSteps.value = [...(steps ?? [])];
-    },
-    { deep: true },
-);
-
-const { move } = useReorderableList({
-    items: orderedSteps,
-    reorderUrl: `/routines/${props.routine.id}/steps/reorder`,
-});
-
 const showAddStepModal = ref(false);
 const selectedRoutineItemId = ref<string>('');
 const stepBlocks = ref('3');
@@ -54,8 +39,10 @@ const saving = ref(false);
 const routineItems = ref<RoutineItem[]>([]);
 const routineItemsLoaded = ref(false);
 
+const steps = computed(() => ensureArray(props.routine.steps));
+
 const totalDurationSeconds = computed(() =>
-    (props.routine.steps ?? []).reduce(
+    steps.value.reduce(
         (sum, step) =>
             sum +
             estimateStepDurationSeconds({
@@ -72,7 +59,7 @@ const totalDurationSeconds = computed(() =>
 const purposeSummary = computed(() => {
     const counts = new Map<string, number>();
 
-    for (const step of props.routine.steps ?? []) {
+    for (const step of steps.value) {
         const purpose = resolveStepPurpose(
             step.purpose,
             step.routine_item?.category ?? null,
@@ -211,30 +198,23 @@ function stepPurposeKey(step: RoutineStep) {
                             <tr
                                 class="border-b border-cd-line/60 bg-white/40 text-xs tracking-[0.06em] text-cd-ink-muted"
                             >
-                                <th class="px-2 py-3 font-medium w-10" />
                                 <th class="px-4 py-3 font-medium">#</th>
                                 <th class="px-4 py-3 font-medium">実施項目</th>
                                 <th class="px-4 py-3 font-medium">目的</th>
                                 <th class="px-4 py-3 font-medium">目標</th>
                                 <th class="px-4 py-3 font-medium">記録形式</th>
                                 <th class="px-4 py-3 font-medium">想定時間</th>
-                                <th class="px-4 py-3 font-medium" />
+                                <th class="px-4 py-3 font-medium">操作</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr
-                                v-for="(step, index) in orderedSteps"
-                                :key="step.id"
-                                class="border-b border-cd-line/40 last:border-b-0"
-                            >
-                                <td class="px-2 py-3">
-                                    <ReorderControls
-                                        :index="index"
-                                        :length="orderedSteps.length"
-                                        @up="move(index, -1)"
-                                        @down="move(index, 1)"
-                                    />
-                                </td>
+                        <ReorderableList
+                            v-if="steps.length"
+                            :items="steps"
+                            :reorder-url="`/routines/${routine.id}/steps/reorder`"
+                            :item-label="(step) => step.routine_item?.name"
+                            variant="table"
+                        >
+                            <template #row="{ item: step, index }">
                                 <td class="px-4 py-3 text-cd-ink-muted">
                                     {{ index + 1 }}
                                 </td>
@@ -272,8 +252,10 @@ function stepPurposeKey(step: RoutineStep) {
                                     {{
                                         formatDurationSeconds(
                                             estimateStepDurationSeconds({
-                                                target_blocks: step.target_blocks,
-                                                target_amount: step.target_amount,
+                                                target_blocks:
+                                                    step.target_blocks,
+                                                target_amount:
+                                                    step.target_amount,
                                                 amount_unit: step.amount_unit,
                                                 rest_seconds: step.rest_seconds,
                                                 tracking_type:
@@ -283,34 +265,28 @@ function stepPurposeKey(step: RoutineStep) {
                                         )
                                     }}
                                 </td>
-                                <td class="px-4 py-3">
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon-sm"
-                                        aria-label="ステップを削除"
-                                        @click="deleteStep(step)"
-                                    >
-                                        <Trash2
-                                            :size="14"
-                                            :stroke-width="1.6"
-                                        />
-                                    </Button>
-                                </td>
-                            </tr>
-                        </tbody>
+                            </template>
+                            <template #actions="{ item: step }">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    aria-label="ステップを削除"
+                                    @click="deleteStep(step)"
+                                >
+                                    <Trash2 :size="14" :stroke-width="1.6" />
+                                </Button>
+                            </template>
+                        </ReorderableList>
                     </table>
                 </div>
 
-                <div
-                    v-if="!routine.steps?.length"
+                <p
+                    v-if="!steps.length"
                     class="px-5 py-12 text-center font-sans text-sm text-cd-ink-muted"
                 >
-                    <p>ステップがまだありません。</p>
-                    <p class="mt-2">
-                        実施項目を追加してルーティンを組み立てましょう。
-                    </p>
-                </div>
+                    ステップがまだありません。
+                </p>
             </section>
         </div>
     </div>

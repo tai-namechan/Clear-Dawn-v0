@@ -49,5 +49,6 @@ export const stepPurposeColorClasses: Record<
 };
 
 export function purposeChipClasses(purpose: StepPurpose): string {
-    return stepPurposeColorClasses[purpose].chip;
+    return stepPurposeColorClasses[purpose]?.chip
+        ?? stepPurposeColorClasses.other.chip;
 }
