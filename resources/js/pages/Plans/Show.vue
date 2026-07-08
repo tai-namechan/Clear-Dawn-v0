@@ -37,12 +37,6 @@ const note = ref(props.plan.note ?? '');
 const saving = ref(false);
 const starting = ref(false);
 const showAddStepModal = ref(false);
-
-const selectedRoutineItemId = ref('');
-const stepBlocks = ref('3');
-const stepAmount = ref('');
-const stepRest = ref('60');
-
 const routineItems = ref<RoutineItem[]>([]);
 
 const steps = computed(() => ensureArray(props.plan.steps));
@@ -96,7 +90,6 @@ async function startSession(): Promise<void> {
 
 async function loadRoutineItems(): Promise<void> {
     routineItems.value = await fetchRoutineItemsFromPage();
-    selectedRoutineItemId.value = routineItems.value[0]?.id ?? '';
 }
 
 async function openAddStep(): Promise<void> {
@@ -307,12 +300,9 @@ function stepPurposeKey(step: RoutinePlanStep) {
 
     <StepEditorDialog
         v-model:open="showAddStepModal"
-        v-model:selected-routine-item-id="selectedRoutineItemId"
-        v-model:blocks="stepBlocks"
-        v-model:amount="stepAmount"
-        v-model:rest-seconds="stepRest"
         :routine-items="routineItems"
         :saving="saving"
         @submit="addStep"
+        @items-changed="loadRoutineItems"
     />
 </template>

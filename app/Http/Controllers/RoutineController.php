@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Routines\StoreRoutineRequest;
 use App\Http\Requests\Routines\UpdateRoutineRequest;
+use App\Http\Resources\LifeAreaResource;
 use App\Http\Resources\RoutineEditorResource;
 use App\Http\Resources\RoutineResource;
 use App\Models\Routine;
@@ -29,14 +30,28 @@ class RoutineController extends Controller
         ]);
     }
 
-    public function show(Request $request, Routine $routine, GetRoutineEditorQuery $query): Response
-    {
+    public function show(
+        Request $request,
+        Routine $routine,
+        GetRoutineEditorQuery $query,
+        GetRoutinesQuery $routinesQuery,
+    ): Response {
         Gate::authorize('view', $routine);
 
         $editor = $query->handle($request->user(), $routine->id);
+        $lifeAreas = $request->user()->lifeAreas()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+        $otherRoutines = $routinesQuery->handle($request->user())
+            ->where('id', '!=', $routine->id)
+            ->take(5)
+            ->values();
 
         return Inertia::render('Routines/Show', [
             'routine' => RoutineEditorResource::make($editor)->resolve(),
+            'lifeAreas' => LifeAreaResource::collection($lifeAreas)->resolve(),
+            'otherRoutines' => RoutineResource::collection($otherRoutines)->resolve(),
         ]);
     }
 

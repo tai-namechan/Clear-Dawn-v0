@@ -58,7 +58,8 @@ routine_block_logs       ← training_set_logs
 - [x] Phase 1: ADR-0007、screens/routines.md
 - [x] Phase 2: DB + バックエンド転換
 - [x] Phase 3: フロント基盤（types、共通コンポーネント、タブ）
-- [x] Phase 4: 画面実装（S1-S8 基本版）
+- [x] Phase 4: 画面実装（S1-S8 基本版 — ルート・タブ・CRUD・実行フロー）
+- [x] Phase 4b: モックアップ準拠UI（S3 ルーティン編集 / S4 ステップ追加モーダル / S7 実行画面）
 - [ ] Phase 5: 記録接続（/history 拡張、グラフ系列化）
 
 詳細仕様の全文は本リポジトリ導入時の設計ドラフトを参照。実装の正はコードと [screens/routines.md](./screens/routines.md)。

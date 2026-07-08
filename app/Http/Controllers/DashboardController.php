@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\TodayResource;
-use App\Queries\GetDashboardTodayQuery;
 use App\Queries\GetMatrixBoardQuery;
 use App\Services\InitializeMatrixBoardService;
 use Illuminate\Http\Request;
@@ -22,19 +20,16 @@ class DashboardController extends Controller
         Request $request,
         InitializeMatrixBoardService $initializeMatrixBoardService,
         GetMatrixBoardQuery $getMatrixBoardQuery,
-        GetDashboardTodayQuery $getDashboardTodayQuery,
     ): Response {
         $user = $request->user();
 
         $initializeMatrixBoardService->handle($user);
 
         $board = $getMatrixBoardQuery->handle($user);
-        $today = $getDashboardTodayQuery->handle($user);
 
         return Inertia::render('Dashboard', [
             'areas' => $board['areas'],
             'rows' => $board['rows'],
-            'todayRoutines' => TodayResource::make($today)->resolve(),
         ]);
     }
 }
