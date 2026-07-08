@@ -3,11 +3,10 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { ArrowLeft, Plus, Trash2 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
-import ReorderControls from '@/components/ReorderControls.vue';
+import ReorderableList from '@/components/ReorderableList.vue';
 import ExercisePickerDialog from '@/components/training/ExercisePickerDialog.vue';
 import RoutinesHubTabs from '@/components/training/RoutinesHubTabs.vue';
 import { Button } from '@/components/ui/button';
-import { useReorderableList } from '@/composables/useReorderableList';
 import { apiFetch } from '@/lib/apiFetch';
 import { ensureArray } from '@/lib/array';
 import { useFetchExercises } from '@/lib/fetchExercises';
@@ -40,11 +39,6 @@ const exercises = ref<Exercise[]>([]);
 const exercisesLoaded = ref(false);
 
 const steps = computed(() => ensureArray(props.routine.steps));
-
-const { move: moveStep } = useReorderableList(
-    steps,
-    `/routines/${props.routine.id}/steps/reorder`,
-);
 
 const totalDurationSeconds = computed(() =>
     steps.value.reduce(
@@ -239,12 +233,14 @@ function formatStepTarget(step: RoutineStep): string {
                                 <th class="px-4 py-3 font-medium">操作</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr
-                                v-for="(step, index) in steps"
-                                :key="step.id"
-                                class="border-b border-cd-line/40 last:border-b-0"
-                            >
+                        <ReorderableList
+                            v-if="steps.length"
+                            :items="steps"
+                            :reorder-url="`/routines/${routine.id}/steps/reorder`"
+                            :item-label="(step) => step.exercise?.name"
+                            variant="table"
+                        >
+                            <template #row="{ item: step, index }">
                                 <td class="px-4 py-3 text-cd-ink-muted">
                                     {{ index + 1 }}
                                 </td>
@@ -292,31 +288,19 @@ function formatStepTarget(step: RoutineStep): string {
                                         )
                                     }}
                                 </td>
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center gap-1">
-                                        <ReorderControls
-                                            :index="index"
-                                            :length="steps.length"
-                                            :item-label="step.exercise?.name"
-                                            @up="moveStep(index, -1)"
-                                            @down="moveStep(index, 1)"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon-sm"
-                                            aria-label="ステップを削除"
-                                            @click="deleteStep(step)"
-                                        >
-                                            <Trash2
-                                                :size="14"
-                                                :stroke-width="1.6"
-                                            />
-                                        </Button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
+                            </template>
+                            <template #actions="{ item: step }">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    aria-label="ステップを削除"
+                                    @click="deleteStep(step)"
+                                >
+                                    <Trash2 :size="14" :stroke-width="1.6" />
+                                </Button>
+                            </template>
+                        </ReorderableList>
                     </table>
                 </div>
 

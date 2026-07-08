@@ -3,11 +3,10 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { ArrowLeft, CirclePlay, Plus, Trash2 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
-import ReorderControls from '@/components/ReorderControls.vue';
+import ReorderableList from '@/components/ReorderableList.vue';
 import ExercisePickerDialog from '@/components/training/ExercisePickerDialog.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useReorderableList } from '@/composables/useReorderableList';
 import { apiFetch } from '@/lib/apiFetch';
 import { ensureArray } from '@/lib/array';
 import { useFetchExercises } from '@/lib/fetchExercises';
@@ -51,11 +50,6 @@ const isDraft = computed(() => props.plan.status === 'draft');
 const steps = computed(() => ensureArray(props.plan.steps));
 
 const runs = computed(() => ensureArray(props.plan.runs));
-
-const { move: moveStep } = useReorderableList(
-    steps,
-    `/training/plans/${props.plan.id}/steps/reorder`,
-);
 
 const canStart = computed(
     () =>
@@ -312,73 +306,55 @@ function formatStepTarget(step: TrainingPlanStep): string {
                 aria-label="ステップ一覧"
                 class="cd-shadow-soft overflow-hidden rounded-2xl border border-cd-line bg-cd-surface"
             >
-                <ul v-if="steps.length" class="flex flex-col">
-                    <li
-                        v-for="(step, index) in steps"
-                        :key="step.id"
-                        class="flex items-center justify-between gap-3 border-b border-cd-line/60 px-5 py-4 last:border-b-0"
-                    >
-                        <div class="min-w-0 flex-1">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span
-                                    class="font-sans text-xs text-cd-ink-muted"
-                                >
-                                    {{ index + 1 }}
-                                </span>
-                                <span
-                                    class="font-serif text-base tracking-[0.06em] text-cd-ink"
-                                >
-                                    {{ step.exercise?.name ?? '—' }}
-                                </span>
-                                <span
-                                    class="inline-flex rounded-full border px-2 py-0.5 font-sans text-xs"
-                                    :class="
-                                        purposeChipClasses(stepPurposeKey(step))
-                                    "
-                                >
-                                    {{
-                                        stepPurposeLabels[stepPurposeKey(step)]
-                                    }}
-                                </span>
-                            </div>
-                            <p class="mt-1 font-sans text-xs text-cd-ink-muted">
-                                {{ formatStepTarget(step) }}
-                                <span
-                                    class="before:mx-1.5 before:content-['·']"
-                                >
-                                    {{
-                                        step.exercise
-                                            ? trackingTypeLabels[
-                                                  step.exercise.tracking_type
-                                              ]
-                                            : ''
-                                    }}
-                                </span>
-                            </p>
-                        </div>
-                        <div
-                            v-if="isDraft"
-                            class="flex shrink-0 items-center gap-1"
-                        >
-                            <ReorderControls
-                                :index="index"
-                                :length="steps.length"
-                                :item-label="step.exercise?.name"
-                                @up="moveStep(index, -1)"
-                                @down="moveStep(index, 1)"
-                            />
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label="ステップを削除"
-                                @click="deleteStep(step)"
+                <ReorderableList
+                    v-if="steps.length"
+                    :items="steps"
+                    :reorder-url="`/training/plans/${plan.id}/steps/reorder`"
+                    :item-label="(step) => step.exercise?.name"
+                    :disabled="!isDraft"
+                >
+                    <template #row="{ item: step, index }">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="font-sans text-xs text-cd-ink-muted">
+                                {{ index + 1 }}
+                            </span>
+                            <span
+                                class="font-serif text-base tracking-[0.06em] text-cd-ink"
                             >
-                                <Trash2 :size="14" :stroke-width="1.6" />
-                            </Button>
+                                {{ step.exercise?.name ?? '—' }}
+                            </span>
+                            <span
+                                class="inline-flex rounded-full border px-2 py-0.5 font-sans text-xs"
+                                :class="purposeChipClasses(stepPurposeKey(step))"
+                            >
+                                {{ stepPurposeLabels[stepPurposeKey(step)] }}
+                            </span>
                         </div>
-                    </li>
-                </ul>
+                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">
+                            {{ formatStepTarget(step) }}
+                            <span class="before:mx-1.5 before:content-['·']">
+                                {{
+                                    step.exercise
+                                        ? trackingTypeLabels[
+                                              step.exercise.tracking_type
+                                          ]
+                                        : ''
+                                }}
+                            </span>
+                        </p>
+                    </template>
+                    <template #actions="{ item: step }">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label="ステップを削除"
+                            @click="deleteStep(step)"
+                        >
+                            <Trash2 :size="14" :stroke-width="1.6" />
+                        </Button>
+                    </template>
+                </ReorderableList>
 
                 <p
                     v-else
