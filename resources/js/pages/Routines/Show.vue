@@ -190,103 +190,81 @@ function stepPurposeKey(step: RoutineStep) {
                 aria-label="ステップ一覧"
                 class="cd-shadow-soft overflow-hidden rounded-2xl border border-cd-line bg-cd-surface"
             >
-                <div class="overflow-x-auto">
-                    <table
-                        class="w-full min-w-[640px] text-left font-sans text-sm"
-                    >
-                        <thead>
-                            <tr
-                                class="border-b border-cd-line/60 bg-white/40 text-xs tracking-[0.06em] text-cd-ink-muted"
+                <ReorderableList
+                    v-if="steps.length"
+                    :items="steps"
+                    :reorder-url="`/routines/${routine.id}/steps/reorder`"
+                    :item-label="(step) => step.routine_item?.name"
+                >
+                    <template #row="{ item: step, index }">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="font-sans text-xs text-cd-ink-muted">
+                                {{ index + 1 }}
+                            </span>
+                            <span
+                                class="font-serif text-base tracking-[0.06em] text-cd-ink"
                             >
-                                <th class="px-4 py-3 font-medium">#</th>
-                                <th class="px-4 py-3 font-medium">実施項目</th>
-                                <th class="px-4 py-3 font-medium">目的</th>
-                                <th class="px-4 py-3 font-medium">目標</th>
-                                <th class="px-4 py-3 font-medium">記録形式</th>
-                                <th class="px-4 py-3 font-medium">想定時間</th>
-                                <th class="px-4 py-3 font-medium">操作</th>
-                            </tr>
-                        </thead>
-                        <ReorderableList
-                            v-if="steps.length"
-                            :items="steps"
-                            :reorder-url="`/routines/${routine.id}/steps/reorder`"
-                            :item-label="(step) => step.routine_item?.name"
-                            variant="table"
+                                {{ step.routine_item?.name ?? '—' }}
+                            </span>
+                            <span
+                                class="inline-flex rounded-full border px-2 py-0.5 font-sans text-xs"
+                                :class="
+                                    purposeChipClasses(stepPurposeKey(step))
+                                "
+                            >
+                                {{ stepPurpose(step) }}
+                            </span>
+                        </div>
+                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">
+                            {{ formatStepTarget(step) }}
+                            <span class="before:mx-1.5 before:content-['·']">
+                                {{
+                                    step.routine_item
+                                        ? trackingTypeLabels[
+                                              step.routine_item.tracking_type
+                                          ]
+                                        : ''
+                                }}
+                            </span>
+                            <span class="before:mx-1.5 before:content-['·']">
+                                {{
+                                    formatDurationSeconds(
+                                        estimateStepDurationSeconds({
+                                            target_blocks: step.target_blocks,
+                                            target_amount: step.target_amount,
+                                            amount_unit: step.amount_unit,
+                                            rest_seconds: step.rest_seconds,
+                                            tracking_type:
+                                                step.routine_item
+                                                    ?.tracking_type,
+                                        }),
+                                    )
+                                }}
+                            </span>
+                        </p>
+                    </template>
+                    <template #actions="{ item: step }">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label="ステップを削除"
+                            @click="deleteStep(step)"
                         >
-                            <template #row="{ item: step, index }">
-                                <td class="px-4 py-3 text-cd-ink-muted">
-                                    {{ index + 1 }}
-                                </td>
-                                <td
-                                    class="px-4 py-3 font-serif tracking-[0.06em] text-cd-ink"
-                                >
-                                    {{ step.routine_item?.name ?? '—' }}
-                                </td>
-                                <td class="px-4 py-3">
-                                    <span
-                                        class="inline-flex rounded-full border px-2 py-0.5 text-xs"
-                                        :class="
-                                            purposeChipClasses(
-                                                stepPurposeKey(step),
-                                            )
-                                        "
-                                    >
-                                        {{ stepPurpose(step) }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-3 text-cd-ink-muted">
-                                    {{ formatStepTarget(step) }}
-                                </td>
-                                <td class="px-4 py-3 text-cd-ink-muted">
-                                    {{
-                                        step.routine_item
-                                            ? trackingTypeLabels[
-                                                  step.routine_item
-                                                      .tracking_type
-                                              ]
-                                            : '—'
-                                    }}
-                                </td>
-                                <td class="px-4 py-3 text-cd-ink-muted">
-                                    {{
-                                        formatDurationSeconds(
-                                            estimateStepDurationSeconds({
-                                                target_blocks:
-                                                    step.target_blocks,
-                                                target_amount:
-                                                    step.target_amount,
-                                                amount_unit: step.amount_unit,
-                                                rest_seconds: step.rest_seconds,
-                                                tracking_type:
-                                                    step.routine_item
-                                                        ?.tracking_type,
-                                            }),
-                                        )
-                                    }}
-                                </td>
-                            </template>
-                            <template #actions="{ item: step }">
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    aria-label="ステップを削除"
-                                    @click="deleteStep(step)"
-                                >
-                                    <Trash2 :size="14" :stroke-width="1.6" />
-                                </Button>
-                            </template>
-                        </ReorderableList>
-                    </table>
-                </div>
+                            <Trash2 :size="14" :stroke-width="1.6" />
+                        </Button>
+                    </template>
+                </ReorderableList>
 
-                <p
-                    v-if="!steps.length"
+                <div
+                    v-else
                     class="px-5 py-12 text-center font-sans text-sm text-cd-ink-muted"
                 >
-                    ステップがまだありません。
-                </p>
+                    <p>ステップがまだありません。</p>
+                    <p class="mt-2">
+                        実施項目を追加してルーティンを組み立てましょう。
+                    </p>
+                </div>
             </section>
         </div>
     </div>
