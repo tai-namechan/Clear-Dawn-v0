@@ -17,7 +17,7 @@ class GetRoutineEditorQuery
             ->with([
                 'lifeArea',
                 'routineSteps' => fn ($query) => $query->orderBy('sort_order'),
-                'routineSteps.exercise',
+                'routineSteps.routineItem',
                 'routineSteps.video',
             ])
             ->first();

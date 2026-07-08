@@ -25,7 +25,7 @@ class VideoResource extends JsonResource
             'size_bytes' => $this->size_bytes,
             'duration_seconds' => $this->duration_seconds,
             'life_area_id' => $this->life_area_id,
-            'exercise_id' => $this->exercise_id,
+            'routine_item_id' => $this->routine_item_id,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

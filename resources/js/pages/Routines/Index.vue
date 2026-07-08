@@ -3,7 +3,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { CalendarPlus, ChevronRight, Plus, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
-import RoutinesHubTabs from '@/components/training/RoutinesHubTabs.vue';
+import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -13,8 +13,8 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { apiFetch } from '@/lib/apiFetch';
-import type { Routine } from '@/types/training';
+import { todayKey } from '@/lib/date';
+import type { Routine } from '@/types/routine';
 
 interface Props {
     routines: Routine[];
@@ -29,7 +29,7 @@ const saving = ref(false);
 const applyingId = ref<string | null>(null);
 
 function todayString(): string {
-    return new Date().toISOString().slice(0, 10);
+    return todayKey();
 }
 
 async function createRoutine(): Promise<void> {
@@ -61,7 +61,7 @@ async function applyToToday(routine: Routine): Promise<void> {
     applyingId.value = routine.id;
 
     try {
-        await apiFetch('/training/plans', {
+        await apiFetch('/plans', {
             method: 'POST',
             body: JSON.stringify({
                 title: routine.name,
@@ -70,7 +70,7 @@ async function applyToToday(routine: Routine): Promise<void> {
             }),
         });
 
-        router.visit('/training');
+        router.visit('/today');
     } finally {
         applyingId.value = null;
     }
@@ -87,7 +87,7 @@ async function deleteRoutine(routine: Routine): Promise<void> {
 </script>
 
 <template>
-    <Head title="テンプレート" />
+    <Head title="ルーティン" />
 
     <div
         class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
@@ -95,8 +95,8 @@ async function deleteRoutine(routine: Routine): Promise<void> {
         <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
             <div class="flex items-start justify-between gap-4">
                 <PageTitleOrnament
-                    title="テンプレート"
-                    subtitle="再利用できるメニューテンプレートを管理します。"
+                    title="ルーティン"
+                    subtitle="再利用できるルーティンを管理します。"
                     align="left"
                 />
 
@@ -113,7 +113,7 @@ async function deleteRoutine(routine: Routine): Promise<void> {
             <RoutinesHubTabs />
 
             <section
-                aria-label="テンプレート一覧"
+                aria-label="ルーティン一覧"
                 class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface"
             >
                 <ul v-if="routines.length > 0" class="flex flex-col">
@@ -168,7 +168,7 @@ async function deleteRoutine(routine: Routine): Promise<void> {
                                         :size="14"
                                         :stroke-width="1.6"
                                     />
-                                    今日のメニューにする
+                                    今日の実行にする
                                 </Button>
                                 <Button
                                     type="button"
@@ -184,12 +184,15 @@ async function deleteRoutine(routine: Routine): Promise<void> {
                     </li>
                 </ul>
 
-                <p
+                <div
                     v-else
                     class="px-5 py-12 text-center font-sans text-sm text-cd-ink-muted"
                 >
-                    テンプレートがまだありません。
-                </p>
+                    <p>ルーティンがまだありません。</p>
+                    <p class="mt-2">
+                        上の「追加」ボタンから、繰り返し使うルーティンを作成しましょう。
+                    </p>
+                </div>
             </section>
         </div>
     </div>
@@ -200,14 +203,14 @@ async function deleteRoutine(routine: Routine): Promise<void> {
                 <DialogTitle
                     class="font-serif text-lg tracking-[0.12em] text-cd-ink"
                 >
-                    テンプレートを追加
+                    ルーティンを追加
                 </DialogTitle>
             </DialogHeader>
 
             <div class="flex flex-col gap-3">
                 <Input
                     v-model="formName"
-                    placeholder="テンプレート名"
+                    placeholder="ルーティン名"
                     maxlength="100"
                     :disabled="saving"
                 />

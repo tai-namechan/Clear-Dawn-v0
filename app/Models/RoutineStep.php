@@ -15,15 +15,15 @@ use Illuminate\Support\Carbon;
 /**
  * @property string $id
  * @property string $routine_id
- * @property string $exercise_id
+ * @property string $routine_item_id
  * @property string|null $video_id
  * @property StepPurpose|null $purpose
  * @property int $sort_order
- * @property int|null $target_sets
- * @property int|null $target_reps
- * @property string|null $target_weight_kg
- * @property string|null $target_distance_m
- * @property int|null $target_duration_seconds
+ * @property string|null $target_load
+ * @property string|null $load_unit
+ * @property string|null $target_amount
+ * @property string|null $amount_unit
+ * @property int|null $target_blocks
  * @property int|null $rest_seconds
  * @property string|null $note
  * @property Carbon|null $deleted_at
@@ -32,15 +32,15 @@ use Illuminate\Support\Carbon;
  */
 #[Fillable([
     'routine_id',
-    'exercise_id',
+    'routine_item_id',
     'video_id',
     'purpose',
     'sort_order',
-    'target_sets',
-    'target_reps',
-    'target_weight_kg',
-    'target_distance_m',
-    'target_duration_seconds',
+    'target_load',
+    'load_unit',
+    'target_amount',
+    'amount_unit',
+    'target_blocks',
     'rest_seconds',
     'note',
 ])]
@@ -56,8 +56,8 @@ class RoutineStep extends Model
     {
         return [
             'purpose' => StepPurpose::class,
-            'target_weight_kg' => 'decimal:2',
-            'target_distance_m' => 'decimal:2',
+            'target_load' => 'decimal:2',
+            'target_amount' => 'decimal:2',
         ];
     }
 
@@ -70,11 +70,11 @@ class RoutineStep extends Model
     }
 
     /**
-     * @return BelongsTo<Exercise, $this>
+     * @return BelongsTo<RoutineItem, $this>
      */
-    public function exercise(): BelongsTo
+    public function routineItem(): BelongsTo
     {
-        return $this->belongsTo(Exercise::class);
+        return $this->belongsTo(RoutineItem::class);
     }
 
     /**

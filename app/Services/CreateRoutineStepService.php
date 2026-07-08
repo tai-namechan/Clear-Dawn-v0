@@ -13,14 +13,14 @@ class CreateRoutineStepService
      * sort_order はサーバー側で採番する。
      *
      * @param  array{
-     *     exercise_id: string,
+     *     routine_item_id: string,
      *     video_id?: string|null,
      *     purpose?: StepPurpose|null,
-     *     target_sets?: int|null,
-     *     target_reps?: int|null,
-     *     target_weight_kg?: float|string|null,
-     *     target_distance_m?: float|string|null,
-     *     target_duration_seconds?: int|null,
+     *     target_load?: float|string|null,
+     *     load_unit?: string|null,
+     *     target_amount?: float|string|null,
+     *     amount_unit?: string|null,
+     *     target_blocks?: int|null,
      *     rest_seconds?: int|null,
      *     note?: string|null
      * }  $attributes
@@ -31,15 +31,15 @@ class CreateRoutineStepService
             $nextSortOrder = (int) $routine->routineSteps()->withTrashed()->max('sort_order') + 1;
 
             return $routine->routineSteps()->create([
-                'exercise_id' => $attributes['exercise_id'],
+                'routine_item_id' => $attributes['routine_item_id'],
                 'video_id' => $attributes['video_id'] ?? null,
                 'purpose' => $attributes['purpose'] ?? null,
                 'sort_order' => $nextSortOrder,
-                'target_sets' => $attributes['target_sets'] ?? null,
-                'target_reps' => $attributes['target_reps'] ?? null,
-                'target_weight_kg' => $attributes['target_weight_kg'] ?? null,
-                'target_distance_m' => $attributes['target_distance_m'] ?? null,
-                'target_duration_seconds' => $attributes['target_duration_seconds'] ?? null,
+                'target_load' => $attributes['target_load'] ?? null,
+                'load_unit' => $attributes['load_unit'] ?? null,
+                'target_amount' => $attributes['target_amount'] ?? null,
+                'amount_unit' => $attributes['amount_unit'] ?? null,
+                'target_blocks' => $attributes['target_blocks'] ?? null,
                 'rest_seconds' => $attributes['rest_seconds'] ?? null,
                 'note' => $attributes['note'] ?? null,
             ]);

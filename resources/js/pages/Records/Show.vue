@@ -8,7 +8,7 @@ import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiFetch } from '@/lib/apiFetch';
-import type { ChartPoint, Metric, MetricRecord } from '@/types/training';
+import type { ChartPoint, Metric, MetricRecord } from '@/types/routine';
 
 interface Props {
     metric: Metric;

@@ -82,11 +82,11 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
-     * @return HasMany<Exercise, $this>
+     * @return HasMany<RoutineItem, $this>
      */
-    public function exercises(): HasMany
+    public function routineItems(): HasMany
     {
-        return $this->hasMany(Exercise::class);
+        return $this->hasMany(RoutineItem::class);
     }
 
     /**
@@ -98,19 +98,19 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
-     * @return HasMany<TrainingPlan, $this>
+     * @return HasMany<RoutinePlan, $this>
      */
-    public function trainingPlans(): HasMany
+    public function routinePlans(): HasMany
     {
-        return $this->hasMany(TrainingPlan::class);
+        return $this->hasMany(RoutinePlan::class);
     }
 
     /**
-     * @return HasMany<TrainingRun, $this>
+     * @return HasMany<RoutineSession, $this>
      */
-    public function trainingRuns(): HasMany
+    public function routineSessions(): HasMany
     {
-        return $this->hasMany(TrainingRun::class);
+        return $this->hasMany(RoutineSession::class);
     }
 
     /**

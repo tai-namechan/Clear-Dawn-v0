@@ -9,14 +9,14 @@ class UpdateRoutineStepService
 {
     /**
      * @param  array{
-     *     exercise_id?: string,
+     *     routine_item_id?: string,
      *     video_id?: string|null,
      *     purpose?: StepPurpose|null,
-     *     target_sets?: int|null,
-     *     target_reps?: int|null,
-     *     target_weight_kg?: float|string|null,
-     *     target_distance_m?: float|string|null,
-     *     target_duration_seconds?: int|null,
+     *     target_load?: float|string|null,
+     *     load_unit?: string|null,
+     *     target_amount?: float|string|null,
+     *     amount_unit?: string|null,
+     *     target_blocks?: int|null,
      *     rest_seconds?: int|null,
      *     note?: string|null
      * }  $attributes

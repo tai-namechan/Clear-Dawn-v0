@@ -11,15 +11,15 @@ return new class extends Migration
         Schema::create('routine_steps', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignUlid('routine_id')->constrained('routines')->cascadeOnDelete();
-            $table->foreignUlid('exercise_id')->constrained('exercises')->restrictOnDelete();
+            $table->foreignUlid('routine_item_id')->constrained('routine_items')->restrictOnDelete();
             $table->foreignUlid('video_id')->nullable()->constrained('videos')->nullOnDelete();
             $table->string('purpose')->nullable();
             $table->unsignedInteger('sort_order');
-            $table->unsignedInteger('target_sets')->nullable();
-            $table->unsignedInteger('target_reps')->nullable();
-            $table->decimal('target_weight_kg', 6, 2)->nullable();
-            $table->decimal('target_distance_m', 7, 2)->nullable();
-            $table->unsignedInteger('target_duration_seconds')->nullable();
+            $table->decimal('target_load', 8, 2)->nullable();
+            $table->string('load_unit')->nullable();
+            $table->decimal('target_amount', 8, 2)->nullable();
+            $table->string('amount_unit')->nullable();
+            $table->unsignedInteger('target_blocks')->nullable();
             $table->unsignedInteger('rest_seconds')->nullable();
             $table->string('note')->nullable();
             $table->softDeletes();

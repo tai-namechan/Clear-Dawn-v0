@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import TodayTrainingCard from '@/components/dashboard/TodayTrainingCard.vue';
+import TodayRoutinesCard from '@/components/dashboard/TodayRoutinesCard.vue';
 import MatrixCellEditModal from '@/components/MatrixCellEditModal.vue';
 import MatrixSheet from '@/components/MatrixSheet.vue';
 import type { LifeArea, MatrixRow } from '@/types/matrix';
-import type { TodayTraining } from '@/types/training';
+import type { TodayRoutines } from '@/types/routine';
 
 interface Props {
     areas: LifeArea[];
     rows: MatrixRow[];
-    todayTraining: TodayTraining;
+    todayRoutines: TodayRoutines;
 }
 
 const props = defineProps<Props>();
@@ -76,7 +76,7 @@ function openCellEditor(payload: { rowIndex: number; areaIndex: number }) {
         >
             <MatrixSheet :areas="areas" :rows="rows" @edit="openCellEditor" />
 
-            <TodayTrainingCard :today-training="todayTraining" />
+            <TodayRoutinesCard :today-routines="todayRoutines" />
 
             <MatrixCellEditModal
                 :open="editing !== null"

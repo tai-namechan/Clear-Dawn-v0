@@ -21,11 +21,11 @@ class UpdateVideoRequest extends FormRequest
                 'ulid',
                 Rule::exists('life_areas', 'id')->where(fn ($query) => $query->where('user_id', $this->user()?->id)),
             ],
-            'exercise_id' => [
+            'routine_item_id' => [
                 'sometimes',
                 'nullable',
                 'ulid',
-                Rule::exists('exercises', 'id')->where(fn ($query) => $query->where('user_id', $this->user()?->id)),
+                Rule::exists('routine_items', 'id')->where(fn ($query) => $query->where('user_id', $this->user()?->id)),
             ],
         ];
     }

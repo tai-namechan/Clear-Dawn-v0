@@ -72,10 +72,10 @@ class Routine extends Model
     }
 
     /**
-     * @return HasMany<TrainingPlan, $this>
+     * @return HasMany<RoutinePlan, $this>
      */
-    public function trainingPlans(): HasMany
+    public function routinePlans(): HasMany
     {
-        return $this->hasMany(TrainingPlan::class);
+        return $this->hasMany(RoutinePlan::class);
     }
 }
