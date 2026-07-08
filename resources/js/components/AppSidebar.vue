@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { Home, Notebook, Pencil, Settings } from '@lucide/vue';
+import {
+    ChartLine,
+    CircleCheck,
+    Clapperboard,
+    Home,
+    Settings,
+} from '@lucide/vue';
 import type { Component } from 'vue';
 import {
     Sidebar,
@@ -16,18 +22,37 @@ import type { NavItem } from '@/types';
 interface CdNavItem {
     title: string;
     icon: Component;
-    /** 遷移先。未実装フェーズ（メモ / 振り返り）は装飾表示のみで導線を持たない。 */
-    href?: NavItem['href'];
+    href: NavItem['href'];
+    matchPrefix?: boolean;
 }
 
 const navItems: CdNavItem[] = [
     { title: 'ダッシュボード', icon: Home, href: dashboard() },
-    { title: 'メモ', icon: Pencil },
-    { title: '振り返り', icon: Notebook },
+    {
+        title: 'ルーティン',
+        icon: CircleCheck,
+        href: '/training',
+        matchPrefix: true,
+    },
+    {
+        title: 'コンディション管理',
+        icon: ChartLine,
+        href: '/records',
+        matchPrefix: true,
+    },
+    { title: '動画', icon: Clapperboard, href: '/videos' },
     { title: '設定', icon: Settings, href: editProfile() },
 ];
 
-const { isCurrentUrl } = useCurrentUrl();
+const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
+
+function isNavActive(item: CdNavItem): boolean {
+    if (item.matchPrefix) {
+        return isCurrentOrParentUrl(item.href);
+    }
+
+    return isCurrentUrl(item.href);
+}
 </script>
 
 <template>
@@ -85,14 +110,11 @@ const { isCurrentUrl } = useCurrentUrl();
             >
                 <template v-for="item in navItems" :key="item.title">
                     <Link
-                        v-if="item.href"
                         :href="item.href"
-                        :aria-current="
-                            isCurrentUrl(item.href) ? 'page' : undefined
-                        "
+                        :aria-current="isNavActive(item) ? 'page' : undefined"
                         class="flex w-24 flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 transition-colors group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-2"
                         :class="
-                            isCurrentUrl(item.href)
+                            isNavActive(item)
                                 ? 'border-white/15 bg-white/10 text-white'
                                 : 'border-transparent text-white/80 hover:bg-white/5 hover:text-white'
                         "
@@ -108,21 +130,6 @@ const { isCurrentUrl } = useCurrentUrl();
                             {{ item.title }}
                         </span>
                     </Link>
-                    <div
-                        v-else
-                        class="flex w-24 cursor-default flex-col items-center justify-center gap-2 border border-transparent px-3 py-3 text-white/55 group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:p-2"
-                    >
-                        <component
-                            :is="item.icon"
-                            :size="26"
-                            :stroke-width="1.4"
-                        />
-                        <span
-                            class="font-serif text-xs tracking-[0.2em] whitespace-nowrap group-data-[collapsible=icon]:hidden"
-                        >
-                            {{ item.title }}
-                        </span>
-                    </div>
                 </template>
             </nav>
         </SidebarContent>
