@@ -7,13 +7,9 @@ import type { LifeArea, MatrixCellItem, MatrixRow } from '@/types/matrix';
 interface Props {
     areas: LifeArea[];
     rows: MatrixRow[];
-    /** false のとき親レイアウトの高さを奪わない（ダッシュボード用） */
-    fillAvailable?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
-    fillAvailable: true,
-});
+defineProps<Props>();
 
 const emit = defineEmits<{
     (e: 'edit', payload: { rowIndex: number; areaIndex: number }): void;
@@ -27,8 +23,7 @@ function toggleCompletion(item: MatrixCellItem): void {
 <template>
     <section
         aria-label="TOP Matrix"
-        class="cd-shadow-soft flex min-h-[30rem] w-full flex-col overflow-hidden rounded-[1.25rem] border border-cd-matrix-line bg-cd-matrix-surface md:min-h-[34rem]"
-        :class="props.fillAvailable ? 'flex-1' : 'shrink-0'"
+        class="cd-shadow-soft flex min-h-[30rem] w-full flex-1 flex-col overflow-hidden rounded-[1.25rem] border border-cd-matrix-line bg-cd-matrix-surface md:min-h-[34rem]"
     >
         <table class="h-full w-full table-fixed border-collapse">
             <thead>

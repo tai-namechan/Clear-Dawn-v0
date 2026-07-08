@@ -1,16 +1,13 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-import TodayTrainingCard from '@/components/dashboard/TodayTrainingCard.vue';
 import MatrixCellEditModal from '@/components/MatrixCellEditModal.vue';
 import MatrixSheet from '@/components/MatrixSheet.vue';
 import type { LifeArea, MatrixRow } from '@/types/matrix';
-import type { TodayTraining } from '@/types/training';
 
 interface Props {
     areas: LifeArea[];
     rows: MatrixRow[];
-    todayTraining: TodayTraining;
 }
 
 const props = defineProps<Props>();
@@ -69,27 +66,12 @@ function openCellEditor(payload: { rowIndex: number; areaIndex: number }) {
     <Head title="ダッシュボード" />
 
     <div
-        class="flex h-full flex-1 flex-col overflow-x-auto overflow-y-auto p-4 md:px-6"
+        class="flex h-full flex-1 flex-col overflow-x-auto p-4 md:px-6 md:pb-8"
     >
-        <div class="mx-auto w-full max-w-7xl">
-            <section
-                aria-label="TOP Matrix ボード"
-                class="flex min-h-[calc(100dvh-5rem)] flex-col justify-center py-4 md:py-6"
-            >
-                <MatrixSheet
-                    :areas="areas"
-                    :rows="rows"
-                    :fill-available="false"
-                    @edit="openCellEditor"
-                />
-            </section>
-
-            <section
-                aria-label="今日のメニュー"
-                class="pb-8 pt-2"
-            >
-                <TodayTrainingCard :today-training="todayTraining" />
-            </section>
+        <div
+            class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 md:gap-7"
+        >
+            <MatrixSheet :areas="areas" :rows="rows" @edit="openCellEditor" />
 
             <MatrixCellEditModal
                 :open="editing !== null"
