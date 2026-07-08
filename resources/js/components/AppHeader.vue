@@ -35,8 +35,8 @@ import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { getInitials } from '@/composables/useInitials';
 import { toUrl } from '@/lib/utils';
-import type { BreadcrumbItem, NavItem, User } from '@/types';
 import { dashboard } from '@/routes';
+import type { BreadcrumbItem, NavItem, User } from '@/types';
 
 type Props = {
     breadcrumbs?: BreadcrumbItem[];

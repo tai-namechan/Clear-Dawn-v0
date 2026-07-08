@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
 import { Check, Pencil, Sunrise } from '@lucide/vue';
-import type { LifeArea, MatrixCellItem, MatrixRow } from '@/types/matrix';
 import { toggle } from '@/routes/matrix-cell-items';
+import type { LifeArea, MatrixCellItem, MatrixRow } from '@/types/matrix';
 
 interface Props {
     areas: LifeArea[];

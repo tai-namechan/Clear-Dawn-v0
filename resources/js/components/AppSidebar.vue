@@ -9,9 +9,9 @@ import {
     SidebarHeader,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
-import type { NavItem } from '@/types';
 import { dashboard } from '@/routes';
 import { edit as editProfile } from '@/routes/profile';
+import type { NavItem } from '@/types';
 
 interface CdNavItem {
     title: string;
