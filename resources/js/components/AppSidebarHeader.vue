@@ -5,8 +5,8 @@ import DashboardPageHeader from '@/components/DashboardPageHeader.vue';
 import HeaderUserMenu from '@/components/HeaderUserMenu.vue';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
-import type { BreadcrumbItem } from '@/types';
 import { dashboard } from '@/routes';
+import type { BreadcrumbItem } from '@/types';
 
 withDefaults(
     defineProps<{

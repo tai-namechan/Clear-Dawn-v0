@@ -6,10 +6,10 @@ import Heading from '@/components/Heading.vue';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { toUrl } from '@/lib/utils';
-import type { NavItem } from '@/types';
 import { index as lifeAreasIndex } from '@/routes/life-areas';
 import { edit as editProfile } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
+import type { NavItem } from '@/types';
 
 interface SettingsNavItem {
     title: string;
