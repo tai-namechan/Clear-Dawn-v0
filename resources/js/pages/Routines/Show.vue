@@ -9,6 +9,7 @@ import RoutinesHubTabs from '@/components/training/RoutinesHubTabs.vue';
 import { Button } from '@/components/ui/button';
 import { useReorderableList } from '@/composables/useReorderableList';
 import { apiFetch } from '@/lib/apiFetch';
+import { ensureArray } from '@/lib/array';
 import { useFetchExercises } from '@/lib/fetchExercises';
 import { purposeChipClasses } from '@/lib/stepPurposeColors';
 import {
@@ -38,7 +39,7 @@ const saving = ref(false);
 const exercises = ref<Exercise[]>([]);
 const exercisesLoaded = ref(false);
 
-const steps = computed(() => props.routine.steps ?? []);
+const steps = computed(() => ensureArray(props.routine.steps));
 
 const { move: moveStep } = useReorderableList(
     steps,

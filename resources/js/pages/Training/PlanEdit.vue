@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useReorderableList } from '@/composables/useReorderableList';
 import { apiFetch } from '@/lib/apiFetch';
+import { ensureArray } from '@/lib/array';
 import { useFetchExercises } from '@/lib/fetchExercises';
 import { purposeChipClasses } from '@/lib/stepPurposeColors';
 import {
@@ -47,7 +48,9 @@ const exercises = ref<Exercise[]>([]);
 
 const isDraft = computed(() => props.plan.status === 'draft');
 
-const steps = computed(() => props.plan.steps ?? []);
+const steps = computed(() => ensureArray(props.plan.steps));
+
+const runs = computed(() => ensureArray(props.plan.runs));
 
 const { move: moveStep } = useReorderableList(
     steps,
@@ -62,7 +65,7 @@ const canStart = computed(
 );
 
 const activeRun = computed(
-    () => props.plan.runs?.find((run) => run.status === 'in_progress') ?? null,
+    () => runs.value.find((run) => run.status === 'in_progress') ?? null,
 );
 
 async function savePlan(): Promise<void> {
