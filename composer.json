@@ -46,6 +46,7 @@
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
             "@php artisan migrate --force",
+            "@wayfinder:generate",
             "npm install",
             "npm run build"
         ],
@@ -59,15 +60,23 @@
         "lint:check": [
             "pint --parallel --test"
         ],
+        "wayfinder:generate": [
+            "@php artisan wayfinder:generate --with-form --ansi"
+        ],
+        "phpstan:check": [
+            "phpstan analyse --memory-limit=512M"
+        ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
+            "@wayfinder:generate",
             "npm run lint:check",
             "npm run format:check",
             "npm run types:check",
+            "npm run build",
             "@test"
         ],
         "types:check": [
-            "phpstan analyse"
+            "@phpstan:check"
         ],
         "test": [
             "@php artisan config:clear --ansi",
