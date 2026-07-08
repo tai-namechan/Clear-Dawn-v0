@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { apiFetch } from '@/lib/apiFetch';
+import { todayKey } from '@/lib/date';
 import type { Routine } from '@/types/training';
 
 interface Props {
@@ -27,10 +28,6 @@ const formName = ref('');
 const formDescription = ref('');
 const saving = ref(false);
 const applyingId = ref<string | null>(null);
-
-function todayString(): string {
-    return new Date().toISOString().slice(0, 10);
-}
 
 async function createRoutine(): Promise<void> {
     if (!formName.value.trim()) {
@@ -61,16 +58,19 @@ async function applyToToday(routine: Routine): Promise<void> {
     applyingId.value = routine.id;
 
     try {
-        await apiFetch('/training/plans', {
-            method: 'POST',
-            body: JSON.stringify({
-                title: routine.name,
-                scheduled_on: todayString(),
-                routine_id: routine.id,
-            }),
-        });
+        const result = await apiFetch<{ plan: { id: string } }>(
+            '/training/plans',
+            {
+                method: 'POST',
+                body: JSON.stringify({
+                    title: routine.name,
+                    scheduled_on: todayKey(),
+                    routine_id: routine.id,
+                }),
+            },
+        );
 
-        router.visit('/training');
+        router.visit(`/training/plans/${result.plan.id}`);
     } finally {
         applyingId.value = null;
     }

@@ -36,7 +36,12 @@ class TrainingPlanController extends Controller
     {
         Gate::authorize('view', $trainingPlan);
 
-        $trainingPlan->load(['steps' => fn ($q) => $q->orderBy('sort_order'), 'steps.exercise', 'steps.video']);
+        $trainingPlan->load([
+            'steps' => fn ($q) => $q->orderBy('sort_order'),
+            'steps.exercise',
+            'steps.video',
+            'runs' => fn ($q) => $q->orderByDesc('started_at'),
+        ]);
 
         return Inertia::render('Training/PlanEdit', [
             'plan' => TrainingPlanResource::make($trainingPlan)->resolve(),

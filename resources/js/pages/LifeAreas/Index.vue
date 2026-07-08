@@ -1,20 +1,20 @@
 <script setup lang="ts">
 import { Form, Head, Link, router } from '@inertiajs/vue3';
 import {
-    ArrowDown,
     ArrowLeft,
-    ArrowUp,
     Eye,
     EyeOff,
     GripVertical,
     Pencil,
     Plus,
 } from '@lucide/vue';
-import { ref } from 'vue';
+import { ref, toRef } from 'vue';
 import InputError from '@/components/InputError.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
+import ReorderControls from '@/components/ReorderControls.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useReorderableList } from '@/composables/useReorderableList';
 import {
     lifeAreaColorClasses,
     lifeAreaColorOptions,
@@ -29,6 +29,10 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const lifeAreasRef = toRef(props, 'lifeAreas');
+
+const { move } = useReorderableList(lifeAreasRef, reorder.url());
+
 const editingId = ref<string | null>(null);
 const editingColor = ref<LifeAreaColor>('dawn');
 const newColor = ref<LifeAreaColor>('dawn');
@@ -36,19 +40,6 @@ const newColor = ref<LifeAreaColor>('dawn');
 function startEditing(area: LifeArea): void {
     editingId.value = area.id;
     editingColor.value = area.color;
-}
-
-function move(index: number, direction: -1 | 1): void {
-    const ids = props.lifeAreas.map((area) => area.id);
-    const target = index + direction;
-
-    if (target < 0 || target >= ids.length) {
-        return;
-    }
-
-    [ids[index], ids[target]] = [ids[target], ids[index]];
-
-    router.patch(reorder.url(), { ordered_ids: ids }, { preserveScroll: true });
 }
 
 function deactivate(area: LifeArea): void {
@@ -213,26 +204,13 @@ function reactivate(area: LifeArea): void {
                             </div>
 
                             <div class="flex shrink-0 items-center gap-1">
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    :disabled="index === 0"
-                                    :aria-label="`${area.name} を上へ`"
-                                    @click="move(index, -1)"
-                                >
-                                    <ArrowUp :size="15" :stroke-width="1.6" />
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    :disabled="index === lifeAreas.length - 1"
-                                    :aria-label="`${area.name} を下へ`"
-                                    @click="move(index, 1)"
-                                >
-                                    <ArrowDown :size="15" :stroke-width="1.6" />
-                                </Button>
+                                <ReorderControls
+                                    :index="index"
+                                    :length="lifeAreas.length"
+                                    :item-label="area.name"
+                                    @up="move(index, -1)"
+                                    @down="move(index, 1)"
+                                />
                                 <Button
                                     type="button"
                                     variant="ghost"
