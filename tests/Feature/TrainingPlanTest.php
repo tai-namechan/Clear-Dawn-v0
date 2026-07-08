@@ -230,4 +230,25 @@ class TrainingPlanTest extends TestCase
             'target_reps' => 10,
         ]);
     }
+
+    public function test_user_can_view_plan_editor_with_steps_and_runs_as_lists(): void
+    {
+        $user = User::factory()->create();
+        $plan = TrainingPlan::factory()->ready()->create(['user_id' => $user->id]);
+        TrainingPlanStep::factory()->forPlan($plan)->create(['sort_order' => 1]);
+        TrainingRun::factory()->create([
+            'user_id' => $user->id,
+            'training_plan_id' => $plan->id,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('training-plans.show', $plan))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Training/PlanEdit')
+                ->has('plan.steps', 1)
+                ->has('plan.runs', 1)
+                ->where('plan.runs.0.training_plan', null)
+            );
+    }
 }

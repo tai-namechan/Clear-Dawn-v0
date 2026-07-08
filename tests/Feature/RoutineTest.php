@@ -87,6 +87,7 @@ class RoutineTest extends TestCase
                 ->component('Routines/Show')
                 ->where('routine.name', '編集対象')
                 ->has('routine.steps', 1)
+                ->where('routine.steps', fn ($steps) => is_array($steps) && array_is_list($steps))
             );
     }
 

@@ -24,7 +24,9 @@ class RoutineEditorResource extends JsonResource
             'sort_order' => $this->sort_order,
             'life_area_id' => $this->life_area_id,
             'life_area' => LifeAreaResource::make($this->whenLoaded('lifeArea')),
-            'steps' => RoutineStepResource::collection($this->whenLoaded('routineSteps')),
+            'steps' => $this->relationLoaded('routineSteps')
+                ? RoutineStepResource::collection($this->routineSteps)->resolve()
+                : [],
         ];
     }
 }

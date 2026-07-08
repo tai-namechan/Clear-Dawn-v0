@@ -25,8 +25,12 @@ class TrainingPlanResource extends JsonResource
             'life_area_id' => $this->life_area_id,
             'routine_id' => $this->routine_id,
             'life_area' => LifeAreaResource::make($this->whenLoaded('lifeArea')),
-            'steps' => TrainingPlanStepResource::collection($this->whenLoaded('steps')),
-            'runs' => TrainingRunResource::collection($this->whenLoaded('runs')),
+            'steps' => $this->relationLoaded('steps')
+                ? TrainingPlanStepResource::collection($this->steps)->resolve()
+                : [],
+            'runs' => $this->relationLoaded('runs')
+                ? TrainingRunSummaryResource::collection($this->runs)->resolve()
+                : [],
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
