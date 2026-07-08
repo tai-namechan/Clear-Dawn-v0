@@ -94,11 +94,17 @@ function formatOccurredAt(iso: string): string {
 function eventDescription(log: ActivityLog): string {
     const summary = log.subject_summary;
 
-    if (log.event_type === 'matrix_item_completed' && summary?.type === 'matrix_cell_item') {
+    if (
+        log.event_type === 'matrix_item_completed' &&
+        summary?.type === 'matrix_cell_item'
+    ) {
         return `「${summary.title}」を完了`;
     }
 
-    if (log.event_type === 'matrix_item_reopened' && summary?.type === 'matrix_cell_item') {
+    if (
+        log.event_type === 'matrix_item_reopened' &&
+        summary?.type === 'matrix_cell_item'
+    ) {
         return `「${summary.title}」を再開`;
     }
 
@@ -106,17 +112,15 @@ function eventDescription(log: ActivityLog): string {
         const title =
             summary?.type === 'training_run' ? summary.plan_title : null;
 
-        return title
-            ? `トレーニング「${title}」を完了`
-            : 'トレーニングを完了';
+        return title ? `トレーニング「${title}」を完了` : 'トレーニングを完了';
     }
 
     return activityLogEventTypeLabels[log.event_type];
 }
 
-const eventTypeOptions = Object.entries(
-    activityLogEventTypeLabels,
-) as Array<[ActivityLogEventType, string]>;
+const eventTypeOptions = Object.entries(activityLogEventTypeLabels) as Array<
+    [ActivityLogEventType, string]
+>;
 </script>
 
 <template>
@@ -175,7 +179,10 @@ const eventTypeOptions = Object.entries(
                 aria-label="履歴タイムライン"
                 class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface"
             >
-                <ul v-if="history.data.length > 0" class="relative flex flex-col">
+                <ul
+                    v-if="history.data.length > 0"
+                    class="relative flex flex-col"
+                >
                     <li
                         v-for="log in history.data"
                         :key="log.id"

@@ -26,6 +26,7 @@ class TrainingPlanStepController extends Controller
         Gate::authorize('updateSteps', $trainingPlan);
 
         $validated = $request->validated();
+        /** @var array{exercise_id: string, video_id?: string|null, purpose?: StepPurpose|null, target_sets?: int|null, target_reps?: int|null, target_weight_kg?: float|string|null, target_distance_m?: float|string|null, target_duration_seconds?: int|null, rest_seconds?: int|null, note?: string|null} $attributes */
         $attributes = $this->mapStepAttributes($validated);
 
         $step = $service->handle($trainingPlan, $attributes);
@@ -37,6 +38,7 @@ class TrainingPlanStepController extends Controller
 
     public function update(
         UpdateTrainingPlanStepRequest $request,
+        TrainingPlan $trainingPlan,
         TrainingPlanStep $trainingPlanStep,
         UpdateTrainingPlanStepService $service,
     ): JsonResponse {
@@ -53,6 +55,7 @@ class TrainingPlanStepController extends Controller
     }
 
     public function destroy(
+        TrainingPlan $trainingPlan,
         TrainingPlanStep $trainingPlanStep,
         DeleteTrainingPlanStepService $service,
     ): JsonResponse {

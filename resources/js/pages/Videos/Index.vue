@@ -279,9 +279,7 @@ async function deleteVideo(video: Video): Promise<void> {
                     class="flex cursor-pointer flex-col items-center gap-2 rounded-xl border border-dashed border-cd-line px-4 py-6 font-sans text-sm text-cd-ink-muted transition-colors hover:border-cd-line hover:bg-white/40"
                 >
                     <Plus :size="20" :stroke-width="1.6" />
-                    <span>{{
-                        selectedFile?.name ?? 'ファイルを選択'
-                    }}</span>
+                    <span>{{ selectedFile?.name ?? 'ファイルを選択' }}</span>
                     <input
                         type="file"
                         accept="video/mp4,video/webm,video/quicktime"
@@ -300,7 +298,8 @@ async function deleteVideo(video: Video): Promise<void> {
                         :stroke-width="1.6"
                         class="mt-0.5 shrink-0 text-cd-sunrise"
                     />
-                    MOV 形式はブラウザによって再生できない場合があります。mp4 での保存を推奨します。
+                    MOV 形式はブラウザによって再生できない場合があります。mp4
+                    での保存を推奨します。
                 </div>
 
                 <div v-if="isUploading" class="space-y-1">
@@ -341,9 +340,7 @@ async function deleteVideo(video: Video): Promise<void> {
                 <Button
                     type="button"
                     :disabled="
-                        isUploading ||
-                        !selectedFile ||
-                        !uploadTitle.trim()
+                        isUploading || !selectedFile || !uploadTitle.trim()
                     "
                     @click="submitUpload"
                 >

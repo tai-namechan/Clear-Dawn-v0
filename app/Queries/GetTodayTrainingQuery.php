@@ -3,8 +3,10 @@
 namespace App\Queries;
 
 use App\Enums\TrainingPlanStatus;
+use App\Models\TrainingPlan;
 use App\Models\User;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 class GetTodayTrainingQuery
 {
@@ -17,12 +19,12 @@ class GetTodayTrainingQuery
      *
      * @return array{
      *     date: string,
-     *     plans: \Illuminate\Support\Collection<int, \App\Models\TrainingPlan>
+     *     plans: Collection<int, TrainingPlan>
      * }
      */
     public function handle(User $user, ?Carbon $date = null): array
     {
-        $targetDate = ($date ?? now())->startOfDay();
+        $targetDate = Carbon::parse($date ?? now())->startOfDay();
 
         return [
             'date' => $targetDate->toDateString(),

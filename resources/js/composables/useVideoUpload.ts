@@ -128,7 +128,9 @@ export function useVideoUpload(options: UseVideoUploadOptions = {}) {
                     return;
                 }
 
-                reject(new Error(`Upload failed with status ${xhr?.status ?? 0}`));
+                reject(
+                    new Error(`Upload failed with status ${xhr?.status ?? 0}`),
+                );
             };
 
             xhr.onerror = () => {

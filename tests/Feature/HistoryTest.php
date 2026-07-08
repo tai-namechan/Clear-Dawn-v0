@@ -17,6 +17,7 @@ use Database\Seeders\MatrixRowSeeder;
 use Database\Seeders\MetricSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -97,7 +98,7 @@ class HistoryTest extends TestCase
                 'user_id' => $user->id,
                 'event_type' => ActivityLogEventType::MatrixItemCompleted,
                 'subject_type' => 'matrix_cell_item',
-                'subject_id' => (string) \Illuminate\Support\Str::ulid(),
+                'subject_id' => (string) Str::ulid(),
                 'occurred_at' => now()->subMinutes($i),
             ]);
         }
@@ -136,14 +137,14 @@ class HistoryTest extends TestCase
             'user_id' => $user->id,
             'event_type' => ActivityLogEventType::MatrixItemCompleted,
             'subject_type' => 'matrix_cell_item',
-            'subject_id' => (string) \Illuminate\Support\Str::ulid(),
+            'subject_id' => (string) Str::ulid(),
             'occurred_at' => Carbon::parse('2026-07-01 10:00:00'),
         ]);
         ActivityLog::query()->create([
             'user_id' => $user->id,
             'event_type' => ActivityLogEventType::MatrixItemCompleted,
             'subject_type' => 'matrix_cell_item',
-            'subject_id' => (string) \Illuminate\Support\Str::ulid(),
+            'subject_id' => (string) Str::ulid(),
             'occurred_at' => Carbon::parse('2026-07-15 10:00:00'),
         ]);
 
@@ -168,7 +169,7 @@ class HistoryTest extends TestCase
             'user_id' => $otherUser->id,
             'event_type' => ActivityLogEventType::MatrixItemCompleted,
             'subject_type' => 'matrix_cell_item',
-            'subject_id' => (string) \Illuminate\Support\Str::ulid(),
+            'subject_id' => (string) Str::ulid(),
             'occurred_at' => now(),
         ]);
 

@@ -1,11 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import {
-    ChevronLeft,
-    ChevronRight,
-    CirclePlay,
-    Plus,
-} from '@lucide/vue';
+import { ChevronLeft, ChevronRight, CirclePlay, Plus } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import RoutinesHubTabs from '@/components/training/RoutinesHubTabs.vue';
@@ -44,7 +39,9 @@ const formattedDate = computed(() => {
     });
 });
 
-const isToday = computed(() => props.date === new Date().toISOString().slice(0, 10));
+const isToday = computed(
+    () => props.date === new Date().toISOString().slice(0, 10),
+);
 
 function shiftDate(days: number): void {
     const current = new Date(`${props.date}T00:00:00`);
@@ -174,7 +171,9 @@ async function createPlan(): Promise<void> {
                                 >
                                     {{ plan.title }}
                                 </Link>
-                                <p class="mt-1 font-sans text-xs text-cd-ink-muted">
+                                <p
+                                    class="mt-1 font-sans text-xs text-cd-ink-muted"
+                                >
                                     {{ plan.steps?.length ?? 0 }} ステップ
                                     <span
                                         v-if="plan.life_area"
@@ -204,7 +203,9 @@ async function createPlan(): Promise<void> {
                                         : latestRun(plan)?.status ===
                                             'completed'
                                           ? '完了済み'
-                                          : trainingPlanStatusLabels[plan.status]
+                                          : trainingPlanStatusLabels[
+                                                plan.status
+                                            ]
                                 }}
                             </span>
                         </div>

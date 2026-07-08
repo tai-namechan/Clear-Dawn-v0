@@ -4,11 +4,8 @@ namespace App\Queries;
 
 use App\Enums\ActivityLogEventType;
 use App\Models\ActivityLog;
-use App\Models\MatrixCellItem;
-use App\Models\TrainingRun;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 
 class GetActivityHistoryQuery
@@ -26,7 +23,7 @@ class GetActivityHistoryQuery
         return ActivityLog::query()
             ->where('user_id', $user->id)
             ->when(
-                isset($filters['event_type']) && $filters['event_type'] instanceof ActivityLogEventType,
+                isset($filters['event_type']),
                 fn ($query) => $query->where('event_type', $filters['event_type']),
             )
             ->when(
@@ -37,12 +34,7 @@ class GetActivityHistoryQuery
                 isset($filters['to']),
                 fn ($query) => $query->where('occurred_at', '<=', Carbon::parse($filters['to'])->endOfDay()),
             )
-            ->with(['subject' => function (MorphTo $morphTo): void {
-                $morphTo->morphWith([
-                    TrainingRun::class => ['trainingPlan'],
-                    MatrixCellItem::class => [],
-                ]);
-            }])
+            ->with(['subject'])
             ->orderByDesc('occurred_at')
             ->paginate($perPage);
     }

@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import {
-    ChevronLeft,
-    ChevronRight,
-    LineChart,
-} from '@lucide/vue';
+import { ChevronLeft, ChevronRight, LineChart } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import { Button } from '@/components/ui/button';
@@ -193,7 +189,9 @@ async function saveAll(): Promise<void> {
                                         />
                                     </Link>
                                 </div>
-                                <p class="mt-0.5 font-sans text-xs text-cd-ink-muted">
+                                <p
+                                    class="mt-0.5 font-sans text-xs text-cd-ink-muted"
+                                >
                                     単位: {{ entry.metric.unit }}
                                 </p>
                             </div>

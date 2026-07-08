@@ -127,10 +127,9 @@ async function deleteStep(step: RoutineStep): Promise<void> {
         return;
     }
 
-    await apiFetch(
-        `/routines/${props.routine.id}/steps/${step.id}`,
-        { method: 'DELETE' },
-    );
+    await apiFetch(`/routines/${props.routine.id}/steps/${step.id}`, {
+        method: 'DELETE',
+    });
     router.reload({ only: ['routine'] });
 }
 
@@ -144,10 +143,7 @@ function stepPurpose(step: RoutineStep): string {
 }
 
 function stepPurposeKey(step: RoutineStep) {
-    return resolveStepPurpose(
-        step.purpose,
-        step.exercise?.category ?? null,
-    );
+    return resolveStepPurpose(step.purpose, step.exercise?.category ?? null);
 }
 
 function formatStepTarget(step: RoutineStep): string {
@@ -218,9 +214,7 @@ function formatStepTarget(step: RoutineStep): string {
                     {{ stepPurposeLabels[item.purpose] }}
                     <span class="opacity-70">×{{ item.count }}</span>
                 </span>
-                <span
-                    class="ml-auto font-sans text-sm text-cd-ink-muted"
-                >
+                <span class="ml-auto font-sans text-sm text-cd-ink-muted">
                     合計
                     {{ formatDurationSeconds(totalDurationSeconds) }}
                 </span>
@@ -231,7 +225,9 @@ function formatStepTarget(step: RoutineStep): string {
                 class="cd-shadow-soft overflow-hidden rounded-2xl border border-cd-line bg-cd-surface"
             >
                 <div class="overflow-x-auto">
-                    <table class="w-full min-w-[640px] text-left font-sans text-sm">
+                    <table
+                        class="w-full min-w-[640px] text-left font-sans text-sm"
+                    >
                         <thead>
                             <tr
                                 class="border-b border-cd-line/60 bg-white/40 text-xs tracking-[0.06em] text-cd-ink-muted"
@@ -254,7 +250,9 @@ function formatStepTarget(step: RoutineStep): string {
                                 <td class="px-4 py-3 text-cd-ink-muted">
                                     {{ index + 1 }}
                                 </td>
-                                <td class="px-4 py-3 font-serif tracking-[0.06em] text-cd-ink">
+                                <td
+                                    class="px-4 py-3 font-serif tracking-[0.06em] text-cd-ink"
+                                >
                                     {{ step.exercise?.name ?? '—' }}
                                 </td>
                                 <td class="px-4 py-3">
@@ -325,7 +323,10 @@ function formatStepTarget(step: RoutineStep): string {
         </div>
     </div>
 
-    <Dialog :open="showAddStepModal" @update:open="(v) => (showAddStepModal = v)">
+    <Dialog
+        :open="showAddStepModal"
+        @update:open="(v) => (showAddStepModal = v)"
+    >
         <DialogContent class="bg-cd-surface sm:max-w-md">
             <DialogHeader>
                 <DialogTitle

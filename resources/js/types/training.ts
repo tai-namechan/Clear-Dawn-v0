@@ -1,28 +1,13 @@
 import type { LifeArea } from '@/types/matrix';
 
 export type StepPurpose =
-    | 'prep'
-    | 'movement'
-    | 'power'
-    | 'strength'
-    | 'care'
-    | 'skill'
-    | 'other';
+    'prep' | 'movement' | 'power' | 'strength' | 'care' | 'skill' | 'other';
 
 export type ExerciseCategory =
-    | 'strength'
-    | 'baseball'
-    | 'mobility'
-    | 'care'
-    | 'music'
-    | 'other';
+    'strength' | 'baseball' | 'mobility' | 'care' | 'music' | 'other';
 
 export type TrackingType =
-    | 'weight_reps'
-    | 'reps'
-    | 'duration'
-    | 'distance'
-    | 'check';
+    'weight_reps' | 'reps' | 'duration' | 'distance' | 'check';
 
 export type TrainingPlanStatus = 'draft' | 'ready' | 'archived';
 
@@ -33,9 +18,7 @@ export type TrainingRunStepStatus = 'pending' | 'completed' | 'skipped';
 export type VideoStatus = 'pending' | 'ready';
 
 export type ActivityLogEventType =
-    | 'matrix_item_completed'
-    | 'matrix_item_reopened'
-    | 'training_run_completed';
+    'matrix_item_completed' | 'matrix_item_reopened' | 'training_run_completed';
 
 export type MetricValueType = 'decimal' | 'integer' | 'scale_1_5';
 

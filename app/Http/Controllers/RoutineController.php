@@ -42,6 +42,7 @@ class RoutineController extends Controller
 
     public function store(StoreRoutineRequest $request, CreateRoutineService $service): JsonResponse
     {
+        /** @var array{name: string, life_area_id?: string|null, description?: string|null, is_active?: bool} $validated */
         $validated = $request->validated();
 
         $routine = $service->handle($request->user(), $validated);

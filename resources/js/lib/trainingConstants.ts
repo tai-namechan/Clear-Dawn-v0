@@ -51,7 +51,10 @@ export const trainingRunStatusLabels: Record<TrainingRunStatus, string> = {
     aborted: '中断',
 };
 
-export const trainingRunStepStatusLabels: Record<TrainingRunStepStatus, string> = {
+export const trainingRunStepStatusLabels: Record<
+    TrainingRunStepStatus,
+    string
+> = {
     pending: '未完了',
     completed: '完了',
     skipped: 'スキップ',
@@ -62,11 +65,12 @@ export const videoStatusLabels: Record<VideoStatus, string> = {
     ready: '利用可能',
 };
 
-export const activityLogEventTypeLabels: Record<ActivityLogEventType, string> = {
-    matrix_item_completed: 'マトリクス完了',
-    matrix_item_reopened: 'マトリクス再開',
-    training_run_completed: 'トレーニング完了',
-};
+export const activityLogEventTypeLabels: Record<ActivityLogEventType, string> =
+    {
+        matrix_item_completed: 'マトリクス完了',
+        matrix_item_reopened: 'マトリクス再開',
+        training_run_completed: 'トレーニング完了',
+    };
 
 /** 種目カテゴリから purpose を推定（ステップに purpose 未設定時） */
 export const categoryDefaultPurpose: Record<ExerciseCategory, StepPurpose> = {
@@ -101,8 +105,7 @@ export function resolveStepPurpose(
 export function estimateStepDurationSeconds(step: StepDurationInput): number {
     const sets = Math.max(step.target_sets ?? 1, 1);
     const rest = step.rest_seconds ?? 0;
-    const workPerSet =
-        step.target_duration_seconds ?? WORK_SECONDS_PER_SET;
+    const workPerSet = step.target_duration_seconds ?? WORK_SECONDS_PER_SET;
 
     const workTotal = sets * workPerSet;
     const restTotal = sets > 1 ? (sets - 1) * rest : 0;

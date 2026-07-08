@@ -29,8 +29,8 @@ class CreateTrainingPlanService
             $plan = $user->trainingPlans()->create([
                 'title' => $attributes['title'],
                 'scheduled_on' => $attributes['scheduled_on'],
-                'life_area_id' => $attributes['life_area_id'] ?? $routine?->life_area_id,
-                'routine_id' => $routine?->id ?? ($attributes['routine_id'] ?? null),
+                'life_area_id' => $attributes['life_area_id'] ?? ($routine !== null ? $routine->life_area_id : null),
+                'routine_id' => $routine !== null ? $routine->id : ($attributes['routine_id'] ?? null),
                 'note' => $attributes['note'] ?? null,
                 'status' => TrainingPlanStatus::Draft,
             ]);

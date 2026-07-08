@@ -183,7 +183,9 @@ async function deleteRecord(record: MetricRecord): Promise<void> {
                 </h2>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full min-w-[480px] text-left font-sans text-sm">
+                    <table
+                        class="w-full min-w-[480px] text-left font-sans text-sm"
+                    >
                         <thead>
                             <tr
                                 class="border-b border-cd-line/60 bg-white/40 text-xs tracking-[0.06em] text-cd-ink-muted"

@@ -29,7 +29,11 @@ import {
     trainingPlanStatusLabels,
     trackingTypeLabels,
 } from '@/lib/trainingConstants';
-import type { Exercise, TrainingPlan, TrainingPlanStep } from '@/types/training';
+import type {
+    Exercise,
+    TrainingPlan,
+    TrainingPlanStep,
+} from '@/types/training';
 
 interface Props {
     plan: TrainingPlan;
@@ -58,8 +62,7 @@ const canStart = computed(
 );
 
 const activeRun = computed(
-    () =>
-        props.plan.runs?.find((run) => run.status === 'in_progress') ?? null,
+    () => props.plan.runs?.find((run) => run.status === 'in_progress') ?? null,
 );
 
 async function savePlan(): Promise<void> {
@@ -150,10 +153,9 @@ async function deleteStep(step: TrainingPlanStep): Promise<void> {
         return;
     }
 
-    await apiFetch(
-        `/training/plans/${props.plan.id}/steps/${step.id}`,
-        { method: 'DELETE' },
-    );
+    await apiFetch(`/training/plans/${props.plan.id}/steps/${step.id}`, {
+        method: 'DELETE',
+    });
     router.reload({ only: ['plan'] });
 }
 
@@ -169,10 +171,7 @@ async function deletePlan(): Promise<void> {
 }
 
 function stepPurposeKey(step: TrainingPlanStep) {
-    return resolveStepPurpose(
-        step.purpose,
-        step.exercise?.category ?? null,
-    );
+    return resolveStepPurpose(step.purpose, step.exercise?.category ?? null);
 }
 
 function formatStepTarget(step: TrainingPlanStep): string {
@@ -213,7 +212,9 @@ function formatStepTarget(step: TrainingPlanStep): string {
                 今日のメニュー
             </Link>
 
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div
+                class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+            >
                 <PageTitleOrnament
                     :title="plan.title"
                     :subtitle="`${plan.scheduled_on} · ${trainingPlanStatusLabels[plan.status]}`"
@@ -242,7 +243,7 @@ function formatStepTarget(step: TrainingPlanStep): string {
                         v-if="plan.status === 'draft'"
                         type="button"
                         variant="outline"
-                        :disabled="saving || !(plan.steps?.length)"
+                        :disabled="saving || !plan.steps?.length"
                         @click="markReady"
                     >
                         準備完了にする
@@ -283,9 +284,7 @@ function formatStepTarget(step: TrainingPlanStep): string {
             </section>
 
             <div class="flex items-center justify-between gap-3">
-                <h2
-                    class="font-serif text-base tracking-[0.12em] text-cd-ink"
-                >
+                <h2 class="font-serif text-base tracking-[0.12em] text-cd-ink">
                     ステップ
                 </h2>
                 <Button type="button" size="sm" @click="openAddStep">
@@ -306,7 +305,9 @@ function formatStepTarget(step: TrainingPlanStep): string {
                     >
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
-                                <span class="font-sans text-xs text-cd-ink-muted">
+                                <span
+                                    class="font-sans text-xs text-cd-ink-muted"
+                                >
                                     {{ index + 1 }}
                                 </span>
                                 <span
@@ -327,7 +328,9 @@ function formatStepTarget(step: TrainingPlanStep): string {
                             </div>
                             <p class="mt-1 font-sans text-xs text-cd-ink-muted">
                                 {{ formatStepTarget(step) }}
-                                <span class="before:mx-1.5 before:content-['·']">
+                                <span
+                                    class="before:mx-1.5 before:content-['·']"
+                                >
                                     {{
                                         step.exercise
                                             ? trackingTypeLabels[
@@ -360,7 +363,10 @@ function formatStepTarget(step: TrainingPlanStep): string {
         </div>
     </div>
 
-    <Dialog :open="showAddStepModal" @update:open="(v) => (showAddStepModal = v)">
+    <Dialog
+        :open="showAddStepModal"
+        @update:open="(v) => (showAddStepModal = v)"
+    >
         <DialogContent class="bg-cd-surface sm:max-w-md">
             <DialogHeader>
                 <DialogTitle

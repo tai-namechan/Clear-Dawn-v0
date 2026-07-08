@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Enums\TrainingPlanStatus;
-use App\Enums\TrainingPlanStatus;
 use App\Http\Requests\TrainingPlans\StoreTrainingPlanRequest;
 use App\Http\Requests\TrainingPlans\UpdateTrainingPlanRequest;
 use App\Http\Resources\TrainingPlanResource;
@@ -57,6 +56,7 @@ class TrainingPlanController extends Controller
 
     public function store(StoreTrainingPlanRequest $request, CreateTrainingPlanService $service): JsonResponse
     {
+        /** @var array{title: string, scheduled_on: string, life_area_id?: string|null, routine_id?: string|null, note?: string|null} $validated */
         $validated = $request->validated();
         $user = $request->user();
 

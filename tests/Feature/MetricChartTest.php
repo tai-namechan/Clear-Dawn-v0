@@ -3,14 +3,12 @@
 namespace Tests\Feature;
 
 use App\Enums\ExerciseCategory;
-use App\Enums\TrainingRunStatus;
 use App\Models\Exercise;
 use App\Models\Metric;
 use App\Models\MetricRecord;
 use App\Models\TrainingPlan;
 use App\Models\TrainingPlanStep;
 use App\Models\TrainingRun;
-use App\Models\TrainingRunStep;
 use App\Models\TrainingSetLog;
 use App\Models\User;
 use App\Queries\GetMetricChartQuery;
@@ -118,8 +116,8 @@ class MetricChartTest extends TestCase
         );
 
         $this->assertCount(1, $chart);
-        $this->assertSame('2026-07-07', $chart->first()['date']);
-        $this->assertSame('80.00', $chart->first()['max_weight_kg']);
+        $this->assertSame('2026-07-07', $chart[0]['date']);
+        $this->assertSame('80.00', $chart[0]['max_weight_kg']);
     }
 
     public function test_strength_chart_aggregates_daily_max_weight_per_exercise(): void
@@ -148,8 +146,8 @@ class MetricChartTest extends TestCase
         );
 
         $this->assertCount(1, $chart);
-        $this->assertSame('スクワット', $chart->first()['exercise_name']);
-        $this->assertSame('90.00', $chart->first()['max_weight_kg']);
+        $this->assertSame('スクワット', $chart[0]['exercise_name']);
+        $this->assertSame('90.00', $chart[0]['max_weight_kg']);
     }
 
     private function createCompletedStrengthRun(

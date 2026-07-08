@@ -22,6 +22,8 @@ class UpsertDailyMetricsService
     public function handle(User $user, Carbon $recordedOn, array $records): void
     {
         DB::transaction(function () use ($user, $recordedOn, $records): void {
+            $recordedOnDate = $recordedOn->copy()->startOfDay();
+
             $metricsByKey = Metric::query()
                 ->whereIn('key', array_column($records, 'metric_key'))
                 ->get()
@@ -38,7 +40,7 @@ class UpsertDailyMetricsService
                 $user->metricRecords()->updateOrCreate(
                     [
                         'metric_id' => $metric->id,
-                        'recorded_on' => $recordedOn->toDateString(),
+                        'recorded_on' => $recordedOnDate,
                     ],
                     [
                         'value' => $record['value'],

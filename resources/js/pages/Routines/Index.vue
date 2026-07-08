@@ -148,7 +148,9 @@ async function deleteRoutine(routine: Routine): Promise<void> {
                                 >
                                     {{ routine.description }}
                                 </p>
-                                <p class="mt-1 font-sans text-xs text-cd-ink-muted">
+                                <p
+                                    class="mt-1 font-sans text-xs text-cd-ink-muted"
+                                >
                                     {{ routine.steps_count ?? 0 }} ステップ
                                 </p>
                             </div>

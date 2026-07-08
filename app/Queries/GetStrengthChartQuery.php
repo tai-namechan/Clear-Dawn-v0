@@ -7,7 +7,6 @@ use App\Enums\TrainingRunStatus;
 use App\Models\TrainingSetLog;
 use App\Models\User;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class GetStrengthChartQuery
@@ -15,13 +14,9 @@ class GetStrengthChartQuery
     /**
      * 筋力種目の重量推移（種目別・日別の最大重量）。
      *
-     * @return Collection<int, array{
-     *     date: string,
-     *     exercise_name: string,
-     *     max_weight_kg: string|null
-     * }>
+     * @return array<int, array{date: string, exercise_name: string, max_weight_kg: string|null}>
      */
-    public function handle(User $user, Carbon $from, Carbon $to, ?string $exerciseId = null): Collection
+    public function handle(User $user, Carbon $from, Carbon $to, ?string $exerciseId = null): array
     {
         $query = TrainingSetLog::query()
             ->select([
@@ -43,13 +38,12 @@ class GetStrengthChartQuery
             ->groupBy('date', 'training_run_steps.exercise_name')
             ->orderBy('date');
 
-        /** @var Collection<int, object{date: string, exercise_name: string, max_weight_kg: string|null}> $rows */
-        $rows = $query->get();
-
-        return $rows->map(fn (object $row): array => [
-            'date' => $row->date,
-            'exercise_name' => $row->exercise_name,
-            'max_weight_kg' => $row->max_weight_kg !== null ? (string) $row->max_weight_kg : null,
-        ]);
+        return $query->toBase()->get()->map(fn (object $row): array => [
+            'date' => (string) $row->date,
+            'exercise_name' => (string) $row->exercise_name,
+            'max_weight_kg' => $row->max_weight_kg !== null
+                ? number_format((float) $row->max_weight_kg, 2, '.', '')
+                : null,
+        ])->values()->all();
     }
 }

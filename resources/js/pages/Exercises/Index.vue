@@ -55,9 +55,7 @@ const groupedExercises = computed(() => {
         groups.set(exercise.category, list);
     }
 
-    return (
-        Object.keys(exerciseCategoryLabels) as ExerciseCategory[]
-    )
+    return (Object.keys(exerciseCategoryLabels) as ExerciseCategory[])
         .filter((category) => groups.has(category))
         .map((category) => ({
             category,
@@ -183,10 +181,10 @@ async function deleteExercise(exercise: Exercise): Promise<void> {
                             >
                                 {{ exercise.name }}
                             </p>
-                            <p class="mt-0.5 font-sans text-xs text-cd-ink-muted">
-                                {{
-                                    trackingTypeLabels[exercise.tracking_type]
-                                }}
+                            <p
+                                class="mt-0.5 font-sans text-xs text-cd-ink-muted"
+                            >
+                                {{ trackingTypeLabels[exercise.tracking_type] }}
                                 <span
                                     v-if="exercise.videos_count"
                                     class="before:mx-1.5 before:content-['·']"
@@ -283,10 +281,7 @@ async function deleteExercise(exercise: Exercise): Promise<void> {
                     :disabled="saving"
                 />
 
-                <p
-                    v-if="formError"
-                    class="font-sans text-xs text-destructive"
-                >
+                <p v-if="formError" class="font-sans text-xs text-destructive">
                     {{ formError }}
                 </p>
             </div>

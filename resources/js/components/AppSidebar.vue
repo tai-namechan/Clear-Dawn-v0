@@ -15,9 +15,9 @@ import {
     SidebarHeader,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
-import type { NavItem } from '@/types';
 import { dashboard } from '@/routes';
 import { edit as editProfile } from '@/routes/profile';
+import type { NavItem } from '@/types';
 
 interface CdNavItem {
     title: string;
@@ -111,9 +111,7 @@ function isNavActive(item: CdNavItem): boolean {
                 <template v-for="item in navItems" :key="item.title">
                     <Link
                         :href="item.href"
-                        :aria-current="
-                            isNavActive(item) ? 'page' : undefined
-                        "
+                        :aria-current="isNavActive(item) ? 'page' : undefined"
                         class="flex w-24 flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 transition-colors group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-2"
                         :class="
                             isNavActive(item)

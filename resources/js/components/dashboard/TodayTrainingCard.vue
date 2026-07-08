@@ -40,9 +40,7 @@ function planStatusLabel(plan: TrainingPlan): string {
         <div
             class="flex items-center justify-between gap-3 border-b border-cd-line/60 px-5 py-4"
         >
-            <h2
-                class="font-serif text-base tracking-[0.12em] text-cd-ink"
-            >
+            <h2 class="font-serif text-base tracking-[0.12em] text-cd-ink">
                 今日のメニュー
             </h2>
             <Link

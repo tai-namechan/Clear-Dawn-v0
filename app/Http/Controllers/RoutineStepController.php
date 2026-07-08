@@ -26,6 +26,7 @@ class RoutineStepController extends Controller
         Gate::authorize('update', $routine);
 
         $validated = $request->validated();
+        /** @var array{exercise_id: string, video_id?: string|null, purpose?: StepPurpose|null, target_sets?: int|null, target_reps?: int|null, target_weight_kg?: float|string|null, target_distance_m?: float|string|null, target_duration_seconds?: int|null, rest_seconds?: int|null, note?: string|null} $attributes */
         $attributes = $this->mapStepAttributes($validated);
 
         $step = $service->handle($routine, $attributes);
@@ -37,6 +38,7 @@ class RoutineStepController extends Controller
 
     public function update(
         UpdateRoutineStepRequest $request,
+        Routine $routine,
         RoutineStep $routineStep,
         UpdateRoutineStepService $service,
     ): JsonResponse {
@@ -52,8 +54,11 @@ class RoutineStepController extends Controller
         ]);
     }
 
-    public function destroy(RoutineStep $routineStep, DeleteRoutineStepService $service): JsonResponse
-    {
+    public function destroy(
+        Routine $routine,
+        RoutineStep $routineStep,
+        DeleteRoutineStepService $service,
+    ): JsonResponse {
         Gate::authorize('delete', $routineStep);
 
         $service->handle($routineStep);

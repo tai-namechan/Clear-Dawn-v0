@@ -27,12 +27,12 @@ class MetricRecordController extends Controller
 
         return Inertia::render('Records/Index', [
             'date' => $recordedOn->toDateString(),
-            'metrics' => $daily->map(fn (array $item): array => [
+            'metrics' => array_map(fn (array $item): array => [
                 'metric' => MetricResource::make($item['metric'])->resolve(),
                 'record' => $item['record'] !== null
                     ? MetricRecordResource::make($item['record'])->resolve()
                     : null,
-            ])->values()->all(),
+            ], $daily),
         ]);
     }
 

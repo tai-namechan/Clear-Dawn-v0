@@ -33,9 +33,7 @@ const props = defineProps<Props>();
 const currentIndex = ref(
     Math.max(
         0,
-        (props.run.steps ?? []).findIndex(
-            (step) => step.status === 'pending',
-        ),
+        (props.run.steps ?? []).findIndex((step) => step.status === 'pending'),
     ),
 );
 
@@ -49,17 +47,14 @@ const setDuration = ref('');
 
 const steps = computed(() => props.run.steps ?? []);
 
-const currentStep = computed(
-    () => steps.value[currentIndex.value] ?? null,
-);
+const currentStep = computed(() => steps.value[currentIndex.value] ?? null);
 
 const trackingType = computed<TrackingType | null>(
     () => currentStep.value?.exercise?.tracking_type ?? null,
 );
 
 const completedCount = computed(
-    () =>
-        steps.value.filter((step) => step.status === 'completed').length,
+    () => steps.value.filter((step) => step.status === 'completed').length,
 );
 
 const progressPercent = computed(() => {
@@ -72,8 +67,7 @@ const progressPercent = computed(() => {
 
 function resetSetForm(): void {
     setWeight.value = currentStep.value?.target_weight_kg ?? '';
-    setReps.value =
-        currentStep.value?.target_reps?.toString() ?? '';
+    setReps.value = currentStep.value?.target_reps?.toString() ?? '';
     setDistance.value = currentStep.value?.target_distance_m ?? '';
     setDuration.value =
         currentStep.value?.target_duration_seconds?.toString() ?? '';
@@ -109,13 +103,10 @@ async function logSet(): Promise<void> {
                 : null;
         }
 
-        await apiFetch(
-            `/training/run-steps/${currentStep.value.id}/sets`,
-            {
-                method: 'POST',
-                body: JSON.stringify(payload),
-            },
-        );
+        await apiFetch(`/training/run-steps/${currentStep.value.id}/sets`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
 
         router.reload({ only: ['run'] });
     } finally {
@@ -194,10 +185,7 @@ async function abortRun(): Promise<void> {
 }
 
 function stepPurposeKey(step: TrainingRunStep) {
-    return resolveStepPurpose(
-        step.purpose,
-        step.exercise?.category ?? null,
-    );
+    return resolveStepPurpose(step.purpose, step.exercise?.category ?? null);
 }
 
 resetSetForm();
@@ -217,7 +205,9 @@ resetSetForm();
             />
 
             <div class="space-y-2">
-                <div class="flex items-center justify-between font-sans text-xs text-cd-ink-muted">
+                <div
+                    class="flex items-center justify-between font-sans text-xs text-cd-ink-muted"
+                >
                     <span>{{ completedCount }} / {{ steps.length }} 完了</span>
                     <span>{{ progressPercent }}%</span>
                 </div>
@@ -250,9 +240,7 @@ resetSetForm();
                         class="inline-flex rounded-full border px-2 py-0.5 font-sans text-xs"
                         :class="purposeChipClasses(stepPurposeKey(currentStep))"
                     >
-                        {{
-                            stepPurposeLabels[stepPurposeKey(currentStep)]
-                        }}
+                        {{ stepPurposeLabels[stepPurposeKey(currentStep)] }}
                     </span>
                 </div>
 
@@ -288,10 +276,7 @@ resetSetForm();
                         記録済みセット
                     </p>
                     <ul class="space-y-1 font-sans text-sm text-cd-ink">
-                        <li
-                            v-for="log in currentStep.set_logs"
-                            :key="log.id"
-                        >
+                        <li v-for="log in currentStep.set_logs" :key="log.id">
                             セット {{ log.set_number }}:
                             <template v-if="log.weight_kg">
                                 {{ log.weight_kg }}kg
@@ -418,11 +403,7 @@ resetSetForm();
                     <Check :size="16" :stroke-width="1.8" />
                     トレーニング完了
                 </Button>
-                <Button
-                    type="button"
-                    variant="destructive"
-                    @click="abortRun"
-                >
+                <Button type="button" variant="destructive" @click="abortRun">
                     <CircleStop :size="16" :stroke-width="1.8" />
                     中断
                 </Button>
