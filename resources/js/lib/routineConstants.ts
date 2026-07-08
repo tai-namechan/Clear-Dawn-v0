@@ -45,6 +45,62 @@ export const trackingTypeLabels: Record<TrackingType, string> = {
     text: 'テキスト',
 };
 
+/** ステップ追加モーダル用の記録形式タブ表示 */
+export const trackingTypeTabLabels: Record<TrackingType, string> = {
+    reps: '回数',
+    duration: '時間',
+    distance: '距離',
+    weight_reps: '重量×回数',
+    check: 'チェック',
+    count: 'カウント',
+    text: 'カスタム',
+};
+
+export const defaultLoadUnit = 'kg';
+
+export const defaultAmountUnitForTracking: Record<TrackingType, string> = {
+    weight_reps: '回',
+    reps: '回',
+    duration: '秒',
+    distance: 'km',
+    check: '',
+    count: '回',
+    text: '',
+};
+
+export const trackingTypeOptions: TrackingType[] = [
+    'reps',
+    'duration',
+    'distance',
+    'weight_reps',
+    'count',
+    'check',
+    'text',
+];
+
+export const stepPurposeOptions: StepPurpose[] = [
+    'prep',
+    'movement',
+    'power',
+    'strength',
+    'care',
+    'practice',
+    'study',
+    'review',
+    'other',
+];
+
+export const routineItemCategoryOptions: RoutineItemCategory[] = [
+    'strength',
+    'baseball',
+    'mobility',
+    'care',
+    'music',
+    'study',
+    'life',
+    'other',
+];
+
 export const routinePlanStatusLabels: Record<RoutinePlanStatus, string> = {
     draft: '下書き',
     ready: '準備完了',

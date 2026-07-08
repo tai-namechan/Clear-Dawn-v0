@@ -9,12 +9,11 @@ import {
     SkipForward,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import SessionBlockLogger from '@/components/routine/SessionBlockLogger.vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { apiFetch } from '@/lib/apiFetch';
 import { purposeChipClasses } from '@/lib/stepPurposeColors';
 import {
-    formatBlockLog,
     formatDurationSeconds,
     formatStepTarget,
     resolveStepPurpose,
@@ -48,9 +47,6 @@ const logging = ref(false);
 const playbackUrl = ref<string | null>(null);
 const playbackLoading = ref(false);
 
-const blockLoad = ref('');
-const blockAmount = ref('');
-
 const steps = computed(() => props.session.steps ?? []);
 
 const currentStep = computed(() => steps.value[currentIndex.value] ?? null);
@@ -71,10 +67,6 @@ const progressPercent = computed(() => {
     return Math.round((completedCount.value / steps.value.length) * 100);
 });
 
-const completedBlocks = computed(
-    () => currentStep.value?.block_logs?.length ?? 0,
-);
-
 const targetBlocks = computed(() => currentStep.value?.target_blocks ?? 0);
 
 const planHref = computed(
@@ -85,15 +77,9 @@ const planTitle = computed(
     () => props.session.routine_plan?.title ?? 'ルーティン実行',
 );
 
-function resetBlockForm(): void {
-    blockLoad.value = currentStep.value?.target_load ?? '';
-    blockAmount.value = currentStep.value?.target_amount ?? '';
-}
-
 function goToStep(index: number): void {
     if (index >= 0 && index < steps.value.length) {
         currentIndex.value = index;
-        resetBlockForm();
     }
 }
 
@@ -126,7 +112,12 @@ watch(
     { immediate: true },
 );
 
-async function logBlock(): Promise<void> {
+async function logBlock(payload: {
+    load_value?: string | null;
+    amount_value?: number | null;
+    amount_unit?: string | null;
+    load_unit?: string | null;
+}): Promise<void> {
     if (!currentStep.value) {
         return;
     }
@@ -134,32 +125,6 @@ async function logBlock(): Promise<void> {
     logging.value = true;
 
     try {
-        const payload: Record<string, unknown> = {};
-
-        if (
-            trackingType.value === 'weight_reps' ||
-            trackingType.value === 'reps' ||
-            trackingType.value === 'count'
-        ) {
-            if (trackingType.value === 'weight_reps') {
-                payload.load_value = blockLoad.value || null;
-                payload.load_unit = currentStep.value.load_unit;
-            }
-
-            payload.amount_value = blockAmount.value
-                ? Number(blockAmount.value)
-                : null;
-            payload.amount_unit = currentStep.value.amount_unit;
-        } else if (
-            trackingType.value === 'distance' ||
-            trackingType.value === 'duration'
-        ) {
-            payload.amount_value = blockAmount.value
-                ? Number(blockAmount.value)
-                : null;
-            payload.amount_unit = currentStep.value.amount_unit;
-        }
-
         await apiFetch(
             `/session-steps/${currentStep.value.id}/blocks`,
             {
@@ -196,7 +161,6 @@ async function completeStep(): Promise<void> {
 
             if (nextPending >= 0) {
                 currentIndex.value = nextPending;
-                resetBlockForm();
             }
         },
     });
@@ -224,7 +188,6 @@ async function skipStep(): Promise<void> {
 
             if (nextPending >= 0) {
                 currentIndex.value = nextPending;
-                resetBlockForm();
             }
         },
     });
@@ -312,7 +275,6 @@ const metrics = computed(() => {
     ];
 });
 
-resetBlockForm();
 </script>
 
 <template>
@@ -482,82 +444,19 @@ resetBlockForm();
                                 </p>
                             </div>
 
-                            <div
-                                v-if="currentStep.block_logs?.length"
-                                class="mt-4 rounded-xl border border-cd-line/60 bg-white/40 p-4"
-                            >
-                                <p
-                                    class="mb-2 font-sans text-xs tracking-[0.08em] text-cd-ink-muted"
-                                >
-                                    記録済み
-                                    <span v-if="targetBlocks">
-                                        （{{ completedBlocks }} /
-                                        {{ targetBlocks }}）
-                                    </span>
-                                </p>
-                                <ul class="space-y-1 font-sans text-sm text-cd-ink">
-                                    <li
-                                        v-for="log in currentStep.block_logs"
-                                        :key="log.id"
-                                    >
-                                        ブロック {{ log.block_number }}:
-                                        {{ formatBlockLog(log) }}
-                                    </li>
-                                </ul>
-                            </div>
-
-                            <div
-                                v-if="trackingType && trackingType !== 'check'"
-                                class="mt-4 flex flex-col gap-3"
-                            >
-                                <div
-                                    v-if="
-                                        trackingType === 'weight_reps' ||
-                                        trackingType === 'reps' ||
-                                        trackingType === 'count'
-                                    "
-                                    class="grid gap-2"
-                                    :class="
-                                        trackingType === 'weight_reps'
-                                            ? 'grid-cols-2'
-                                            : 'grid-cols-1'
-                                    "
-                                >
-                                    <Input
-                                        v-if="trackingType === 'weight_reps'"
-                                        v-model="blockLoad"
-                                        type="number"
-                                        step="0.5"
-                                        :placeholder="`負荷 (${currentStep.load_unit ?? 'kg'})`"
-                                    />
-                                    <Input
-                                        v-model="blockAmount"
-                                        type="number"
-                                        :placeholder="`量 (${currentStep.amount_unit ?? '回'})`"
-                                    />
-                                </div>
-
-                                <Input
-                                    v-if="
-                                        trackingType === 'distance' ||
-                                        trackingType === 'duration'
-                                    "
-                                    v-model="blockAmount"
-                                    type="number"
-                                    step="0.1"
-                                    :placeholder="`量 (${currentStep.amount_unit ?? ''})`"
-                                />
-
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    class="self-start"
-                                    :disabled="logging"
-                                    @click="logBlock"
-                                >
-                                    ブロックを記録
-                                </Button>
+                            <div class="mt-4">
+                                <SessionBlockLogger
+                                v-if="trackingType && currentStep"
+                                :tracking-type="trackingType"
+                                :target-blocks="targetBlocks"
+                                :completed-logs="currentStep.block_logs ?? []"
+                                :load-unit="currentStep.load_unit"
+                                :amount-unit="currentStep.amount_unit"
+                                :default-load="currentStep.target_load"
+                                :default-amount="currentStep.target_amount"
+                                :logging="logging"
+                                @log="logBlock"
+                            />
                             </div>
                         </div>
                     </section>
