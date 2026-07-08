@@ -80,4 +80,44 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->hasMany(Video::class);
     }
+
+    /**
+     * @return HasMany<Exercise, $this>
+     */
+    public function exercises(): HasMany
+    {
+        return $this->hasMany(Exercise::class);
+    }
+
+    /**
+     * @return HasMany<Routine, $this>
+     */
+    public function routines(): HasMany
+    {
+        return $this->hasMany(Routine::class);
+    }
+
+    /**
+     * @return HasMany<TrainingPlan, $this>
+     */
+    public function trainingPlans(): HasMany
+    {
+        return $this->hasMany(TrainingPlan::class);
+    }
+
+    /**
+     * @return HasMany<TrainingRun, $this>
+     */
+    public function trainingRuns(): HasMany
+    {
+        return $this->hasMany(TrainingRun::class);
+    }
+
+    /**
+     * @return HasMany<MetricRecord, $this>
+     */
+    public function metricRecords(): HasMany
+    {
+        return $this->hasMany(MetricRecord::class);
+    }
 }

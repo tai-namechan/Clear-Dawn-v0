@@ -137,7 +137,7 @@ function deleteItem(itemId: string): void {
                                 class="text-[17px] leading-relaxed md:text-lg"
                                 :class="
                                     item.is_completed
-                                        ? 'font-matrix font-matrix--done line-through'
+                                        ? 'font-matrix--done font-matrix line-through'
                                         : 'font-matrix'
                                 "
                             >

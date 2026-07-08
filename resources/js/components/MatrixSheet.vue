@@ -135,7 +135,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                                             ? 'text-left'
                                             : 'text-center text-balance',
                                         item.is_completed
-                                            ? 'font-matrix font-matrix--done line-through decoration-cd-ink-muted/60'
+                                            ? 'font-matrix--done font-matrix line-through decoration-cd-ink-muted/60'
                                             : 'font-matrix',
                                     ]"
                                     >{{ item.title }}</span
