@@ -22,7 +22,7 @@
 
 | タブ | 画面 | ルート | 役割 |
 |---|---|---|---|
-| メニュー（主導線） | S2/S3 | GET /routines, /routines/{id} | メニュー作成・ステップ追加 |
+| ルーティン（主導線） | S2/S3 | GET /routines, /routines/{id} | ルーティン作成・ステップ追加 |
 | 今日やる | S1 | GET /today | 当日開始・再開のみ |
 | 履歴 | S8 | GET /history | 振り返り（登録しない） |
 | 部品（下位） | S4/S5 | GET /routine-items | 整理用ライブラリ |

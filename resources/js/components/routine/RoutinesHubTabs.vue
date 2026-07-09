@@ -10,11 +10,11 @@ type HubTab = {
 };
 
 /**
- * 主導線: メニューを作る → 今日やる → 履歴
- * 実施項目は部品ライブラリ（下位）として末尾に置く
+ * 主導線: ルーティンを作る → 今日やる → 履歴
+ * 部品は下位（整理用）
  */
 const tabs: HubTab[] = [
-    { label: 'メニュー', href: '/routines', matchPrefix: true, primary: true },
+    { label: 'ルーティン', href: '/routines', matchPrefix: true, primary: true },
     { label: '今日やる', href: '/today', matchPrefix: true },
     { label: '履歴', href: '/history' },
     { label: '部品', href: '/routine-items' },

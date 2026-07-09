@@ -135,7 +135,7 @@ const eventTypeOptions = Object.entries(activityLogEventTypeLabels) as Array<
         <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
             <PageTitleOrnament
                 title="履歴"
-                subtitle="完了したメニューとマトリクスの活動を振り返ります。"
+                subtitle="完了したルーティンとマトリクスの活動を振り返ります。"
                 align="left"
             />
 

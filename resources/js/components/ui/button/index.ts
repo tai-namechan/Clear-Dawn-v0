@@ -9,18 +9,18 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground hover:bg-[var(--cd-primary-hover)] active:bg-[var(--cd-primary-hover)]",
+          "bg-primary text-primary-foreground hover:bg-primary-hover active:bg-primary-hover",
         destructive:
-          "bg-destructive text-white hover:bg-[var(--cd-danger-hover)] focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
+          "bg-destructive text-white hover:bg-cd-danger-hover focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
         outline:
           "border border-cd-line bg-white text-cd-ink shadow-xs hover:border-primary/40 hover:bg-primary/5 hover:text-primary",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-[var(--cd-secondary-hover)]",
+          "bg-secondary text-secondary-foreground hover:bg-cd-secondary-hover",
         warning:
-          "bg-[var(--cd-warning)] text-white hover:bg-[var(--cd-warning-hover)]",
+          "bg-cd-warning text-white hover:bg-cd-warning-hover",
         ghost:
-          "text-cd-ink hover:bg-primary/8 hover:text-primary",
-        link: "text-primary underline-offset-4 hover:underline hover:text-[var(--cd-primary-hover)]",
+          "text-cd-ink hover:bg-primary/10 hover:text-primary",
+        link: "text-primary underline-offset-4 hover:underline hover:text-primary-hover",
       },
       size: {
         "default": "h-9 px-4 py-2 has-[>svg]:px-3",

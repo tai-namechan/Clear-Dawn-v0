@@ -8,6 +8,7 @@ import {
     Trash2,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import RoutineBasicsForm from '@/components/forms/RoutineBasicsForm.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import ReorderableList from '@/components/ReorderableList.vue';
 import RoutineEditorSidebar from '@/components/routine/RoutineEditorSidebar.vue';
@@ -16,14 +17,6 @@ import StepEditorDialog, {
     type StepEditorPayload,
 } from '@/components/routine/StepEditorDialog.vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { apiFetch } from '@/lib/apiFetch';
 import { ensureArray } from '@/lib/array';
 import { fetchRoutineItemsFromPage } from '@/lib/fetchRoutineItems';
@@ -185,11 +178,11 @@ function stepPurposeKey(step: RoutineStep) {
                 class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
             >
                 <ArrowLeft :size="16" :stroke-width="1.6" />
-                メニュー一覧
+                ルーティン一覧
             </Link>
 
             <PageTitleOrnament
-                title="メニュー編集"
+                title="ルーティン編集"
                 subtitle="基本情報を整えたら、下でステップを順番に追加します。"
                 align="left"
             />
@@ -206,112 +199,30 @@ function stepPurposeKey(step: RoutineStep) {
                             基本情報
                         </h2>
 
-                        <div class="mt-4 grid gap-4 md:grid-cols-2">
-                            <div class="space-y-2 md:col-span-2">
-                                <label
-                                    class="font-sans text-xs text-cd-ink-muted"
-                                >
-                                    ルーティン名
-                                </label>
-                                <Input
-                                    v-model="formName"
-                                    maxlength="100"
-                                    :disabled="savingRoutine"
-                                />
-                            </div>
-
-                            <div class="space-y-2 md:col-span-2">
-                                <label
-                                    class="font-sans text-xs text-cd-ink-muted"
-                                >
-                                    説明
-                                </label>
-                                <textarea
-                                    v-model="formDescription"
-                                    rows="3"
-                                    class="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[80px] w-full rounded-md border px-3 py-2 font-sans text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                                    :disabled="savingRoutine"
-                                />
-                            </div>
-
-                            <div class="space-y-2">
-                                <label
-                                    class="font-sans text-xs text-cd-ink-muted"
-                                >
-                                    カテゴリ
-                                </label>
-                                <p class="font-sans text-sm text-cd-ink">
-                                    {{ dominantCategory }}
-                                </p>
-                            </div>
-
-                            <div class="space-y-2">
-                                <label
-                                    class="font-sans text-xs text-cd-ink-muted"
-                                >
-                                    領域
-                                </label>
-                                <Select
-                                    :model-value="formLifeAreaId ?? 'none'"
-                                    :disabled="savingRoutine"
-                                    @update:model-value="
-                                        (v) =>
-                                            (formLifeAreaId =
-                                                v && v !== 'none'
-                                                    ? String(v)
-                                                    : null)
-                                    "
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="未設定" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="none">
-                                            未設定
-                                        </SelectItem>
-                                        <SelectItem
-                                            v-for="area in lifeAreas"
-                                            :key="area.id"
-                                            :value="area.id"
-                                        >
-                                            {{ area.name }}
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div class="space-y-2">
-                                <label
-                                    class="font-sans text-xs text-cd-ink-muted"
-                                >
-                                    合計時間
-                                </label>
-                                <p class="font-sans text-sm text-cd-ink">
-                                    {{ formatDurationSeconds(totalDurationSeconds) }}
-                                </p>
-                            </div>
-
-                            <div class="space-y-2">
-                                <label
-                                    class="font-sans text-xs text-cd-ink-muted"
-                                >
-                                    ステップ数
-                                </label>
-                                <p class="font-sans text-sm text-cd-ink">
-                                    {{ steps.length }} 件
-                                </p>
-                            </div>
+                        <div class="mt-4">
+                            <RoutineBasicsForm
+                                v-model:name="formName"
+                                v-model:description="formDescription"
+                                v-model:life-area-id="formLifeAreaId"
+                                :life-areas="lifeAreas"
+                                :disabled="savingRoutine"
+                                :category-label="dominantCategory"
+                                :total-duration-label="
+                                    formatDurationSeconds(totalDurationSeconds)
+                                "
+                                :step-count-label="`${steps.length} 件`"
+                            />
                         </div>
 
                         <div
-                            class="mt-4 flex flex-wrap items-center gap-2 border-t border-cd-line/60 pt-4"
+                            class="mt-4 flex flex-wrap items-center gap-2 border-t border-cd-line pt-4"
                         >
                             <Link
                                 href="/today"
-                                class="inline-flex items-center gap-1.5 rounded-full border border-cd-line/80 px-3 py-1.5 font-sans text-xs text-cd-ink-muted transition-colors hover:text-cd-ink"
+                                class="inline-flex items-center gap-1.5 rounded-full border border-cd-line px-3 py-1.5 font-sans text-xs font-medium text-cd-ink-muted transition-colors hover:border-primary/30 hover:text-primary"
                             >
                                 <CalendarDays :size="14" :stroke-width="1.6" />
-                                今日の実行へ展開
+                                今日やるへ進む
                             </Link>
                         </div>
                     </section>
