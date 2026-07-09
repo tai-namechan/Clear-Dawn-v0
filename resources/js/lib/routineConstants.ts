@@ -95,7 +95,6 @@ export const itemNamePlaceholders = [
 ] as const;
 
 export const stepTitlePlaceholders = [
-    '例: 股関節を開く準備',
     '例: ゆっくり確認',
     '例: 権限まわりを復習',
     '例: 通常スクワット',
@@ -103,8 +102,6 @@ export const stepTitlePlaceholders = [
 
 export const videoPlaceholders = [
     '例: 通常スクワット動画',
-    '例: 投手用スクワット動画',
-    '例: リハビリ用フォーム確認動画',
 ] as const;
 
 /**

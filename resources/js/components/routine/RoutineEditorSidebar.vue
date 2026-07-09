@@ -7,15 +7,17 @@ import type { Routine, RoutineEditor } from '@/types/routine';
 interface Props {
     routine: RoutineEditor;
     otherRoutines?: Routine[];
+    isCreating?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     otherRoutines: () => [],
+    isCreating: false,
 });
 
 const recommended = computed(() =>
     props.otherRoutines
-        .filter((item) => item.id !== props.routine.id)
+        .filter((item) => props.routine.id === null || item.id !== props.routine.id)
         .slice(0, 3),
 );
 
@@ -86,8 +88,14 @@ const stepCount = computed(() => props.routine.steps?.length ?? 0);
                 ヘルプ
             </h2>
             <p class="mt-2 font-sans text-xs leading-relaxed text-cd-ink-muted">
-                ① 「ステップを追加」でやることを登録 → ② 今日やる → ③
-                実行画面で1つずつ完了。 現在 {{ stepCount }} ステップです。
+                <template v-if="isCreating">
+                    ① 名前を入力して保存 → ② 「ステップを追加」でやることを登録 →
+                    ③ 今日やる。
+                </template>
+                <template v-else>
+                    ① 「ステップを追加」でやることを登録 → ② 今日やる → ③
+                    実行画面で1つずつ完了。 現在 {{ stepCount }} ステップです。
+                </template>
             </p>
             <p class="mt-2 font-sans text-xs leading-relaxed text-cd-ink-muted">
                 ※ ステップの中身（スクワットなど）は「ステップを追加」時にその場で作れます。別画面の整理用一覧は不要なら使わなくて大丈夫です。

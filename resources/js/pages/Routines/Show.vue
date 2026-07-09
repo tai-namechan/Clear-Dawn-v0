@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import {
     ArrowLeft,
     CalendarDays,
@@ -14,14 +14,12 @@ import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import ReorderableList from '@/components/ReorderableList.vue';
 import RoutineEditorSidebar from '@/components/routine/RoutineEditorSidebar.vue';
 import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
-import StepEditorDialog, {
-    type StepEditorPayload,
-} from '@/components/routine/StepEditorDialog.vue';
+import StepEditorDialog from '@/components/routine/StepEditorDialog.vue';
+import type { StepEditorPayload } from '@/components/routine/StepEditorDialog.vue';
 import { Button } from '@/components/ui/button';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
 import { ensureArray } from '@/lib/array';
 import { fetchRoutineItemsFromPage } from '@/lib/fetchRoutineItems';
-import { purposeChipClasses } from '@/lib/stepPurposeColors';
 import {
     estimateStepDurationSeconds,
     formatDurationSeconds,
@@ -31,6 +29,7 @@ import {
     stepPurposeLabels,
     trackingTypeLabels,
 } from '@/lib/routineConstants';
+import { purposeChipClasses } from '@/lib/stepPurposeColors';
 import type { LifeArea } from '@/types/matrix';
 import type {
     Routine,
@@ -46,13 +45,14 @@ interface Props {
     otherRoutines: Routine[];
     routineItems?: RoutineItem[];
     videos?: Video[];
+    isCreating?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     routineItems: () => [],
     videos: () => [],
+    isCreating: false,
 });
-const page = usePage();
 
 const formName = ref(props.routine.name);
 const formDescription = ref(props.routine.description ?? '');
@@ -60,6 +60,7 @@ const formLifeAreaId = ref<string | null>(props.routine.life_area_id);
 const savingRoutine = ref(false);
 const savingStep = ref(false);
 const showAddStepModal = ref(false);
+const formError = ref<string | null>(null);
 const routineItems = ref<RoutineItem[]>([...props.routineItems]);
 const stepEditorRef = ref<{
     applyApiErrors: (error: unknown) => void;
@@ -74,30 +75,22 @@ watch(
 );
 
 const steps = computed(() => ensureArray(props.routine.steps));
-
-/** 作成直後（?new=1、または名前未変更・ステップ0）は「作成」表示 */
-const isFreshCreate = computed(() => {
-    const url = String(page.url ?? '');
-    const fromCreateFlow = /[?&]new=1(?:&|$)/.test(url);
-    const name = props.routine.name.trim();
-    const looksBrandNew =
-        steps.value.length === 0 && name === '新しいルーティン';
-
-    return fromCreateFlow || looksBrandNew;
-});
+const isCreateMode = computed(() => props.isCreating || props.routine.id === null);
 
 const pageHeading = computed(() =>
-    isFreshCreate.value ? 'ルーティンを作成' : 'ルーティンを編集',
+    isCreateMode.value ? 'ルーティンを作成' : 'ルーティンを編集',
 );
 
 const pageSubtitle = computed(() =>
-    isFreshCreate.value
-        ? '名前を決めたら、下でステップを追加します。'
+    isCreateMode.value
+        ? '名前を入力して保存すると、ステップを追加できます。'
         : '基本情報を整えたら、下でステップを順番に追加します。',
 );
 
-const documentTitle = computed(
-    () => `${props.routine.name} · ${pageHeading.value}`,
+const documentTitle = computed(() =>
+    isCreateMode.value
+        ? pageHeading.value
+        : `${props.routine.name} · ${pageHeading.value}`,
 );
 
 const dominantCategory = computed(() => {
@@ -115,7 +108,11 @@ const dominantCategory = computed(() => {
 
     const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
 
-    return top ? routineItemCategoryLabels[top[0] as keyof typeof routineItemCategoryLabels] : '—';
+    return top
+        ? routineItemCategoryLabels[
+              top[0] as keyof typeof routineItemCategoryLabels
+          ]
+        : '—';
 });
 
 const totalDurationSeconds = computed(() =>
@@ -151,6 +148,10 @@ async function loadRoutineItems(): Promise<void> {
 }
 
 async function openAddStep(): Promise<void> {
+    if (isCreateMode.value || !props.routine.id) {
+        return;
+    }
+
     // Prefer props already on the page; refresh in background when possible.
     if (routineItems.value.length === 0) {
         await loadRoutineItems();
@@ -162,29 +163,61 @@ async function openAddStep(): Promise<void> {
 }
 
 async function saveRoutine(): Promise<void> {
-    if (!formName.value.trim()) {
+    const name = formName.value.trim();
+
+    if (!name) {
+        formError.value = 'ルーティン名を入力してください。';
+
         return;
     }
 
+    formError.value = null;
     savingRoutine.value = true;
 
     try {
+        if (isCreateMode.value || !props.routine.id) {
+            const result = await apiFetch<{ routine: { id: string } }>(
+                '/routines',
+                {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name,
+                        description: formDescription.value.trim() || null,
+                        life_area_id: formLifeAreaId.value,
+                    }),
+                },
+            );
+
+            router.visit(`/routines/${result.routine.id}`);
+
+            return;
+        }
+
         await apiFetch(`/routines/${props.routine.id}`, {
             method: 'PATCH',
             body: JSON.stringify({
-                name: formName.value.trim(),
+                name,
                 description: formDescription.value.trim() || null,
                 life_area_id: formLifeAreaId.value,
             }),
         });
 
         router.reload({ only: ['routine'] });
+    } catch (error) {
+        formError.value =
+            error instanceof ApiError
+                ? '保存に失敗しました。入力内容を確認してください。'
+                : '保存に失敗しました。もう一度お試しください。';
     } finally {
         savingRoutine.value = false;
     }
 }
 
 async function addStep(payload: StepEditorPayload): Promise<void> {
+    if (!props.routine.id) {
+        return;
+    }
+
     savingStep.value = true;
     stepEditorRef.value?.clearFieldErrors();
 
@@ -209,6 +242,10 @@ async function addStep(payload: StepEditorPayload): Promise<void> {
 }
 
 async function deleteStep(step: RoutineStep): Promise<void> {
+    if (!props.routine.id) {
+        return;
+    }
+
     if (!confirm('このステップを削除しますか？')) {
         return;
     }
@@ -236,9 +273,7 @@ function stepPurposeKey(step: RoutineStep) {
 <template>
     <Head :title="documentTitle" />
 
-    <div
-        class="flex min-h-0 flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-28"
-    >
+    <div class="flex min-h-0 flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6">
             <PageSectionCard>
                 <div class="flex flex-col gap-4">
@@ -262,11 +297,10 @@ function stepPurposeKey(step: RoutineStep) {
 
             <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
                 <div class="flex flex-col gap-6">
-                    <section
-                        aria-label="基本情報"
-                        class="cd-panel px-5 py-5"
-                    >
-                        <h2 class="font-sans text-base font-semibold text-cd-ink">
+                    <section aria-label="基本情報" class="cd-panel px-5 py-5">
+                        <h2
+                            class="font-sans text-base font-semibold text-cd-ink"
+                        >
                             基本情報
                         </h2>
 
@@ -285,7 +319,16 @@ function stepPurposeKey(step: RoutineStep) {
                             />
                         </div>
 
+                        <p
+                            v-if="formError"
+                            class="mt-3 font-sans text-sm text-destructive"
+                            role="alert"
+                        >
+                            {{ formError }}
+                        </p>
+
                         <div
+                            v-if="!isCreateMode"
                             class="mt-4 flex flex-wrap items-center gap-2 border-t border-cd-line pt-4"
                         >
                             <Link
@@ -305,10 +348,17 @@ function stepPurposeKey(step: RoutineStep) {
                         <div
                             class="flex items-center justify-between gap-3 border-b border-cd-line px-5 py-4"
                         >
-                            <h2 class="font-sans text-base font-semibold text-cd-ink">
+                            <h2
+                                class="font-sans text-base font-semibold text-cd-ink"
+                            >
                                 ステップ一覧
                             </h2>
-                            <Button type="button" size="sm" @click="openAddStep">
+                            <Button
+                                type="button"
+                                size="sm"
+                                :disabled="isCreateMode"
+                                @click="openAddStep"
+                            >
                                 <Plus :size="14" :stroke-width="1.8" />
                                 ステップを追加
                             </Button>
@@ -407,7 +457,8 @@ function stepPurposeKey(step: RoutineStep) {
                                                             rest_seconds:
                                                                 step.rest_seconds,
                                                             tracking_type:
-                                                                step.routine_item
+                                                                step
+                                                                    .routine_item
                                                                     ?.tracking_type,
                                                         },
                                                     ),
@@ -472,42 +523,49 @@ function stepPurposeKey(step: RoutineStep) {
                             v-else
                             class="px-5 py-12 text-center font-sans text-sm text-cd-ink-muted"
                         >
-                            <p>ステップがまだありません。</p>
-                            <p class="mt-2">
-                                「ステップを追加」から、やることを順番に登録しましょう。
-                            </p>
+                            <template v-if="isCreateMode">
+                                <p>まず名前を入力して保存してください。</p>
+                                <p class="mt-2">
+                                    保存後に「ステップを追加」から、やることを順番に登録できます。
+                                </p>
+                            </template>
+                            <template v-else>
+                                <p>ステップがまだありません。</p>
+                                <p class="mt-2">
+                                    「ステップを追加」から、やることを順番に登録しましょう。
+                                </p>
+                            </template>
                         </div>
+                    </section>
+
+                    <section
+                        aria-label="保存操作"
+                        class="cd-panel flex flex-wrap items-center justify-end gap-2 px-5 py-4"
+                    >
+                        <Button type="button" variant="ghost" as-child>
+                            <Link href="/routines">キャンセル</Link>
+                        </Button>
+                        <Button
+                            type="button"
+                            :disabled="savingRoutine || !formName.trim()"
+                            @click="saveRoutine"
+                        >
+                            保存
+                        </Button>
                     </section>
                 </div>
 
                 <RoutineEditorSidebar
                     :routine="routine"
                     :other-routines="otherRoutines"
+                    :is-creating="isCreateMode"
                 />
-            </div>
-        </div>
-
-        <div
-            class="sticky bottom-0 border-t border-cd-line bg-[#fffcf8]/95 px-4 py-4 backdrop-blur md:px-6"
-        >
-            <div
-                class="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-end gap-2"
-            >
-                <Button type="button" variant="ghost" as-child>
-                    <Link href="/routines">キャンセル</Link>
-                </Button>
-                <Button
-                    type="button"
-                    :disabled="savingRoutine || !formName.trim()"
-                    @click="saveRoutine"
-                >
-                    保存
-                </Button>
             </div>
         </div>
     </div>
 
     <StepEditorDialog
+        v-if="!isCreateMode"
         ref="stepEditorRef"
         v-model:open="showAddStepModal"
         :routine-items="routineItems"
