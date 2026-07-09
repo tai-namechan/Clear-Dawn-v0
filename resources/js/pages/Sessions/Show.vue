@@ -300,79 +300,76 @@ const metrics = computed(() => {
 <template>
     <Head :title="planTitle" />
 
-    <div class="flex min-h-0 flex-1 flex-col">
-        <div
-            class="flex min-h-0 flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-28"
-        >
-            <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4">
-                <PageSectionCard>
-                    <div class="flex flex-col gap-4">
-                        <Link
-                            :href="planHref"
-                            class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
-                        >
-                            <ArrowLeft :size="16" :stroke-width="1.6" />
-                            プラン詳細
-                        </Link>
+    <div class="flex min-h-0 flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
+        <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4">
+            <PageSectionCard>
+                <div class="flex flex-col gap-4">
+                    <Link
+                        :href="planHref"
+                        class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
+                    >
+                        <ArrowLeft :size="16" :stroke-width="1.6" />
+                        プラン詳細
+                    </Link>
 
-                        <div
-                            class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
-                        >
-                            <div class="min-w-0">
-                                <h1
-                                    class="font-sans text-2xl font-semibold tracking-tight text-cd-ink md:text-3xl"
-                                >
-                                    {{ planTitle }}
-                                </h1>
-                                <p
-                                    v-if="allStepsResolved"
-                                    class="mt-2 font-sans text-sm text-cd-ink-muted"
-                                >
-                                    全 {{ steps.length }} ステップ処理済み
-                                </p>
-                                <p
-                                    v-else-if="currentStep"
-                                    class="mt-2 font-sans text-sm text-cd-ink-muted"
-                                >
-                                    Step {{ currentIndex + 1 }} /
-                                    {{ steps.length }}
-                                </p>
+                    <div
+                        class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+                    >
+                        <div class="min-w-0">
+                            <h1
+                                class="font-sans text-2xl font-semibold tracking-tight text-cd-ink md:text-3xl"
+                            >
+                                {{ planTitle }}
+                            </h1>
+                            <p
+                                v-if="allStepsResolved"
+                                class="mt-2 font-sans text-sm text-cd-ink-muted"
+                            >
+                                全 {{ steps.length }} ステップ処理済み
+                            </p>
+                            <p
+                                v-else-if="currentStep"
+                                class="mt-2 font-sans text-sm text-cd-ink-muted"
+                            >
+                                Step {{ currentIndex + 1 }} /
+                                {{ steps.length }}
+                            </p>
+                        </div>
+
+                        <div class="w-full max-w-xs space-y-2 lg:w-56">
+                            <div
+                                class="flex items-center justify-between font-sans text-xs text-cd-ink-muted"
+                            >
+                                <span>進捗</span>
+                                <span>
+                                    {{ resolvedCount }} /
+                                    {{ steps.length }}（{{
+                                        progressPercent
+                                    }}%）
+                                </span>
                             </div>
-
-                            <div class="w-full max-w-xs space-y-2 lg:w-56">
+                            <div
+                                class="h-2 overflow-hidden rounded-full bg-muted"
+                                role="progressbar"
+                                :aria-valuenow="progressPercent"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                            >
                                 <div
-                                    class="flex items-center justify-between font-sans text-xs text-cd-ink-muted"
-                                >
-                                    <span>進捗</span>
-                                    <span>
-                                        {{ resolvedCount }} /
-                                        {{ steps.length }}（{{
-                                            progressPercent
-                                        }}%）
-                                    </span>
-                                </div>
-                                <div
-                                    class="h-2 overflow-hidden rounded-full bg-muted"
-                                    role="progressbar"
-                                    :aria-valuenow="progressPercent"
-                                    aria-valuemin="0"
-                                    aria-valuemax="100"
-                                >
-                                    <div
-                                        class="h-full bg-primary transition-all"
-                                        :style="{
-                                            width: `${progressPercent}%`,
-                                        }"
-                                    />
-                                </div>
+                                    class="h-full bg-primary transition-all"
+                                    :style="{
+                                        width: `${progressPercent}%`,
+                                    }"
+                                />
                             </div>
                         </div>
                     </div>
-                </PageSectionCard>
+                </div>
+            </PageSectionCard>
 
-                <div
-                    class="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px]"
-                >
+            <div
+                class="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px]"
+            >
                     <section
                         v-if="allStepsResolved && !isSessionFinished"
                         aria-label="実行のまとめ"
@@ -593,8 +590,8 @@ const metrics = computed(() => {
                     </section>
 
                     <aside
-                        aria-label="ステップ一覧"
-                        class="cd-panel"
+                        aria-label="ステップ一覧と操作"
+                        class="cd-panel flex flex-col lg:sticky lg:top-4 lg:self-start"
                     >
                         <div
                             class="border-b border-cd-line px-4 py-3 font-sans text-sm font-semibold text-cd-ink"
@@ -602,7 +599,7 @@ const metrics = computed(() => {
                             ステップ一覧（{{ steps.length }}）
                         </div>
 
-                        <ul class="max-h-[min(70vh,640px)] overflow-y-auto">
+                        <ul class="max-h-[min(50vh,420px)] overflow-y-auto">
                             <li
                                 v-for="(step, index) in steps"
                                 :key="step.id"
@@ -662,68 +659,74 @@ const metrics = computed(() => {
                                 </button>
                             </li>
                         </ul>
+
+                        <div
+                            v-if="!isSessionFinished"
+                            class="flex flex-col gap-2 border-t border-cd-line p-3"
+                        >
+                            <Button
+                                v-if="allStepsResolved"
+                                type="button"
+                                class="w-full"
+                                :disabled="completing"
+                                @click="completeSession"
+                            >
+                                <Check :size="16" :stroke-width="1.8" />
+                                {{
+                                    completing
+                                        ? '完了処理中…'
+                                        : '実行を完了する'
+                                }}
+                            </Button>
+                            <Button
+                                v-else
+                                type="button"
+                                class="w-full"
+                                :disabled="
+                                    !currentStep ||
+                                    currentStep.status !== 'pending'
+                                "
+                                @click="completeStep"
+                            >
+                                <Check :size="16" :stroke-width="1.8" />
+                                完了して次へ
+                            </Button>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    class="w-full"
+                                    :disabled="
+                                        !currentStep ||
+                                        currentStep.status !== 'pending' ||
+                                        allStepsResolved
+                                    "
+                                    @click="skipStep"
+                                >
+                                    <SkipForward
+                                        :size="16"
+                                        :stroke-width="1.8"
+                                    />
+                                    スキップ
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    class="w-full"
+                                    :disabled="completing"
+                                    @click="abortSession"
+                                >
+                                    <CircleStop
+                                        :size="16"
+                                        :stroke-width="1.8"
+                                    />
+                                    中断
+                                </Button>
+                            </div>
+                        </div>
                     </aside>
                 </div>
             </div>
         </div>
-
-        <div
-            v-if="!isSessionFinished"
-            class="sticky bottom-0 z-10 border-t border-cd-line bg-[#fffcf8]/95 px-4 py-4 backdrop-blur md:px-6"
-        >
-            <div
-                class="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3"
-            >
-                <div class="flex flex-wrap gap-2">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        :disabled="
-                            !currentStep ||
-                            currentStep.status !== 'pending' ||
-                            allStepsResolved
-                        "
-                        @click="skipStep"
-                    >
-                        <SkipForward :size="16" :stroke-width="1.8" />
-                        スキップ
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        :disabled="completing"
-                        @click="abortSession"
-                    >
-                        <CircleStop :size="16" :stroke-width="1.8" />
-                        中断
-                    </Button>
-                </div>
-
-                <div class="flex flex-wrap gap-2">
-                    <Button
-                        v-if="allStepsResolved"
-                        type="button"
-                        :disabled="completing"
-                        @click="completeSession"
-                    >
-                        <Check :size="16" :stroke-width="1.8" />
-                        {{
-                            completing ? '完了処理中…' : '実行を完了する'
-                        }}
-                    </Button>
-                    <Button
-                        v-else
-                        type="button"
-                        :disabled="
-                            !currentStep || currentStep.status !== 'pending'
-                        "
-                        @click="completeStep"
-                    >
-                        <Check :size="16" :stroke-width="1.8" />
-                        完了して次へ
-                    </Button>
-                </div>
-            </div>
-        </div>
-    </div>
 </template>
