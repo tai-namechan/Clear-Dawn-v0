@@ -10,7 +10,7 @@ import StepEditorDialog, {
 } from '@/components/routine/StepEditorDialog.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { apiFetch } from '@/lib/apiFetch';
+import { apiFetch, ApiError } from '@/lib/apiFetch';
 import { ensureArray } from '@/lib/array';
 import { fetchRoutineItemsFromPage } from '@/lib/fetchRoutineItems';
 import { purposeChipClasses } from '@/lib/stepPurposeColors';
@@ -45,6 +45,10 @@ const saving = ref(false);
 const starting = ref(false);
 const showAddStepModal = ref(false);
 const routineItems = ref<RoutineItem[]>([...props.routineItems]);
+const stepEditorRef = ref<{
+    applyApiErrors: (error: unknown) => void;
+    clearFieldErrors: () => void;
+} | null>(null);
 
 watch(
     () => props.routineItems,
@@ -122,6 +126,7 @@ async function openAddStep(): Promise<void> {
 
 async function addStep(payload: StepEditorPayload): Promise<void> {
     saving.value = true;
+    stepEditorRef.value?.clearFieldErrors();
 
     try {
         await apiFetch(`/plans/${props.plan.id}/steps`, {
@@ -130,7 +135,13 @@ async function addStep(payload: StepEditorPayload): Promise<void> {
         });
 
         showAddStepModal.value = false;
-        router.reload({ only: ['plan'] });
+        router.reload({ only: ['plan', 'routineItems'] });
+    } catch (error) {
+        stepEditorRef.value?.applyApiErrors(error);
+
+        if (!(error instanceof ApiError) || error.status >= 500) {
+            console.error(error);
+        }
     } finally {
         saving.value = false;
     }
@@ -327,6 +338,7 @@ function stepPurposeKey(step: RoutinePlanStep) {
     </div>
 
     <StepEditorDialog
+        ref="stepEditorRef"
         v-model:open="showAddStepModal"
         :routine-items="routineItems"
         :videos="videos"

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\VideoStatus;
 use App\Http\Requests\Videos\StoreVideoUploadUrlRequest;
 use App\Http\Requests\Videos\UpdateVideoRequest;
 use App\Http\Resources\VideoResource;
@@ -21,8 +22,22 @@ use Inertia\Response;
 
 class VideoController extends Controller
 {
-    public function index(Request $request, GetVideosQuery $query): Response
+    public function index(Request $request, GetVideosQuery $query): Response|JsonResponse
     {
+        // JSON list for pickers (avoids Inertia asset-version 409)
+        if ($request->wantsJson() && ! $request->headers->has('X-Inertia')) {
+            $videos = Video::query()
+                ->where('user_id', $request->user()->id)
+                ->where('status', VideoStatus::Ready)
+                ->orderByDesc('created_at')
+                ->limit(100)
+                ->get();
+
+            return response()->json([
+                'videos' => VideoResource::collection($videos)->resolve(),
+            ]);
+        }
+
         $videos = $query->handle($request->user());
 
         return Inertia::render('Videos/Index', [

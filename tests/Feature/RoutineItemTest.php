@@ -193,4 +193,17 @@ class RoutineItemTest extends TestCase
                 ))
             );
     }
+
+    public function test_json_index_returns_routine_items_without_inertia(): void
+    {
+        $user = User::factory()->create();
+        RoutineItem::factory()->create(['user_id' => $user->id, 'name' => 'JSON種目']);
+        RoutineItem::factory()->create(['name' => '他人の種目']);
+
+        $this->actingAs($user)
+            ->getJson(route('routine-items.index'))
+            ->assertOk()
+            ->assertJsonPath('routine_items.0.name', 'JSON種目')
+            ->assertJsonMissingPath('component');
+    }
 }
