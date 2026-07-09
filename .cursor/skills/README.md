@@ -1,9 +1,8 @@
-# Skills インデックス（汎用テンプレート）
+# Clear Dawn Cursor Skills
 
-各スキルは `<スキル名>/SKILL.md` に配置し、frontmatter（name / description）を必須とする。
-これにより Cursor がスキルとして自動認識し、タスク種別に応じて自動で読み込まれる。
+プロジェクト固有の思考フレームワーク。タスク種別に応じて `.cursor/rules/task-skill-routing.mdc` が参照する。
 
-## 構成
+## プロジェクト固有スキル
 
 | スキル | 種別 | 用途 |
 |---|---|---|
@@ -13,27 +12,30 @@
 | `review-only/` | 思考フレームワーク | コードレビュー（No Patch / No Apply） |
 | `spec/` | 思考フレームワーク | 仕様検討・設計判断（論点分解・A/B比較） |
 | `test-design-review/` | 思考フレームワーク | テスト設計レビュー（握りつぶし禁止） |
-| `vue-sfc-patterns/` | 実装パターン | Vue 3 SFC・Inertia・Vitest（要プロジェクト調整） |
+| `vue-sfc-patterns/` | 実装パターン | Vue 3 SFC・Inertia・Vitest |
 | `_shared/` | 共有リファレンス | 全スキル共通の概念定義（スキルではない） |
 
-## 共通概念の定義場所
+共通概念は [`_shared/analysis-concepts.md`](_shared/analysis-concepts.md)。定義の正は1箇所。
 
-「地雷チェック」「確信度」「Data Cardinality」「Filter Location」「Ops Delta」「SEARCH_SCOPE の規律」は
-[`_shared/analysis-concepts.md`](_shared/analysis-concepts.md) に一元定義されている。
-各スキルはこれを参照し、**定義を重複記載しない**（正は1箇所、他は参照）。
+## Laravel Boost 由来スキル
+
+`php artisan boost:install` / `boost:update` で同期される。プロジェクト固有スキルと **同居** する（同名衝突に注意）。
+
+| スキル | 用途 |
+|---|---|
+| `laravel-best-practices` | Laravel 実装のベストプラクティス |
+| `fortify-development` | Fortify |
+| `wayfinder-development` | Wayfinder |
+| `tailwindcss-development` | Tailwind CSS |
+| `deploying-laravel-cloud` | Laravel Cloud デプロイ（`.ai/skills` への symlink） |
+
+詳細は `docs/dev/laravel-boost.md`。
 
 ## Rules との役割分担
 
 | 場所 | 役割 |
 |---|---|
 | `.cursor/rules/*.mdc` | 常時適用される品質基準・禁止事項（alwaysApply） |
-| `.cursor/skills/*/SKILL.md` | タスク種別ごとの手順・出力フォーマット（該当タスク時に読む） |
+| `.cursor/skills/*/SKILL.md` | タスク種別ごとの手順・出力フォーマット |
 
-タスク種別 → スキルの対応表は `rules/task-skill-routing.mdc` に定義されている。
-
-## スキルを追加するとき
-
-1. `<スキル名>/SKILL.md` を作成し、frontmatter に `name` と `description`（いつ使うかを具体的に）を書く
-2. 共通概念が必要なら `_shared/analysis-concepts.md` を参照する（再定義しない）
-3. `rules/task-skill-routing.mdc` の対応表に行を追加する
-4. この README の一覧に追加する
+タスク種別 → スキルの対応表は `rules/task-skill-routing.mdc`。
