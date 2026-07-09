@@ -21,13 +21,25 @@ use Inertia\Response;
 
 class RoutineItemController extends Controller
 {
-    public function index(Request $request, GetRoutineItemsQuery $query): Response
+    public function index(Request $request, GetRoutineItemsQuery $query): Response|JsonResponse
     {
         $routineItems = $query->handle($request->user());
+
+        // JSON list for pickers (avoids Inertia asset-version 409)
+        if ($this->wantsPlainJson($request)) {
+            return response()->json([
+                'routine_items' => RoutineItemResource::collection($routineItems)->resolve(),
+            ]);
+        }
 
         return Inertia::render('RoutineItems/Index', [
             'routineItems' => RoutineItemResource::collection($routineItems)->resolve(),
         ]);
+    }
+
+    private function wantsPlainJson(Request $request): bool
+    {
+        return $request->wantsJson() && ! $request->headers->has('X-Inertia');
     }
 
     public function show(Request $request, RoutineItem $item, GetRoutineItemQuery $query): Response

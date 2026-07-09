@@ -15,7 +15,7 @@ class CreateRoutineStepService
      * @param  array{
      *     routine_item_id: string,
      *     video_id?: string|null,
-     *     purpose?: StepPurpose|null,
+     *     purpose?: StepPurpose|string|null,
      *     target_load?: float|string|null,
      *     load_unit?: string|null,
      *     target_amount?: float|string|null,

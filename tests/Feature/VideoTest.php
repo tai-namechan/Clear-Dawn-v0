@@ -420,4 +420,19 @@ class VideoTest extends TestCase
         $this->actingAs($user)->deleteJson(route('videos.destroy', $ready))->assertOk();
         $this->assertSoftDeleted('videos', ['id' => $ready->id]);
     }
+
+    public function test_json_index_returns_ready_videos_without_inertia(): void
+    {
+        $user = User::factory()->create();
+        Video::factory()->ready()->create(['user_id' => $user->id, 'title' => '準備完了']);
+        Video::factory()->pending()->create(['user_id' => $user->id, 'title' => '未完了']);
+        Video::factory()->ready()->create(['title' => '他人の動画']);
+
+        $this->actingAs($user)
+            ->getJson(route('videos.index'))
+            ->assertOk()
+            ->assertJsonPath('videos.0.title', '準備完了')
+            ->assertJsonCount(1, 'videos')
+            ->assertJsonMissingPath('component');
+    }
 }
