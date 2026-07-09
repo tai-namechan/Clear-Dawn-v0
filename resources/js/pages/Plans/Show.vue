@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ArrowLeft, CirclePlay, Plus, Trash2 } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import ReorderableList from '@/components/ReorderableList.vue';
@@ -25,20 +25,33 @@ import type {
     RoutineItem,
     RoutinePlan,
     RoutinePlanStep,
+    Video,
 } from '@/types/routine';
 
 interface Props {
     plan: RoutinePlan;
+    routineItems?: RoutineItem[];
+    videos?: Video[];
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    routineItems: () => [],
+    videos: () => [],
+});
 
 const title = ref(props.plan.title);
 const note = ref(props.plan.note ?? '');
 const saving = ref(false);
 const starting = ref(false);
 const showAddStepModal = ref(false);
-const routineItems = ref<RoutineItem[]>([]);
+const routineItems = ref<RoutineItem[]>([...props.routineItems]);
+
+watch(
+    () => props.routineItems,
+    (items) => {
+        routineItems.value = [...items];
+    },
+);
 
 const steps = computed(() => ensureArray(props.plan.steps));
 
@@ -90,11 +103,20 @@ async function startSession(): Promise<void> {
 }
 
 async function loadRoutineItems(): Promise<void> {
-    routineItems.value = await fetchRoutineItemsFromPage();
+    try {
+        routineItems.value = await fetchRoutineItemsFromPage();
+    } catch {
+        // Keep current list if auxiliary fetch fails.
+    }
 }
 
 async function openAddStep(): Promise<void> {
-    await loadRoutineItems();
+    if (routineItems.value.length === 0) {
+        await loadRoutineItems();
+    } else {
+        void loadRoutineItems();
+    }
+
     showAddStepModal.value = true;
 }
 
@@ -307,6 +329,7 @@ function stepPurposeKey(step: RoutinePlanStep) {
     <StepEditorDialog
         v-model:open="showAddStepModal"
         :routine-items="routineItems"
+        :videos="videos"
         :saving="saving"
         @submit="addStep"
         @items-changed="loadRoutineItems"

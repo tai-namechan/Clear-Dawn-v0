@@ -32,15 +32,26 @@ import {
     trackingTypeLabels,
 } from '@/lib/routineConstants';
 import type { LifeArea } from '@/types/matrix';
-import type { Routine, RoutineEditor, RoutineItem, RoutineStep } from '@/types/routine';
+import type {
+    Routine,
+    RoutineEditor,
+    RoutineItem,
+    RoutineStep,
+    Video,
+} from '@/types/routine';
 
 interface Props {
     routine: RoutineEditor;
     lifeAreas: LifeArea[];
     otherRoutines: Routine[];
+    routineItems?: RoutineItem[];
+    videos?: Video[];
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    routineItems: () => [],
+    videos: () => [],
+});
 const page = usePage();
 
 const formName = ref(props.routine.name);
@@ -49,7 +60,14 @@ const formLifeAreaId = ref<string | null>(props.routine.life_area_id);
 const savingRoutine = ref(false);
 const savingStep = ref(false);
 const showAddStepModal = ref(false);
-const routineItems = ref<RoutineItem[]>([]);
+const routineItems = ref<RoutineItem[]>([...props.routineItems]);
+
+watch(
+    () => props.routineItems,
+    (items) => {
+        routineItems.value = [...items];
+    },
+);
 
 const steps = computed(() => ensureArray(props.routine.steps));
 
@@ -121,11 +139,21 @@ watch(
 );
 
 async function loadRoutineItems(): Promise<void> {
-    routineItems.value = await fetchRoutineItemsFromPage();
+    try {
+        routineItems.value = await fetchRoutineItemsFromPage();
+    } catch {
+        // Keep current list if auxiliary fetch fails (e.g. temporary 409).
+    }
 }
 
 async function openAddStep(): Promise<void> {
-    await loadRoutineItems();
+    // Prefer props already on the page; refresh in background when possible.
+    if (routineItems.value.length === 0) {
+        await loadRoutineItems();
+    } else {
+        void loadRoutineItems();
+    }
+
     showAddStepModal.value = true;
 }
 
@@ -162,7 +190,10 @@ async function addStep(payload: StepEditorPayload): Promise<void> {
         });
 
         showAddStepModal.value = false;
-        router.reload({ only: ['routine'] });
+        router.reload({ only: ['routine', 'routineItems'] });
+    } catch (error) {
+        console.error(error);
+        alert('ステップの追加に失敗しました。もう一度お試しください。');
     } finally {
         savingStep.value = false;
     }
@@ -453,6 +484,7 @@ function stepPurposeKey(step: RoutineStep) {
     <StepEditorDialog
         v-model:open="showAddStepModal"
         :routine-items="routineItems"
+        :videos="videos"
         :saving="savingStep"
         @submit="addStep"
         @items-changed="loadRoutineItems"

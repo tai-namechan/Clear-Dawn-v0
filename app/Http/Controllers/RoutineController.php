@@ -2,13 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\VideoStatus;
 use App\Http\Requests\Routines\StoreRoutineRequest;
 use App\Http\Requests\Routines\UpdateRoutineRequest;
 use App\Http\Resources\LifeAreaResource;
 use App\Http\Resources\RoutineEditorResource;
+use App\Http\Resources\RoutineItemResource;
 use App\Http\Resources\RoutineResource;
+use App\Http\Resources\VideoResource;
 use App\Models\Routine;
+use App\Models\Video;
 use App\Queries\GetRoutineEditorQuery;
+use App\Queries\GetRoutineItemsQuery;
 use App\Queries\GetRoutinesQuery;
 use App\Services\CreateRoutineService;
 use App\Services\DeleteRoutineService;
@@ -35,23 +40,34 @@ class RoutineController extends Controller
         Routine $routine,
         GetRoutineEditorQuery $query,
         GetRoutinesQuery $routinesQuery,
+        GetRoutineItemsQuery $routineItemsQuery,
     ): Response {
         Gate::authorize('view', $routine);
 
-        $editor = $query->handle($request->user(), $routine->id);
-        $lifeAreas = $request->user()->lifeAreas()
+        $user = $request->user();
+        $editor = $query->handle($user, $routine->id);
+        $lifeAreas = $user->lifeAreas()
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->get();
-        $otherRoutines = $routinesQuery->handle($request->user())
+        $otherRoutines = $routinesQuery->handle($user)
             ->where('id', '!=', $routine->id)
             ->take(5)
             ->values();
+        $routineItems = $routineItemsQuery->handle($user);
+        $videos = Video::query()
+            ->where('user_id', $user->id)
+            ->where('status', VideoStatus::Ready)
+            ->orderByDesc('created_at')
+            ->limit(100)
+            ->get();
 
         return Inertia::render('Routines/Show', [
             'routine' => RoutineEditorResource::make($editor)->resolve(),
             'lifeAreas' => LifeAreaResource::collection($lifeAreas)->resolve(),
             'otherRoutines' => RoutineResource::collection($otherRoutines)->resolve(),
+            'routineItems' => RoutineItemResource::collection($routineItems)->resolve(),
+            'videos' => VideoResource::collection($videos)->resolve(),
         ]);
     }
 
