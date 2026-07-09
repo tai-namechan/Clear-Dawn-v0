@@ -172,6 +172,40 @@ class RoutineTest extends TestCase
         ]);
     }
 
+    public function test_user_can_add_a_step_without_video(): void
+    {
+        $user = User::factory()->create();
+        $routine = Routine::factory()->create(['user_id' => $user->id]);
+        $routineItem = RoutineItem::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)
+            ->postJson(route('routine-steps.store', $routine), [
+                'routine_item_id' => $routineItem->id,
+                'video_id' => null,
+                'purpose' => 'strength',
+                'target_blocks' => 3,
+                'target_amount' => 10,
+                'amount_unit' => '回',
+            ])
+            ->assertOk()
+            ->assertJsonPath('step.video_id', null)
+            ->assertJsonPath('step.video', null);
+    }
+
+    public function test_storing_a_step_requires_purpose_and_target_blocks(): void
+    {
+        $user = User::factory()->create();
+        $routine = Routine::factory()->create(['user_id' => $user->id]);
+        $routineItem = RoutineItem::factory()->create(['user_id' => $user->id]);
+
+        $this->actingAs($user)
+            ->postJson(route('routine-steps.store', $routine), [
+                'routine_item_id' => $routineItem->id,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['purpose', 'target_blocks']);
+    }
+
     public function test_user_can_reorder_their_routine_steps(): void
     {
         $user = User::factory()->create();
@@ -209,6 +243,8 @@ class RoutineTest extends TestCase
         $this->actingAs($user)
             ->postJson(route('routine-steps.store', $routine), [
                 'routine_item_id' => $otherRoutineItem->id,
+                'purpose' => 'strength',
+                'target_blocks' => 1,
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('routine_item_id');
@@ -225,6 +261,8 @@ class RoutineTest extends TestCase
             ->postJson(route('routine-steps.store', $routine), [
                 'routine_item_id' => $routineItem->id,
                 'video_id' => $otherVideo->id,
+                'purpose' => 'strength',
+                'target_blocks' => 1,
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('video_id');

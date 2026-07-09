@@ -26,14 +26,53 @@ class StoreRoutineStepRequest extends FormRequest
                 'ulid',
                 Rule::exists('videos', 'id')->where(fn ($query) => $query->where('user_id', $userId)),
             ],
-            'purpose' => ['nullable', Rule::enum(StepPurpose::class)],
+            'purpose' => ['required', Rule::enum(StepPurpose::class)],
             'target_load' => ['nullable', 'numeric', 'min:0', 'max:999.99'],
             'load_unit' => ['nullable', 'string', 'max:20'],
             'target_amount' => ['nullable', 'numeric', 'min:0', 'max:99999.99'],
             'amount_unit' => ['nullable', 'string', 'max:20'],
-            'target_blocks' => ['nullable', 'integer', 'min:1', 'max:99'],
+            'target_blocks' => ['required', 'integer', 'min:1', 'max:99'],
             'rest_seconds' => ['nullable', 'integer', 'min:0', 'max:3600'],
             'note' => ['nullable', 'string', 'max:500'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'routine_item_id.required' => 'ステップ名（実施項目）を選択または作成してください。',
+            'routine_item_id.exists' => '選択したステップが見つかりません。',
+            'purpose.required' => '目的を選択してください。',
+            'purpose.enum' => '目的の値が不正です。',
+            'target_blocks.required' => 'セット数を入力してください。',
+            'target_blocks.min' => 'セット数は1以上で入力してください。',
+            'target_blocks.max' => 'セット数は99以下で入力してください。',
+            'target_load.numeric' => '重量は数値で入力してください。',
+            'target_amount.numeric' => '回数・時間・距離は数値で入力してください。',
+            'rest_seconds.integer' => '休憩は整数で入力してください。',
+            'rest_seconds.max' => '休憩は3600秒以下で入力してください。',
+            'note.max' => 'メモは500文字以内で入力してください。',
+            'video_id.exists' => '選択した動画が見つかりません。',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'routine_item_id' => 'ステップ',
+            'purpose' => '目的',
+            'target_blocks' => 'セット数',
+            'target_load' => '重量',
+            'target_amount' => '回数・量',
+            'rest_seconds' => '休憩',
+            'note' => 'メモ',
+            'video_id' => '動画',
         ];
     }
 }

@@ -64,6 +64,7 @@ type FieldErrors = {
     purpose?: string;
     target_blocks?: string;
     rest_seconds?: string;
+    target_load?: string;
     target_amount?: string;
     general?: string;
 };
@@ -169,19 +170,41 @@ function applyApiErrors(error: unknown): void {
             next.target_amount = body.errors.target_amount[0];
         }
         if (body.errors.target_load?.[0]) {
-            next.target_amount = body.errors.target_load[0];
+            next.target_load = body.errors.target_load[0];
+        }
+        if (body.errors.load_unit?.[0]) {
+            next.target_load = body.errors.load_unit[0];
+        }
+        if (body.errors.amount_unit?.[0]) {
+            next.target_amount = body.errors.amount_unit[0];
+        }
+        if (body.errors.video_id?.[0]) {
+            next.general = body.errors.video_id[0];
+        }
+        if (body.errors.note?.[0]) {
+            next.general = body.errors.note[0];
         }
     }
 
     if (!Object.keys(next).length) {
+        // Laravel default exception message is often just "Server Error"
+        const message = body.message?.trim();
         next.general =
-            body.message ?? '保存に失敗しました。もう一度お試しください。';
+            !message || message === 'Server Error'
+                ? '保存に失敗しました。入力内容を確認してもう一度お試しください。'
+                : message;
     }
 
     fieldErrors.value = next;
 
     if (next.name) {
         scrollToNameField();
+    } else if (next.target_load || next.target_amount || next.target_blocks) {
+        requestAnimationFrame(() => {
+            document
+                .querySelector('[data-step-sets-section]')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
     }
 }
 
@@ -400,10 +423,39 @@ function validateClient(): boolean {
         next.target_blocks = 'セット数は1以上で入力してください。';
     }
 
+    const firstRow = blockRows.value[0] ?? { load: '', amount: '', memo: '' };
+    const tracking = effectiveTrackingType.value;
+
+    if (tracking === 'weight_reps' && !firstRow.load.trim()) {
+        next.target_load = '重量を入力してください。';
+    }
+
+    if (
+        (tracking === 'weight_reps' ||
+            tracking === 'reps' ||
+            tracking === 'count' ||
+            tracking === 'duration' ||
+            tracking === 'distance') &&
+        !firstRow.amount.trim()
+    ) {
+        next.target_amount =
+            tracking === 'duration'
+                ? '時間を入力してください。'
+                : tracking === 'distance'
+                  ? '距離を入力してください。'
+                  : '回数を入力してください。';
+    }
+
     fieldErrors.value = next;
 
     if (next.name) {
         scrollToNameField();
+    } else if (next.target_load || next.target_amount || next.target_blocks) {
+        requestAnimationFrame(() => {
+            document
+                .querySelector('[data-step-sets-section]')
+                ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
     }
 
     return Object.keys(next).length === 0;
@@ -592,7 +644,10 @@ defineExpose({
                         </p>
                     </section>
 
-                    <section class="cd-step-section">
+                    <section
+                        data-step-sets-section
+                        class="cd-step-section"
+                    >
                         <div class="cd-step-section__label">
                             <span class="cd-step-section__num">5</span>
                             セット内容
@@ -682,11 +737,25 @@ defineExpose({
                             :load-unit="loadUnit"
                             :amount-unit="amountUnit"
                             :disabled="saving"
+                            :load-error="fieldErrors.target_load"
+                            :amount-error="fieldErrors.target_amount"
+                            @update:rows="
+                                () => {
+                                    fieldErrors.target_load = undefined;
+                                    fieldErrors.target_amount = undefined;
+                                }
+                            "
                         />
-                        <InputError
-                            v-if="fieldErrors.target_amount"
-                            :message="fieldErrors.target_amount"
-                        />
+                        <div
+                            v-if="
+                                fieldErrors.target_load ||
+                                fieldErrors.target_amount
+                            "
+                            class="space-y-1"
+                        >
+                            <InputError :message="fieldErrors.target_load" />
+                            <InputError :message="fieldErrors.target_amount" />
+                        </div>
                     </section>
 
                     <section class="cd-step-section">
