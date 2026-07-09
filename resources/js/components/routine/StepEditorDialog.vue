@@ -262,7 +262,7 @@ async function createInlineItem(): Promise<RoutineItem | null> {
 
         return result.routine_item;
     } catch {
-        formError.value = '実施項目の作成に失敗しました。';
+        formError.value = 'ステップ名の作成に失敗しました。';
 
         return null;
     } finally {
@@ -286,7 +286,7 @@ async function submit(): Promise<void> {
     }
 
     if (!routineItemId) {
-        formError.value = '実施項目を選択してください。';
+        formError.value = 'ステップを選択してください。';
 
         return;
     }
@@ -371,7 +371,7 @@ async function submit(): Promise<void> {
                             :disabled="saving || !routineItems.length"
                         >
                             <SelectTrigger>
-                                <SelectValue placeholder="実施項目を選択" />
+                                <SelectValue placeholder="既存のステップを選択" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem
