@@ -3,18 +3,22 @@
 v0 の実装をマイルストーン（MS）単位で管理する。カレンダー日程では管理しない。
 各マイルストーンは「Route → Controller → Query/Service → Vue → テスト」の縦断で完結させる。
 
+**実装の現在地（done / partial / not_started）は [progress.md](./progress.md) を正とする。**  
+AI 開発支援（Laravel Boost）は [dev/laravel-boost.md](./dev/laravel-boost.md) を参照。
+
 ## Phase と Milestone の対応
 
-| Phase | Milestone | 主な機能 |
-|---|---|---|
-| Phase 1 | M1 | TOP Matrix、領域管理、activity_logs（M1 記録開始） |
-| Phase 1.5 | M2 | メモ、日次・週次振り返り |
-| Phase 2 | M3 | ルーティン / トレーニング、実行履歴 UI（/history） |
-| Phase 2.5 | M4 | 記録（体重・睡眠・筋力・野球）、グラフ |
-| Phase 3 | M5 | Finance |
-| Phase 3.5 | M6 | 動画 |
-| Phase 4 | M7 | AI 支援 |
-| Phase 4.5 | M8 | Export API、v1 移行リハーサル |
+| Phase | Milestone | 主な機能 | 実装状態 |
+|---|---|---|---|
+| — | M0 | docs 整備 + デザイン基盤 | partial |
+| Phase 1 | M1 | TOP Matrix、領域管理、activity_logs（M1 記録開始） | done |
+| Phase 1.5 | M2 | メモ、日次・週次振り返り | not_started |
+| Phase 2 | M3 | ルーティン / トレーニング、実行履歴 UI（/history） | done |
+| Phase 2.5 | M4 | 記録（体重・睡眠・筋力・野球）、グラフ | partial |
+| Phase 3 | M5 | Finance | not_started |
+| Phase 3.5 | M6 | 動画 | partial |
+| Phase 4 | M7 | AI 支援 | not_started |
+| Phase 4.5 | M8 | Export API、v1 移行リハーサル | not_started |
 
 M0（docs 整備 + デザイン基盤）は Phase 番号の外で先行する。
 
@@ -25,10 +29,10 @@ M0（docs 整備 + デザイン基盤）は Phase 番号の外で先行する。
 | M0 | docs 整備 + デザイン基盤（`app.css` トークン反映、AppLayout / Sidebar / 背景素材、フォント導入） | フォント配信方法・ダークモード方針を確定（→ 未決定 #2, #10） |
 | M1 | TOP Matrix 縦断（Matrix 中核 4 テーブル + **activity_logs** migration、Dashboard、セル編集モーダル、領域管理、Policy / FormRequest / Query / Service、Feature テスト） | v0 の核。[top-matrix.md](./product/screens/top-matrix.md) を正とする。**activity_logs のテーブル設計と記録開始を M1 で行う**（`matrix_item_completed` / `matrix_item_reopened` のみ） |
 | M2 | メモ + 日次・週次振り返り | M2 初期は `completed_at` 参照。将来的に activity_logs 参照へ移行可能にする |
-| M3 | ルーティン / トレーニング + **実行履歴 UI（/history）** | `routine_completed` を activity_logs に追加。ルーティンの TOP 補助表示可否を判断（→ 未決定 #4） |
-| M4 | 記録（体重・睡眠・筋力・野球）+ グラフ | チャートライブラリ選定（→ 未決定 #1）、記録系スキーマ確定（→ 未決定 #3） |
+| M3 | ルーティン / トレーニング + **実行履歴 UI（/history）** | 実装イベント名は `routine_session_completed`（roadmap 旧称 `routine_completed`）。ルーティンの TOP 補助表示可否を判断（→ 未決定 #4） |
+| M4 | 記録（体重・睡眠・筋力・野球）+ グラフ | チャートは **ECharts 導入済**（→ 未決定 #1 は実質クローズ候補）。記録系スキーマ確定（→ 未決定 #3）。残: 週次平均等の集計・筋力チャート UI |
 | M5 | Finance | スコープ確定（→ 未決定 #7） |
-| M6 | 動画（Laravel Cloud Object Storage、署名付き URL） | ローカルは MinIO 検討。サイズ・尺の上限確定 |
+| M6 | 動画（Laravel Cloud Object Storage、署名付き URL） | コア（署名付き upload/stream）は実装済。ローカルは MinIO 検討。サイズ・尺の上限確定 |
 | M7 | AI 支援 | プロバイダ・コスト・形態・ログ保存を確定（→ 未決定 #6） |
 | M8 | Export API + v1 移行リハーサル | 認証方式確定（→ 未決定 #8）。allowlist 契約は [export-api.md](./api/export-api.md) |
 
@@ -45,7 +49,7 @@ M0（docs 整備 + デザイン基盤）は Phase 番号の外で先行する。
 | テーブル設計 + migration | **M1** | activity_logs テーブルを Phase 1 で作成 |
 | 記録開始 | **M1** | セル項目完了切替時に `matrix_item_completed` / `matrix_item_reopened` を記録 |
 | 実行履歴 UI | **M3** | GET /history で activity_logs を時系列表示 |
-| ルーティンイベント | **M3** | ルーティン完了時に `routine_completed` を追加 |
+| ルーティンイベント | **M3** | セッション完了時に `routine_session_completed` を追加（実装名。旧称 `routine_completed`） |
 
 - activity_logs は **不変のイベントログ** である。TOP Matrix 自体のスナップショット履歴ではない
 - 完了取り消しは `matrix_item_reopened` イベントを **追加** する（既存イベントは更新・削除しない）
@@ -56,7 +60,7 @@ M0（docs 整備 + デザイン基盤）は Phase 番号の外で先行する。
 
 | # | 事項 | 選択肢・論点 | 決定期限 |
 |---|---|---|---|
-| 1 | チャートライブラリ | Chart.js / ECharts / Unovis 等。package 追加は要承認 | M4 着手前 |
+| 1 | チャートライブラリ | **実装で ECharts を採用済**（`echarts`）。ADR 化して正式クローズするか判断 | M4（実質決定済） |
 | 2 | フォント配信 | セルフホスト（public/fonts）or CDN。プライバシーと表示安定性ならセルフホスト推奨 | M0 |
 | 3 | 記録系スキーマ | 汎用テーブル一本 vs ハイブリッド（推奨: ハイブリッド） | M4 設計時 |
 | 4 | ルーティンの TOP 表示 | 当日実施予定を TOP に補助表示するか、完全独立か | M3 設計時 |
