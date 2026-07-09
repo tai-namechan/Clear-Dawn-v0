@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { LineChart } from '@lucide/vue';
 import { ref } from 'vue';
 import DateNavigator from '@/components/DateNavigator.vue';
+import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -81,28 +82,29 @@ async function saveAll(): Promise<void> {
     <div
         class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
     >
-        <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
-            <PageTitleOrnament
-                title="コンディション管理"
-                subtitle="日々のコンディション指標をまとめて記録します。"
-                align="left"
-            />
+        <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
+            <PageSectionCard>
+                <PageTitleOrnament
+                    title="コンディション管理"
+                    subtitle="日々のコンディション指標をまとめて記録します。"
+                    align="left"
+                />
+            </PageSectionCard>
 
-            <DateNavigator
-                :date="date"
-                route-url="/records"
-                :reload-only="['metrics', 'date']"
-            />
+            <PageSectionCard padding="sm">
+                <DateNavigator
+                    :date="date"
+                    route-url="/records"
+                    :reload-only="['metrics', 'date']"
+                />
+            </PageSectionCard>
 
-            <section
-                aria-label="日次入力"
-                class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface"
-            >
+            <PageSectionCard padding="none" aria-label="日次入力">
                 <ul class="flex flex-col">
                     <li
                         v-for="entry in metrics"
                         :key="entry.metric.key"
-                        class="border-b border-cd-line/60 px-5 py-4 last:border-b-0"
+                        class="border-b border-cd-line px-5 py-4 last:border-b-0"
                     >
                         <div
                             class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
@@ -111,7 +113,7 @@ async function saveAll(): Promise<void> {
                                 <div class="flex items-center gap-2">
                                     <label
                                         :for="`metric-${entry.metric.key}`"
-                                        class="font-serif text-base tracking-[0.08em] text-cd-ink"
+                                        class="font-sans text-base font-semibold text-cd-ink"
                                     >
                                         {{ entry.metric.label }}
                                     </label>
@@ -164,31 +166,33 @@ async function saveAll(): Promise<void> {
                         </div>
                     </li>
                 </ul>
-            </section>
+            </PageSectionCard>
 
-            <div class="flex items-center justify-between gap-3">
-                <p
-                    v-if="saveMessage"
-                    class="font-sans text-sm"
-                    :class="
-                        saveMessage.includes('失敗')
-                            ? 'text-destructive'
-                            : 'text-cd-moss'
-                    "
-                >
-                    {{ saveMessage }}
-                </p>
-                <span v-else />
+            <PageSectionCard padding="sm">
+                <div class="flex items-center justify-between gap-3">
+                    <p
+                        v-if="saveMessage"
+                        class="font-sans text-sm"
+                        :class="
+                            saveMessage.includes('失敗')
+                                ? 'text-destructive'
+                                : 'text-cd-moss'
+                        "
+                    >
+                        {{ saveMessage }}
+                    </p>
+                    <span v-else />
 
-                <Button
-                    type="button"
-                    class="font-sans tracking-[0.08em]"
-                    :disabled="saving"
-                    @click="saveAll"
-                >
-                    まとめて保存
-                </Button>
-            </div>
+                    <Button
+                        type="button"
+                        class="font-sans tracking-[0.08em]"
+                        :disabled="saving"
+                        @click="saveAll"
+                    >
+                        まとめて保存
+                    </Button>
+                </div>
+            </PageSectionCard>
         </div>
     </div>
 </template>

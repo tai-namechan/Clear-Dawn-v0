@@ -40,7 +40,7 @@ const user = computed(() => page.props.auth.user!);
     <h1 class="sr-only">プロフィール設定</h1>
 
     <div class="flex flex-col space-y-12">
-        <div class="cd-card p-6 md:p-8">
+        <div class="cd-panel p-6 md:p-8">
             <Heading
                 variant="small"
                 title="プロフィール"
@@ -50,7 +50,7 @@ const user = computed(() => page.props.auth.user!);
 
             <Form
                 v-bind="ProfileController.update.form()"
-                class="space-y-6"
+                class="space-y-6 font-sans"
                 v-slot="{ errors, processing, recentlySuccessful }"
             >
                 <div class="grid gap-2">
@@ -64,7 +64,7 @@ const user = computed(() => page.props.auth.user!);
                         autocomplete="name"
                         placeholder="お名前"
                     />
-                    <p class="text-sm text-cd-ink-muted">
+                    <p class="font-sans text-sm text-cd-ink-muted">
                         あなたの名前を入力してください。ダッシュボードやメモで表示されます。
                     </p>
                     <InputError class="mt-1" :message="errors.name" />
@@ -84,7 +84,7 @@ const user = computed(() => page.props.auth.user!);
                         autocomplete="username"
                         placeholder="メールアドレス"
                     />
-                    <p class="text-sm text-cd-ink-muted">
+                    <p class="font-sans text-sm text-cd-ink-muted">
                         ログインや各種通知に使用されるメールアドレスです。
                     </p>
                     <InputError class="mt-1" :message="errors.email" />

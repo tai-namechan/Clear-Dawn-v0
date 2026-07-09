@@ -9,6 +9,7 @@ import {
 } from '@lucide/vue';
 import { ref } from 'vue';
 import InputError from '@/components/InputError.vue';
+import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import ReorderableList from '@/components/ReorderableList.vue';
 import { Button } from '@/components/ui/button';
@@ -51,33 +52,32 @@ function reactivate(area: LifeArea): void {
     <div
         class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
     >
-        <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
-            <div class="flex items-start justify-between gap-4">
-                <PageTitleOrnament
-                    title="領域管理"
-                    subtitle="人生を構成する領域を整え、優先順位とバランスを明確にしましょう。"
-                    align="left"
-                />
-
-                <Link
-                    :href="dashboard()"
-                    class="mt-2 flex shrink-0 items-center gap-2 rounded-full border border-cd-line/80 bg-white/60 px-3.5 py-1.5 font-sans text-sm text-cd-ink-muted transition-colors hover:border-cd-line hover:text-cd-ink"
-                >
-                    <ArrowLeft
-                        :size="16"
-                        :stroke-width="1.6"
-                        aria-hidden="true"
+        <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
+            <PageSectionCard>
+                <div class="flex items-start justify-between gap-4">
+                    <PageTitleOrnament
+                        title="領域管理"
+                        subtitle="人生を構成する領域を整え、優先順位とバランスを明確にしましょう。"
+                        align="left"
                     />
-                    ダッシュボードへ戻る
-                </Link>
-            </div>
 
-            <section
-                aria-label="登録済みの領域"
-                class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface"
-            >
+                    <Link
+                        :href="dashboard()"
+                        class="mt-2 flex shrink-0 items-center gap-2 rounded-full border border-cd-line px-3.5 py-1.5 font-sans text-sm text-cd-ink-muted transition-colors hover:border-primary/30 hover:bg-primary-hover hover:text-primary"
+                    >
+                        <ArrowLeft
+                            :size="16"
+                            :stroke-width="1.6"
+                            aria-hidden="true"
+                        />
+                        ダッシュボードへ戻る
+                    </Link>
+                </div>
+            </PageSectionCard>
+
+            <PageSectionCard padding="none" aria-label="登録済みの領域">
                 <h2
-                    class="border-b border-cd-line/60 px-5 py-4 font-serif text-base tracking-[0.12em] text-cd-ink"
+                    class="border-b border-cd-line px-5 py-4 font-sans text-base font-semibold text-cd-ink"
                 >
                     登録済みの領域
                 </h2>
@@ -166,7 +166,7 @@ function reactivate(area: LifeArea): void {
                                 :class="lifeAreaColorClasses[area.color]"
                             />
                             <span
-                                class="min-w-0 truncate font-serif text-base tracking-[0.08em] text-cd-ink"
+                                class="min-w-0 truncate font-sans text-base font-semibold text-cd-ink"
                             >
                                 {{ area.name }}
                             </span>
@@ -222,15 +222,10 @@ function reactivate(area: LifeArea): void {
                         </template>
                     </template>
                 </ReorderableList>
-            </section>
+            </PageSectionCard>
 
-            <section
-                aria-label="新しい領域を追加"
-                class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface px-5 py-5"
-            >
-                <h2
-                    class="mb-4 font-serif text-base tracking-[0.12em] text-cd-ink"
-                >
+            <PageSectionCard aria-label="新しい領域を追加">
+                <h2 class="mb-4 font-sans text-base font-semibold text-cd-ink">
                     新しい領域を追加
                 </h2>
                 <Form
@@ -287,7 +282,7 @@ function reactivate(area: LifeArea): void {
                         </Button>
                     </div>
                 </Form>
-            </section>
+            </PageSectionCard>
         </div>
     </div>
 </template>

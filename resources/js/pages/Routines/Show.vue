@@ -9,6 +9,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import RoutineBasicsForm from '@/components/forms/RoutineBasicsForm.vue';
+import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import ReorderableList from '@/components/ReorderableList.vue';
 import RoutineEditorSidebar from '@/components/routine/RoutineEditorSidebar.vue';
@@ -173,21 +174,25 @@ function stepPurposeKey(step: RoutineStep) {
         class="flex min-h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-28"
     >
         <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6">
-            <Link
-                href="/routines"
-                class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
-            >
-                <ArrowLeft :size="16" :stroke-width="1.6" />
-                ルーティン一覧
-            </Link>
+            <PageSectionCard>
+                <div class="flex flex-col gap-4">
+                    <Link
+                        href="/routines"
+                        class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
+                    >
+                        <ArrowLeft :size="16" :stroke-width="1.6" />
+                        ルーティン一覧
+                    </Link>
 
-            <PageTitleOrnament
-                title="ルーティン編集"
-                subtitle="基本情報を整えたら、下でステップを順番に追加します。"
-                align="left"
-            />
+                    <PageTitleOrnament
+                        title="ルーティン編集"
+                        subtitle="基本情報を整えたら、下でステップを順番に追加します。"
+                        align="left"
+                    />
 
-            <RoutinesHubTabs />
+                    <RoutinesHubTabs />
+                </div>
+            </PageSectionCard>
 
             <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
                 <div class="flex flex-col gap-6">

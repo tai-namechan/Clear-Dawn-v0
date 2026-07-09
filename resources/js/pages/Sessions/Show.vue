@@ -10,6 +10,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import SessionBlockLogger from '@/components/routine/SessionBlockLogger.vue';
+import PageSectionCard from '@/components/PageSectionCard.vue';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/apiFetch';
 import { purposeChipClasses } from '@/lib/stepPurposeColors';
@@ -284,53 +285,60 @@ const metrics = computed(() => {
         <div
             class="flex flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-28"
         >
-            <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6">
-                <Link
-                    :href="planHref"
-                    class="inline-flex items-center gap-2 font-sans text-sm text-cd-ink-muted transition-colors hover:text-cd-ink"
-                >
-                    <ArrowLeft :size="16" :stroke-width="1.6" />
-                    プラン詳細
-                </Link>
+            <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4">
+                <PageSectionCard>
+                    <div class="flex flex-col gap-4">
+                        <Link
+                            :href="planHref"
+                            class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
+                        >
+                            <ArrowLeft :size="16" :stroke-width="1.6" />
+                            プラン詳細
+                        </Link>
 
-                <div
-                    class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
-                >
-                    <div class="min-w-0">
-                        <h1
-                            class="font-sans text-2xl font-semibold tracking-tight text-cd-ink md:text-3xl"
+                        <div
+                            class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
                         >
-                            {{ planTitle }}
-                        </h1>
-                        <p
-                            v-if="currentStep"
-                            class="mt-2 font-sans text-sm text-cd-ink-muted"
-                        >
-                            Step {{ currentIndex + 1 }} / {{ steps.length }}
-                        </p>
-                    </div>
+                            <div class="min-w-0">
+                                <h1
+                                    class="font-sans text-2xl font-semibold tracking-tight text-cd-ink md:text-3xl"
+                                >
+                                    {{ planTitle }}
+                                </h1>
+                                <p
+                                    v-if="currentStep"
+                                    class="mt-2 font-sans text-sm text-cd-ink-muted"
+                                >
+                                    Step {{ currentIndex + 1 }} /
+                                    {{ steps.length }}
+                                </p>
+                            </div>
 
-                    <div class="w-full max-w-xs space-y-2 lg:w-56">
-                        <div
-                            class="flex items-center justify-between font-sans text-xs text-cd-ink-muted"
-                        >
-                            <span>完了ステータス</span>
-                            <span>{{ progressPercent }}%</span>
-                        </div>
-                        <div
-                            class="h-2 overflow-hidden rounded-full bg-muted"
-                            role="progressbar"
-                            :aria-valuenow="progressPercent"
-                            aria-valuemin="0"
-                            aria-valuemax="100"
-                        >
-                            <div
-                                class="h-full bg-primary transition-all"
-                                :style="{ width: `${progressPercent}%` }"
-                            />
+                            <div class="w-full max-w-xs space-y-2 lg:w-56">
+                                <div
+                                    class="flex items-center justify-between font-sans text-xs text-cd-ink-muted"
+                                >
+                                    <span>完了ステータス</span>
+                                    <span>{{ progressPercent }}%</span>
+                                </div>
+                                <div
+                                    class="h-2 overflow-hidden rounded-full bg-muted"
+                                    role="progressbar"
+                                    :aria-valuenow="progressPercent"
+                                    aria-valuemin="0"
+                                    aria-valuemax="100"
+                                >
+                                    <div
+                                        class="h-full bg-primary transition-all"
+                                        :style="{
+                                            width: `${progressPercent}%`,
+                                        }"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </PageSectionCard>
 
                 <div
                     class="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px]"

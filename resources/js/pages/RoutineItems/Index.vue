@@ -2,6 +2,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ChevronRight, Pencil, Plus, Trash2 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import RoutineItemForm from '@/components/forms/RoutineItemForm.vue';
 import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
@@ -14,7 +15,10 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { apiFetch } from '@/lib/apiFetch';
-import { routineItemCategoryLabels } from '@/lib/routineConstants';
+import {
+    routineItemCategoryLabels,
+    trackingTypeLabels,
+} from '@/lib/routineConstants';
 import type {
     RoutineItem,
     RoutineItemCategory,
@@ -127,31 +131,35 @@ async function deleteItem(item: RoutineItem): Promise<void> {
     <div
         class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
     >
-        <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
-            <div class="flex items-start justify-between gap-4">
-                <PageTitleOrnament
-                    title="部品ライブラリ"
-                    subtitle="ルーティン編集の中で作るのが基本です。ここは整理用です。"
-                    align="left"
-                />
+        <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
+            <PageSectionCard>
+                <div class="flex items-start justify-between gap-4">
+                    <PageTitleOrnament
+                        title="実施項目"
+                        subtitle="ルーティンのステップで使う項目です。基本はルーティン編集から作ります。"
+                        align="left"
+                    />
 
-                <Button
-                    type="button"
-                    class="mt-2 shrink-0"
-                    @click="openCreate"
-                >
-                    <Plus :size="16" :stroke-width="1.8" />
-                    追加
-                </Button>
-            </div>
+                    <Button
+                        type="button"
+                        class="mt-2 shrink-0"
+                        @click="openCreate"
+                    >
+                        <Plus :size="16" :stroke-width="1.8" />
+                        追加
+                    </Button>
+                </div>
 
-            <RoutinesHubTabs />
+                <div class="mt-5">
+                    <RoutinesHubTabs />
+                </div>
+            </PageSectionCard>
 
-            <section
+            <PageSectionCard
                 v-for="group in groupedItems"
                 :key="group.category"
+                padding="none"
                 :aria-label="group.label"
-                class="cd-panel"
             >
                 <h2
                     class="border-b border-cd-line px-5 py-4 font-sans text-base font-semibold text-cd-ink"
@@ -162,7 +170,7 @@ async function deleteItem(item: RoutineItem): Promise<void> {
                     <li
                         v-for="item in group.items"
                         :key="item.id"
-                        class="flex items-center justify-between gap-3 border-b border-cd-line/60 px-5 py-4 last:border-b-0"
+                        class="flex items-center justify-between gap-3 border-b border-cd-line px-5 py-4 last:border-b-0"
                         :class="{ 'opacity-55': !item.is_active }"
                     >
                         <div class="min-w-0 flex-1">
@@ -216,17 +224,19 @@ async function deleteItem(item: RoutineItem): Promise<void> {
                         </div>
                     </li>
                 </ul>
-            </section>
+            </PageSectionCard>
 
-            <div
+            <PageSectionCard
                 v-if="routineItems.length === 0"
-                class="py-12 text-center font-sans text-sm text-cd-ink-muted"
+                class="py-12 text-center"
             >
-                <p>実施項目がまだありません。</p>
-                <p class="mt-2">
+                <p class="font-sans text-sm text-cd-ink-muted">
+                    実施項目がまだありません。
+                </p>
+                <p class="mt-2 font-sans text-sm text-cd-ink-muted">
                     上の「追加」ボタンから登録するか、ルーティン編集のステップ追加から作れます。
                 </p>
-            </div>
+            </PageSectionCard>
         </div>
     </div>
 

@@ -63,7 +63,7 @@ const stepCount = computed(() => props.routine.steps?.length ?? 0);
                     >
                         <span class="inline-flex items-center gap-2">
                             <ListChecks :size="15" :stroke-width="1.6" />
-                            部品ライブラリ
+                            実施項目
                         </span>
                         <ChevronRight :size="14" :stroke-width="1.6" />
                     </Link>

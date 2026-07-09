@@ -2,6 +2,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { CalendarPlus, ChevronRight, Plus, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
+import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
 import { Button } from '@/components/ui/button';
@@ -81,31 +82,32 @@ async function deleteRoutine(routine: Routine): Promise<void> {
     <div
         class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
     >
-        <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
-            <div class="flex items-start justify-between gap-4">
-                <PageTitleOrnament
-                    title="ルーティン"
-                    subtitle="ルーティンを作り、ステップを追加してから今日やります。"
-                    align="left"
-                />
+        <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
+            <PageSectionCard>
+                <div class="flex items-start justify-between gap-4">
+                    <PageTitleOrnament
+                        title="ルーティン"
+                        subtitle="ルーティンを作り、ステップを追加してから今日やります。"
+                        align="left"
+                    />
 
-                <Button
-                    type="button"
-                    class="mt-2 shrink-0"
-                    :disabled="creating"
-                    @click="createRoutine"
-                >
-                    <Plus :size="16" :stroke-width="1.8" />
-                    ルーティンを作る
-                </Button>
-            </div>
+                    <Button
+                        type="button"
+                        class="mt-2 shrink-0"
+                        :disabled="creating"
+                        @click="createRoutine"
+                    >
+                        <Plus :size="16" :stroke-width="1.8" />
+                        ルーティンを作る
+                    </Button>
+                </div>
 
-            <RoutinesHubTabs />
+                <div class="mt-5">
+                    <RoutinesHubTabs />
+                </div>
+            </PageSectionCard>
 
-            <section
-                aria-label="ルーティン一覧"
-                class="cd-panel overflow-hidden"
-            >
+            <PageSectionCard padding="none" aria-label="ルーティン一覧">
                 <ul v-if="routines.length > 0" class="flex flex-col">
                     <li
                         v-for="routine in routines"
@@ -194,7 +196,7 @@ async function deleteRoutine(routine: Routine): Promise<void> {
                         ルーティンを作る
                     </Button>
                 </div>
-            </section>
+            </PageSectionCard>
         </div>
     </div>
 </template>

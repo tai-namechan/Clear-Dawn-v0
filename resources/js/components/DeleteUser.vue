@@ -23,7 +23,7 @@ const passwordInput = useTemplateRef('passwordInput');
 </script>
 
 <template>
-    <div class="space-y-6">
+    <div class="cd-panel space-y-6 p-5 md:p-6">
         <Heading
             variant="small"
             title="危険な操作ゾーン"
@@ -39,11 +39,11 @@ const passwordInput = useTemplateRef('passwordInput');
                     aria-hidden="true"
                     class="mt-0.5 shrink-0 text-cd-danger-ink"
                 />
-                <div class="space-y-1">
-                    <p class="font-medium text-cd-danger-ink">
+                <div class="space-y-1 font-sans">
+                    <p class="font-sans font-medium text-cd-danger-ink">
                         アカウントを削除する
                     </p>
-                    <p class="text-sm text-cd-ink-muted">
+                    <p class="font-sans text-sm text-cd-ink-muted">
                         アカウントとすべてのデータが完全に削除されます。<br />
                         この操作は取り消せません。
                     </p>

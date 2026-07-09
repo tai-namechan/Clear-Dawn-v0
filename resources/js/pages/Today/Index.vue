@@ -2,6 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { CirclePlay } from '@lucide/vue';
 import DateNavigator from '@/components/DateNavigator.vue';
+import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
 import { routinePlanStatusLabels } from '@/lib/routineConstants';
@@ -25,24 +26,27 @@ function latestSession(plan: RoutinePlan) {
     <div
         class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
     >
-        <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
-            <div class="flex items-start justify-between gap-4">
+        <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
+            <PageSectionCard>
                 <PageTitleOrnament
                     title="今日やる"
                     subtitle="今日のルーティンを開始・再開します。作成は「ルーティン」タブで行います。"
                     align="left"
                 />
-            </div>
+                <div class="mt-5">
+                    <RoutinesHubTabs />
+                </div>
+            </PageSectionCard>
 
-            <RoutinesHubTabs />
+            <PageSectionCard padding="sm">
+                <DateNavigator
+                    :date="date"
+                    route-url="/today"
+                    :reload-only="['plans', 'date']"
+                />
+            </PageSectionCard>
 
-            <DateNavigator
-                :date="date"
-                route-url="/today"
-                :reload-only="['plans', 'date']"
-            />
-
-            <section aria-label="プラン一覧" class="cd-panel">
+            <PageSectionCard padding="none" aria-label="プラン一覧">
                 <ul v-if="plans.length > 0" class="flex flex-col">
                     <li
                         v-for="plan in plans"
@@ -100,7 +104,7 @@ function latestSession(plan: RoutinePlan) {
                                     latestSession(plan)?.status === 'in_progress'
                                 "
                                 :href="`/sessions/${latestSession(plan)!.id}`"
-                                class="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-sans text-xs font-medium text-primary transition-colors hover:bg-primary/15"
+                                class="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-sans text-xs font-medium text-primary transition-colors hover:bg-primary-hover hover:text-primary"
                             >
                                 <CirclePlay :size="14" :stroke-width="1.6" />
                                 続ける
@@ -108,7 +112,7 @@ function latestSession(plan: RoutinePlan) {
                             <Link
                                 v-else
                                 :href="`/plans/${plan.id}`"
-                                class="inline-flex items-center gap-1.5 rounded-full border border-cd-line px-3 py-1 font-sans text-xs font-medium text-cd-ink-muted transition-colors hover:border-primary/30 hover:text-primary"
+                                class="inline-flex items-center gap-1.5 rounded-full border border-cd-line px-3 py-1 font-sans text-xs font-medium text-cd-ink-muted transition-colors hover:border-primary/30 hover:bg-primary-hover hover:text-primary"
                             >
                                 編集・開始
                             </Link>
@@ -131,7 +135,7 @@ function latestSession(plan: RoutinePlan) {
                         を作ってから「今日やる」に載せてください。
                     </p>
                 </div>
-            </section>
+            </PageSectionCard>
         </div>
     </div>
 </template>
