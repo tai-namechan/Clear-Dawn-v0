@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property TrackingType $tracking_type
  * @property string|null $default_load_unit
  * @property string|null $default_amount_unit
+ * @property string|null $default_video_id
  * @property string|null $note
  * @property bool $is_active
  * @property Carbon|null $deleted_at
@@ -37,6 +38,7 @@ use Illuminate\Support\Carbon;
     'tracking_type',
     'default_load_unit',
     'default_amount_unit',
+    'default_video_id',
     'note',
     'is_active',
 ])]
@@ -71,6 +73,14 @@ class RoutineItem extends Model
     public function lifeArea(): BelongsTo
     {
         return $this->belongsTo(LifeArea::class);
+    }
+
+    /**
+     * @return BelongsTo<Video, $this>
+     */
+    public function defaultVideo(): BelongsTo
+    {
+        return $this->belongsTo(Video::class, 'default_video_id');
     }
 
     /**

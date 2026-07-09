@@ -25,6 +25,11 @@ class StoreRoutineItemRequest extends FormRequest
             'tracking_type' => ['required', Rule::enum(TrackingType::class)],
             'default_load_unit' => ['nullable', 'string', 'max:20'],
             'default_amount_unit' => ['nullable', 'string', 'max:20'],
+            'default_video_id' => [
+                'nullable',
+                'ulid',
+                Rule::exists('videos', 'id')->where(fn ($query) => $query->where('user_id', $this->user()?->id)),
+            ],
             'note' => ['nullable', 'string'],
             'is_active' => ['sometimes', 'boolean'],
         ];

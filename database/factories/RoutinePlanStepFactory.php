@@ -23,6 +23,7 @@ class RoutinePlanStepFactory extends Factory
         return [
             'routine_plan_id' => RoutinePlan::factory(),
             'routine_item_id' => RoutineItem::factory(),
+            'title' => null,
             'video_id' => null,
             'purpose' => fake()->optional()->randomElement(StepPurpose::cases()),
             'sort_order' => fake()->numberBetween(1, 10),

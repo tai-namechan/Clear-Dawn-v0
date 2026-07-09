@@ -16,6 +16,7 @@ class UpdateRoutineItemService
      *     tracking_type?: TrackingType,
      *     default_load_unit?: string|null,
      *     default_amount_unit?: string|null,
+     *     default_video_id?: string|null,
      *     note?: string|null,
      *     is_active?: bool
      * }  $attributes

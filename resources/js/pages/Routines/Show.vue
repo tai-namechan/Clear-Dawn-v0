@@ -349,7 +349,11 @@ function stepPurposeKey(step: RoutineStep) {
                                 <ReorderableList
                                     :items="steps"
                                     :reorder-url="`/routines/${routine.id}/steps/reorder`"
-                                    :item-label="(step) => step.routine_item?.name"
+                                    :item-label="
+                                        (step) =>
+                                            step.display_name ||
+                                            step.routine_item?.name
+                                    "
                                     variant="table"
                                 >
                                     <template #row="{ item: step, index }">
@@ -359,7 +363,20 @@ function stepPurposeKey(step: RoutineStep) {
                                         <td
                                             class="px-4 py-3 font-sans font-semibold text-cd-ink"
                                         >
-                                            {{ step.routine_item?.name ?? '—' }}
+                                            {{
+                                                step.display_name ||
+                                                step.routine_item?.name ||
+                                                '—'
+                                            }}
+                                            <span
+                                                v-if="
+                                                    step.title &&
+                                                    step.routine_item?.name
+                                                "
+                                                class="mt-0.5 block font-sans text-xs font-normal text-cd-ink-muted"
+                                            >
+                                                {{ step.routine_item.name }}
+                                            </span>
                                         </td>
                                         <td class="px-4 py-3 text-cd-ink-muted">
                                             {{ formatStepTarget(step) }}

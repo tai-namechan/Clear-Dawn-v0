@@ -26,6 +26,12 @@ class UpdateRoutineItemRequest extends FormRequest
             'tracking_type' => ['sometimes', 'required', Rule::enum(TrackingType::class)],
             'default_load_unit' => ['sometimes', 'nullable', 'string', 'max:20'],
             'default_amount_unit' => ['sometimes', 'nullable', 'string', 'max:20'],
+            'default_video_id' => [
+                'sometimes',
+                'nullable',
+                'ulid',
+                Rule::exists('videos', 'id')->where(fn ($query) => $query->where('user_id', $this->user()?->id)),
+            ],
             'note' => ['sometimes', 'nullable', 'string'],
             'is_active' => ['sometimes', 'boolean'],
         ];
