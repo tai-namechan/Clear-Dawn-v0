@@ -4,9 +4,10 @@ import { Input } from '@/components/ui/input';
 import type { TrackingType } from '@/types/routine';
 
 export type BlockTargetRow = {
-    load: string;
-    amount: string;
-    memo: string;
+    /** number input 経由で number になることがあるため両方許容 */
+    load: string | number;
+    amount: string | number;
+    memo: string | number;
 };
 
 interface Props {

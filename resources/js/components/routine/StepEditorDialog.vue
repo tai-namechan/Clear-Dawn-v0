@@ -404,10 +404,18 @@ async function createInlineItem(): Promise<RoutineItem | null> {
     }
 }
 
+function asText(value: unknown): string {
+    if (value === null || value === undefined) {
+        return '';
+    }
+
+    return String(value).trim();
+}
+
 function validateClient(): boolean {
     const next: FieldErrors = {};
 
-    if (mode.value === 'create' && !newItemName.value.trim()) {
+    if (mode.value === 'create' && !asText(newItemName.value)) {
         next.name = 'ステップ名を入力してください。';
     }
 
@@ -425,8 +433,10 @@ function validateClient(): boolean {
 
     const firstRow = blockRows.value[0] ?? { load: '', amount: '', memo: '' };
     const tracking = effectiveTrackingType.value;
+    const loadText = asText(firstRow.load);
+    const amountText = asText(firstRow.amount);
 
-    if (tracking === 'weight_reps' && !firstRow.load.trim()) {
+    if (tracking === 'weight_reps' && !loadText) {
         next.target_load = '重量を入力してください。';
     }
 
@@ -436,7 +446,7 @@ function validateClient(): boolean {
             tracking === 'count' ||
             tracking === 'duration' ||
             tracking === 'distance') &&
-        !firstRow.amount.trim()
+        !amountText
     ) {
         next.target_amount =
             tracking === 'duration'
@@ -492,7 +502,9 @@ async function submit(): Promise<void> {
         amount: '',
         memo: '',
     };
-    const combinedNote = [note.value.trim(), firstRow.memo.trim()]
+    const loadText = asText(firstRow.load);
+    const amountText = asText(firstRow.amount);
+    const combinedNote = [asText(note.value), asText(firstRow.memo)]
         .filter(Boolean)
         .join('\n');
 
@@ -501,11 +513,13 @@ async function submit(): Promise<void> {
         video_id: videoId.value,
         purpose: purpose.value,
         target_blocks: blockCount.value || null,
-        target_load: firstRow.load ? Number(firstRow.load) : null,
+        target_load: loadText ? Number(loadText) : null,
         load_unit: loadUnit.value || null,
-        target_amount: firstRow.amount ? Number(firstRow.amount) : null,
+        target_amount: amountText ? Number(amountText) : null,
         amount_unit: amountUnit.value || null,
-        rest_seconds: restSeconds.value ? Number(restSeconds.value) : null,
+        rest_seconds: asText(restSeconds.value)
+            ? Number(asText(restSeconds.value))
+            : null,
         note: combinedNote || null,
     });
 }
