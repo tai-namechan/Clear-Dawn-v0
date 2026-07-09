@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\VideoStatus;
+use App\Exceptions\VideoStorageNotConfiguredException;
 use App\Models\User;
 use App\Models\Video;
 use App\Support\VideoMimeType;
@@ -41,33 +42,39 @@ class CreateVideoUploadUrlService
             ]);
         }
 
-        return DB::transaction(function () use ($user, $title, $mimeType, $sizeBytes, $durationSeconds): array {
-            $videoId = (string) Str::ulid();
-            $extension = VideoMimeType::extensionFor($mimeType);
-            $storageKey = "videos/{$user->id}/{$videoId}.{$extension}";
+        try {
+            return DB::transaction(function () use ($user, $title, $mimeType, $sizeBytes, $durationSeconds): array {
+                $videoId = (string) Str::ulid();
+                $extension = VideoMimeType::extensionFor($mimeType);
+                $storageKey = "videos/{$user->id}/{$videoId}.{$extension}";
 
-            $video = Video::query()->create([
-                'id' => $videoId,
-                'user_id' => $user->id,
-                'title' => $title,
-                'status' => VideoStatus::Pending,
-                'storage_key' => $storageKey,
-                'mime_type' => $mimeType,
-                'size_bytes' => $sizeBytes,
-                'duration_seconds' => $durationSeconds,
+                $video = Video::query()->create([
+                    'id' => $videoId,
+                    'user_id' => $user->id,
+                    'title' => $title,
+                    'status' => VideoStatus::Pending,
+                    'storage_key' => $storageKey,
+                    'mime_type' => $mimeType,
+                    'size_bytes' => $sizeBytes,
+                    'duration_seconds' => $durationSeconds,
+                ]);
+
+                $upload = $this->storageClient->temporaryUploadUrl(
+                    $storageKey,
+                    self::UploadUrlExpiryMinutes,
+                    $mimeType,
+                );
+
+                return [
+                    'mode' => 'single',
+                    'video_id' => $video->id,
+                    'uploads' => [$upload],
+                ];
+            });
+        } catch (VideoStorageNotConfiguredException $exception) {
+            throw ValidationException::withMessages([
+                'upload' => [$exception->getMessage()],
             ]);
-
-            $upload = $this->storageClient->temporaryUploadUrl(
-                $storageKey,
-                self::UploadUrlExpiryMinutes,
-                $mimeType,
-            );
-
-            return [
-                'mode' => 'single',
-                'video_id' => $video->id,
-                'uploads' => [$upload],
-            ];
-        });
+        }
     }
 }

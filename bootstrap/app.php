@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\VideoStorageNotConfiguredException;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -27,4 +28,15 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        $exceptions->render(function (VideoStorageNotConfiguredException $exception, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $exception->getMessage(),
+                    'errors' => [
+                        'upload' => [$exception->getMessage()],
+                    ],
+                ], 422);
+            }
+        });
     })->create();

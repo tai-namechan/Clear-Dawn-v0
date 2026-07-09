@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\VideoStorageNotConfiguredException;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -22,6 +23,8 @@ class VideoStorageClient
      */
     public function temporaryUploadUrl(string $key, int $expiryMinutes, string $contentType): array
     {
+        $this->assertConfigured();
+
         $expiresAt = Carbon::now()->addMinutes($expiryMinutes);
 
         /** @var array{url: string, headers: array<string, string>} $result */
@@ -41,6 +44,8 @@ class VideoStorageClient
      */
     public function temporaryUrl(string $key, int $expiryMinutes): array
     {
+        $this->assertConfigured();
+
         $expiresAt = Carbon::now()->addMinutes($expiryMinutes);
 
         return [
@@ -69,5 +74,22 @@ class VideoStorageClient
     public function delete(string $key): void
     {
         $this->disk->delete($key);
+    }
+
+    /**
+     * Presigned URL 発行前に必須設定を確認する。
+     * 未設定だと AWS SDK が "Bucket" 空で InvalidArgumentException → 500 になる。
+     */
+    private function assertConfigured(): void
+    {
+        $diskName = (string) config('filesystems.videos', 'videos');
+        /** @var array<string, mixed> $config */
+        $config = config("filesystems.disks.{$diskName}", []);
+
+        $bucket = trim((string) ($config['bucket'] ?? ''));
+
+        if ($bucket === '') {
+            throw VideoStorageNotConfiguredException::missingBucket();
+        }
     }
 }

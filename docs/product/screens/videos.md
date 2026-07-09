@@ -28,15 +28,25 @@
 
 | 項目 | 暫定方針 |
 |---|---|
-| 保存先 | Laravel Cloud Object Storage |
+| 保存先 | Laravel Cloud Object Storage（disk 名 `videos`） |
 | ローカル開発 | 動画実装時に MinIO を検討（それまで不要） |
 | 形式 | mp4 を基本 |
-| サイズ上限 | 初期は 1 本 50MB 目安 |
+| サイズ上限 | 初期は 1 本 100MB（`VideoStorageClient::MaxSizeBytes`） |
 | 尺 | 基本 30 秒、上限 60 秒 |
 | サムネイル | 初期は未対応。後で Queue で自動生成 |
-| URL | 公開 URL ではなく認証済みユーザー向け。署名付き URL を検討 |
+| URL | 公開 URL ではなく認証済みユーザー向け。署名付き URL |
 
-上限値・ストレージ構成は動画実装時（M6）に確定する。
+### 本番セットアップ（必須）
+
+`POST /videos/upload-url` は S3 互換の署名付き PUT URL を発行する。  
+`AWS_BUCKET` / `AWS_VIDEOS_BUCKET` が空だと 500 ではなく「動画ストレージが未設定」の 422 になる。
+
+1. Laravel Cloud の環境インフラで **Object Storage バケットを追加**（Private）
+2. disk 名を **`videos`** にする（`config/filesystems.php` の `disks.videos` と一致）
+3. 環境にアタッチ後、**再デプロイ**（Cloud が `AWS_*` を注入）
+4. General Settings で `AWS_BUCKET` / `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_DEFAULT_REGION` / `AWS_ENDPOINT` が入っていることを確認
+
+`FILESYSTEM_VIDEOS_DISK` を変える場合は、Cloud 側の disk 名も同じ値に揃える。
 
 ## 設計方針
 

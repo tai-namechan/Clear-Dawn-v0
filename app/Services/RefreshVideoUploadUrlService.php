@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Exceptions\VideoStorageNotConfiguredException;
 use App\Models\Video;
+use Illuminate\Validation\ValidationException;
 
 class RefreshVideoUploadUrlService
 {
@@ -15,11 +17,17 @@ class RefreshVideoUploadUrlService
      */
     public function handle(Video $video): array
     {
-        $upload = $this->storageClient->temporaryUploadUrl(
-            $video->storage_key,
-            CreateVideoUploadUrlService::UploadUrlExpiryMinutes,
-            $video->mime_type,
-        );
+        try {
+            $upload = $this->storageClient->temporaryUploadUrl(
+                $video->storage_key,
+                CreateVideoUploadUrlService::UploadUrlExpiryMinutes,
+                $video->mime_type,
+            );
+        } catch (VideoStorageNotConfiguredException $exception) {
+            throw ValidationException::withMessages([
+                'upload' => [$exception->getMessage()],
+            ]);
+        }
 
         return [
             'mode' => 'single',

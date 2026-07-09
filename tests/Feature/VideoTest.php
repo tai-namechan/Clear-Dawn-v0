@@ -41,6 +41,26 @@ class VideoTest extends TestCase
         return $mock;
     }
 
+    public function test_upload_url_returns_validation_error_when_bucket_is_not_configured(): void
+    {
+        config([
+            'filesystems.videos' => 'videos',
+            'filesystems.disks.videos.bucket' => '',
+            'filesystems.disks.videos.key' => 'test-key',
+            'filesystems.disks.videos.secret' => 'test-secret',
+            'filesystems.disks.videos.region' => 'us-east-1',
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->postJson(route('videos.upload-url'), $this->uploadUrlPayload())
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['upload']);
+
+        $this->assertDatabaseCount('videos', 0);
+    }
+
     public function test_upload_url_creates_pending_video_with_server_generated_storage_key(): void
     {
         $user = User::factory()->create();
