@@ -10,6 +10,7 @@ class UpdateRoutineStepService
     /**
      * @param  array{
      *     routine_item_id?: string,
+     *     title?: string|null,
      *     video_id?: string|null,
      *     purpose?: StepPurpose|null,
      *     target_load?: float|string|null,
@@ -23,6 +24,14 @@ class UpdateRoutineStepService
      */
     public function handle(RoutineStep $step, array $attributes): RoutineStep
     {
+        if (array_key_exists('title', $attributes)) {
+            $title = $attributes['title'];
+            if ($title !== null) {
+                $trimmed = trim((string) $title);
+                $attributes['title'] = $trimmed === '' ? null : $trimmed;
+            }
+        }
+
         $step->update($attributes);
 
         return $step->refresh();

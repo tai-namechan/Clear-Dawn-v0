@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\RoutinePlanStep;
+use App\Support\RoutineStepDisplay;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -16,11 +17,16 @@ class RoutinePlanStepResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $item = $this->relationLoaded('routineItem') ? $this->routineItem : null;
+
         return [
             'id' => $this->id,
             'routine_plan_id' => $this->routine_plan_id,
             'routine_item_id' => $this->routine_item_id,
+            'title' => $this->title,
+            'display_name' => RoutineStepDisplay::resolveName($this->title, $item),
             'video_id' => $this->video_id,
+            'resolved_video_id' => RoutineStepDisplay::resolveVideoId($this->video_id, $item),
             'purpose' => $this->purpose?->value,
             'sort_order' => $this->sort_order,
             'target_load' => $this->target_load !== null ? (string) $this->target_load : null,

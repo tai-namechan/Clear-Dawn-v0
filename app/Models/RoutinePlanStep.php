@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
  * @property string $id
  * @property string $routine_plan_id
  * @property string $routine_item_id
+ * @property string|null $title
  * @property string|null $video_id
  * @property StepPurpose|null $purpose
  * @property int $sort_order
@@ -31,6 +32,7 @@ use Illuminate\Support\Carbon;
 #[Fillable([
     'routine_plan_id',
     'routine_item_id',
+    'title',
     'video_id',
     'purpose',
     'sort_order',

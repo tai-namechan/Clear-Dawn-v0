@@ -2,14 +2,15 @@
 
 namespace Tests\Feature;
 
-use App\Models\RoutineItem;
 use App\Models\Routine;
+use App\Models\RoutineItem;
 use App\Models\RoutineStep;
 use App\Models\User;
 use App\Models\Video;
 use Database\Seeders\MatrixRowSeeder;
 use Database\Seeders\MetricSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -87,7 +88,9 @@ class RoutineTest extends TestCase
                 ->component('Routines/Show')
                 ->where('routine.name', '編集対象')
                 ->has('routine.steps', 1)
-                ->where('routine.steps', fn ($steps) => is_array($steps) && array_is_list($steps))
+                ->where('routine.steps', fn ($steps) => $steps instanceof Collection
+                    ? $steps->values()->all() === $steps->all()
+                    : (is_array($steps) && array_is_list($steps)))
                 ->has('routineItems')
                 ->has('videos')
             );

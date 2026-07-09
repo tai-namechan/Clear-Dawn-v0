@@ -147,6 +147,8 @@ unique: (user_id, week_start_date)
 
 ### routine_steps
 
+> **実装の正は ADR-0007 系マイグレーション。** 下記は旧ドラフト。現行は `routine_item_id` / `title` nullable / `video_id` / 汎用 target 列。
+
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | ULID | PK |

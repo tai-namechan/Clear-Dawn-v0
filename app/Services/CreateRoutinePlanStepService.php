@@ -16,6 +16,7 @@ class CreateRoutinePlanStepService
      *
      * @param  array{
      *     routine_item_id: string,
+     *     title?: string|null,
      *     video_id?: string|null,
      *     purpose?: StepPurpose|string|null,
      *     target_load?: float|string|null,
@@ -31,9 +32,16 @@ class CreateRoutinePlanStepService
     {
         return DB::transaction(function () use ($plan, $attributes): RoutinePlanStep {
             $nextSortOrder = (int) $plan->steps()->max('sort_order') + 1;
+            $title = $attributes['title'] ?? null;
+
+            if ($title !== null) {
+                $trimmed = trim((string) $title);
+                $title = $trimmed === '' ? null : $trimmed;
+            }
 
             $step = $plan->steps()->create([
                 'routine_item_id' => $attributes['routine_item_id'],
+                'title' => $title,
                 'video_id' => $attributes['video_id'] ?? null,
                 'purpose' => $attributes['purpose'] ?? null,
                 'sort_order' => $nextSortOrder,

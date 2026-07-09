@@ -286,4 +286,90 @@ class RoutineSessionTest extends TestCase
                 ->has('session.steps.0.block_logs', 1)
             );
     }
+
+    public function test_start_snapshots_step_title_as_item_name_when_present(): void
+    {
+        $user = User::factory()->create();
+        $routineItem = RoutineItem::factory()->create([
+            'user_id' => $user->id,
+            'name' => 'AWS IAM章',
+        ]);
+        $plan = RoutinePlan::factory()->ready()->create(['user_id' => $user->id]);
+        RoutinePlanStep::factory()->forPlan($plan)->create([
+            'routine_item_id' => $routineItem->id,
+            'title' => '権限まわりを復習',
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($user)->postJson(route('routine-sessions.start', $plan))->assertOk();
+
+        $this->assertDatabaseHas('routine_session_steps', [
+            'routine_item_id' => $routineItem->id,
+            'item_name' => '権限まわりを復習',
+        ]);
+    }
+
+    public function test_start_resolves_video_from_item_default_when_plan_step_has_none(): void
+    {
+        $user = User::factory()->create();
+        $routineItem = RoutineItem::factory()->create([
+            'user_id' => $user->id,
+            'name' => 'スクワット',
+        ]);
+        $defaultVideo = Video::factory()->ready()->create([
+            'user_id' => $user->id,
+            'routine_item_id' => $routineItem->id,
+            'title' => 'リハビリ用フォーム確認動画',
+        ]);
+        $routineItem->update(['default_video_id' => $defaultVideo->id]);
+
+        $plan = RoutinePlan::factory()->ready()->create(['user_id' => $user->id]);
+        RoutinePlanStep::factory()->forPlan($plan)->create([
+            'routine_item_id' => $routineItem->id,
+            'video_id' => null,
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($user)->postJson(route('routine-sessions.start', $plan))->assertOk();
+
+        $this->assertDatabaseHas('routine_session_steps', [
+            'routine_item_id' => $routineItem->id,
+            'item_name' => 'スクワット',
+            'video_id' => $defaultVideo->id,
+        ]);
+    }
+
+    public function test_start_prefers_plan_step_video_over_item_default(): void
+    {
+        $user = User::factory()->create();
+        $routineItem = RoutineItem::factory()->create([
+            'user_id' => $user->id,
+            'name' => 'スクワット',
+        ]);
+        $defaultVideo = Video::factory()->ready()->create([
+            'user_id' => $user->id,
+            'routine_item_id' => $routineItem->id,
+            'title' => '通常スクワット動画',
+        ]);
+        $overrideVideo = Video::factory()->ready()->create([
+            'user_id' => $user->id,
+            'routine_item_id' => $routineItem->id,
+            'title' => '投手用スクワット動画',
+        ]);
+        $routineItem->update(['default_video_id' => $defaultVideo->id]);
+
+        $plan = RoutinePlan::factory()->ready()->create(['user_id' => $user->id]);
+        RoutinePlanStep::factory()->forPlan($plan)->create([
+            'routine_item_id' => $routineItem->id,
+            'video_id' => $overrideVideo->id,
+            'sort_order' => 1,
+        ]);
+
+        $this->actingAs($user)->postJson(route('routine-sessions.start', $plan))->assertOk();
+
+        $this->assertDatabaseHas('routine_session_steps', [
+            'routine_item_id' => $routineItem->id,
+            'video_id' => $overrideVideo->id,
+        ]);
+    }
 }

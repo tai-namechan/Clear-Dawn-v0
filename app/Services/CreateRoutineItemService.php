@@ -18,6 +18,7 @@ class CreateRoutineItemService
      *     tracking_type: TrackingType,
      *     default_load_unit?: string|null,
      *     default_amount_unit?: string|null,
+     *     default_video_id?: string|null,
      *     note?: string|null,
      *     is_active?: bool
      * }  $attributes
@@ -32,6 +33,7 @@ class CreateRoutineItemService
                 'tracking_type' => $attributes['tracking_type'],
                 'default_load_unit' => $attributes['default_load_unit'] ?? null,
                 'default_amount_unit' => $attributes['default_amount_unit'] ?? null,
+                'default_video_id' => $attributes['default_video_id'] ?? null,
                 'note' => $attributes['note'] ?? null,
                 'is_active' => $attributes['is_active'] ?? true,
             ]);
