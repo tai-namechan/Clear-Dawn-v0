@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { ChevronRight, History, Layers, ListChecks } from '@lucide/vue';
+import { ChevronRight, History, Layers } from '@lucide/vue';
 import { computed } from 'vue';
 import type { Routine, RoutineEditor } from '@/types/routine';
 
@@ -24,10 +24,7 @@ const stepCount = computed(() => props.routine.steps?.length ?? 0);
 
 <template>
     <aside class="flex flex-col gap-4">
-        <section
-            aria-label="次にやること"
-            class="cd-panel px-4 py-4"
-        >
+        <section aria-label="次にやること" class="cd-panel px-4 py-4">
             <h2 class="font-sans text-sm font-semibold text-cd-ink">
                 次にやること
             </h2>
@@ -52,18 +49,6 @@ const stepCount = computed(() => props.routine.steps?.length ?? 0);
                         <span class="inline-flex items-center gap-2">
                             <History :size="15" :stroke-width="1.6" />
                             履歴を見る
-                        </span>
-                        <ChevronRight :size="14" :stroke-width="1.6" />
-                    </Link>
-                </li>
-                <li>
-                    <Link
-                        href="/routine-items"
-                        class="flex items-center justify-between gap-2 text-cd-ink-muted transition-colors hover:text-primary"
-                    >
-                        <span class="inline-flex items-center gap-2">
-                            <ListChecks :size="15" :stroke-width="1.6" />
-                            実施項目
                         </span>
                         <ChevronRight :size="14" :stroke-width="1.6" />
                     </Link>
@@ -101,8 +86,11 @@ const stepCount = computed(() => props.routine.steps?.length ?? 0);
                 ヘルプ
             </h2>
             <p class="mt-2 font-sans text-xs leading-relaxed text-cd-ink-muted">
-                ① ステップを追加 → ② 今日やる → ③ 実行画面で1つずつ完了。
-                現在 {{ stepCount }} ステップです。
+                ① 「ステップを追加」でやることを登録 → ② 今日やる → ③
+                実行画面で1つずつ完了。 現在 {{ stepCount }} ステップです。
+            </p>
+            <p class="mt-2 font-sans text-xs leading-relaxed text-cd-ink-muted">
+                ※ ステップの中身（スクワットなど）は「ステップを追加」時にその場で作れます。別画面の整理用一覧は不要なら使わなくて大丈夫です。
             </p>
         </section>
     </aside>

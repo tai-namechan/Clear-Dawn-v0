@@ -41,7 +41,7 @@ async function createRoutine(): Promise<void> {
             },
         );
 
-        router.visit(`/routines/${result.routine.id}`);
+        router.visit(`/routines/${result.routine.id}?new=1`);
     } finally {
         creating.value = false;
     }
@@ -80,7 +80,7 @@ async function deleteRoutine(routine: Routine): Promise<void> {
     <Head title="ルーティン" />
 
     <div
-        class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
+        class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6"
     >
         <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
             <PageSectionCard>

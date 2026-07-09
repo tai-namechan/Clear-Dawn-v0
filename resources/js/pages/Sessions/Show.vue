@@ -281,9 +281,9 @@ const metrics = computed(() => {
 <template>
     <Head :title="planTitle" />
 
-    <div class="flex min-h-full flex-1 flex-col">
+    <div class="flex min-h-0 flex-1 flex-col">
         <div
-            class="flex flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-28"
+            class="flex min-h-0 flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-28"
         >
             <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4">
                 <PageSectionCard>

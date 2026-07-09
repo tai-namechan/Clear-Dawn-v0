@@ -129,14 +129,14 @@ async function deleteItem(item: RoutineItem): Promise<void> {
     <Head title="実施項目" />
 
     <div
-        class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
+        class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6"
     >
         <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
             <PageSectionCard>
                 <div class="flex items-start justify-between gap-4">
                     <PageTitleOrnament
-                        title="実施項目"
-                        subtitle="ルーティンのステップで使う項目です。基本はルーティン編集から作ります。"
+                        title="実施項目（整理用）"
+                        subtitle="ステップで使う「やることを」まとめて見る画面です。普段はルーティンの「ステップを追加」だけで十分です。"
                         align="left"
                     />
 
@@ -234,7 +234,7 @@ async function deleteItem(item: RoutineItem): Promise<void> {
                     実施項目がまだありません。
                 </p>
                 <p class="mt-2 font-sans text-sm text-cd-ink-muted">
-                    上の「追加」ボタンから登録するか、ルーティン編集のステップ追加から作れます。
+                    普段はルーティンの「ステップを追加」から作れます。ここはまとめて整理したいとき用です。
                 </p>
             </PageSectionCard>
         </div>

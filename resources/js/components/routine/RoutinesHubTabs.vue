@@ -10,14 +10,16 @@ type HubTab = {
 };
 
 /**
- * 主導線: ルーティンを作る → 今日やる → 履歴
- * 実施項目は下位（整理用）
+ * 主導線のみ表示:
+ * ルーティンを作る → 今日やる → 履歴
+ *
+ * 実施項目（ステップで使う部品の整理画面）は主導線外。
+ * ルーティン編集の「ステップを追加」から作るのが基本。
  */
 const tabs: HubTab[] = [
     { label: 'ルーティン', href: '/routines', matchPrefix: true, primary: true },
     { label: '今日やる', href: '/today', matchPrefix: true },
     { label: '履歴', href: '/history' },
-    { label: '実施項目', href: '/routine-items' },
 ];
 
 const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
@@ -39,10 +41,7 @@ function isActive(tab: HubTab): boolean {
 </script>
 
 <template>
-    <nav
-        aria-label="ルーティンハブ"
-        class="flex flex-wrap gap-2"
-    >
+    <nav aria-label="ルーティンハブ" class="flex flex-wrap gap-2">
         <Link
             v-for="tab in tabs"
             :key="tab.href"

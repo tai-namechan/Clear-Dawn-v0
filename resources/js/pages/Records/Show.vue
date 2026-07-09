@@ -96,7 +96,7 @@ async function deleteRecord(record: MetricRecord): Promise<void> {
     <Head :title="metric.label" />
 
     <div
-        class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
+        class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6"
     >
         <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4">
             <PageSectionCard>
