@@ -15,12 +15,16 @@ interface Props {
     loadUnit?: string | null;
     amountUnit?: string | null;
     disabled?: boolean;
+    loadError?: string;
+    amountError?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     disabled: false,
     loadUnit: 'kg',
     amountUnit: '回',
+    loadError: undefined,
+    amountError: undefined,
 });
 
 const rows = defineModel<BlockTargetRow[]>('rows', { default: () => [] });
@@ -103,6 +107,7 @@ watch(
                             min="0"
                             class="h-8"
                             :disabled="disabled"
+                            :aria-invalid="index === 0 && Boolean(loadError)"
                         />
                     </td>
                     <td v-if="showAmount" class="px-3 py-2">
@@ -113,6 +118,7 @@ watch(
                             min="0"
                             class="h-8"
                             :disabled="disabled"
+                            :aria-invalid="index === 0 && Boolean(amountError)"
                         />
                     </td>
                     <td v-if="showMemo" class="px-3 py-2">
