@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import {
     ArrowLeft,
     CalendarDays,
@@ -41,6 +41,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const page = usePage();
 
 const formName = ref(props.routine.name);
 const formDescription = ref(props.routine.description ?? '');
@@ -51,6 +52,31 @@ const showAddStepModal = ref(false);
 const routineItems = ref<RoutineItem[]>([]);
 
 const steps = computed(() => ensureArray(props.routine.steps));
+
+/** 作成直後（?new=1、または名前未変更・ステップ0）は「作成」表示 */
+const isFreshCreate = computed(() => {
+    const url = String(page.url ?? '');
+    const fromCreateFlow = /[?&]new=1(?:&|$)/.test(url);
+    const name = props.routine.name.trim();
+    const looksBrandNew =
+        steps.value.length === 0 && name === '新しいルーティン';
+
+    return fromCreateFlow || looksBrandNew;
+});
+
+const pageHeading = computed(() =>
+    isFreshCreate.value ? 'ルーティンを作成' : 'ルーティンを編集',
+);
+
+const pageSubtitle = computed(() =>
+    isFreshCreate.value
+        ? '名前を決めたら、下でステップを追加します。'
+        : '基本情報を整えたら、下でステップを順番に追加します。',
+);
+
+const documentTitle = computed(
+    () => `${props.routine.name} · ${pageHeading.value}`,
+);
 
 const dominantCategory = computed(() => {
     const counts = new Map<string, number>();
@@ -168,10 +194,10 @@ function stepPurposeKey(step: RoutineStep) {
 </script>
 
 <template>
-    <Head :title="`${routine.name} · ルーティン編集`" />
+    <Head :title="documentTitle" />
 
     <div
-        class="flex min-h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-28"
+        class="flex min-h-0 flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-28"
     >
         <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6">
             <PageSectionCard>
@@ -185,8 +211,8 @@ function stepPurposeKey(step: RoutineStep) {
                     </Link>
 
                     <PageTitleOrnament
-                        title="ルーティン編集"
-                        subtitle="基本情報を整えたら、下でステップを順番に追加します。"
+                        :title="pageHeading"
+                        :subtitle="pageSubtitle"
                         align="left"
                     />
 
@@ -391,7 +417,7 @@ function stepPurposeKey(step: RoutineStep) {
                         >
                             <p>ステップがまだありません。</p>
                             <p class="mt-2">
-                                「ステップを追加」から実施項目を組み込みましょう。
+                                「ステップを追加」から、やることを順番に登録しましょう。
                             </p>
                         </div>
                     </section>

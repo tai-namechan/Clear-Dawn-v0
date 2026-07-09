@@ -24,7 +24,7 @@ function latestSession(plan: RoutinePlan) {
     <Head title="今日やる" />
 
     <div
-        class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
+        class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6"
     >
         <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
             <PageSectionCard>
