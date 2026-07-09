@@ -9,11 +9,10 @@ import {
     SkipForward,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
-import SessionBlockLogger from '@/components/routine/SessionBlockLogger.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
+import SessionBlockLogger from '@/components/routine/SessionBlockLogger.vue';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/apiFetch';
-import { purposeChipClasses } from '@/lib/stepPurposeColors';
 import {
     formatDurationSeconds,
     formatStepTarget,
@@ -21,6 +20,7 @@ import {
     stepPurposeLabels,
     trackingTypeLabels,
 } from '@/lib/routineConstants';
+import { purposeChipClasses } from '@/lib/stepPurposeColors';
 import type {
     RoutineSession,
     RoutineSessionStep,
@@ -60,12 +60,26 @@ const completedCount = computed(
     () => steps.value.filter((step) => step.status === 'completed').length,
 );
 
+const resolvedCount = computed(
+    () =>
+        steps.value.filter(
+            (step) =>
+                step.status === 'completed' || step.status === 'skipped',
+        ).length,
+);
+
+const allStepsResolved = computed(
+    () =>
+        steps.value.length > 0 &&
+        resolvedCount.value >= steps.value.length,
+);
+
 const progressPercent = computed(() => {
     if (steps.value.length === 0) {
         return 0;
     }
 
-    return Math.round((completedCount.value / steps.value.length) * 100);
+    return Math.round((resolvedCount.value / steps.value.length) * 100);
 });
 
 const targetBlocks = computed(() => currentStep.value?.target_blocks ?? 0);
@@ -76,6 +90,12 @@ const planHref = computed(
 
 const planTitle = computed(
     () => props.session.routine_plan?.title ?? 'ルーティン実行',
+);
+
+const isSessionFinished = computed(
+    () =>
+        props.session.status === 'completed' ||
+        props.session.status === 'aborted',
 );
 
 function goToStep(index: number): void {
@@ -140,8 +160,18 @@ async function logBlock(payload: {
     }
 }
 
+function advanceToNextPending(): void {
+    const nextPending = steps.value.findIndex(
+        (step) => step.status === 'pending',
+    );
+
+    if (nextPending >= 0) {
+        currentIndex.value = nextPending;
+    }
+}
+
 async function completeStep(): Promise<void> {
-    if (!currentStep.value) {
+    if (!currentStep.value || currentStep.value.status !== 'pending') {
         return;
     }
 
@@ -156,19 +186,13 @@ async function completeStep(): Promise<void> {
     router.reload({
         only: ['session'],
         onSuccess: () => {
-            const nextPending = steps.value.findIndex(
-                (step) => step.status === 'pending',
-            );
-
-            if (nextPending >= 0) {
-                currentIndex.value = nextPending;
-            }
+            advanceToNextPending();
         },
     });
 }
 
 async function skipStep(): Promise<void> {
-    if (!currentStep.value) {
+    if (!currentStep.value || currentStep.value.status !== 'pending') {
         return;
     }
 
@@ -183,13 +207,7 @@ async function skipStep(): Promise<void> {
     router.reload({
         only: ['session'],
         onSuccess: () => {
-            const nextPending = steps.value.findIndex(
-                (step) => step.status === 'pending',
-            );
-
-            if (nextPending >= 0) {
-                currentIndex.value = nextPending;
-            }
+            advanceToNextPending();
         },
     });
 }
@@ -247,8 +265,7 @@ const metrics = computed(() => {
     }
 
     const type = trackingType.value;
-
-    return [
+    const items = [
         metricValue(
             '回数',
             type === 'reps' || type === 'weight_reps' || type === 'count'
@@ -274,6 +291,8 @@ const metrics = computed(() => {
             step.rest_seconds ? `${step.rest_seconds}秒` : null,
         ),
     ];
+
+    return items.filter((item) => item.value !== '—');
 });
 
 </script>
@@ -306,7 +325,13 @@ const metrics = computed(() => {
                                     {{ planTitle }}
                                 </h1>
                                 <p
-                                    v-if="currentStep"
+                                    v-if="allStepsResolved"
+                                    class="mt-2 font-sans text-sm text-cd-ink-muted"
+                                >
+                                    全 {{ steps.length }} ステップ処理済み
+                                </p>
+                                <p
+                                    v-else-if="currentStep"
                                     class="mt-2 font-sans text-sm text-cd-ink-muted"
                                 >
                                     Step {{ currentIndex + 1 }} /
@@ -318,8 +343,13 @@ const metrics = computed(() => {
                                 <div
                                     class="flex items-center justify-between font-sans text-xs text-cd-ink-muted"
                                 >
-                                    <span>完了ステータス</span>
-                                    <span>{{ progressPercent }}%</span>
+                                    <span>進捗</span>
+                                    <span>
+                                        {{ resolvedCount }} /
+                                        {{ steps.length }}（{{
+                                            progressPercent
+                                        }}%）
+                                    </span>
                                 </div>
                                 <div
                                     class="h-2 overflow-hidden rounded-full bg-muted"
@@ -344,7 +374,85 @@ const metrics = computed(() => {
                     class="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px]"
                 >
                     <section
-                        v-if="currentStep"
+                        v-if="allStepsResolved && !isSessionFinished"
+                        aria-label="実行のまとめ"
+                        class="cd-panel flex flex-col px-5 py-8"
+                    >
+                        <div class="mx-auto max-w-md text-center">
+                            <CircleCheck
+                                :size="40"
+                                :stroke-width="1.5"
+                                class="mx-auto text-cd-moss"
+                            />
+                            <h2
+                                class="mt-4 font-sans text-xl font-semibold text-cd-ink"
+                            >
+                                すべてのステップが終わりました
+                            </h2>
+                            <p
+                                class="mt-2 font-sans text-sm text-cd-ink-muted"
+                            >
+                                完了 {{ completedCount }} /
+                                {{ steps.length }}
+                                <span
+                                    v-if="
+                                        resolvedCount - completedCount > 0
+                                    "
+                                    class="before:mx-1.5 before:content-['·']"
+                                >
+                                    スキップ
+                                    {{ resolvedCount - completedCount }}
+                                </span>
+                            </p>
+                            <p
+                                class="mt-3 font-sans text-sm text-cd-ink-muted"
+                            >
+                                「実行を完了する」を押すと今日やるへ戻ります。履歴にも残ります。
+                            </p>
+                            <Button
+                                type="button"
+                                class="mt-6"
+                                :disabled="completing"
+                                @click="completeSession"
+                            >
+                                <Check :size="16" :stroke-width="1.8" />
+                                {{
+                                    completing
+                                        ? '完了処理中…'
+                                        : '実行を完了する'
+                                }}
+                            </Button>
+                        </div>
+                    </section>
+
+                    <section
+                        v-else-if="isSessionFinished"
+                        aria-label="実行済み"
+                        class="cd-panel flex flex-col px-5 py-8"
+                    >
+                        <div class="mx-auto max-w-md text-center">
+                            <h2
+                                class="font-sans text-xl font-semibold text-cd-ink"
+                            >
+                                {{
+                                    session.status === 'completed'
+                                        ? 'この実行は完了済みです'
+                                        : 'この実行は中断されました'
+                                }}
+                            </h2>
+                            <p
+                                class="mt-2 font-sans text-sm text-cd-ink-muted"
+                            >
+                                今日やる画面から、別の予定を開始できます。
+                            </p>
+                            <Button type="button" class="mt-6" as-child>
+                                <Link href="/today">今日やるへ戻る</Link>
+                            </Button>
+                        </div>
+                    </section>
+
+                    <section
+                        v-else-if="currentStep"
                         aria-label="現在のステップ"
                         class="cd-panel flex flex-col"
                     >
@@ -379,6 +487,7 @@ const metrics = computed(() => {
                             </h2>
 
                             <div
+                                v-if="metrics.length"
                                 class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4"
                             >
                                 <div
@@ -454,19 +563,33 @@ const metrics = computed(() => {
 
                             <div class="mt-4">
                                 <SessionBlockLogger
-                                v-if="trackingType && currentStep"
-                                :tracking-type="trackingType"
-                                :target-blocks="targetBlocks"
-                                :completed-logs="currentStep.block_logs ?? []"
-                                :load-unit="currentStep.load_unit"
-                                :amount-unit="currentStep.amount_unit"
-                                :default-load="currentStep.target_load"
-                                :default-amount="currentStep.target_amount"
-                                :logging="logging"
-                                @log="logBlock"
-                            />
+                                    v-if="trackingType && currentStep"
+                                    :tracking-type="trackingType"
+                                    :target-blocks="targetBlocks"
+                                    :completed-logs="
+                                        currentStep.block_logs ?? []
+                                    "
+                                    :load-unit="currentStep.load_unit"
+                                    :amount-unit="currentStep.amount_unit"
+                                    :default-load="currentStep.target_load"
+                                    :default-amount="
+                                        currentStep.target_amount
+                                    "
+                                    :logging="logging"
+                                    @log="logBlock"
+                                />
                             </div>
                         </div>
+                    </section>
+
+                    <section
+                        v-else
+                        aria-label="ステップなし"
+                        class="cd-panel flex flex-col px-5 py-8 text-center"
+                    >
+                        <p class="font-sans text-sm text-cd-ink-muted">
+                            表示できるステップがありません。
+                        </p>
                     </section>
 
                     <aside
@@ -545,7 +668,8 @@ const metrics = computed(() => {
         </div>
 
         <div
-            class="sticky bottom-0 border-t border-cd-line bg-[#fffcf8]/95 px-4 py-4 backdrop-blur md:px-6"
+            v-if="!isSessionFinished"
+            class="sticky bottom-0 z-10 border-t border-cd-line bg-[#fffcf8]/95 px-4 py-4 backdrop-blur md:px-6"
         >
             <div
                 class="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3"
@@ -555,7 +679,9 @@ const metrics = computed(() => {
                         type="button"
                         variant="outline"
                         :disabled="
-                            !currentStep || currentStep.status !== 'pending'
+                            !currentStep ||
+                            currentStep.status !== 'pending' ||
+                            allStepsResolved
                         "
                         @click="skipStep"
                     >
@@ -565,6 +691,7 @@ const metrics = computed(() => {
                     <Button
                         type="button"
                         variant="ghost"
+                        :disabled="completing"
                         @click="abortSession"
                     >
                         <CircleStop :size="16" :stroke-width="1.8" />
@@ -574,15 +701,18 @@ const metrics = computed(() => {
 
                 <div class="flex flex-wrap gap-2">
                     <Button
+                        v-if="allStepsResolved"
                         type="button"
-                        variant="outline"
-                        :disabled="completing || completedCount < steps.length"
+                        :disabled="completing"
                         @click="completeSession"
                     >
                         <Check :size="16" :stroke-width="1.8" />
-                        実行完了
+                        {{
+                            completing ? '完了処理中…' : '実行を完了する'
+                        }}
                     </Button>
                     <Button
+                        v-else
                         type="button"
                         :disabled="
                             !currentStep || currentStep.status !== 'pending'

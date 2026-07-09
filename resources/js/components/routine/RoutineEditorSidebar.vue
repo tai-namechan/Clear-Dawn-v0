@@ -10,12 +10,18 @@ interface Props {
     routine: RoutineEditor;
     otherRoutines?: Routine[];
     flowPhase?: FlowPhase;
+    applyingToToday?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     otherRoutines: () => [],
     flowPhase: 'ready',
+    applyingToToday: false,
 });
+
+const emit = defineEmits<{
+    'apply-to-today': [];
+}>();
 
 const recommended = computed(() =>
     props.otherRoutines
@@ -44,8 +50,8 @@ const helpLines = computed(() => {
     }
 
     return [
-        'いまは③です。ステップが揃ったら「今日やる」へ進めます。',
-        `現在 ${stepCount.value} ステップです。基本情報の変更は上の「基本情報を保存」です。`,
+        'いまは③です。「今日やるに登録して進む」で今日の予定に載せます。',
+        `現在 ${stepCount.value} ステップです。同じルーティンを複数回登録しても構いません。`,
     ];
 });
 </script>
@@ -58,18 +64,27 @@ const helpLines = computed(() => {
             </h2>
             <ul class="mt-3 space-y-2 font-sans text-sm">
                 <li v-if="flowPhase === 'ready'">
-                    <Link
-                        href="/today"
-                        class="flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 font-medium text-primary transition-colors hover:bg-primary/10"
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-left font-medium text-primary transition-colors hover:bg-primary/10 disabled:opacity-60"
+                        :disabled="applyingToToday"
+                        @click="emit('apply-to-today')"
                     >
                         <span class="inline-flex items-center gap-2">
                             <Layers :size="15" :stroke-width="1.6" />
-                            今日やるへ進む
+                            {{
+                                applyingToToday
+                                    ? '登録中…'
+                                    : '今日やるに登録して進む'
+                            }}
                         </span>
                         <ChevronRight :size="14" :stroke-width="1.6" />
-                    </Link>
+                    </button>
                 </li>
-                <li v-else class="rounded-lg border border-dashed border-cd-line px-3 py-2 text-cd-ink-muted">
+                <li
+                    v-else
+                    class="rounded-lg border border-dashed border-cd-line px-3 py-2 text-cd-ink-muted"
+                >
                     <p class="font-medium text-cd-ink">
                         {{
                             flowPhase === 'name'
@@ -149,7 +164,7 @@ const helpLines = computed(() => {
                         'font-medium text-cd-ink': flowPhase === 'ready',
                     }"
                 >
-                    ③ 今日やる
+                    ③ 今日やるに登録
                 </li>
             </ol>
             <p

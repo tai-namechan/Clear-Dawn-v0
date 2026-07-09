@@ -19,6 +19,7 @@ import type { StepEditorPayload } from '@/components/routine/StepEditorDialog.vu
 import { Button } from '@/components/ui/button';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
 import { ensureArray } from '@/lib/array';
+import { todayKey } from '@/lib/date';
 import { fetchRoutineItemsFromPage } from '@/lib/fetchRoutineItems';
 import {
     estimateStepDurationSeconds,
@@ -59,6 +60,7 @@ const formDescription = ref(props.routine.description ?? '');
 const formLifeAreaId = ref<string | null>(props.routine.life_area_id);
 const savingRoutine = ref(false);
 const savingStep = ref(false);
+const applyingToToday = ref(false);
 const showAddStepModal = ref(false);
 const formError = ref<string | null>(null);
 const routineItems = ref<RoutineItem[]>([...props.routineItems]);
@@ -179,6 +181,36 @@ async function openAddStep(): Promise<void> {
     }
 
     showAddStepModal.value = true;
+}
+
+/**
+ * 一覧の「今日やる」と同じく、今日のプランを作成してから /today へ進む。
+ * 遷移だけの Link だと登録されず空の今日やる画面になる。
+ */
+async function applyToToday(): Promise<void> {
+    if (!props.routine.id || steps.value.length < 1 || applyingToToday.value) {
+        return;
+    }
+
+    applyingToToday.value = true;
+
+    try {
+        await apiFetch('/plans', {
+            method: 'POST',
+            body: JSON.stringify({
+                title: formName.value.trim() || props.routine.name,
+                scheduled_on: todayKey(),
+                routine_id: props.routine.id,
+            }),
+        });
+
+        router.visit('/today');
+    } catch {
+        formError.value =
+            '今日やるへの登録に失敗しました。もう一度お試しください。';
+    } finally {
+        applyingToToday.value = false;
+    }
 }
 
 async function saveRoutine(): Promise<void> {
@@ -695,17 +727,23 @@ function stepPurposeKey(step: RoutineStep) {
                                     今日やる
                                 </h2>
                                 <p class="mt-1 font-sans text-xs text-cd-ink-muted">
-                                    ステップの登録が終わったら、今日の実行へ進めます
+                                    このルーティンを今日の予定に登録して進みます（同じルーティンを複数回登録しても構いません）
                                 </p>
                             </div>
-                            <Button type="button" as-child>
-                                <Link href="/today">
-                                    <CalendarDays
-                                        :size="16"
-                                        :stroke-width="1.6"
-                                    />
-                                    今日やるへ進む
-                                </Link>
+                            <Button
+                                type="button"
+                                :disabled="applyingToToday"
+                                @click="applyToToday"
+                            >
+                                <CalendarDays
+                                    :size="16"
+                                    :stroke-width="1.6"
+                                />
+                                {{
+                                    applyingToToday
+                                        ? '登録中…'
+                                        : '今日やるに登録して進む'
+                                }}
                             </Button>
                         </div>
                     </section>
@@ -715,6 +753,8 @@ function stepPurposeKey(step: RoutineStep) {
                     :routine="routine"
                     :other-routines="otherRoutines"
                     :flow-phase="flowPhase"
+                    :applying-to-today="applyingToToday"
+                    @apply-to-today="applyToToday"
                 />
             </div>
         </div>
