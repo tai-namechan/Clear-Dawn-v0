@@ -30,11 +30,21 @@ class RoutineSessionStepResource extends JsonResource
             'amount_unit' => $this->amount_unit,
             'target_blocks' => $this->target_blocks,
             'rest_seconds' => $this->rest_seconds,
-            'status' => $this->status->value,
+            'status' => $this->status?->value,
             'actual_duration_seconds' => $this->actual_duration_seconds,
             'memo' => $this->memo,
-            'routine_item' => RoutineItemResource::make($this->whenLoaded('routineItem')),
-            'video' => VideoResource::make($this->whenLoaded('video')),
+            'routine_item' => $this->whenLoaded(
+                'routineItem',
+                fn () => $this->routineItem
+                    ? RoutineItemResource::make($this->routineItem)->resolve()
+                    : null,
+            ),
+            'video' => $this->whenLoaded(
+                'video',
+                fn () => $this->video
+                    ? VideoResource::make($this->video)->resolve()
+                    : null,
+            ),
             'block_logs' => $this->relationLoaded('blockLogs')
                 ? RoutineBlockLogResource::collection($this->blockLogs)->resolve()
                 : [],
