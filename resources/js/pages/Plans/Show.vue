@@ -2,6 +2,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ArrowLeft, CirclePlay, Plus, Trash2 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import ReorderableList from '@/components/ReorderableList.vue';
 import StepEditorDialog, {
@@ -149,57 +150,63 @@ function stepPurposeKey(step: RoutinePlanStep) {
     <div
         class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
     >
-        <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6">
-            <Link
-                href="/today"
-                class="inline-flex items-center gap-2 font-sans text-sm text-cd-ink-muted transition-colors hover:text-cd-ink"
-            >
-                <ArrowLeft :size="16" :stroke-width="1.6" />
-                今日の実行プラン
-            </Link>
+        <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4">
+            <PageSectionCard>
+                <div class="flex flex-col gap-4">
+                    <Link
+                        href="/today"
+                        class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
+                    >
+                        <ArrowLeft :size="16" :stroke-width="1.6" />
+                        今日の実行プラン
+                    </Link>
 
-            <div
-                class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-            >
-                <PageTitleOrnament
-                    :title="plan.title"
-                    :subtitle="`${plan.scheduled_on} · ${routinePlanStatusLabels[plan.status]}`"
-                    align="left"
-                />
+                    <div
+                        class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+                    >
+                        <PageTitleOrnament
+                            :title="plan.title"
+                            :subtitle="`${plan.scheduled_on} · ${routinePlanStatusLabels[plan.status]}`"
+                            align="left"
+                        />
 
-                <div class="flex flex-wrap gap-2">
-                    <Button
-                        v-if="activeSession"
-                        type="button"
-                        @click="router.visit(`/sessions/${activeSession.id}`)"
-                    >
-                        <CirclePlay :size="16" :stroke-width="1.6" />
-                        実行を続ける
-                    </Button>
-                    <Button
-                        v-else-if="canStart"
-                        type="button"
-                        :disabled="starting"
-                        @click="startSession"
-                    >
-                        <CirclePlay :size="16" :stroke-width="1.6" />
-                        開始
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="実行プランを削除"
-                        @click="deletePlan"
-                    >
-                        <Trash2 :size="16" :stroke-width="1.6" />
-                    </Button>
+                        <div class="flex flex-wrap gap-2">
+                            <Button
+                                v-if="activeSession"
+                                type="button"
+                                @click="
+                                    router.visit(
+                                        `/sessions/${activeSession.id}`,
+                                    )
+                                "
+                            >
+                                <CirclePlay :size="16" :stroke-width="1.6" />
+                                実行を続ける
+                            </Button>
+                            <Button
+                                v-else-if="canStart"
+                                type="button"
+                                :disabled="starting"
+                                @click="startSession"
+                            >
+                                <CirclePlay :size="16" :stroke-width="1.6" />
+                                開始
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                aria-label="実行プランを削除"
+                                @click="deletePlan"
+                            >
+                                <Trash2 :size="16" :stroke-width="1.6" />
+                            </Button>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </PageSectionCard>
 
-            <section
-                class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface px-5 py-5"
-            >
+            <PageSectionCard aria-label="基本情報">
                 <div class="flex flex-col gap-3">
                     <Input
                         v-model="title"
@@ -218,22 +225,21 @@ function stepPurposeKey(step: RoutinePlanStep) {
                         </Button>
                     </div>
                 </div>
-            </section>
+            </PageSectionCard>
 
-            <div class="flex items-center justify-between gap-3">
-                <h2 class="font-serif text-base tracking-[0.12em] text-cd-ink">
-                    ステップ
-                </h2>
-                <Button type="button" size="sm" @click="openAddStep">
-                    <Plus :size="14" :stroke-width="1.8" />
-                    追加
-                </Button>
-            </div>
+            <PageSectionCard padding="none" aria-label="ステップ一覧">
+                <div
+                    class="flex items-center justify-between gap-3 border-b border-cd-line px-5 py-4"
+                >
+                    <h2 class="font-sans text-base font-semibold text-cd-ink">
+                        ステップ
+                    </h2>
+                    <Button type="button" size="sm" @click="openAddStep">
+                        <Plus :size="14" :stroke-width="1.8" />
+                        追加
+                    </Button>
+                </div>
 
-            <section
-                aria-label="ステップ一覧"
-                class="cd-shadow-soft overflow-hidden rounded-2xl border border-cd-line bg-cd-surface"
-            >
                 <ReorderableList
                     v-if="steps.length"
                     :items="steps"
@@ -246,7 +252,7 @@ function stepPurposeKey(step: RoutinePlanStep) {
                                 {{ index + 1 }}
                             </span>
                             <span
-                                class="font-serif text-base tracking-[0.06em] text-cd-ink"
+                                class="font-sans text-base font-semibold text-cd-ink"
                             >
                                 {{ step.routine_item?.name ?? '—' }}
                             </span>
@@ -294,7 +300,7 @@ function stepPurposeKey(step: RoutinePlanStep) {
                         実施項目を追加して実行プランを組み立てましょう。
                     </p>
                 </div>
-            </section>
+            </PageSectionCard>
         </div>
     </div>
 

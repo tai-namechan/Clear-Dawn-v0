@@ -9,6 +9,7 @@ import {
     Upload,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -147,28 +148,27 @@ async function deleteVideo(video: Video): Promise<void> {
     <div
         class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
     >
-        <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6">
-            <div class="flex items-start justify-between gap-4">
-                <PageTitleOrnament
-                    title="動画"
-                    subtitle="フォーム確認用の短尺動画を管理し、種目に添付できます。"
-                    align="left"
-                />
+        <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4">
+            <PageSectionCard>
+                <div class="flex items-start justify-between gap-4">
+                    <PageTitleOrnament
+                        title="動画"
+                        subtitle="フォーム確認用の短尺動画を管理し、種目に添付できます。"
+                        align="left"
+                    />
 
-                <Button
-                    type="button"
-                    class="mt-2 shrink-0 font-sans tracking-[0.08em]"
-                    @click="openUploadModal"
-                >
-                    <Upload :size="16" :stroke-width="1.8" />
-                    アップロード
-                </Button>
-            </div>
+                    <Button
+                        type="button"
+                        class="mt-2 shrink-0 font-sans tracking-[0.08em]"
+                        @click="openUploadModal"
+                    >
+                        <Upload :size="16" :stroke-width="1.8" />
+                        アップロード
+                    </Button>
+                </div>
+            </PageSectionCard>
 
-            <section
-                aria-label="動画ライブラリ"
-                class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface p-5"
-            >
+            <PageSectionCard aria-label="動画ライブラリ">
                 <div
                     v-if="videoList.length === 0"
                     class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4"
@@ -225,7 +225,7 @@ async function deleteVideo(video: Video): Promise<void> {
 
                         <div class="space-y-1 p-3">
                             <p
-                                class="truncate font-serif text-sm tracking-[0.06em] text-cd-ink"
+                                class="truncate font-sans text-sm font-semibold text-cd-ink"
                             >
                                 {{ video.title }}
                             </p>
@@ -250,7 +250,7 @@ async function deleteVideo(video: Video): Promise<void> {
                         </div>
                     </li>
                 </ul>
-            </section>
+            </PageSectionCard>
         </div>
     </div>
 
@@ -258,7 +258,7 @@ async function deleteVideo(video: Video): Promise<void> {
         <DialogContent class="bg-cd-surface sm:max-w-md">
             <DialogHeader>
                 <DialogTitle
-                    class="font-serif text-lg tracking-[0.12em] text-cd-ink"
+                    class="font-sans text-lg font-semibold text-cd-ink"
                 >
                     動画をアップロード
                 </DialogTitle>
@@ -357,7 +357,7 @@ async function deleteVideo(video: Video): Promise<void> {
         <DialogContent class="bg-cd-surface sm:max-w-2xl">
             <DialogHeader>
                 <DialogTitle
-                    class="font-serif text-lg tracking-[0.12em] text-cd-ink"
+                    class="font-sans text-lg font-semibold text-cd-ink"
                 >
                     {{ playbackVideo?.title }}
                 </DialogTitle>

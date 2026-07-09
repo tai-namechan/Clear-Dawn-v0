@@ -4,6 +4,7 @@ import { ArrowLeft, Trash2 } from '@lucide/vue';
 import type { EChartsCoreOption } from 'echarts/core';
 import { computed, ref } from 'vue';
 import BaseChart from '@/components/charts/BaseChart.vue';
+import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -97,25 +98,26 @@ async function deleteRecord(record: MetricRecord): Promise<void> {
     <div
         class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
     >
-        <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6">
-            <Link
-                href="/records"
-                class="inline-flex items-center gap-2 font-sans text-sm text-cd-ink-muted transition-colors hover:text-cd-ink"
-            >
-                <ArrowLeft :size="16" :stroke-width="1.6" />
-                コンディション管理
-            </Link>
+        <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4">
+            <PageSectionCard>
+                <div class="flex flex-col gap-4">
+                    <Link
+                        href="/records"
+                        class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
+                    >
+                        <ArrowLeft :size="16" :stroke-width="1.6" />
+                        コンディション管理
+                    </Link>
 
-            <PageTitleOrnament
-                :title="metric.label"
-                :subtitle="`単位: ${metric.unit}`"
-                align="left"
-            />
+                    <PageTitleOrnament
+                        :title="metric.label"
+                        :subtitle="`単位: ${metric.unit}`"
+                        align="left"
+                    />
+                </div>
+            </PageSectionCard>
 
-            <section
-                aria-label="期間フィルター"
-                class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface px-5 py-4"
-            >
+            <PageSectionCard aria-label="期間フィルター" padding="sm">
                 <div class="flex flex-wrap items-end gap-3">
                     <div class="flex flex-col gap-1">
                         <label
@@ -149,15 +151,10 @@ async function deleteRecord(record: MetricRecord): Promise<void> {
                         適用
                     </Button>
                 </div>
-            </section>
+            </PageSectionCard>
 
-            <section
-                aria-label="推移グラフ"
-                class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface p-5"
-            >
-                <h2
-                    class="mb-4 font-serif text-base tracking-[0.12em] text-cd-ink"
-                >
+            <PageSectionCard aria-label="推移グラフ">
+                <h2 class="mb-4 font-sans text-base font-semibold text-cd-ink">
                     推移
                 </h2>
                 <BaseChart
@@ -170,14 +167,11 @@ async function deleteRecord(record: MetricRecord): Promise<void> {
                 >
                     この期間にデータがありません。
                 </p>
-            </section>
+            </PageSectionCard>
 
-            <section
-                aria-label="記録一覧"
-                class="cd-shadow-soft overflow-hidden rounded-2xl border border-cd-line bg-cd-surface"
-            >
+            <PageSectionCard padding="none" aria-label="記録一覧">
                 <h2
-                    class="border-b border-cd-line/60 px-5 py-4 font-serif text-base tracking-[0.12em] text-cd-ink"
+                    class="border-b border-cd-line px-5 py-4 font-sans text-base font-semibold text-cd-ink"
                 >
                     記録一覧
                 </h2>
@@ -188,7 +182,7 @@ async function deleteRecord(record: MetricRecord): Promise<void> {
                     >
                         <thead>
                             <tr
-                                class="border-b border-cd-line/60 bg-white/40 text-xs tracking-[0.06em] text-cd-ink-muted"
+                                class="border-b border-cd-line bg-white/40 text-xs tracking-[0.06em] text-cd-ink-muted"
                             >
                                 <th class="px-4 py-3 font-medium">日付</th>
                                 <th class="px-4 py-3 font-medium">値</th>
@@ -237,7 +231,7 @@ async function deleteRecord(record: MetricRecord): Promise<void> {
                 >
                     記録がありません。
                 </p>
-            </section>
+            </PageSectionCard>
         </div>
     </div>
 </template>

@@ -37,7 +37,7 @@ defineOptions({
     <h1 class="sr-only">セキュリティ設定</h1>
 
     <div class="space-y-12">
-        <div class="cd-card p-6 md:p-8">
+        <div class="cd-panel p-6 md:p-8">
             <Heading
                 variant="small"
                 title="パスワードの変更"
@@ -56,7 +56,7 @@ defineOptions({
                     'password_confirmation',
                     'current_password',
                 ]"
-                class="space-y-6"
+                class="space-y-6 font-sans"
                 v-slot="{ errors, processing, recentlySuccessful }"
             >
                 <div class="grid gap-2">
