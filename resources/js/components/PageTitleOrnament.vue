@@ -5,12 +5,18 @@ interface Props {
     align?: 'center' | 'left';
     /** Dashboard 等、左寄せタイトルを一段読みやすくする */
     size?: 'default' | 'prominent';
+    /**
+     * brand: セリフ（ダッシュボード等の特別画面）
+     * app: 標準ゴシック（登録・実行画面の可読性優先）
+     */
+    tone?: 'brand' | 'app';
 }
 
 withDefaults(defineProps<Props>(), {
     subtitle: undefined,
     align: 'center',
     size: 'default',
+    tone: 'app',
 });
 </script>
 
@@ -24,20 +30,22 @@ withDefaults(defineProps<Props>(), {
         "
     >
         <h1
-            class="font-serif font-normal text-primary"
-            :class="
+            class="font-normal text-primary"
+            :class="[
+                tone === 'brand' ? 'font-serif' : 'font-sans font-semibold',
                 align === 'center'
-                    ? 'text-4xl tracking-[0.12em] md:text-5xl'
+                    ? 'text-4xl tracking-[0.08em] md:text-5xl'
                     : size === 'prominent'
-                      ? 'text-4xl leading-tight tracking-[0.14em] md:text-[2.625rem]'
-                      : 'text-3xl leading-tight tracking-[0.14em] md:text-4xl'
-            "
+                      ? 'text-4xl leading-tight tracking-[0.04em] md:text-[2.625rem]'
+                      : 'text-2xl leading-tight tracking-[0.02em] md:text-3xl',
+            ]"
         >
             {{ title }}
         </h1>
         <p
             v-if="subtitle"
-            class="font-serif text-sm tracking-[0.12em] text-muted-foreground"
+            class="font-sans text-sm text-cd-ink-muted"
+            :class="tone === 'brand' ? 'tracking-[0.12em]' : 'tracking-normal'"
         >
             {{ subtitle }}
         </p>

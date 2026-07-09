@@ -13,6 +13,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { apiFetch } from '@/lib/apiFetch';
 import { todayKey } from '@/lib/date';
 import type { Routine } from '@/types/routine';
 
@@ -40,18 +41,21 @@ async function createRoutine(): Promise<void> {
     saving.value = true;
 
     try {
-        await apiFetch('/routines', {
-            method: 'POST',
-            body: JSON.stringify({
-                name: formName.value.trim(),
-                description: formDescription.value.trim() || null,
-            }),
-        });
+        const result = await apiFetch<{ routine: { id: string } }>(
+            '/routines',
+            {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: formName.value.trim(),
+                    description: formDescription.value.trim() || null,
+                }),
+            },
+        );
 
         showCreateModal.value = false;
         formName.value = '';
         formDescription.value = '';
-        router.reload({ only: ['routines'] });
+        router.visit(`/routines/${result.routine.id}`);
     } finally {
         saving.value = false;
     }
@@ -87,7 +91,7 @@ async function deleteRoutine(routine: Routine): Promise<void> {
 </script>
 
 <template>
-    <Head title="ルーティン" />
+    <Head title="メニュー" />
 
     <div
         class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
@@ -95,32 +99,32 @@ async function deleteRoutine(routine: Routine): Promise<void> {
         <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
             <div class="flex items-start justify-between gap-4">
                 <PageTitleOrnament
-                    title="ルーティン"
-                    subtitle="再利用できるルーティンを管理します。"
+                    title="メニュー"
+                    subtitle="練習メニューを作り、ステップを追加してから今日やります。"
                     align="left"
                 />
 
                 <Button
                     type="button"
-                    class="mt-2 shrink-0 font-sans tracking-[0.08em]"
+                    class="mt-2 shrink-0"
                     @click="showCreateModal = true"
                 >
                     <Plus :size="16" :stroke-width="1.8" />
-                    追加
+                    メニューを作る
                 </Button>
             </div>
 
             <RoutinesHubTabs />
 
             <section
-                aria-label="ルーティン一覧"
-                class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface"
+                aria-label="メニュー一覧"
+                class="cd-panel overflow-hidden"
             >
                 <ul v-if="routines.length > 0" class="flex flex-col">
                     <li
                         v-for="routine in routines"
                         :key="routine.id"
-                        class="border-b border-cd-line/60 px-5 py-4 last:border-b-0"
+                        class="border-b border-cd-line px-5 py-4 last:border-b-0"
                         :class="{ 'opacity-55': !routine.is_active }"
                     >
                         <div
@@ -132,7 +136,7 @@ async function deleteRoutine(routine: Routine): Promise<void> {
                                     class="group flex items-center gap-1"
                                 >
                                     <p
-                                        class="truncate font-serif text-base tracking-[0.08em] text-cd-ink group-hover:text-primary"
+                                        class="truncate font-sans text-base font-semibold text-cd-ink group-hover:text-primary"
                                     >
                                         {{ routine.name }}
                                     </p>
@@ -144,13 +148,11 @@ async function deleteRoutine(routine: Routine): Promise<void> {
                                 </Link>
                                 <p
                                     v-if="routine.description"
-                                    class="mt-1 line-clamp-2 font-sans text-xs text-cd-ink-muted"
+                                    class="mt-1 line-clamp-2 font-sans text-sm text-cd-ink-muted"
                                 >
                                     {{ routine.description }}
                                 </p>
-                                <p
-                                    class="mt-1 font-sans text-xs text-cd-ink-muted"
-                                >
+                                <p class="mt-1 font-sans text-sm text-cd-ink-muted">
                                     {{ routine.steps_count ?? 0 }} ステップ
                                 </p>
                             </div>
@@ -159,16 +161,17 @@ async function deleteRoutine(routine: Routine): Promise<void> {
                                 <Button
                                     type="button"
                                     size="sm"
-                                    variant="outline"
-                                    class="font-sans text-xs tracking-[0.06em]"
-                                    :disabled="applyingId === routine.id"
+                                    :disabled="
+                                        applyingId === routine.id ||
+                                        (routine.steps_count ?? 0) < 1
+                                    "
                                     @click="applyToToday(routine)"
                                 >
                                     <CalendarPlus
                                         :size="14"
                                         :stroke-width="1.6"
                                     />
-                                    今日の実行にする
+                                    今日やる
                                 </Button>
                                 <Button
                                     type="button"
@@ -186,31 +189,37 @@ async function deleteRoutine(routine: Routine): Promise<void> {
 
                 <div
                     v-else
-                    class="px-5 py-12 text-center font-sans text-sm text-cd-ink-muted"
+                    class="flex flex-col items-center gap-4 px-5 py-14 text-center"
                 >
-                    <p>ルーティンがまだありません。</p>
-                    <p class="mt-2">
-                        上の「追加」ボタンから、繰り返し使うルーティンを作成しましょう。
-                    </p>
+                    <div class="space-y-2">
+                        <p class="font-sans text-base font-semibold text-cd-ink">
+                            まだメニューがありません
+                        </p>
+                        <p class="max-w-sm font-sans text-sm text-cd-ink-muted">
+                            ① メニューを作る → ② ステップを追加 → ③ 今日やる、の順で進めます。
+                        </p>
+                    </div>
+                    <Button type="button" @click="showCreateModal = true">
+                        <Plus :size="16" :stroke-width="1.8" />
+                        メニューを作る
+                    </Button>
                 </div>
             </section>
         </div>
     </div>
 
     <Dialog :open="showCreateModal" @update:open="(v) => (showCreateModal = v)">
-        <DialogContent class="bg-cd-surface sm:max-w-md">
+        <DialogContent class="bg-[#fffcf8] sm:max-w-md">
             <DialogHeader>
-                <DialogTitle
-                    class="font-serif text-lg tracking-[0.12em] text-cd-ink"
-                >
-                    ルーティンを追加
+                <DialogTitle class="font-sans text-lg font-semibold text-cd-ink">
+                    メニューを作る
                 </DialogTitle>
             </DialogHeader>
 
             <div class="flex flex-col gap-3">
                 <Input
                     v-model="formName"
-                    placeholder="ルーティン名"
+                    placeholder="メニュー名（例: 朝の基礎トレーニング）"
                     maxlength="100"
                     :disabled="saving"
                 />
@@ -235,7 +244,7 @@ async function deleteRoutine(routine: Routine): Promise<void> {
                     :disabled="saving || !formName.trim()"
                     @click="createRoutine"
                 >
-                    作成
+                    作って編集へ
                 </Button>
             </DialogFooter>
         </DialogContent>

@@ -2,6 +2,7 @@
 import { Head, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
+import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -133,14 +134,16 @@ const eventTypeOptions = Object.entries(activityLogEventTypeLabels) as Array<
     >
         <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
             <PageTitleOrnament
-                title="実行履歴"
-                subtitle="マトリクスとルーティン実行の活動を時系列で確認できます。"
+                title="履歴"
+                subtitle="完了したメニューとマトリクスの活動を振り返ります。"
                 align="left"
             />
 
+            <RoutinesHubTabs />
+
             <section
                 aria-label="フィルター"
-                class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface px-5 py-4"
+                class="cd-panel px-5 py-4"
             >
                 <div class="grid gap-3 sm:grid-cols-3">
                     <Select v-model="localEventType">
@@ -179,7 +182,7 @@ const eventTypeOptions = Object.entries(activityLogEventTypeLabels) as Array<
 
             <section
                 aria-label="履歴タイムライン"
-                class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface"
+                class="cd-panel"
             >
                 <ul
                     v-if="history.data.length > 0"

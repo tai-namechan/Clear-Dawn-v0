@@ -67,8 +67,8 @@ async function createPlan(): Promise<void> {
         <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
             <div class="flex items-start justify-between gap-4">
                 <PageTitleOrnament
-                    title="今日の実行プラン"
-                    subtitle="スケジュールされた実行プランを確認・実行します。"
+                    title="今日やる"
+                    subtitle="今日のメニューを開始・再開します。メニュー自体は「メニュー」タブで作ります。"
                     align="left"
                 />
             </div>
@@ -90,7 +90,7 @@ async function createPlan(): Promise<void> {
 
             <section
                 aria-label="プラン一覧"
-                class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface"
+                class="cd-panel"
             >
                 <ul v-if="plans.length > 0" class="flex flex-col">
                     <li
@@ -102,7 +102,7 @@ async function createPlan(): Promise<void> {
                             <div class="min-w-0">
                                 <Link
                                     :href="`/plans/${plan.id}`"
-                                    class="font-serif text-base tracking-[0.08em] text-cd-ink hover:text-primary"
+                                    class="font-sans text-base font-semibold text-cd-ink hover:text-primary"
                                 >
                                     {{ plan.title }}
                                 </Link>
@@ -169,15 +169,15 @@ async function createPlan(): Promise<void> {
                     v-else
                     class="px-5 py-12 text-center font-sans text-sm text-cd-ink-muted"
                 >
-                    <p>この日の実行プランはありません。</p>
+                    <p>この日のメニューはありません。</p>
                     <p class="mt-2">
                         <Link
                             href="/routines"
-                            class="text-primary underline-offset-2 hover:underline"
+                            class="font-medium text-primary underline-offset-2 hover:underline"
                         >
-                            ルーティン
+                            メニュー
                         </Link>
-                        から追加するか、上の「追加」ボタンで新規作成してください。
+                        を作ってから「今日やる」に載せてください。
                     </p>
                 </div>
             </section>

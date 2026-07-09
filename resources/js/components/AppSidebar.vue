@@ -31,7 +31,7 @@ const navItems: CdNavItem[] = [
     {
         title: 'ルーティン',
         icon: CircleCheck,
-        href: '/today',
+        href: '/routines',
         matchPrefix: true,
     },
     {

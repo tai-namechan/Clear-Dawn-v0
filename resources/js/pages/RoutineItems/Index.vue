@@ -140,14 +140,14 @@ async function deleteItem(item: RoutineItem): Promise<void> {
         <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
             <div class="flex items-start justify-between gap-4">
                 <PageTitleOrnament
-                    title="実施項目"
-                    subtitle="ルーティンで使う実施項目をカテゴリ別に管理します。"
+                    title="部品ライブラリ"
+                    subtitle="メニュー編集の中で作るのが基本です。ここは整理用です。"
                     align="left"
                 />
 
                 <Button
                     type="button"
-                    class="mt-2 shrink-0 font-sans tracking-[0.08em]"
+                    class="mt-2 shrink-0"
                     @click="openCreate"
                 >
                     <Plus :size="16" :stroke-width="1.8" />
@@ -161,10 +161,10 @@ async function deleteItem(item: RoutineItem): Promise<void> {
                 v-for="group in groupedItems"
                 :key="group.category"
                 :aria-label="group.label"
-                class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface"
+                class="cd-panel"
             >
                 <h2
-                    class="border-b border-cd-line/60 px-5 py-4 font-serif text-base tracking-[0.12em] text-cd-ink"
+                    class="border-b border-cd-line px-5 py-4 font-sans text-base font-semibold text-cd-ink"
                 >
                     {{ group.label }}
                 </h2>
@@ -181,7 +181,7 @@ async function deleteItem(item: RoutineItem): Promise<void> {
                                 class="group flex items-center gap-1"
                             >
                                 <p
-                                    class="truncate font-serif text-base tracking-[0.08em] text-cd-ink group-hover:text-primary"
+                                    class="truncate font-sans text-base font-semibold text-cd-ink group-hover:text-primary"
                                 >
                                     {{ item.name }}
                                 </p>

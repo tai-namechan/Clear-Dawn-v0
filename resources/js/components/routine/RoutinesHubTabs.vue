@@ -6,18 +6,30 @@ type HubTab = {
     label: string;
     href: string;
     matchPrefix?: boolean;
+    primary?: boolean;
 };
 
+/**
+ * 主導線: メニューを作る → 今日やる → 履歴
+ * 実施項目は部品ライブラリ（下位）として末尾に置く
+ */
 const tabs: HubTab[] = [
-    { label: '今日の実行', href: '/today', matchPrefix: true },
-    { label: 'ルーティン', href: '/routines', matchPrefix: true },
-    { label: '実施項目', href: '/routine-items' },
-    { label: '記録', href: '/history' },
+    { label: 'メニュー', href: '/routines', matchPrefix: true, primary: true },
+    { label: '今日やる', href: '/today', matchPrefix: true },
+    { label: '履歴', href: '/history' },
+    { label: '部品', href: '/routine-items' },
 ];
 
 const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
 
 function isActive(tab: HubTab): boolean {
+    if (tab.href === '/routines') {
+        return (
+            isCurrentOrParentUrl('/routines') &&
+            !isCurrentOrParentUrl('/routine-items')
+        );
+    }
+
     if (tab.matchPrefix) {
         return isCurrentOrParentUrl(tab.href);
     }
@@ -29,18 +41,20 @@ function isActive(tab: HubTab): boolean {
 <template>
     <nav
         aria-label="ルーティンハブ"
-        class="flex flex-wrap gap-2 border-b border-cd-line/60 pb-3"
+        class="flex flex-wrap gap-2 border-b border-cd-line pb-3"
     >
         <Link
             v-for="tab in tabs"
             :key="tab.href"
             :href="tab.href"
             :aria-current="isActive(tab) ? 'page' : undefined"
-            class="rounded-full border px-4 py-1.5 font-sans text-sm tracking-[0.06em] transition-colors"
+            class="rounded-full border px-4 py-1.5 font-sans text-sm font-medium transition-colors"
             :class="
                 isActive(tab)
-                    ? 'border-primary/30 bg-primary/10 text-primary'
-                    : 'border-cd-line/80 bg-white/60 text-cd-ink-muted hover:border-cd-line hover:text-cd-ink'
+                    ? tab.primary
+                        ? 'border-primary bg-primary text-primary-foreground'
+                        : 'border-primary/40 bg-primary/10 text-primary'
+                    : 'border-cd-line bg-white text-cd-ink-muted hover:border-primary/30 hover:bg-primary/5 hover:text-primary'
             "
         >
             {{ tab.label }}
