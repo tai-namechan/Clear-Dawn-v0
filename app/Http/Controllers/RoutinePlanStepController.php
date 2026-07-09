@@ -88,13 +88,24 @@ class RoutinePlanStepController extends Controller
         $attributes = $validated;
 
         if (array_key_exists('purpose', $validated)) {
-            $attributes['purpose'] = $validated['purpose'] !== null
-                ? StepPurpose::from($validated['purpose'])
-                : null;
+            $attributes['purpose'] = $this->normalizePurpose($validated['purpose']);
         } elseif (! $partial) {
             $attributes['purpose'] = null;
         }
 
         return $attributes;
+    }
+
+    private function normalizePurpose(mixed $purpose): ?StepPurpose
+    {
+        if ($purpose === null || $purpose === '') {
+            return null;
+        }
+
+        if ($purpose instanceof StepPurpose) {
+            return $purpose;
+        }
+
+        return StepPurpose::from((string) $purpose);
     }
 }

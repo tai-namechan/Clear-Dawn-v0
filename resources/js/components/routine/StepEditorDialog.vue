@@ -21,7 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { apiFetch } from '@/lib/apiFetch';
+import { apiFetch, ApiError } from '@/lib/apiFetch';
 import { fetchVideosFromPage } from '@/lib/fetchVideos';
 import {
     categoryDefaultPurpose,
@@ -61,11 +61,13 @@ export type StepEditorPayload = {
 interface Props {
     open: boolean;
     routineItems: RoutineItem[];
+    videos?: Video[];
     saving?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     saving: false,
+    videos: () => [],
 });
 
 const emit = defineEmits<{
@@ -87,7 +89,7 @@ const videoId = ref<string | null>(null);
 const blockRows = ref<BlockTargetRow[]>([
     { load: '', amount: '10', memo: '' },
 ]);
-const videos = ref<Video[]>([]);
+const videos = ref<Video[]>([...props.videos]);
 const creatingItem = ref(false);
 const formError = ref<string | null>(null);
 
@@ -205,7 +207,9 @@ watch(
         note.value = '';
         videoId.value = null;
         blockRows.value = [{ load: '', amount: '10', memo: '' }];
-        videos.value = await fetchVideosFromPage();
+        videos.value = props.videos.length
+            ? [...props.videos]
+            : await fetchVideosFromPage().catch(() => []);
     },
 );
 
@@ -261,8 +265,20 @@ async function createInlineItem(): Promise<RoutineItem | null> {
         mode.value = 'pick';
 
         return result.routine_item;
-    } catch {
-        formError.value = 'ステップ名の作成に失敗しました。';
+    } catch (error) {
+        if (error instanceof ApiError) {
+            const body = error.body as {
+                message?: string;
+                errors?: Record<string, string[]>;
+            };
+            const firstError = body.errors
+                ? Object.values(body.errors).flat()[0]
+                : undefined;
+            formError.value =
+                firstError ?? body.message ?? 'ステップ名の作成に失敗しました。';
+        } else {
+            formError.value = 'ステップ名の作成に失敗しました。';
+        }
 
         return null;
     } finally {

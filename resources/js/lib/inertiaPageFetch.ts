@@ -16,24 +16,43 @@ function getInertiaVersion(): string | undefined {
     }
 }
 
-export async function fetchInertiaPageProps<T extends Record<string, unknown>>(
+async function fetchInertiaJson(
     url: string,
-): Promise<T> {
-    const version = getInertiaVersion();
+    includeVersion: boolean,
+): Promise<Response> {
     const headers: Record<string, string> = {
         Accept: 'application/json',
         'X-Inertia': 'true',
         'X-Requested-With': 'XMLHttpRequest',
     };
 
-    if (version) {
-        headers['X-Inertia-Version'] = version;
+    if (includeVersion) {
+        const version = getInertiaVersion();
+
+        if (version) {
+            headers['X-Inertia-Version'] = version;
+        }
     }
 
-    const response = await fetch(url, {
+    return fetch(url, {
         headers,
         credentials: 'same-origin',
     });
+}
+
+/**
+ * Inertia ページの props を JSON で取得する。
+ * アセットバージョン不一致 (409) のときは version ヘッダなしで再試行する。
+ */
+export async function fetchInertiaPageProps<T extends Record<string, unknown>>(
+    url: string,
+): Promise<T> {
+    let response = await fetchInertiaJson(url, true);
+
+    // 409 = Inertia asset version mismatch. Retry without version so pickers still work.
+    if (response.status === 409) {
+        response = await fetchInertiaJson(url, false);
+    }
 
     if (!response.ok) {
         return {} as T;

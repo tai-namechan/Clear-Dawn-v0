@@ -3,11 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Enums\RoutinePlanStatus;
+use App\Enums\VideoStatus;
 use App\Http\Requests\RoutinePlans\StoreRoutinePlanRequest;
 use App\Http\Requests\RoutinePlans\UpdateRoutinePlanRequest;
+use App\Http\Resources\RoutineItemResource;
 use App\Http\Resources\RoutinePlanResource;
+use App\Http\Resources\VideoResource;
 use App\Models\Routine;
 use App\Models\RoutinePlan;
+use App\Models\Video;
+use App\Queries\GetRoutineItemsQuery;
 use App\Services\CreateRoutinePlanService;
 use App\Services\DeleteRoutinePlanService;
 use App\Services\UpdateRoutinePlanService;
@@ -19,9 +24,14 @@ use Inertia\Response;
 
 class RoutinePlanController extends Controller
 {
-    public function show(Request $request, RoutinePlan $p): Response
-    {
+    public function show(
+        Request $request,
+        RoutinePlan $p,
+        GetRoutineItemsQuery $routineItemsQuery,
+    ): Response {
         Gate::authorize('view', $p);
+
+        $user = $request->user();
 
         $p->load([
             'steps' => fn ($q) => $q->orderBy('sort_order'),
@@ -30,8 +40,19 @@ class RoutinePlanController extends Controller
             'sessions' => fn ($q) => $q->orderByDesc('started_at'),
         ]);
 
+        $videos = Video::query()
+            ->where('user_id', $user->id)
+            ->where('status', VideoStatus::Ready)
+            ->orderByDesc('created_at')
+            ->limit(100)
+            ->get();
+
         return Inertia::render('Plans/Show', [
             'plan' => RoutinePlanResource::make($p)->resolve(),
+            'routineItems' => RoutineItemResource::collection(
+                $routineItemsQuery->handle($user),
+            )->resolve(),
+            'videos' => VideoResource::collection($videos)->resolve(),
         ]);
     }
 
