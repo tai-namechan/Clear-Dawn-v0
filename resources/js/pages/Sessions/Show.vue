@@ -298,7 +298,7 @@ const metrics = computed(() => {
                 >
                     <div class="min-w-0">
                         <h1
-                            class="font-serif text-2xl tracking-[0.12em] text-cd-ink md:text-3xl"
+                            class="font-sans text-2xl font-semibold tracking-tight text-cd-ink md:text-3xl"
                         >
                             {{ planTitle }}
                         </h1>
@@ -338,7 +338,7 @@ const metrics = computed(() => {
                     <section
                         v-if="currentStep"
                         aria-label="現在のステップ"
-                        class="cd-shadow-soft flex flex-col rounded-2xl border border-cd-line bg-cd-surface"
+                        class="cd-panel flex flex-col"
                     >
                         <div class="border-b border-cd-line/60 px-5 py-5">
                             <div class="flex flex-wrap items-center gap-2">
@@ -365,7 +365,7 @@ const metrics = computed(() => {
                             </div>
 
                             <h2
-                                class="mt-3 font-serif text-xl tracking-[0.1em] text-cd-ink md:text-2xl"
+                                class="mt-3 font-sans text-xl font-semibold tracking-tight text-cd-ink md:text-2xl"
                             >
                                 {{ currentStep.item_name }}
                             </h2>
@@ -384,7 +384,7 @@ const metrics = computed(() => {
                                         {{ metric.label }}
                                     </p>
                                     <p
-                                        class="mt-1 font-serif text-sm tracking-[0.06em] text-cd-ink"
+                                        class="mt-1 font-sans text-sm font-medium text-cd-ink"
                                     >
                                         {{ metric.value }}
                                     </p>
@@ -463,10 +463,10 @@ const metrics = computed(() => {
 
                     <aside
                         aria-label="ステップ一覧"
-                        class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface"
+                        class="cd-panel"
                     >
                         <div
-                            class="border-b border-cd-line/60 px-4 py-3 font-serif text-sm tracking-[0.1em] text-cd-ink"
+                            class="border-b border-cd-line px-4 py-3 font-sans text-sm font-semibold text-cd-ink"
                         >
                             ステップ一覧（{{ steps.length }}）
                         </div>
@@ -537,7 +537,7 @@ const metrics = computed(() => {
         </div>
 
         <div
-            class="sticky bottom-0 border-t border-cd-line/80 bg-cd-surface/95 px-4 py-4 backdrop-blur md:px-6"
+            class="sticky bottom-0 border-t border-cd-line bg-[#fffcf8]/95 px-4 py-4 backdrop-blur md:px-6"
         >
             <div
                 class="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3"

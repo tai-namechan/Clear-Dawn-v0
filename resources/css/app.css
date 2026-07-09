@@ -8,12 +8,17 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+    /*
+     * App default: readable system / Noto Sans JP stack.
+     * Dashboard matrix keeps --font-serif / --font-matrix via MatrixSheet only.
+     */
     --font-sans:
-        Instrument Sans, 'Zen Kaku Gothic New', 'Noto Sans JP', ui-sans-serif,
-        system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN',
+        'Yu Gothic UI', 'Yu Gothic', Meiryo, system-ui, -apple-system,
+        'Segoe UI', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 
-    /* Latin glyphs fall to Cormorant Garamond, JP glyphs to Shippori Mincho */
+    /* Dashboard / brand titles only — do not use on routine registration screens */
     --font-serif:
         'Cormorant Garamond', 'Shippori Mincho', 'Noto Serif JP',
         'Times New Roman', serif;
@@ -49,6 +54,9 @@
     --color-destructive: var(--destructive);
     --color-destructive-foreground: var(--destructive-foreground);
 
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
+
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--ring);
@@ -78,6 +86,14 @@
     --color-cd-ink-muted: var(--cd-ink-muted);
     --color-cd-line: var(--cd-line);
     --color-cd-surface: var(--cd-surface);
+    --color-cd-primary: var(--cd-primary);
+    --color-cd-primary-hover: var(--cd-primary-hover);
+    --color-cd-secondary: var(--cd-secondary);
+    --color-cd-secondary-hover: var(--cd-secondary-hover);
+    --color-cd-warning: var(--cd-warning);
+    --color-cd-warning-hover: var(--cd-warning-hover);
+    --color-cd-danger: var(--cd-danger);
+    --color-cd-danger-hover: var(--cd-danger-hover);
     --color-cd-gilt: var(--cd-gilt);
     --color-cd-sunrise: var(--cd-sunrise);
     --color-cd-sunrise-soft: var(--cd-sunrise-soft);
@@ -120,36 +136,43 @@
     body,
     html {
         --font-sans:
-            'Instrument Sans', 'Zen Kaku Gothic New', 'Noto Sans JP',
-            ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-            'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+            'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN',
+            'Yu Gothic UI', 'Yu Gothic', Meiryo, system-ui, -apple-system,
+            'Segoe UI', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+            'Segoe UI Symbol', 'Noto Color Emoji';
     }
 }
 
 :root {
     /*
      * Clear Dawn palette — quiet pre-dawn purples, greige paper, navy-grey ink.
-     * Values map the starter kit tokens onto the Clear Dawn design language.
+     * Semantic roles:
+     *   Primary   = deep dawn purple (登録・保存・主要CTA)
+     *   Secondary = soft lavender grey (補助操作)
+     *   Warning   = restrained gold (注意・下書き)
+     *   Danger    = soft rose red (削除・破壊的操作)
      */
     --background: hsl(266 10% 94%);
-    --foreground: hsl(227 23% 22%);
-    --card: hsl(40 25% 99%);
-    --card-foreground: hsl(227 23% 22%);
-    --popover: hsl(40 25% 99%);
-    --popover-foreground: hsl(227 23% 22%);
-    --primary: hsl(238 29% 21%);
+    --foreground: hsl(227 28% 16%);
+    --card: hsl(40 40% 99%);
+    --card-foreground: hsl(227 28% 16%);
+    --popover: hsl(40 40% 99%);
+    --popover-foreground: hsl(227 28% 16%);
+    --primary: hsl(238 32% 22%);
     --primary-foreground: hsl(40 30% 98%);
-    --secondary: hsl(258 14% 90%);
-    --secondary-foreground: hsl(227 23% 22%);
-    --muted: hsl(260 12% 92%);
-    --muted-foreground: hsl(232 12% 46%);
-    --accent: hsl(258 16% 90%);
-    --accent-foreground: hsl(238 29% 21%);
-    --destructive: hsl(4 45% 51%);
+    --secondary: hsl(255 18% 88%);
+    --secondary-foreground: hsl(238 28% 24%);
+    --muted: hsl(260 14% 93%);
+    --muted-foreground: hsl(232 14% 34%);
+    --accent: hsl(255 20% 90%);
+    --accent-foreground: hsl(238 32% 22%);
+    --destructive: hsl(4 52% 46%);
     --destructive-foreground: hsl(0 0% 98%);
-    --border: hsl(260 11% 86%);
-    --input: hsl(260 10% 84%);
-    --ring: hsl(250 20% 55%);
+    --warning: hsl(38 62% 46%);
+    --warning-foreground: hsl(40 30% 98%);
+    --border: hsl(260 12% 80%);
+    --input: hsl(260 12% 78%);
+    --ring: hsl(250 24% 48%);
     --chart-1: hsl(238 29% 35%);
     --chart-2: hsl(251 17% 55%);
     --chart-3: hsl(43 33% 60%);
@@ -171,11 +194,19 @@
     --cd-dawn-mid: hsl(240 29% 24%);
     --cd-dawn-soft: hsl(251 17% 40%);
     --cd-lavender-mist: hsl(255 24% 76%); /* sidebar bottom: pale lavender */
-    --cd-ink: hsl(227 23% 22%); /* body text: navy grey */
+    --cd-ink: hsl(227 28% 16%); /* body text: darker navy for contrast */
     --cd-ink-pen: hsl(228 36% 13%); /* ballpoint ink: deep blue-black */
-    --cd-ink-muted: hsl(232 12% 46%); /* secondary text */
-    --cd-line: hsl(260 11% 86%); /* hairline borders */
-    --cd-surface: hsl(40 45% 97.5%); /* warm ecru paper card surface */
+    --cd-ink-muted: hsl(232 14% 34%); /* secondary text — readable, not washed out */
+    --cd-line: hsl(260 12% 80%); /* hairline borders */
+    --cd-surface: hsl(40 50% 99%); /* warmer opaque paper card surface */
+    --cd-primary: hsl(238 32% 22%);
+    --cd-primary-hover: hsl(238 34% 16%);
+    --cd-secondary: hsl(255 18% 88%);
+    --cd-secondary-hover: hsl(255 16% 82%);
+    --cd-warning: hsl(38 62% 46%);
+    --cd-warning-hover: hsl(36 64% 40%);
+    --cd-danger: hsl(4 52% 46%);
+    --cd-danger-hover: hsl(4 55% 40%);
     --cd-gilt: hsl(43 33% 66%); /* restrained pale gold accent */
     --cd-sunrise: hsl(22 62% 61%); /* dawn accent (design-system --cd-accent) */
     --cd-sunrise-soft: hsl(
@@ -302,7 +333,7 @@
             0 2px 8px hsl(237 30% 20% / 0.06);
     }
 
-    /* Elegant paper card. */
+    /* Elegant paper card — opaque enough for readable body text. */
     .cd-card {
         background-color: var(--cd-surface);
         border: 1px solid var(--cd-line);
@@ -310,6 +341,58 @@
         box-shadow:
             0 8px 28px hsl(237 30% 20% / 0.08),
             0 2px 8px hsl(237 30% 20% / 0.05);
+        color: var(--cd-ink);
+    }
+
+    /* Routine / registration screens: solid readable surface (not frosted). */
+    .cd-panel {
+        background-color: #fffcf8;
+        border: 1px solid var(--cd-line);
+        border-radius: 1rem;
+        box-shadow:
+            0 8px 28px hsl(237 30% 20% / 0.1),
+            0 2px 8px hsl(237 30% 20% / 0.06);
+        color: var(--cd-ink);
+    }
+
+    .cd-panel-muted {
+        background-color: hsl(40 30% 97%);
+        border: 1px solid var(--cd-line);
+        border-radius: 0.75rem;
+        color: var(--cd-ink);
+    }
+
+    /* Step registration numbered section */
+    .cd-step-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        border-radius: 0.75rem;
+        border: 1px solid var(--cd-line);
+        background: #fff;
+        padding: 1rem;
+    }
+
+    .cd-step-section__label {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--cd-ink);
+    }
+
+    .cd-step-section__num {
+        display: inline-flex;
+        height: 1.5rem;
+        width: 1.5rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9999px;
+        background: var(--cd-primary);
+        color: var(--primary-foreground);
+        font-size: 0.75rem;
+        font-weight: 700;
     }
 
     /* Subtle translucency — restrained, not glassy. */

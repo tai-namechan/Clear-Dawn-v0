@@ -209,104 +209,55 @@ UI 仕様書 v2 の内容を正として移植したドキュメント。
 
 ## 9. カラー設計（デザイントークン）
 
+実装の正は `resources/css/app.css`。セマンティックロールは次で統一する。
+
+| ロール | 用途 | 値（目安） | ホバー |
+|---|---|---|---|
+| **Primary** | 登録・保存・追加・主要CTA | 夜明け前の深紫 `#26284A` 系 | 一段暗い深紫 |
+| **Secondary** | 補助操作・キャンセル周辺 | ラベンダーグレー | 少し濃いラベンダー |
+| **Warning** | 注意・下書き | 落ち着いた金 `#C48A2E` 系 | 一段暗い金 |
+| **Danger** | 削除・破壊的操作 | ローズレッド `#B53D39` 系 | 一段暗い赤 |
+
 ```css
 :root {
-    --cd-primary: #252646;
-    --cd-primary-dark: #17182f;
-    --cd-primary-hover: #1b1c35;
-    --cd-primary-light: #6e6a96;
-    --cd-secondary: #6e6a96;
-    --cd-secondary-soft: #c9c2d8;
-    --cd-accent: #d98b5f;
-    --cd-accent-hover: #c9794f;
-    --cd-accent-soft: #f8e8db;
-    --cd-accent-light: #fdf4ec;
-    --cd-bg: #f7f3ec;
-    --cd-bg-soft: #fbf7f1;
-    --cd-surface: #fffcf8;
-    --cd-surface-muted: #f3efe8;
-    --cd-surface-glass: rgba(255, 252, 248, 0.86);
-    --cd-text: #1f2a3d;
-    --cd-text-muted: #6f7480;
-    --cd-text-subtle: #9a9aa6;
-    --cd-text-inverse: #ffffff;
-    --cd-border: #ddd8d0;
-    --cd-border-soft: #eae4dc;
-    --cd-border-table: rgba(205, 211, 220, 0.62);
-    --cd-success: #6f8f72;
-    --cd-warning: #d9a441;
-    --cd-danger: #b96a64;
-    --cd-info: #6f8faf;
-    --cd-shadow-sm: 0 2px 8px rgba(31, 42, 61, 0.08);
-    --cd-shadow-md: 0 8px 24px rgba(31, 42, 61, 0.12);
-    --cd-shadow-lg: 0 16px 40px rgba(31, 42, 61, 0.16);
-    --cd-radius-sm: 8px;
-    --cd-radius-md: 12px;
-    --cd-radius-lg: 18px;
-    --cd-radius-xl: 24px;
+    --primary: hsl(238 32% 22%);
+    --cd-primary-hover: hsl(238 34% 16%);
+    --secondary: hsl(255 18% 88%);
+    --cd-secondary-hover: hsl(255 16% 82%);
+    --warning / --cd-warning: hsl(38 62% 46%);
+    --cd-warning-hover: hsl(36 64% 40%);
+    --destructive / --cd-danger: hsl(4 52% 46%);
+    --cd-danger-hover: hsl(4 55% 40%);
 }
 ```
 
-### Tailwind v4 / 既存トークンとの統合方針
+### ボタン規則
 
-- 既存 shadcn 系トークン（`--background` / `--foreground` / `--primary` 等）の **値** を
-  Clear Dawn パレットで上書きし、既存の Tailwind ユーティリティ
-  （`bg-background`, `text-foreground` 等）をそのまま活かす
-- Clear Dawn 固有トークン（`--cd-accent-soft` 等、shadcn に対応先がないもの）は
-  `app.css` の `@theme inline` に追加マッピングしてユーティリティ化する
-- 既存の CSS クラス・トークン定義は削除しない（追加・値変更で対応）
-- チャート配色は `--chart-1`〜`--chart-5` に cd パレット
-  （primary / accent / success / info / warning）を割り当てる
-- ダークモード: v0 はライトモード固定（Appearance Settings は提供しない）
-
-## 10. ボタン仕様
-
-| 用途 | クラス |
+| 用途 | variant |
 |---|---|
-| 保存・登録・更新 | btn-primary |
-| 今日を始める・トレーニング開始 | btn-accent |
-| 編集・戻る・キャンセル | btn-secondary |
-| 閉じる | btn-ghost |
-| 削除 | btn-danger |
+| 登録・保存・追加・更新 | `default`（Primary） |
+| 補助・戻る | `secondary` / `outline` / `ghost` |
+| 注意 | `warning` |
+| 削除 | `destructive` |
 
-```css
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: 40px;
-    padding: 0 18px;
-    border-radius: var(--cd-radius-md);
-    border: 1px solid transparent;
-    font-family: var(--cd-font-body);
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 1;
-    cursor: pointer;
-    transition:
-        background-color 0.2s ease,
-        border-color 0.2s ease,
-        color 0.2s ease,
-        box-shadow 0.2s ease,
-        transform 0.1s ease;
-}
-.btn-primary {
-    background: var(--cd-primary);
-    color: var(--cd-text-inverse);
-    border-color: var(--cd-primary);
-}
-.btn-accent {
-    background: var(--cd-accent);
-    color: var(--cd-text-inverse);
-    border-color: var(--cd-accent);
-}
-```
+すべてのボタンは `transition-colors` + hover で色を変える。
 
-実装方針: 既存 `resources/js/components/ui/button` の内部は改変せず、
-CVA variant の追加またはラッパーコンポーネントで 5 系統に対応付ける。
+### 可読性
 
-## 11. 画像にしないもの
+- カード表面は半透明を避け、`#fffcf8` 系の不透明パネル（`.cd-panel`）を使う
+- 本文色 `--cd-ink` / 補助色 `--cd-ink-muted` はコントラストを確保した濃さにする
+- **ダッシュボード（マトリクス）は例外**で、既存のセリフ / matrix フォントと見た目を維持する
+
+### フォント
+
+| 画面 | フォント |
+|---|---|
+| ダッシュボード（マトリクス） | 既存の `font-serif` / `font-matrix`（変更しない） |
+| それ以外 | `Noto Sans JP` + システムゴシック（`--font-sans`） |
+
+実装の正は `resources/js/components/ui/button` の CVA variants（`default` / `secondary` / `outline` / `ghost` / `warning` / `destructive`）。
+
+## 10. 画像にしないもの
 
 以下は必ず HTML/CSS/Vue コンポーネントで作る（[ADR-0004](../adr/0004-ui-built-with-html-css-vue.md)）。
 

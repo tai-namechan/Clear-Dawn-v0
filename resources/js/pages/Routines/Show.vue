@@ -182,15 +182,15 @@ function stepPurposeKey(step: RoutineStep) {
         <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6">
             <Link
                 href="/routines"
-                class="inline-flex items-center gap-2 font-sans text-sm text-cd-ink-muted transition-colors hover:text-cd-ink"
+                class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
             >
                 <ArrowLeft :size="16" :stroke-width="1.6" />
-                ルーティン一覧
+                メニュー一覧
             </Link>
 
             <PageTitleOrnament
-                title="ルーティン編集"
-                subtitle="ルーティンを編集して、日々の活動をより良くしましょう。"
+                title="メニュー編集"
+                subtitle="基本情報を整えたら、下でステップを順番に追加します。"
                 align="left"
             />
 
@@ -200,11 +200,9 @@ function stepPurposeKey(step: RoutineStep) {
                 <div class="flex flex-col gap-6">
                     <section
                         aria-label="基本情報"
-                        class="cd-shadow-soft rounded-2xl border border-cd-line bg-cd-surface px-5 py-5"
+                        class="cd-panel px-5 py-5"
                     >
-                        <h2
-                            class="font-serif text-base tracking-[0.12em] text-cd-ink"
-                        >
+                        <h2 class="font-sans text-base font-semibold text-cd-ink">
                             基本情報
                         </h2>
 
@@ -320,14 +318,12 @@ function stepPurposeKey(step: RoutineStep) {
 
                     <section
                         aria-label="ステップ一覧"
-                        class="cd-shadow-soft overflow-hidden rounded-2xl border border-cd-line bg-cd-surface"
+                        class="cd-panel overflow-hidden"
                     >
                         <div
-                            class="flex items-center justify-between gap-3 border-b border-cd-line/60 px-5 py-4"
+                            class="flex items-center justify-between gap-3 border-b border-cd-line px-5 py-4"
                         >
-                            <h2
-                                class="font-serif text-base tracking-[0.12em] text-cd-ink"
-                            >
+                            <h2 class="font-sans text-base font-semibold text-cd-ink">
                                 ステップ一覧
                             </h2>
                             <Button type="button" size="sm" @click="openAddStep">
@@ -379,7 +375,7 @@ function stepPurposeKey(step: RoutineStep) {
                                             {{ index + 1 }}
                                         </td>
                                         <td
-                                            class="px-4 py-3 font-serif tracking-[0.06em] text-cd-ink"
+                                            class="px-4 py-3 font-sans font-semibold text-cd-ink"
                                         >
                                             {{ step.routine_item?.name ?? '—' }}
                                         </td>
@@ -493,7 +489,7 @@ function stepPurposeKey(step: RoutineStep) {
         </div>
 
         <div
-            class="sticky bottom-0 border-t border-cd-line/80 bg-cd-surface/95 px-4 py-4 backdrop-blur md:px-6"
+            class="sticky bottom-0 border-t border-cd-line bg-[#fffcf8]/95 px-4 py-4 backdrop-blur md:px-6"
         >
             <div
                 class="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-end gap-2"
