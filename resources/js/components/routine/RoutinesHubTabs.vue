@@ -11,13 +11,13 @@ type HubTab = {
 
 /**
  * 主導線: ルーティンを作る → 今日やる → 履歴
- * 部品は下位（整理用）
+ * 実施項目は下位（整理用）
  */
 const tabs: HubTab[] = [
     { label: 'ルーティン', href: '/routines', matchPrefix: true, primary: true },
     { label: '今日やる', href: '/today', matchPrefix: true },
     { label: '履歴', href: '/history' },
-    { label: '部品', href: '/routine-items' },
+    { label: '実施項目', href: '/routine-items' },
 ];
 
 const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
@@ -41,7 +41,7 @@ function isActive(tab: HubTab): boolean {
 <template>
     <nav
         aria-label="ルーティンハブ"
-        class="flex flex-wrap gap-2 border-b border-cd-line pb-3"
+        class="flex flex-wrap gap-2"
     >
         <Link
             v-for="tab in tabs"
@@ -54,7 +54,7 @@ function isActive(tab: HubTab): boolean {
                     ? tab.primary
                         ? 'border-primary bg-primary text-primary-foreground'
                         : 'border-primary/40 bg-primary/10 text-primary'
-                    : 'border-cd-line bg-white text-cd-ink-muted hover:border-primary/30 hover:bg-primary/5 hover:text-primary'
+                    : 'border-cd-line bg-white text-cd-ink-muted hover:border-primary/30 hover:bg-primary-hover hover:text-primary'
             "
         >
             {{ tab.label }}

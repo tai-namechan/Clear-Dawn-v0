@@ -159,21 +159,22 @@
     --card-foreground: hsl(227 28% 16%);
     --popover: hsl(40 40% 99%);
     --popover-foreground: hsl(227 28% 16%);
-    --primary: hsl(238 32% 22%);
-    --primary-foreground: hsl(40 30% 98%);
+    /* Primary = matrix column header purple (#5b5577), hover wash (#d6d3de) */
+    --primary: #5b5577;
+    --primary-foreground: #fffcf8;
     --secondary: hsl(255 18% 88%);
-    --secondary-foreground: hsl(238 28% 24%);
+    --secondary-foreground: #5b5577;
     --muted: hsl(260 14% 93%);
     --muted-foreground: hsl(232 14% 34%);
-    --accent: hsl(255 20% 90%);
-    --accent-foreground: hsl(238 32% 22%);
+    --accent: #d6d3de;
+    --accent-foreground: #5b5577;
     --destructive: hsl(4 52% 46%);
     --destructive-foreground: hsl(0 0% 98%);
     --warning: hsl(38 62% 46%);
     --warning-foreground: hsl(40 30% 98%);
     --border: hsl(260 12% 80%);
     --input: hsl(260 12% 78%);
-    --ring: hsl(250 24% 48%);
+    --ring: #5b5577;
     --chart-1: hsl(238 29% 35%);
     --chart-2: hsl(251 17% 55%);
     --chart-3: hsl(43 33% 60%);
@@ -200,9 +201,9 @@
     --cd-ink-muted: hsl(232 14% 34%); /* secondary text — readable, not washed out */
     --cd-line: hsl(260 12% 80%); /* hairline borders */
     --cd-surface: hsl(40 50% 99%); /* warmer opaque paper card surface */
-    --cd-primary: hsl(238 32% 22%);
-    /* Hover must be clearly different from base (not just 6% darker). */
-    --cd-primary-hover: hsl(250 34% 38%);
+    --cd-primary: #5b5577;
+    /* Light lavender wash — pair with dark text on hover */
+    --cd-primary-hover: #d6d3de;
     --cd-secondary: hsl(255 18% 88%);
     --cd-secondary-hover: hsl(255 16% 82%);
     --cd-warning: hsl(38 62% 46%);

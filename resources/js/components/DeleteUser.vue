@@ -23,7 +23,7 @@ const passwordInput = useTemplateRef('passwordInput');
 </script>
 
 <template>
-    <div class="space-y-6">
+    <div class="cd-panel space-y-6 p-5 md:p-6">
         <Heading
             variant="small"
             title="危険な操作ゾーン"

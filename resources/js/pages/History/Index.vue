@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
 import { Button } from '@/components/ui/button';
@@ -132,19 +133,19 @@ const eventTypeOptions = Object.entries(activityLogEventTypeLabels) as Array<
     <div
         class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
     >
-        <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
-            <PageTitleOrnament
-                title="履歴"
-                subtitle="完了したルーティンとマトリクスの活動を振り返ります。"
-                align="left"
-            />
+        <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
+            <PageSectionCard>
+                <PageTitleOrnament
+                    title="履歴"
+                    subtitle="完了したルーティンとマトリクスの活動を振り返ります。"
+                    align="left"
+                />
+                <div class="mt-5">
+                    <RoutinesHubTabs />
+                </div>
+            </PageSectionCard>
 
-            <RoutinesHubTabs />
-
-            <section
-                aria-label="フィルター"
-                class="cd-panel px-5 py-4"
-            >
+            <PageSectionCard aria-label="フィルター" padding="sm">
                 <div class="grid gap-3 sm:grid-cols-3">
                     <Select v-model="localEventType">
                         <SelectTrigger>
@@ -178,12 +179,9 @@ const eventTypeOptions = Object.entries(activityLogEventTypeLabels) as Array<
                         @change="onToDateChange"
                     />
                 </div>
-            </section>
+            </PageSectionCard>
 
-            <section
-                aria-label="履歴タイムライン"
-                class="cd-panel"
-            >
+            <PageSectionCard padding="none" aria-label="履歴タイムライン">
                 <ul
                     v-if="history.data.length > 0"
                     class="relative flex flex-col"
@@ -191,7 +189,7 @@ const eventTypeOptions = Object.entries(activityLogEventTypeLabels) as Array<
                     <li
                         v-for="log in history.data"
                         :key="log.id"
-                        class="relative border-b border-cd-line/60 px-5 py-4 pl-10 last:border-b-0"
+                        class="relative border-b border-cd-line px-5 py-4 pl-10 last:border-b-0"
                     >
                         <span
                             aria-hidden="true"
@@ -199,15 +197,13 @@ const eventTypeOptions = Object.entries(activityLogEventTypeLabels) as Array<
                         />
                         <span
                             aria-hidden="true"
-                            class="absolute top-6 left-[1.125rem] h-full w-px bg-cd-line/60 last:hidden"
+                            class="absolute top-6 left-[1.125rem] h-full w-px bg-cd-line last:hidden"
                         />
 
                         <p class="font-sans text-xs text-cd-ink-muted">
                             {{ formatOccurredAt(log.occurred_at) }}
                         </p>
-                        <p
-                            class="mt-1 font-serif text-base tracking-[0.06em] text-cd-ink"
-                        >
+                        <p class="mt-1 font-sans text-base font-semibold text-cd-ink">
                             {{ eventDescription(log) }}
                         </p>
                         <span
@@ -224,7 +220,7 @@ const eventTypeOptions = Object.entries(activityLogEventTypeLabels) as Array<
                 >
                     履歴がありません。
                 </p>
-            </section>
+            </PageSectionCard>
 
             <div
                 v-if="history.meta.last_page > 1"

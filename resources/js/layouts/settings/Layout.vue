@@ -44,19 +44,21 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
 
 <template>
     <div class="px-4 py-6 md:px-6 md:pb-8">
-        <div class="mx-auto w-full max-w-5xl">
-            <Heading
-                title="設定"
-                description="アカウントなどの各種設定を管理します。"
-            />
+        <div class="mx-auto w-full max-w-5xl space-y-6">
+            <section class="cd-panel p-5 md:p-6">
+                <Heading
+                    title="設定"
+                    description="アカウントなどの各種設定を管理します。"
+                />
+            </section>
 
             <div
-                class="mt-8 grid grid-cols-1 items-start gap-8 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-10 xl:gap-12"
+                class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-8 xl:gap-10"
             >
                 <aside class="w-full lg:w-auto">
                     <nav
                         aria-label="設定メニュー"
-                        class="cd-shadow-soft flex flex-col gap-1 rounded-2xl border border-cd-line bg-cd-surface p-2"
+                        class="cd-panel flex flex-col gap-1 p-2"
                     >
                         <Link
                             v-for="item in sidebarNavItems"
@@ -82,9 +84,7 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
                                 "
                             />
                             <span class="flex min-w-0 flex-col gap-0.5">
-                                <span
-                                    class="font-serif text-sm tracking-[0.06em]"
-                                >
+                                <span class="font-sans text-sm font-semibold">
                                     {{ item.title }}
                                 </span>
                                 <span
