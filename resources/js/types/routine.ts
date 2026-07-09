@@ -105,7 +105,8 @@ export type Routine = {
     created_at: string | null;
 };
 
-export type RoutineEditor = Routine & {
+export type RoutineEditor = Omit<Routine, 'id'> & {
+    id: string | null;
     life_area?: LifeArea;
     steps: RoutineStep[];
 };

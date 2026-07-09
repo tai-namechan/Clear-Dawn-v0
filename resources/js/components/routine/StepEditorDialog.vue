@@ -43,7 +43,6 @@ import {
     trackingTypeTabLabels,
     UNIT_PRESET_OTHER,
     unitSelectValue,
-    videoPlaceholders,
 } from '@/lib/routineConstants';
 import { purposeChipClasses } from '@/lib/stepPurposeColors';
 import type {
@@ -126,7 +125,6 @@ const fieldErrors = ref<FieldErrors>({});
 const nameSectionRef = ref<HTMLElement | null>(null);
 const itemNamePlaceholder = itemNamePlaceholders[0];
 const stepTitlePlaceholder = stepTitlePlaceholders[0];
-const videoPlaceholderHint = videoPlaceholders.join(' / ');
 
 watch(
     () => props.serverErrors,
@@ -730,8 +728,7 @@ defineExpose({
                             @input="fieldErrors.title = undefined"
                         />
                         <p class="font-sans text-xs text-cd-ink-muted">
-                            このルーティン内だけの表示名。未入力なら実施項目名を表示します。例:
-                            股関節を開く準備 / ゆっくり確認 / 権限まわりを復習
+                            このルーティン内だけの表示名。未入力なら実施項目名を表示します。
                         </p>
                         <InputError :message="fieldErrors.title" />
                     </section>
@@ -962,8 +959,7 @@ defineExpose({
                                     </SelectContent>
                                 </Select>
                                 <p class="font-sans text-xs text-cd-ink-muted">
-                                    ルーティンごとに見本を変えられます。例:
-                                    {{ videoPlaceholderHint }}
+                                    未選択なら実施項目の既定動画を使います。必要ならルーティン用に差し替えられます。
                                 </p>
                             </div>
                         </div>

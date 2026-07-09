@@ -32,11 +32,34 @@ class RoutineTest extends TestCase
         $step = RoutineStep::factory()->forRoutine($routine)->create();
 
         $this->get(route('routines.index'))->assertRedirect(route('login'));
+        $this->get(route('routines.create'))->assertRedirect(route('login'));
         $this->postJson(route('routines.store'), ['name' => '新規'])->assertUnauthorized();
         $this->get(route('routines.show', $routine))->assertRedirect(route('login'));
         $this->patchJson(route('routines.update', $routine), ['name' => '改ざん'])->assertUnauthorized();
         $this->deleteJson(route('routines.destroy', $routine))->assertUnauthorized();
         $this->postJson(route('routine-steps.store', $routine), ['routine_item_id' => $step->routine_item_id])->assertUnauthorized();
+    }
+
+    public function test_create_page_does_not_persist_a_routine(): void
+    {
+        $user = User::factory()->create();
+        $countBefore = Routine::query()->where('user_id', $user->id)->count();
+
+        $this->actingAs($user)
+            ->get(route('routines.create'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Routines/Show')
+                ->where('isCreating', true)
+                ->where('routine.id', null)
+                ->where('routine.name', '')
+                ->has('routine.steps', 0)
+            );
+
+        $this->assertSame(
+            $countBefore,
+            Routine::query()->where('user_id', $user->id)->count(),
+        );
     }
 
     public function test_index_shows_only_the_authenticated_users_active_routines(): void
@@ -93,6 +116,7 @@ class RoutineTest extends TestCase
                     : (is_array($steps) && array_is_list($steps)))
                 ->has('routineItems')
                 ->has('videos')
+                ->where('isCreating', false)
             );
     }
 
