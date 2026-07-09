@@ -1,20 +1,15 @@
-import { fetchInertiaPageProps } from '@/lib/inertiaPageFetch';
+import { apiFetch } from '@/lib/apiFetch';
 import type { Video } from '@/types/routine';
 
+/**
+ * 動画一覧を JSON API で取得する（Inertia 409 を避ける）。
+ */
 export async function fetchVideosFromPage(): Promise<Video[]> {
-    const props = await fetchInertiaPageProps<{ videos?: Video[] | { data: Video[] } }>(
-        '/videos',
-    );
+    const result = await apiFetch<{ videos: Video[] }>('/videos', {
+        headers: {
+            Accept: 'application/json',
+        },
+    });
 
-    const videos = props.videos;
-
-    if (!videos) {
-        return [];
-    }
-
-    if (Array.isArray(videos)) {
-        return videos;
-    }
-
-    return videos.data ?? [];
+    return result.videos ?? [];
 }

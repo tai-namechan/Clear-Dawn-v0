@@ -21,6 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import InputError from '@/components/InputError.vue';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
 import { fetchVideosFromPage } from '@/lib/fetchVideos';
 import {
@@ -58,16 +59,28 @@ export type StepEditorPayload = {
     note?: string | null;
 };
 
+type FieldErrors = {
+    name?: string;
+    purpose?: string;
+    target_blocks?: string;
+    rest_seconds?: string;
+    target_amount?: string;
+    general?: string;
+};
+
 interface Props {
     open: boolean;
     routineItems: RoutineItem[];
     videos?: Video[];
     saving?: boolean;
+    /** Parent can push server-side field errors after submit fails */
+    serverErrors?: FieldErrors | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     saving: false,
     videos: () => [],
+    serverErrors: null,
 });
 
 const emit = defineEmits<{
@@ -91,7 +104,86 @@ const blockRows = ref<BlockTargetRow[]>([
 ]);
 const videos = ref<Video[]>([...props.videos]);
 const creatingItem = ref(false);
-const formError = ref<string | null>(null);
+const fieldErrors = ref<FieldErrors>({});
+const nameSectionRef = ref<HTMLElement | null>(null);
+
+watch(
+    () => props.serverErrors,
+    (errors) => {
+        if (errors) {
+            fieldErrors.value = { ...errors };
+            if (errors.name) {
+                scrollToNameField();
+            }
+        }
+    },
+);
+
+function clearFieldErrors(): void {
+    fieldErrors.value = {};
+}
+
+function scrollToNameField(): void {
+    requestAnimationFrame(() => {
+        nameSectionRef.value?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+        });
+        const input = nameSectionRef.value?.querySelector('input');
+        input?.focus();
+    });
+}
+
+function applyApiErrors(error: unknown): void {
+    if (!(error instanceof ApiError)) {
+        fieldErrors.value = {
+            general: '保存に失敗しました。もう一度お試しください。',
+        };
+
+        return;
+    }
+
+    const body = error.body as {
+        message?: string;
+        errors?: Record<string, string[]>;
+    };
+    const next: FieldErrors = {};
+
+    if (body.errors) {
+        if (body.errors.name?.[0]) {
+            next.name = body.errors.name[0];
+        }
+        if (body.errors.routine_item_id?.[0]) {
+            next.name = body.errors.routine_item_id[0];
+        }
+        if (body.errors.purpose?.[0]) {
+            next.purpose = body.errors.purpose[0];
+        }
+        if (body.errors.target_blocks?.[0]) {
+            next.target_blocks = body.errors.target_blocks[0];
+        }
+        if (body.errors.rest_seconds?.[0]) {
+            next.rest_seconds = body.errors.rest_seconds[0];
+        }
+        if (body.errors.target_amount?.[0]) {
+            next.target_amount = body.errors.target_amount[0];
+        }
+        if (body.errors.target_load?.[0]) {
+            next.target_amount = body.errors.target_load[0];
+        }
+    }
+
+    if (!Object.keys(next).length) {
+        next.general =
+            body.message ?? '保存に失敗しました。もう一度お試しください。';
+    }
+
+    fieldErrors.value = next;
+
+    if (next.name) {
+        scrollToNameField();
+    }
+}
 
 const selectedItem = computed(
     () =>
@@ -195,7 +287,7 @@ watch(
             return;
         }
 
-        formError.value = null;
+        clearFieldErrors();
         mode.value = props.routineItems.length ? 'pick' : 'create';
         selectedItemId.value = props.routineItems[0]?.id ?? '';
         newItemName.value = '';
@@ -221,6 +313,10 @@ watch(selectedItem, (item) => {
     purpose.value = categoryDefaultPurpose[item.category] ?? null;
 });
 
+watch(purpose, () => {
+    fieldErrors.value.purpose = undefined;
+});
+
 watch(newItemCategory, (category) => {
     purpose.value = categoryDefaultPurpose[category] ?? null;
 });
@@ -231,13 +327,14 @@ function close(): void {
 
 async function createInlineItem(): Promise<RoutineItem | null> {
     if (!newItemName.value.trim()) {
-        formError.value = 'ステップ名を入力してください。';
+        fieldErrors.value = { name: 'ステップ名を入力してください。' };
+        scrollToNameField();
 
         return null;
     }
 
     creatingItem.value = true;
-    formError.value = null;
+    clearFieldErrors();
 
     try {
         const result = await apiFetch<{ routine_item: RoutineItem }>(
@@ -266,18 +363,16 @@ async function createInlineItem(): Promise<RoutineItem | null> {
 
         return result.routine_item;
     } catch (error) {
-        if (error instanceof ApiError) {
-            const body = error.body as {
-                message?: string;
-                errors?: Record<string, string[]>;
+        applyApiErrors(error);
+
+        if (!fieldErrors.value.name) {
+            fieldErrors.value = {
+                ...fieldErrors.value,
+                name:
+                    fieldErrors.value.general ??
+                    'ステップ名の作成に失敗しました。',
             };
-            const firstError = body.errors
-                ? Object.values(body.errors).flat()[0]
-                : undefined;
-            formError.value =
-                firstError ?? body.message ?? 'ステップ名の作成に失敗しました。';
-        } else {
-            formError.value = 'ステップ名の作成に失敗しました。';
+            scrollToNameField();
         }
 
         return null;
@@ -286,8 +381,40 @@ async function createInlineItem(): Promise<RoutineItem | null> {
     }
 }
 
+function validateClient(): boolean {
+    const next: FieldErrors = {};
+
+    if (mode.value === 'create' && !newItemName.value.trim()) {
+        next.name = 'ステップ名を入力してください。';
+    }
+
+    if (mode.value === 'pick' && !selectedItemId.value) {
+        next.name = 'ステップを選択してください。';
+    }
+
+    if (!purpose.value) {
+        next.purpose = '目的を選択してください。';
+    }
+
+    if (!blockCount.value || blockCount.value < 1) {
+        next.target_blocks = 'セット数は1以上で入力してください。';
+    }
+
+    fieldErrors.value = next;
+
+    if (next.name) {
+        scrollToNameField();
+    }
+
+    return Object.keys(next).length === 0;
+}
+
 async function submit(): Promise<void> {
-    formError.value = null;
+    clearFieldErrors();
+
+    if (!validateClient()) {
+        return;
+    }
 
     let routineItemId = selectedItemId.value;
 
@@ -302,7 +429,8 @@ async function submit(): Promise<void> {
     }
 
     if (!routineItemId) {
-        formError.value = 'ステップを選択してください。';
+        fieldErrors.value = { name: 'ステップを選択してください。' };
+        scrollToNameField();
 
         return;
     }
@@ -329,6 +457,11 @@ async function submit(): Promise<void> {
         note: combinedNote || null,
     });
 }
+
+defineExpose({
+    applyApiErrors,
+    clearFieldErrors,
+});
 </script>
 
 <template>
@@ -369,7 +502,7 @@ async function submit(): Promise<void> {
                         </Button>
                     </div>
 
-                    <section class="cd-step-section">
+                    <section ref="nameSectionRef" class="cd-step-section">
                         <div class="cd-step-section__label">
                             <span class="cd-step-section__num">1</span>
                             ステップ名
@@ -380,13 +513,17 @@ async function submit(): Promise<void> {
                             placeholder="例: スクワット / スケール練習"
                             maxlength="100"
                             :disabled="saving || creatingItem"
+                            :aria-invalid="Boolean(fieldErrors.name)"
+                            @input="fieldErrors.name = undefined"
                         />
                         <Select
                             v-else
                             v-model="selectedItemId"
                             :disabled="saving || !routineItems.length"
                         >
-                            <SelectTrigger>
+                            <SelectTrigger
+                                :aria-invalid="Boolean(fieldErrors.name)"
+                            >
                                 <SelectValue placeholder="既存のステップを選択" />
                             </SelectTrigger>
                             <SelectContent>
@@ -399,6 +536,7 @@ async function submit(): Promise<void> {
                                 </SelectItem>
                             </SelectContent>
                         </Select>
+                        <InputError :message="fieldErrors.name" />
                     </section>
 
                     <section class="cd-step-section">
@@ -435,6 +573,7 @@ async function submit(): Promise<void> {
                             :disabled="saving"
                             size="sm"
                         />
+                        <InputError :message="fieldErrors.purpose" />
                     </section>
 
                     <section class="cd-step-section">
@@ -469,6 +608,15 @@ async function submit(): Promise<void> {
                                     min="1"
                                     max="99"
                                     :disabled="saving"
+                                    :aria-invalid="
+                                        Boolean(fieldErrors.target_blocks)
+                                    "
+                                    @input="
+                                        fieldErrors.target_blocks = undefined
+                                    "
+                                />
+                                <InputError
+                                    :message="fieldErrors.target_blocks"
                                 />
                             </div>
                             <div class="space-y-1.5">
@@ -481,6 +629,15 @@ async function submit(): Promise<void> {
                                     min="0"
                                     max="3600"
                                     :disabled="saving"
+                                    :aria-invalid="
+                                        Boolean(fieldErrors.rest_seconds)
+                                    "
+                                    @input="
+                                        fieldErrors.rest_seconds = undefined
+                                    "
+                                />
+                                <InputError
+                                    :message="fieldErrors.rest_seconds"
                                 />
                             </div>
                             <div class="space-y-1.5 sm:col-span-1">
@@ -526,6 +683,10 @@ async function submit(): Promise<void> {
                             :amount-unit="amountUnit"
                             :disabled="saving"
                         />
+                        <InputError
+                            v-if="fieldErrors.target_amount"
+                            :message="fieldErrors.target_amount"
+                        />
                     </section>
 
                     <section class="cd-step-section">
@@ -543,10 +704,11 @@ async function submit(): Promise<void> {
                     </section>
 
                     <p
-                        v-if="formError"
+                        v-if="fieldErrors.general"
                         class="font-sans text-sm text-destructive"
+                        role="alert"
                     >
-                        {{ formError }}
+                        {{ fieldErrors.general }}
                     </p>
                 </div>
 

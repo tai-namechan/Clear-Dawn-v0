@@ -18,7 +18,7 @@ import StepEditorDialog, {
     type StepEditorPayload,
 } from '@/components/routine/StepEditorDialog.vue';
 import { Button } from '@/components/ui/button';
-import { apiFetch } from '@/lib/apiFetch';
+import { apiFetch, ApiError } from '@/lib/apiFetch';
 import { ensureArray } from '@/lib/array';
 import { fetchRoutineItemsFromPage } from '@/lib/fetchRoutineItems';
 import { purposeChipClasses } from '@/lib/stepPurposeColors';
@@ -61,6 +61,10 @@ const savingRoutine = ref(false);
 const savingStep = ref(false);
 const showAddStepModal = ref(false);
 const routineItems = ref<RoutineItem[]>([...props.routineItems]);
+const stepEditorRef = ref<{
+    applyApiErrors: (error: unknown) => void;
+    clearFieldErrors: () => void;
+} | null>(null);
 
 watch(
     () => props.routineItems,
@@ -182,6 +186,7 @@ async function saveRoutine(): Promise<void> {
 
 async function addStep(payload: StepEditorPayload): Promise<void> {
     savingStep.value = true;
+    stepEditorRef.value?.clearFieldErrors();
 
     try {
         await apiFetch(`/routines/${props.routine.id}/steps`, {
@@ -192,8 +197,12 @@ async function addStep(payload: StepEditorPayload): Promise<void> {
         showAddStepModal.value = false;
         router.reload({ only: ['routine', 'routineItems'] });
     } catch (error) {
-        console.error(error);
-        alert('ステップの追加に失敗しました。もう一度お試しください。');
+        stepEditorRef.value?.applyApiErrors(error);
+
+        if (!(error instanceof ApiError) || error.status >= 500) {
+            // Keep dialog open; field/general errors already shown.
+            console.error(error);
+        }
     } finally {
         savingStep.value = false;
     }
@@ -482,6 +491,7 @@ function stepPurposeKey(step: RoutineStep) {
     </div>
 
     <StepEditorDialog
+        ref="stepEditorRef"
         v-model:open="showAddStepModal"
         :routine-items="routineItems"
         :videos="videos"
