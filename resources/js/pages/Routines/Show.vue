@@ -77,15 +77,34 @@ watch(
 const steps = computed(() => ensureArray(props.routine.steps));
 const isCreateMode = computed(() => props.isCreating || props.routine.id === null);
 
+/** ①名前 → ②ステップ → ③今日やる */
+const flowPhase = computed<'name' | 'steps' | 'ready'>(() => {
+    if (isCreateMode.value) {
+        return 'name';
+    }
+
+    if (steps.value.length === 0) {
+        return 'steps';
+    }
+
+    return 'ready';
+});
+
 const pageHeading = computed(() =>
     isCreateMode.value ? 'ルーティンを作成' : 'ルーティンを編集',
 );
 
-const pageSubtitle = computed(() =>
-    isCreateMode.value
-        ? '名前を入力して保存すると、ステップを追加できます。'
-        : '基本情報を整えたら、下でステップを順番に追加します。',
-);
+const pageSubtitle = computed(() => {
+    if (flowPhase.value === 'name') {
+        return '① まず名前を入力して保存します。保存後にステップを追加できます。';
+    }
+
+    if (flowPhase.value === 'steps') {
+        return '② 「ステップを追加」でやることを登録し、ダイアログ内で保存します。';
+    }
+
+    return '③ ステップが揃ったら「今日やる」へ進めます。基本情報の変更もこの画面で保存できます。';
+});
 
 const documentTitle = computed(() =>
     isCreateMode.value
@@ -291,6 +310,86 @@ function stepPurposeKey(step: RoutineStep) {
                         align="left"
                     />
 
+                    <ol
+                        class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3"
+                        aria-label="作成の手順"
+                    >
+                        <li
+                            class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-sans text-xs font-medium"
+                            :class="
+                                flowPhase === 'name'
+                                    ? 'border-primary/40 bg-primary/10 text-primary'
+                                    : 'border-cd-line bg-white text-cd-ink-muted'
+                            "
+                        >
+                            <span
+                                class="inline-flex size-5 items-center justify-center rounded-full text-[0.65rem] font-bold"
+                                :class="
+                                    flowPhase === 'name'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-muted text-cd-ink-muted'
+                                "
+                            >
+                                1
+                            </span>
+                            名前を保存
+                        </li>
+                        <li
+                            class="hidden text-cd-ink-muted sm:inline"
+                            aria-hidden="true"
+                        >
+                            →
+                        </li>
+                        <li
+                            class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-sans text-xs font-medium"
+                            :class="
+                                flowPhase === 'steps'
+                                    ? 'border-primary/40 bg-primary/10 text-primary'
+                                    : flowPhase === 'ready'
+                                      ? 'border-cd-line bg-white text-cd-ink-muted'
+                                      : 'border-dashed border-cd-line bg-transparent text-cd-ink-muted'
+                            "
+                        >
+                            <span
+                                class="inline-flex size-5 items-center justify-center rounded-full text-[0.65rem] font-bold"
+                                :class="
+                                    flowPhase === 'steps'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-muted text-cd-ink-muted'
+                                "
+                            >
+                                2
+                            </span>
+                            ステップを保存
+                        </li>
+                        <li
+                            class="hidden text-cd-ink-muted sm:inline"
+                            aria-hidden="true"
+                        >
+                            →
+                        </li>
+                        <li
+                            class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-sans text-xs font-medium"
+                            :class="
+                                flowPhase === 'ready'
+                                    ? 'border-primary/40 bg-primary/10 text-primary'
+                                    : 'border-dashed border-cd-line bg-transparent text-cd-ink-muted'
+                            "
+                        >
+                            <span
+                                class="inline-flex size-5 items-center justify-center rounded-full text-[0.65rem] font-bold"
+                                :class="
+                                    flowPhase === 'ready'
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-muted text-cd-ink-muted'
+                                "
+                            >
+                                3
+                            </span>
+                            今日やる
+                        </li>
+                    </ol>
+
                     <RoutinesHubTabs />
                 </div>
             </PageSectionCard>
@@ -298,11 +397,25 @@ function stepPurposeKey(step: RoutineStep) {
             <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
                 <div class="flex flex-col gap-6">
                     <section aria-label="基本情報" class="cd-panel px-5 py-5">
-                        <h2
-                            class="font-sans text-base font-semibold text-cd-ink"
-                        >
-                            基本情報
-                        </h2>
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h2
+                                class="font-sans text-base font-semibold text-cd-ink"
+                            >
+                                <span
+                                    v-if="isCreateMode"
+                                    class="mr-2 inline-flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground"
+                                >
+                                    1
+                                </span>
+                                基本情報
+                            </h2>
+                            <p
+                                v-if="isCreateMode"
+                                class="font-sans text-xs text-cd-ink-muted"
+                            >
+                                この段階の保存は「名前」だけです
+                            </p>
+                        </div>
 
                         <div class="mt-4">
                             <RoutineBasicsForm
@@ -328,31 +441,57 @@ function stepPurposeKey(step: RoutineStep) {
                         </p>
 
                         <div
-                            v-if="!isCreateMode"
-                            class="mt-4 flex flex-wrap items-center gap-2 border-t border-cd-line pt-4"
+                            class="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-cd-line pt-4"
                         >
-                            <Link
-                                href="/today"
-                                class="inline-flex items-center gap-1.5 rounded-full border border-cd-line px-3 py-1.5 font-sans text-xs font-medium text-cd-ink-muted transition-colors hover:border-primary/30 hover:text-primary"
+                            <Button type="button" variant="ghost" as-child>
+                                <Link href="/routines">キャンセル</Link>
+                            </Button>
+                            <Button
+                                type="button"
+                                :disabled="savingRoutine || !formName.trim()"
+                                @click="saveRoutine"
                             >
-                                <CalendarDays :size="14" :stroke-width="1.6" />
-                                今日やるへ進む
-                            </Link>
+                                {{
+                                    isCreateMode
+                                        ? '① 名前を保存して次へ'
+                                        : '基本情報を保存'
+                                }}
+                            </Button>
                         </div>
                     </section>
 
                     <section
                         aria-label="ステップ一覧"
                         class="cd-panel overflow-hidden"
+                        :class="{ 'opacity-70': isCreateMode }"
                     >
                         <div
-                            class="flex items-center justify-between gap-3 border-b border-cd-line px-5 py-4"
+                            class="flex flex-col gap-2 border-b border-cd-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
                         >
-                            <h2
-                                class="font-sans text-base font-semibold text-cd-ink"
-                            >
-                                ステップ一覧
-                            </h2>
+                            <div class="min-w-0">
+                                <h2
+                                    class="font-sans text-base font-semibold text-cd-ink"
+                                >
+                                    <span
+                                        v-if="!isCreateMode"
+                                        class="mr-2 inline-flex size-6 items-center justify-center rounded-full text-xs font-bold"
+                                        :class="
+                                            flowPhase === 'steps'
+                                                ? 'bg-primary text-primary-foreground'
+                                                : 'bg-muted text-cd-ink-muted'
+                                        "
+                                    >
+                                        2
+                                    </span>
+                                    ステップ一覧
+                                </h2>
+                                <p
+                                    v-if="!isCreateMode"
+                                    class="mt-1 font-sans text-xs text-cd-ink-muted"
+                                >
+                                    1件ごとにダイアログで「このステップを保存」します
+                                </p>
+                            </div>
                             <Button
                                 type="button"
                                 size="sm"
@@ -524,41 +663,58 @@ function stepPurposeKey(step: RoutineStep) {
                             class="px-5 py-12 text-center font-sans text-sm text-cd-ink-muted"
                         >
                             <template v-if="isCreateMode">
-                                <p>まず名前を入力して保存してください。</p>
-                                <p class="mt-2">
-                                    保存後に「ステップを追加」から、やることを順番に登録できます。
-                                </p>
+                                <p>① の「名前を保存して次へ」が終わると、ここにステップを追加できます。</p>
                             </template>
                             <template v-else>
                                 <p>ステップがまだありません。</p>
                                 <p class="mt-2">
-                                    「ステップを追加」から、やることを順番に登録しましょう。
+                                    「ステップを追加」→ 内容を入力 →
+                                    「このステップを保存」の順です。
                                 </p>
                             </template>
                         </div>
                     </section>
 
                     <section
-                        aria-label="保存操作"
-                        class="cd-panel flex flex-wrap items-center justify-end gap-2 px-5 py-4"
+                        v-if="flowPhase === 'ready'"
+                        aria-label="今日やる"
+                        class="cd-panel px-5 py-4"
                     >
-                        <Button type="button" variant="ghost" as-child>
-                            <Link href="/routines">キャンセル</Link>
-                        </Button>
-                        <Button
-                            type="button"
-                            :disabled="savingRoutine || !formName.trim()"
-                            @click="saveRoutine"
+                        <div
+                            class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
                         >
-                            保存
-                        </Button>
+                            <div>
+                                <h2
+                                    class="font-sans text-base font-semibold text-cd-ink"
+                                >
+                                    <span
+                                        class="mr-2 inline-flex size-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground"
+                                    >
+                                        3
+                                    </span>
+                                    今日やる
+                                </h2>
+                                <p class="mt-1 font-sans text-xs text-cd-ink-muted">
+                                    ステップの登録が終わったら、今日の実行へ進めます
+                                </p>
+                            </div>
+                            <Button type="button" as-child>
+                                <Link href="/today">
+                                    <CalendarDays
+                                        :size="16"
+                                        :stroke-width="1.6"
+                                    />
+                                    今日やるへ進む
+                                </Link>
+                            </Button>
+                        </div>
                     </section>
                 </div>
 
                 <RoutineEditorSidebar
                     :routine="routine"
                     :other-routines="otherRoutines"
-                    :is-creating="isCreateMode"
+                    :flow-phase="flowPhase"
                 />
             </div>
         </div>

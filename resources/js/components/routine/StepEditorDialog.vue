@@ -1075,7 +1075,7 @@ defineExpose({
                     :disabled="saving || creatingItem"
                     @click="submit"
                 >
-                    追加する
+                    このステップを保存
                 </Button>
             </DialogFooter>
         </DialogContent>
