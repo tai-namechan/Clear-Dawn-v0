@@ -23,7 +23,7 @@ const { formattedDate, isToday, shiftDate, goToday } = useDateNavigation({
 
 <template>
     <div
-        class="flex items-center justify-between gap-3 rounded-2xl border border-cd-line/80 bg-white/60 px-4 py-3"
+        class="flex items-center justify-between gap-3 rounded-2xl border border-cd-line bg-white px-4 py-3"
     >
         <template v-if="$slots.actions">
             <div class="flex min-w-0 items-center gap-2">
@@ -38,13 +38,15 @@ const { formattedDate, isToday, shiftDate, goToday } = useDateNavigation({
                 </Button>
 
                 <div class="min-w-0 text-center">
-                    <p class="font-serif text-base tracking-[0.1em] text-cd-ink">
+                    <p
+                        class="font-sans text-base font-semibold tracking-tight text-cd-ink md:text-lg"
+                    >
                         {{ formattedDate }}
                     </p>
                     <button
                         v-if="!isToday"
                         type="button"
-                        class="mt-0.5 font-sans text-xs text-primary underline-offset-2 hover:underline"
+                        class="mt-0.5 font-sans text-xs font-medium text-primary underline-offset-2 hover:underline"
                         @click="goToday"
                     >
                         今日に戻る
@@ -79,13 +81,15 @@ const { formattedDate, isToday, shiftDate, goToday } = useDateNavigation({
             </Button>
 
             <div class="text-center">
-                <p class="font-serif text-base tracking-[0.1em] text-cd-ink">
+                <p
+                    class="font-sans text-base font-semibold tracking-tight text-cd-ink md:text-lg"
+                >
                     {{ formattedDate }}
                 </p>
                 <button
                     v-if="!isToday"
                     type="button"
-                    class="mt-0.5 font-sans text-xs text-primary underline-offset-2 hover:underline"
+                    class="mt-0.5 font-sans text-xs font-medium text-primary underline-offset-2 hover:underline"
                     @click="goToday"
                 >
                     今日に戻る

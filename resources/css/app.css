@@ -41,6 +41,7 @@
 
     --color-primary: var(--primary);
     --color-primary-foreground: var(--primary-foreground);
+    --color-primary-hover: var(--cd-primary-hover);
 
     --color-secondary: var(--secondary);
     --color-secondary-foreground: var(--secondary-foreground);
@@ -200,7 +201,8 @@
     --cd-line: hsl(260 12% 80%); /* hairline borders */
     --cd-surface: hsl(40 50% 99%); /* warmer opaque paper card surface */
     --cd-primary: hsl(238 32% 22%);
-    --cd-primary-hover: hsl(238 34% 16%);
+    /* Hover must be clearly different from base (not just 6% darker). */
+    --cd-primary-hover: hsl(250 34% 38%);
     --cd-secondary: hsl(255 18% 88%);
     --cd-secondary-hover: hsl(255 16% 82%);
     --cd-warning: hsl(38 62% 46%);

@@ -3,6 +3,7 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { ChevronRight, Pencil, Plus, Trash2 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
+import RoutineItemForm from '@/components/forms/RoutineItemForm.vue';
 import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,19 +13,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { apiFetch } from '@/lib/apiFetch';
-import {
-    routineItemCategoryLabels,
-    trackingTypeLabels,
-} from '@/lib/routineConstants';
+import { routineItemCategoryLabels } from '@/lib/routineConstants';
 import type {
     RoutineItem,
     RoutineItemCategory,
@@ -141,7 +131,7 @@ async function deleteItem(item: RoutineItem): Promise<void> {
             <div class="flex items-start justify-between gap-4">
                 <PageTitleOrnament
                     title="部品ライブラリ"
-                    subtitle="メニュー編集の中で作るのが基本です。ここは整理用です。"
+                    subtitle="ルーティン編集の中で作るのが基本です。ここは整理用です。"
                     align="left"
                 />
 
@@ -234,7 +224,7 @@ async function deleteItem(item: RoutineItem): Promise<void> {
             >
                 <p>実施項目がまだありません。</p>
                 <p class="mt-2">
-                    上の「追加」ボタンから、ルーティンで使う項目を登録しましょう。
+                    上の「追加」ボタンから登録するか、ルーティン編集のステップ追加から作れます。
                 </p>
             </div>
         </div>
@@ -244,59 +234,21 @@ async function deleteItem(item: RoutineItem): Promise<void> {
         <DialogContent class="bg-cd-surface sm:max-w-md">
             <DialogHeader>
                 <DialogTitle
-                    class="font-serif text-lg tracking-[0.12em] text-cd-ink"
+                    class="font-sans text-lg font-semibold text-cd-ink"
                 >
                     {{ editingItem ? '実施項目を編集' : '実施項目を追加' }}
                 </DialogTitle>
             </DialogHeader>
 
             <div class="flex flex-col gap-3">
-                <Input
-                    v-model="formName"
-                    placeholder="項目名"
-                    maxlength="100"
+                <RoutineItemForm
+                    v-model:name="formName"
+                    v-model:category="formCategory"
+                    v-model:tracking-type="formTrackingType"
+                    v-model:note="formNote"
                     :disabled="saving"
+                    :error="formError"
                 />
-
-                <Select v-model="formCategory" :disabled="saving">
-                    <SelectTrigger>
-                        <SelectValue placeholder="カテゴリ" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem
-                            v-for="(label, value) in routineItemCategoryLabels"
-                            :key="value"
-                            :value="value"
-                        >
-                            {{ label }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-
-                <Select v-model="formTrackingType" :disabled="saving">
-                    <SelectTrigger>
-                        <SelectValue placeholder="記録形式" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem
-                            v-for="(label, value) in trackingTypeLabels"
-                            :key="value"
-                            :value="value"
-                        >
-                            {{ label }}
-                        </SelectItem>
-                    </SelectContent>
-                </Select>
-
-                <Input
-                    v-model="formNote"
-                    placeholder="メモ（任意）"
-                    :disabled="saving"
-                />
-
-                <p v-if="formError" class="font-sans text-xs text-destructive">
-                    {{ formError }}
-                </p>
             </div>
 
             <DialogFooter>

@@ -1,20 +1,9 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
-import { CirclePlay, Plus } from '@lucide/vue';
-import { ref } from 'vue';
+import { Head, Link } from '@inertiajs/vue3';
+import { CirclePlay } from '@lucide/vue';
 import DateNavigator from '@/components/DateNavigator.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
-import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { apiFetch } from '@/lib/apiFetch';
 import { routinePlanStatusLabels } from '@/lib/routineConstants';
 import type { RoutinePlan } from '@/types/routine';
 
@@ -23,43 +12,15 @@ interface Props {
     plans: RoutinePlan[];
 }
 
-const props = defineProps<Props>();
-
-const showCreateModal = ref(false);
-const formTitle = ref('');
-const saving = ref(false);
+defineProps<Props>();
 
 function latestSession(plan: RoutinePlan) {
     return plan.sessions?.[0] ?? null;
 }
-
-async function createPlan(): Promise<void> {
-    if (!formTitle.value.trim()) {
-        return;
-    }
-
-    saving.value = true;
-
-    try {
-        await apiFetch('/plans', {
-            method: 'POST',
-            body: JSON.stringify({
-                title: formTitle.value.trim(),
-                scheduled_on: props.date,
-            }),
-        });
-
-        showCreateModal.value = false;
-        formTitle.value = '';
-        router.reload({ only: ['plans', 'date'] });
-    } finally {
-        saving.value = false;
-    }
-}
 </script>
 
 <template>
-    <Head title="今日の実行プラン" />
+    <Head title="今日やる" />
 
     <div
         class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
@@ -68,35 +29,25 @@ async function createPlan(): Promise<void> {
             <div class="flex items-start justify-between gap-4">
                 <PageTitleOrnament
                     title="今日やる"
-                    subtitle="今日のメニューを開始・再開します。メニュー自体は「メニュー」タブで作ります。"
+                    subtitle="今日のルーティンを開始・再開します。作成は「ルーティン」タブで行います。"
                     align="left"
                 />
             </div>
 
             <RoutinesHubTabs />
 
-            <DateNavigator :date="date" route-url="/today" :reload-only="['plans', 'date']">
-                <template #actions>
-                    <Button
-                        type="button"
-                        class="shrink-0 font-sans tracking-[0.08em]"
-                        @click="showCreateModal = true"
-                    >
-                        <Plus :size="16" :stroke-width="1.8" />
-                        追加
-                    </Button>
-                </template>
-            </DateNavigator>
+            <DateNavigator
+                :date="date"
+                route-url="/today"
+                :reload-only="['plans', 'date']"
+            />
 
-            <section
-                aria-label="プラン一覧"
-                class="cd-panel"
-            >
+            <section aria-label="プラン一覧" class="cd-panel">
                 <ul v-if="plans.length > 0" class="flex flex-col">
                     <li
                         v-for="plan in plans"
                         :key="plan.id"
-                        class="border-b border-cd-line/60 px-5 py-4 last:border-b-0"
+                        class="border-b border-cd-line px-5 py-4 last:border-b-0"
                     >
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
@@ -107,7 +58,7 @@ async function createPlan(): Promise<void> {
                                     {{ plan.title }}
                                 </Link>
                                 <p
-                                    class="mt-1 font-sans text-xs text-cd-ink-muted"
+                                    class="mt-1 font-sans text-sm text-cd-ink-muted"
                                 >
                                     {{ plan.steps?.length ?? 0 }} ステップ
                                     <span
@@ -120,7 +71,7 @@ async function createPlan(): Promise<void> {
                             </div>
 
                             <span
-                                class="inline-flex shrink-0 rounded-full px-2.5 py-0.5 font-sans text-xs"
+                                class="inline-flex shrink-0 rounded-full px-2.5 py-0.5 font-sans text-xs font-medium"
                                 :class="
                                     latestSession(plan)?.status === 'completed'
                                         ? 'bg-cd-moss/15 text-cd-moss'
@@ -149,7 +100,7 @@ async function createPlan(): Promise<void> {
                                     latestSession(plan)?.status === 'in_progress'
                                 "
                                 :href="`/sessions/${latestSession(plan)!.id}`"
-                                class="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-sans text-xs tracking-[0.06em] text-primary"
+                                class="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-sans text-xs font-medium text-primary transition-colors hover:bg-primary/15"
                             >
                                 <CirclePlay :size="14" :stroke-width="1.6" />
                                 続ける
@@ -157,7 +108,7 @@ async function createPlan(): Promise<void> {
                             <Link
                                 v-else
                                 :href="`/plans/${plan.id}`"
-                                class="inline-flex items-center gap-1.5 rounded-full border border-cd-line/80 px-3 py-1 font-sans text-xs tracking-[0.06em] text-cd-ink-muted hover:text-cd-ink"
+                                class="inline-flex items-center gap-1.5 rounded-full border border-cd-line px-3 py-1 font-sans text-xs font-medium text-cd-ink-muted transition-colors hover:border-primary/30 hover:text-primary"
                             >
                                 編集・開始
                             </Link>
@@ -169,13 +120,13 @@ async function createPlan(): Promise<void> {
                     v-else
                     class="px-5 py-12 text-center font-sans text-sm text-cd-ink-muted"
                 >
-                    <p>この日のメニューはありません。</p>
+                    <p>この日のルーティンはありません。</p>
                     <p class="mt-2">
                         <Link
                             href="/routines"
                             class="font-medium text-primary underline-offset-2 hover:underline"
                         >
-                            メニュー
+                            ルーティン
                         </Link>
                         を作ってから「今日やる」に載せてください。
                     </p>
@@ -183,41 +134,4 @@ async function createPlan(): Promise<void> {
             </section>
         </div>
     </div>
-
-    <Dialog :open="showCreateModal" @update:open="(v) => (showCreateModal = v)">
-        <DialogContent class="bg-cd-surface sm:max-w-md">
-            <DialogHeader>
-                <DialogTitle
-                    class="font-serif text-lg tracking-[0.12em] text-cd-ink"
-                >
-                    実行プランを追加
-                </DialogTitle>
-            </DialogHeader>
-
-            <Input
-                v-model="formTitle"
-                placeholder="プラン名"
-                maxlength="100"
-                :disabled="saving"
-            />
-
-            <DialogFooter>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    :disabled="saving"
-                    @click="showCreateModal = false"
-                >
-                    キャンセル
-                </Button>
-                <Button
-                    type="button"
-                    :disabled="saving || !formTitle.trim()"
-                    @click="createPlan"
-                >
-                    作成
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
 </template>

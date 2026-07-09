@@ -73,11 +73,11 @@ const stepCount = computed(() => props.routine.steps?.length ?? 0);
 
         <section
             v-if="recommended.length"
-            aria-label="おすすめのメニュー"
+            aria-label="おすすめのルーティン"
             class="cd-panel px-4 py-4"
         >
             <h2 class="font-sans text-sm font-semibold text-cd-ink">
-                おすすめのメニュー
+                おすすめのルーティン
             </h2>
             <ul class="mt-3 space-y-2">
                 <li v-for="item in recommended" :key="item.id">

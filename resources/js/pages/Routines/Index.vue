@@ -5,14 +5,6 @@ import { ref } from 'vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { apiFetch } from '@/lib/apiFetch';
 import { todayKey } from '@/lib/date';
 import type { Routine } from '@/types/routine';
@@ -23,10 +15,7 @@ interface Props {
 
 defineProps<Props>();
 
-const showCreateModal = ref(false);
-const formName = ref('');
-const formDescription = ref('');
-const saving = ref(false);
+const creating = ref(false);
 const applyingId = ref<string | null>(null);
 
 function todayString(): string {
@@ -34,11 +23,11 @@ function todayString(): string {
 }
 
 async function createRoutine(): Promise<void> {
-    if (!formName.value.trim()) {
+    if (creating.value) {
         return;
     }
 
-    saving.value = true;
+    creating.value = true;
 
     try {
         const result = await apiFetch<{ routine: { id: string } }>(
@@ -46,18 +35,14 @@ async function createRoutine(): Promise<void> {
             {
                 method: 'POST',
                 body: JSON.stringify({
-                    name: formName.value.trim(),
-                    description: formDescription.value.trim() || null,
+                    name: '新しいルーティン',
                 }),
             },
         );
 
-        showCreateModal.value = false;
-        formName.value = '';
-        formDescription.value = '';
         router.visit(`/routines/${result.routine.id}`);
     } finally {
-        saving.value = false;
+        creating.value = false;
     }
 }
 
@@ -91,7 +76,7 @@ async function deleteRoutine(routine: Routine): Promise<void> {
 </script>
 
 <template>
-    <Head title="メニュー" />
+    <Head title="ルーティン" />
 
     <div
         class="flex h-full flex-1 flex-col overflow-x-auto rounded-xl p-4 md:px-6 md:pb-6"
@@ -99,25 +84,26 @@ async function deleteRoutine(routine: Routine): Promise<void> {
         <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6">
             <div class="flex items-start justify-between gap-4">
                 <PageTitleOrnament
-                    title="メニュー"
-                    subtitle="練習メニューを作り、ステップを追加してから今日やります。"
+                    title="ルーティン"
+                    subtitle="ルーティンを作り、ステップを追加してから今日やります。"
                     align="left"
                 />
 
                 <Button
                     type="button"
                     class="mt-2 shrink-0"
-                    @click="showCreateModal = true"
+                    :disabled="creating"
+                    @click="createRoutine"
                 >
                     <Plus :size="16" :stroke-width="1.8" />
-                    メニューを作る
+                    ルーティンを作る
                 </Button>
             </div>
 
             <RoutinesHubTabs />
 
             <section
-                aria-label="メニュー一覧"
+                aria-label="ルーティン一覧"
                 class="cd-panel overflow-hidden"
             >
                 <ul v-if="routines.length > 0" class="flex flex-col">
@@ -193,60 +179,22 @@ async function deleteRoutine(routine: Routine): Promise<void> {
                 >
                     <div class="space-y-2">
                         <p class="font-sans text-base font-semibold text-cd-ink">
-                            まだメニューがありません
+                            まだルーティンがありません
                         </p>
                         <p class="max-w-sm font-sans text-sm text-cd-ink-muted">
-                            ① メニューを作る → ② ステップを追加 → ③ 今日やる、の順で進めます。
+                            ① ルーティンを作る → ② ステップを追加 → ③ 今日やる、の順で進めます。
                         </p>
                     </div>
-                    <Button type="button" @click="showCreateModal = true">
+                    <Button
+                        type="button"
+                        :disabled="creating"
+                        @click="createRoutine"
+                    >
                         <Plus :size="16" :stroke-width="1.8" />
-                        メニューを作る
+                        ルーティンを作る
                     </Button>
                 </div>
             </section>
         </div>
     </div>
-
-    <Dialog :open="showCreateModal" @update:open="(v) => (showCreateModal = v)">
-        <DialogContent class="bg-[#fffcf8] sm:max-w-md">
-            <DialogHeader>
-                <DialogTitle class="font-sans text-lg font-semibold text-cd-ink">
-                    メニューを作る
-                </DialogTitle>
-            </DialogHeader>
-
-            <div class="flex flex-col gap-3">
-                <Input
-                    v-model="formName"
-                    placeholder="メニュー名（例: 朝の基礎トレーニング）"
-                    maxlength="100"
-                    :disabled="saving"
-                />
-                <Input
-                    v-model="formDescription"
-                    placeholder="説明（任意）"
-                    :disabled="saving"
-                />
-            </div>
-
-            <DialogFooter>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    :disabled="saving"
-                    @click="showCreateModal = false"
-                >
-                    キャンセル
-                </Button>
-                <Button
-                    type="button"
-                    :disabled="saving || !formName.trim()"
-                    @click="createRoutine"
-                >
-                    作って編集へ
-                </Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
 </template>
