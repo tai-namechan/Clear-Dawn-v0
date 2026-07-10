@@ -56,7 +56,7 @@ function isNavActive(item: CdNavItem): boolean {
 </script>
 
 <template>
-    <Sidebar collapsible="icon" variant="floating" class="cd-sidebar">
+    <Sidebar collapsible="icon" variant="sidebar" class="cd-sidebar">
         <div
             aria-hidden="true"
             class="pointer-events-none absolute inset-0 overflow-hidden group-data-[collapsible=icon]:hidden"
