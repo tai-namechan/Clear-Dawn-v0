@@ -38,12 +38,12 @@ const todayIso = [
 
 <template>
     <header
-        class="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/70 px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-6"
+        class="flex min-h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/70 px-4 py-3 transition-[width,height] ease-linear md:px-6 md:py-4"
     >
         <div class="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
             <SidebarTrigger class="-ml-1 shrink-0" />
             <h1
-                class="truncate font-serif text-lg tracking-[0.12em] text-cd-dawn-deep md:text-xl"
+                class="truncate font-serif text-[2rem] leading-none font-normal tracking-[0.16em] text-cd-dawn-deep md:text-[2.5rem]"
             >
                 Clear Dawn
             </h1>
