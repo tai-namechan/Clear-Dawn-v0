@@ -131,3 +131,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 require __DIR__.'/settings.php';
+require __DIR__.'/yoyu.php';
+require __DIR__.'/kioku.php';
