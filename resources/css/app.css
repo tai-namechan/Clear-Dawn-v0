@@ -101,6 +101,9 @@
     --color-cd-sunrise-mist: var(--cd-sunrise-mist);
     --color-cd-moss: var(--cd-moss);
     --color-cd-mist: var(--cd-mist);
+    --color-cd-pfc-p: var(--cd-pfc-p);
+    --color-cd-pfc-f: var(--cd-pfc-f);
+    --color-cd-pfc-c: var(--cd-pfc-c);
     --color-cd-current: var(--cd-current);
     --color-cd-matrix-surface: var(--cd-matrix-surface);
     --color-cd-matrix-line: var(--cd-matrix-line);
@@ -220,6 +223,10 @@
     ); /* faintest sunrise tint (--cd-accent-light) */
     --cd-moss: hsl(125 13% 50%); /* quiet green (--cd-success family) */
     --cd-mist: hsl(210 29% 56%); /* soft blue-grey (--cd-info family) */
+    /* PFC chart / legend — brighter than moss/sunrise/mist for readability */
+    --cd-pfc-p: hsl(142 62% 42%);
+    --cd-pfc-f: hsl(27 92% 55%);
+    --cd-pfc-c: hsl(207 82% 52%);
 
     /* Interactive surface tints — readability first, quiet lavender feedback */
     --cd-cell: hsl(45 33% 99%); /* near-white ivory cell base (#FCFBF9) */

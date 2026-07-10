@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { Pencil, Plus, Trash2, UtensilsCrossed } from '@lucide/vue';
+import { Camera, Check, Pencil, Plus, Sparkles, Trash2, UtensilsCrossed } from '@lucide/vue';
 import type { EChartsCoreOption } from 'echarts/core';
 import { computed, ref, watch } from 'vue';
 import BaseChart from '@/components/charts/BaseChart.vue';
@@ -19,6 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiFetch } from '@/lib/apiFetch';
+import { PFC_COLORS } from '@/lib/pfcColors';
 import type {
     FoodItem,
     MealEntry,
@@ -124,14 +125,14 @@ const kcalChartOption = computed<EChartsCoreOption>(() => ({
     xAxis: {
         type: 'category',
         data: props.chartPoints.map((point) => point.date),
-        axisLabel: { color: 'var(--cd-ink-muted)', fontSize: 11 },
-        axisLine: { lineStyle: { color: 'var(--cd-line)' } },
+        axisLabel: { color: '#5c5a6e', fontSize: 11 },
+        axisLine: { lineStyle: { color: '#cfc8d8' } },
     },
     yAxis: {
         type: 'value',
-        axisLabel: { color: 'var(--cd-ink-muted)', fontSize: 11 },
+        axisLabel: { color: '#5c5a6e', fontSize: 11 },
         splitLine: {
-            lineStyle: { color: 'var(--cd-line)', opacity: 0.4 },
+            lineStyle: { color: '#cfc8d8', opacity: 0.45 },
         },
     },
     series: [
@@ -140,13 +141,11 @@ const kcalChartOption = computed<EChartsCoreOption>(() => ({
             type: 'line',
             smooth: true,
             symbol: 'circle',
-            symbolSize: 6,
+            symbolSize: 8,
             data: props.chartPoints.map((point) => point.kcal),
-            lineStyle: { color: 'var(--chart-1)', width: 2 },
-            itemStyle: { color: 'var(--chart-1)' },
-            areaStyle: {
-                color: 'color-mix(in oklab, var(--chart-1) 12%, transparent)',
-            },
+            lineStyle: { color: '#5b5577', width: 2 },
+            itemStyle: { color: '#5b5577' },
+            areaStyle: { color: 'rgba(91, 85, 119, 0.12)' },
         },
     ],
 }));
@@ -156,19 +155,19 @@ const pfcChartOption = computed<EChartsCoreOption>(() => ({
     tooltip: { trigger: 'axis' },
     legend: {
         top: 0,
-        textStyle: { color: 'var(--cd-ink-muted)', fontSize: 11 },
+        textStyle: { color: '#5c5a6e', fontSize: 11 },
     },
     xAxis: {
         type: 'category',
         data: props.chartPoints.map((point) => point.date),
-        axisLabel: { color: 'var(--cd-ink-muted)', fontSize: 11 },
-        axisLine: { lineStyle: { color: 'var(--cd-line)' } },
+        axisLabel: { color: '#5c5a6e', fontSize: 11 },
+        axisLine: { lineStyle: { color: '#cfc8d8' } },
     },
     yAxis: {
         type: 'value',
-        axisLabel: { color: 'var(--cd-ink-muted)', fontSize: 11 },
+        axisLabel: { color: '#5c5a6e', fontSize: 11 },
         splitLine: {
-            lineStyle: { color: 'var(--cd-line)', opacity: 0.4 },
+            lineStyle: { color: '#cfc8d8', opacity: 0.45 },
         },
     },
     series: [
@@ -176,25 +175,41 @@ const pfcChartOption = computed<EChartsCoreOption>(() => ({
             name: 'P',
             type: 'bar',
             stack: 'pfc',
+            barMaxWidth: 36,
             data: props.chartPoints.map((point) => point.protein_g),
-            itemStyle: { color: 'var(--cd-moss)' },
+            itemStyle: { color: PFC_COLORS.p.hex, borderRadius: [0, 0, 0, 0] },
         },
         {
             name: 'F',
             type: 'bar',
             stack: 'pfc',
+            barMaxWidth: 36,
             data: props.chartPoints.map((point) => point.fat_g),
-            itemStyle: { color: 'var(--cd-sunrise)' },
+            itemStyle: { color: PFC_COLORS.f.hex },
         },
         {
             name: 'C',
             type: 'bar',
             stack: 'pfc',
+            barMaxWidth: 36,
             data: props.chartPoints.map((point) => point.carb_g),
-            itemStyle: { color: 'var(--cd-mist)' },
+            itemStyle: {
+                color: PFC_COLORS.c.hex,
+                borderRadius: [4, 4, 0, 0],
+            },
         },
     ],
 }));
+
+const hasChartData = computed(() =>
+    props.chartPoints.some(
+        (point) =>
+            point.kcal > 0 ||
+            point.protein_g > 0 ||
+            point.fat_g > 0 ||
+            point.carb_g > 0,
+    ),
+);
 
 function formatNum(value: string | number): string {
     return Number(value).toLocaleString('ja-JP', {
@@ -429,7 +444,10 @@ function applyChartFilter(): void {
                     </div>
                 </PageSectionCard>
 
-                <PageSectionCard padding="sm" class="flex items-center">
+                <PageSectionCard
+                    padding="sm"
+                    class="flex items-center justify-center"
+                >
                     <DateNavigator
                         :date="date"
                         route-url="/meals"
@@ -444,119 +462,138 @@ function applyChartFilter(): void {
                 </PageSectionCard>
             </div>
 
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <PageSectionCard padding="sm">
-                    <p class="font-sans text-xs text-cd-ink-muted">
-                        合計エネルギー
-                    </p>
-                    <p class="mt-1 font-sans text-2xl font-semibold text-cd-ink">
-                        {{ formatNum(totals.kcal) }}
-                        <span class="text-sm font-medium text-cd-ink-muted"
-                            >kcal</span
+            <PageSectionCard padding="none" aria-label="本日の食事サマリ">
+                <div
+                    class="grid divide-y divide-cd-line sm:grid-cols-2 sm:divide-x lg:grid-cols-4 lg:divide-y-0"
+                >
+                    <div class="p-4">
+                        <p class="font-sans text-xs text-cd-ink-muted">
+                            合計エネルギー
+                        </p>
+                        <p
+                            class="mt-1 font-sans text-2xl font-semibold text-cd-ink"
                         >
-                    </p>
-                    <p v-if="goal" class="mt-1 font-sans text-xs text-cd-ink-muted">
-                        目標 {{ formatNum(goal.kcal) }} kcal
-                    </p>
-                    <div
-                        v-if="kcalAchievement !== null"
-                        class="mt-3 h-2 overflow-hidden rounded-full bg-cd-line/40"
-                    >
-                        <div
-                            class="h-full rounded-full bg-primary"
-                            :style="{
-                                width: `${Math.min(100, kcalAchievement)}%`,
-                            }"
-                        />
-                    </div>
-                </PageSectionCard>
-
-                <PageSectionCard padding="sm">
-                    <p class="font-sans text-xs text-cd-ink-muted">
-                        PFC バランス
-                    </p>
-                    <div
-                        class="mt-3 flex h-2 overflow-hidden rounded-full bg-cd-line/40"
-                    >
-                        <div
-                            class="bg-cd-moss"
-                            :style="{ width: `${pfcEnergy.p}%` }"
-                        />
-                        <div
-                            class="bg-cd-sunrise"
-                            :style="{ width: `${pfcEnergy.f}%` }"
-                        />
-                        <div
-                            class="bg-cd-mist"
-                            :style="{ width: `${pfcEnergy.c}%` }"
-                        />
-                    </div>
-                    <div class="mt-2 space-y-0.5 font-sans text-xs">
-                        <p class="text-cd-moss">
-                            P {{ formatNum(totals.protein_g) }}g ({{
-                                pfcEnergy.p
-                            }}%)
+                            {{ formatNum(totals.kcal) }}
+                            <span class="text-sm font-medium text-cd-ink-muted"
+                                >kcal</span
+                            >
                         </p>
-                        <p class="text-cd-sunrise">
-                            F {{ formatNum(totals.fat_g) }}g ({{
-                                pfcEnergy.f
-                            }}%)
-                        </p>
-                        <p class="text-cd-mist">
-                            C {{ formatNum(totals.carb_g) }}g ({{
-                                pfcEnergy.c
-                            }}%)
-                        </p>
-                    </div>
-                </PageSectionCard>
-
-                <PageSectionCard padding="sm">
-                    <p class="font-sans text-xs text-cd-ink-muted">目標達成率</p>
-                    <p
-                        v-if="kcalAchievement !== null"
-                        class="mt-1 font-sans text-3xl font-semibold text-cd-ink"
-                    >
-                        {{ kcalAchievement }}%
-                    </p>
-                    <p v-else class="mt-1 font-sans text-lg text-cd-ink-muted">
-                        未設定
-                    </p>
-                    <p
-                        v-if="goal && kcalAchievement !== null"
-                        class="mt-2 font-sans text-xs text-cd-moss"
-                    >
-                        残り
-                        {{
-                            formatNum(
-                                Math.max(
-                                    0,
-                                    Number(goal.kcal) - totals.kcal,
-                                ),
-                            )
-                        }}
-                        kcal
-                    </p>
-                </PageSectionCard>
-
-                <PageSectionCard padding="sm">
-                    <p class="font-sans text-xs text-cd-ink-muted">今日のヒント</p>
-                    <p class="mt-2 font-sans text-sm leading-relaxed text-cd-ink">
-                        <template v-if="!goal">
-                            目標を設定すると、達成率と残りカロリーがわかります。
-                        </template>
-                        <template
-                            v-else-if="
-                                totals.protein_g < Number(goal.protein_g) * 0.8
-                            "
+                        <p
+                            v-if="goal"
+                            class="mt-1 font-sans text-xs text-cd-ink-muted"
                         >
-                            たんぱく質が目標に届いていません。次の食事で意識してみましょう。
-                        </template>
-                        <template v-else>
-                            記録が順調です。このペースを続けましょう。
-                        </template>
-                    </p>
-                </PageSectionCard>
-            </div>
+                            目標 {{ formatNum(goal.kcal) }} kcal
+                        </p>
+                        <div
+                            v-if="kcalAchievement !== null"
+                            class="mt-3 h-2 overflow-hidden rounded-full bg-cd-line/40"
+                        >
+                            <div
+                                class="h-full rounded-full bg-primary"
+                                :style="{
+                                    width: `${Math.min(100, kcalAchievement)}%`,
+                                }"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="p-4">
+                        <p class="font-sans text-xs text-cd-ink-muted">
+                            PFC バランス
+                        </p>
+                        <div
+                            class="mt-3 flex h-2 overflow-hidden rounded-full bg-cd-line/40"
+                        >
+                            <div
+                                class="bg-cd-pfc-p"
+                                :style="{ width: `${pfcEnergy.p}%` }"
+                            />
+                            <div
+                                class="bg-cd-pfc-f"
+                                :style="{ width: `${pfcEnergy.f}%` }"
+                            />
+                            <div
+                                class="bg-cd-pfc-c"
+                                :style="{ width: `${pfcEnergy.c}%` }"
+                            />
+                        </div>
+                        <div class="mt-2 space-y-0.5 font-sans text-xs">
+                            <p class="inline-flex items-center gap-1.5 text-cd-pfc-p">
+                                <span class="size-2 rounded-sm bg-cd-pfc-p" />
+                                P {{ formatNum(totals.protein_g) }}g ({{
+                                    pfcEnergy.p
+                                }}%)
+                            </p>
+                            <p class="inline-flex items-center gap-1.5 text-cd-pfc-f">
+                                <span class="size-2 rounded-sm bg-cd-pfc-f" />
+                                F {{ formatNum(totals.fat_g) }}g ({{
+                                    pfcEnergy.f
+                                }}%)
+                            </p>
+                            <p class="inline-flex items-center gap-1.5 text-cd-pfc-c">
+                                <span class="size-2 rounded-sm bg-cd-pfc-c" />
+                                C {{ formatNum(totals.carb_g) }}g ({{
+                                    pfcEnergy.c
+                                }}%)
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="p-4">
+                        <p class="font-sans text-xs text-cd-ink-muted">
+                            目標達成率
+                        </p>
+                        <p
+                            v-if="kcalAchievement !== null"
+                            class="mt-1 font-sans text-3xl font-semibold text-cd-ink"
+                        >
+                            {{ kcalAchievement }}%
+                        </p>
+                        <p
+                            v-else
+                            class="mt-1 font-sans text-lg text-cd-ink-muted"
+                        >
+                            未設定
+                        </p>
+                        <p
+                            v-if="goal && kcalAchievement !== null"
+                            class="mt-2 font-sans text-xs text-cd-pfc-p"
+                        >
+                            残り
+                            {{
+                                formatNum(
+                                    Math.max(0, Number(goal.kcal) - totals.kcal),
+                                )
+                            }}
+                            kcal
+                        </p>
+                    </div>
+
+                    <div class="p-4">
+                        <p class="font-sans text-xs text-cd-ink-muted">
+                            今日のヒント
+                        </p>
+                        <p
+                            class="mt-2 font-sans text-sm leading-relaxed text-cd-ink"
+                        >
+                            <template v-if="!goal">
+                                目標を設定すると、達成率と残りカロリーがわかります。
+                            </template>
+                            <template
+                                v-else-if="
+                                    totals.protein_g <
+                                    Number(goal.protein_g) * 0.8
+                                "
+                            >
+                                たんぱく質が目標に届いていません。次の食事で意識してみましょう。
+                            </template>
+                            <template v-else>
+                                記録が順調です。このペースを続けましょう。
+                            </template>
+                        </p>
+                    </div>
+                </div>
+            </PageSectionCard>
 
             <p
                 v-if="message"
@@ -571,9 +608,7 @@ function applyChartFilter(): void {
             </p>
 
             <PageSectionCard padding="sm" aria-label="食事タイムライン">
-                <ol
-                    class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
-                >
+                <ol class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <li
                         v-for="section in sections"
                         :key="`timeline-${section.meal_type}`"
@@ -586,18 +621,21 @@ function applyChartFilter(): void {
                                 {{ section.label }}
                             </p>
                             <span
-                                class="rounded-full px-2 py-0.5 font-sans text-[11px] font-medium"
-                                :class="
-                                    section.entries.length > 0
-                                        ? 'bg-cd-moss/15 text-cd-moss'
-                                        : 'bg-muted text-cd-ink-muted'
-                                "
+                                v-if="section.entries.length > 0"
+                                class="inline-flex items-center gap-1 rounded-full bg-cd-pfc-p/15 px-2 py-0.5 font-sans text-[11px] font-medium text-cd-pfc-p"
                             >
-                                {{
-                                    section.entries.length > 0
-                                        ? '記録済み'
-                                        : '未記録'
-                                }}
+                                <span
+                                    class="inline-flex size-3.5 items-center justify-center rounded-full bg-cd-pfc-p text-white"
+                                >
+                                    <Check :size="9" :stroke-width="3" />
+                                </span>
+                                記録済み
+                            </span>
+                            <span
+                                v-else
+                                class="rounded-full bg-muted px-2 py-0.5 font-sans text-[11px] font-medium text-cd-ink-muted"
+                            >
+                                未記録
                             </span>
                         </div>
                         <p class="mt-1 font-sans text-xs text-cd-ink-muted">
@@ -642,15 +680,15 @@ function applyChartFilter(): void {
                     <p
                         class="border-b border-cd-line px-4 py-2 font-sans text-xs"
                     >
-                        <span class="text-cd-moss"
+                        <span class="text-cd-pfc-p"
                             >P {{ formatNum(section.subtotal.protein_g) }}</span
                         >
                         ·
-                        <span class="text-cd-sunrise"
+                        <span class="text-cd-pfc-f"
                             >F {{ formatNum(section.subtotal.fat_g) }}</span
                         >
                         ·
-                        <span class="text-cd-mist"
+                        <span class="text-cd-pfc-c"
                             >C {{ formatNum(section.subtotal.carb_g) }}</span
                         >
                     </p>
@@ -705,13 +743,24 @@ function applyChartFilter(): void {
                         まだ記録がありません。
                     </p>
 
-                    <div class="border-t border-cd-line px-4 py-3">
+                    <div class="grid grid-cols-2 gap-2 border-t border-cd-line px-4 py-3">
                         <Button
                             type="button"
                             size="sm"
-                            class="w-full font-sans"
+                            variant="outline"
+                            class="font-sans"
+                            @click.prevent
+                        >
+                            <Camera :size="14" :stroke-width="1.6" />
+                            写真で記録
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            class="font-sans"
                             @click="openAddEntry(section.meal_type)"
                         >
+                            <Sparkles :size="14" :stroke-width="1.6" />
                             クイック追加
                         </Button>
                     </div>
@@ -720,47 +769,87 @@ function applyChartFilter(): void {
 
             <PageSectionCard aria-label="推移">
                 <div class="flex flex-col gap-4">
-                    <PageTitleOrnament
-                        title="推移"
-                        subtitle="期間内の日別合計を表示します。"
-                        align="left"
-                    />
+                    <div
+                        class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
+                    >
+                        <PageTitleOrnament
+                            title="推移"
+                            subtitle="期間内の日別合計を表示します。"
+                            align="left"
+                        />
 
-                    <div class="flex flex-wrap items-end gap-3">
-                        <div class="flex flex-col gap-1">
-                            <Label class="font-sans text-xs">開始</Label>
-                            <Input v-model="filterFrom" type="date" />
+                        <div class="flex flex-wrap items-end gap-3">
+                            <div class="flex flex-col gap-1">
+                                <Label class="font-sans text-xs">開始</Label>
+                                <Input v-model="filterFrom" type="date" />
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <Label class="font-sans text-xs">終了</Label>
+                                <Input v-model="filterTo" type="date" />
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                class="font-sans"
+                                @click="applyChartFilter"
+                            >
+                                反映
+                            </Button>
                         </div>
-                        <div class="flex flex-col gap-1">
-                            <Label class="font-sans text-xs">終了</Label>
-                            <Input v-model="filterTo" type="date" />
-                        </div>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            class="font-sans"
-                            @click="applyChartFilter"
-                        >
-                            反映
-                        </Button>
                     </div>
 
-                    <div>
-                        <h3
-                            class="mb-2 font-sans text-sm font-semibold text-cd-ink"
-                        >
-                            エネルギー（kcal）
-                        </h3>
-                        <BaseChart :option="kcalChartOption" />
+                    <div
+                        v-if="!hasChartData"
+                        class="rounded-xl border border-dashed border-cd-line px-4 py-10 text-center"
+                    >
+                        <p class="font-sans text-sm text-cd-ink-muted">
+                            この期間の食事記録がまだありません。記録すると推移グラフが表示されます。
+                        </p>
                     </div>
 
-                    <div>
-                        <h3
-                            class="mb-2 font-sans text-sm font-semibold text-cd-ink"
-                        >
-                            PFC（g）
-                        </h3>
-                        <BaseChart :option="pfcChartOption" />
+                    <div
+                        v-else
+                        class="grid gap-6 lg:grid-cols-2"
+                    >
+                        <div>
+                            <h3
+                                class="mb-2 font-sans text-sm font-semibold text-cd-ink"
+                            >
+                                エネルギー（kcal）
+                            </h3>
+                            <BaseChart :option="kcalChartOption" />
+                        </div>
+
+                        <div>
+                            <h3
+                                class="mb-2 font-sans text-sm font-semibold text-cd-ink"
+                            >
+                                PFC（g）
+                            </h3>
+                            <div
+                                class="mb-2 flex flex-wrap gap-3 font-sans text-xs"
+                            >
+                                <span
+                                    class="inline-flex items-center gap-1.5 text-cd-pfc-p"
+                                >
+                                    <span class="size-2 rounded-sm bg-cd-pfc-p" />
+                                    たんぱく質
+                                </span>
+                                <span
+                                    class="inline-flex items-center gap-1.5 text-cd-pfc-f"
+                                >
+                                    <span class="size-2 rounded-sm bg-cd-pfc-f" />
+                                    脂質
+                                </span>
+                                <span
+                                    class="inline-flex items-center gap-1.5 text-cd-pfc-c"
+                                >
+                                    <span class="size-2 rounded-sm bg-cd-pfc-c" />
+                                    炭水化物
+                                </span>
+                            </div>
+                            <BaseChart :option="pfcChartOption" />
+                        </div>
                     </div>
                 </div>
             </PageSectionCard>
