@@ -23,7 +23,8 @@ const { formattedDate, isToday, shiftDate, goToday } = useDateNavigation({
 
 <template>
     <div
-        class="flex items-center justify-between gap-3 rounded-2xl border border-cd-line bg-white px-4 py-3"
+        class="flex w-full items-center gap-3 rounded-2xl border border-cd-line bg-white px-4 py-3"
+        :class="$slots.actions ? 'justify-between' : 'justify-center'"
     >
         <template v-if="$slots.actions">
             <div class="flex min-w-0 items-center gap-2">
@@ -70,41 +71,49 @@ const { formattedDate, isToday, shiftDate, goToday } = useDateNavigation({
         </template>
 
         <template v-else>
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="前の日"
-                @click="shiftDate(-1)"
-            >
-                <ChevronLeft :size="18" :stroke-width="1.6" />
-            </Button>
-
-            <div class="text-center">
-                <p
-                    class="font-sans text-base font-semibold tracking-tight text-cd-ink md:text-lg"
-                >
-                    {{ formattedDate }}
-                </p>
-                <button
-                    v-if="!isToday"
+            <div class="mx-auto flex items-center justify-center gap-2">
+                <Button
                     type="button"
-                    class="mt-0.5 font-sans text-xs font-medium text-primary underline-offset-2 hover:underline"
-                    @click="goToday"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="前の日"
+                    @click="shiftDate(-1)"
                 >
-                    今日に戻る
-                </button>
-            </div>
+                    <ChevronLeft :size="18" :stroke-width="1.6" />
+                </Button>
 
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="次の日"
-                @click="shiftDate(1)"
-            >
-                <ChevronRight :size="18" :stroke-width="1.6" />
-            </Button>
+                <div class="min-w-0 text-center">
+                    <p
+                        class="font-sans text-base font-semibold tracking-tight text-cd-ink md:text-lg"
+                    >
+                        {{ formattedDate }}
+                    </p>
+                    <button
+                        v-if="!isToday"
+                        type="button"
+                        class="mt-0.5 font-sans text-xs font-medium text-primary underline-offset-2 hover:underline"
+                        @click="goToday"
+                    >
+                        今日に戻る
+                    </button>
+                    <p
+                        v-else
+                        class="mt-0.5 font-sans text-xs font-medium text-cd-ink-muted"
+                    >
+                        今日
+                    </p>
+                </div>
+
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="次の日"
+                    @click="shiftDate(1)"
+                >
+                    <ChevronRight :size="18" :stroke-width="1.6" />
+                </Button>
+            </div>
         </template>
     </div>
 </template>
