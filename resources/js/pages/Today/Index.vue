@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import { Plus } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
+import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
 import TodayPlanCard from '@/components/routine/TodayPlanCard.vue';
 import TodayProgressPanel from '@/components/routine/TodayProgressPanel.vue';
@@ -53,8 +54,15 @@ const totalMinutes = computed(() =>
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4">
-            <PageSectionCard padding="sm">
-                <RoutinesHubTabs />
+            <PageSectionCard>
+                <PageTitleOrnament
+                    title="今日やる"
+                    subtitle="今日のルーティンを開始・再開します。作成は「ルーティン」タブで行います。"
+                    align="left"
+                />
+                <div class="mt-5">
+                    <RoutinesHubTabs />
+                </div>
             </PageSectionCard>
 
             <div
