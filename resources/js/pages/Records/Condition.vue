@@ -600,7 +600,7 @@ async function saveAll(): Promise<void> {
                     </h2>
                 </div>
 
-                <ul class="grid gap-3 p-4 sm:grid-cols-2">
+                <ul class="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
                     <li
                         v-for="entry in metrics"
                         :key="entry.metric.key"
