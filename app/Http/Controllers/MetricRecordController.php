@@ -12,6 +12,7 @@ use App\Queries\GetDailyMealsQuery;
 use App\Queries\GetDailyMetricsQuery;
 use App\Queries\GetMetricChartQuery;
 use App\Queries\GetMetricHistoryQuery;
+use App\Services\EnsureMetricsService;
 use App\Services\UpsertDailyMetricsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,8 +23,14 @@ use Inertia\Response;
 
 class MetricRecordController extends Controller
 {
-    public function index(Request $request, GetDailyMetricsQuery $query, GetDailyMealsQuery $mealsQuery): Response
-    {
+    public function index(
+        Request $request,
+        GetDailyMetricsQuery $query,
+        GetDailyMealsQuery $mealsQuery,
+        EnsureMetricsService $ensureMetrics,
+    ): Response {
+        $ensureMetrics->handle();
+
         $recordedOn = Carbon::parse($request->input('date', now()->toDateString()));
         $previousOn = $recordedOn->copy()->subDay();
 
@@ -52,7 +59,10 @@ class MetricRecordController extends Controller
         Request $request,
         GetDailyMetricsQuery $query,
         GetMetricChartQuery $chartQuery,
+        EnsureMetricsService $ensureMetrics,
     ): Response {
+        $ensureMetrics->handle();
+
         $recordedOn = Carbon::parse($request->input('date', now()->toDateString()));
         $previousOn = $recordedOn->copy()->subDay();
         $from = $recordedOn->copy()->subDays(6);

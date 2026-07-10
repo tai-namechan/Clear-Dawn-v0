@@ -5,14 +5,23 @@ import {
     ArrowRight,
     CheckCircle2,
     Circle,
+    Flame,
+    Gauge,
+    HeartPulse,
     Moon,
+    Scale,
     UtensilsCrossed,
 } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, type Component } from 'vue';
 import DateNavigator from '@/components/DateNavigator.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import { Button } from '@/components/ui/button';
+import {
+    formatSleepDelta,
+    formatSleepMinutes,
+    metricLabel,
+} from '@/lib/metricLabels';
 import type {
     DailyMetricEntry,
     NutritionGoal,
@@ -37,6 +46,13 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const metricIcons: Record<string, Component> = {
+    weight: Scale,
+    sleep_minutes: Moon,
+    pain_level: HeartPulse,
+    pitch_speed_max: Gauge,
+};
+
 function metricValue(
     list: DailyMetricEntry[],
     key: string,
@@ -56,10 +72,11 @@ function formatMetric(key: string, value: number | null): string {
     }
 
     if (key === 'sleep_minutes') {
-        const hours = Math.floor(value / 60);
-        const minutes = Math.round(value % 60);
+        return formatSleepMinutes(value);
+    }
 
-        return `${hours}h ${minutes}m`;
+    if (key === 'pain_level' || key === 'fatigue_level') {
+        return `${Math.round(value)} / 5`;
     }
 
     if (key === 'weight' || key === 'pitch_speed_max') {
@@ -77,22 +94,19 @@ function deltaLabel(key: string, today: number | null, prev: number | null): str
     const diff = today - prev;
 
     if (Math.abs(diff) < 0.05) {
-        return '変化なし';
+        return '変化なし（前日比）';
+    }
+
+    if (key === 'sleep_minutes') {
+        return `${formatSleepDelta(diff)}（前日比）`;
     }
 
     const sign = diff > 0 ? '▲' : '▼';
-
-    if (key === 'sleep_minutes') {
-        const abs = Math.abs(Math.round(diff));
-        const hours = Math.floor(abs / 60);
-        const minutes = abs % 60;
-
-        return `${sign} ${hours}h ${minutes}m`;
-    }
-
-    return `${sign} ${Math.abs(diff).toLocaleString('ja-JP', {
+    const abs = Math.abs(diff).toLocaleString('ja-JP', {
         maximumFractionDigits: 1,
-    })}`;
+    });
+
+    return `${sign} ${abs}（前日比）`;
 }
 
 const summaryMetrics = computed(() =>
@@ -103,10 +117,11 @@ const summaryMetrics = computed(() =>
 
         return {
             key,
-            label: meta?.label ?? key,
+            label: metricLabel(key, meta?.label),
             unit: meta?.unit ?? '',
             display: formatMetric(key, today),
             delta: deltaLabel(key, today, prev),
+            icon: metricIcons[key] ?? Activity,
         };
     }),
 );
@@ -128,6 +143,28 @@ const pfcEnergy = computed(() => {
     };
 });
 
+const pfcDonutStyle = computed(() => {
+    const { p, f, c } = pfcEnergy.value;
+
+    if (p + f + c <= 0) {
+        return {
+            background:
+                'conic-gradient(var(--cd-line) 0deg 360deg)',
+        };
+    }
+
+    const pEnd = p * 3.6;
+    const fEnd = pEnd + f * 3.6;
+
+    return {
+        background: `conic-gradient(
+            var(--cd-moss) 0deg ${pEnd}deg,
+            var(--cd-sunrise) ${pEnd}deg ${fEnd}deg,
+            var(--cd-mist) ${fEnd}deg 360deg
+        )`,
+    };
+});
+
 const kcalProgress = computed(() => {
     if (!props.mealGoal) {
         return null;
@@ -143,13 +180,13 @@ const kcalProgress = computed(() => {
 });
 
 const conditionHighlights = computed(() =>
-    props.metrics.slice(0, 5).map((entry) => {
+    props.metrics.map((entry) => {
         const today = entry.record ? Number(entry.record.value) : null;
         const prev = metricValue(props.previousMetrics, entry.metric.key);
 
         return {
             key: entry.metric.key,
-            label: entry.metric.label,
+            label: metricLabel(entry.metric.key, entry.metric.label),
             display: formatMetric(entry.metric.key, today),
             unit: entry.metric.unit,
             delta: deltaLabel(entry.metric.key, today, prev),
@@ -162,34 +199,47 @@ const conditionHighlights = computed(() =>
     <Head title="パフォーマンス管理" />
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
-        <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4">
-            <PageSectionCard>
-                <PageTitleOrnament
-                    title="パフォーマンス管理"
-                    subtitle="食事とコンディションを、すぐ記録して、すぐ振り返る"
-                    align="left"
-                />
-            </PageSectionCard>
+        <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 md:gap-5">
+            <div class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
+                <PageSectionCard>
+                    <PageTitleOrnament
+                        title="パフォーマンス管理"
+                        subtitle="食事とコンディションを、すぐ記録して、すぐ振り返る"
+                        align="left"
+                    />
+                </PageSectionCard>
 
-            <PageSectionCard padding="sm">
-                <DateNavigator
-                    :date="date"
-                    route-url="/records"
-                    :reload-only="[
-                        'metrics',
-                        'previousMetrics',
-                        'mealTotals',
-                        'mealSections',
-                        'mealGoal',
-                        'date',
-                    ]"
-                />
-            </PageSectionCard>
+                <PageSectionCard padding="sm" class="flex items-center">
+                    <DateNavigator
+                        :date="date"
+                        route-url="/records"
+                        :reload-only="[
+                            'metrics',
+                            'previousMetrics',
+                            'mealTotals',
+                            'mealSections',
+                            'mealGoal',
+                            'date',
+                        ]"
+                    />
+                </PageSectionCard>
+            </div>
 
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <PageSectionCard padding="sm" class="sm:col-span-1">
-                    <p class="font-sans text-xs text-cd-ink-muted">摂取カロリー</p>
-                    <p class="mt-1 font-sans text-2xl font-semibold text-cd-ink">
+            <div
+                class="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6"
+            >
+                <PageSectionCard padding="sm">
+                    <div class="flex items-start justify-between gap-2">
+                        <p class="font-sans text-xs text-cd-ink-muted">
+                            摂取カロリー
+                        </p>
+                        <Flame
+                            class="text-primary"
+                            :size="16"
+                            :stroke-width="1.6"
+                        />
+                    </div>
+                    <p class="mt-2 font-sans text-2xl font-semibold text-cd-ink">
                         {{
                             Number(mealTotals.kcal).toLocaleString('ja-JP', {
                                 maximumFractionDigits: 0,
@@ -199,7 +249,10 @@ const conditionHighlights = computed(() =>
                             >kcal</span
                         >
                     </p>
-                    <p v-if="mealGoal" class="mt-1 font-sans text-xs text-cd-ink-muted">
+                    <p
+                        v-if="mealGoal"
+                        class="mt-1 font-sans text-xs text-cd-ink-muted"
+                    >
                         目標
                         {{
                             Number(mealGoal.kcal).toLocaleString('ja-JP', {
@@ -220,27 +273,27 @@ const conditionHighlights = computed(() =>
                 </PageSectionCard>
 
                 <PageSectionCard padding="sm">
-                    <p class="font-sans text-xs text-cd-ink-muted">PFC バランス</p>
-                    <div class="mt-3 flex h-2 overflow-hidden rounded-full bg-cd-line/40">
+                    <p class="font-sans text-xs text-cd-ink-muted">
+                        PFC バランス
+                    </p>
+                    <div class="mt-3 flex items-center gap-3">
                         <div
-                            class="bg-[var(--chart-2)]"
-                            :style="{ width: `${pfcEnergy.p}%` }"
-                        />
+                            class="relative size-14 shrink-0 rounded-full"
+                            :style="pfcDonutStyle"
+                        >
+                            <div
+                                class="absolute inset-[22%] rounded-full bg-cd-surface"
+                            />
+                        </div>
                         <div
-                            class="bg-[var(--chart-3)]"
-                            :style="{ width: `${pfcEnergy.f}%` }"
-                        />
-                        <div
-                            class="bg-[var(--chart-4)]"
-                            :style="{ width: `${pfcEnergy.c}%` }"
-                        />
-                    </div>
-                    <div
-                        class="mt-2 flex flex-wrap gap-3 font-sans text-xs text-cd-ink-muted"
-                    >
-                        <span>P {{ pfcEnergy.p }}%</span>
-                        <span>F {{ pfcEnergy.f }}%</span>
-                        <span>C {{ pfcEnergy.c }}%</span>
+                            class="flex flex-col gap-1 font-sans text-xs text-cd-ink-muted"
+                        >
+                            <span class="text-cd-moss">P {{ pfcEnergy.p }}%</span>
+                            <span class="text-cd-sunrise"
+                                >F {{ pfcEnergy.f }}%</span
+                            >
+                            <span class="text-cd-mist">C {{ pfcEnergy.c }}%</span>
+                        </div>
                     </div>
                 </PageSectionCard>
 
@@ -249,17 +302,28 @@ const conditionHighlights = computed(() =>
                     :key="item.key"
                     padding="sm"
                 >
-                    <p class="font-sans text-xs text-cd-ink-muted">
-                        {{ item.label }}
-                    </p>
-                    <p class="mt-1 font-sans text-2xl font-semibold text-cd-ink">
+                    <div class="flex items-start justify-between gap-2">
+                        <p class="font-sans text-xs text-cd-ink-muted">
+                            {{ item.label }}
+                        </p>
+                        <component
+                            :is="item.icon"
+                            class="text-primary"
+                            :size="16"
+                            :stroke-width="1.6"
+                        />
+                    </div>
+                    <p class="mt-2 font-sans text-2xl font-semibold text-cd-ink">
                         {{ item.display }}
                         <span
-                            v-if="item.display !== '—'"
+                            v-if="
+                                item.display !== '—' &&
+                                item.key !== 'sleep_minutes' &&
+                                item.key !== 'pain_level' &&
+                                item.key !== 'fatigue_level'
+                            "
                             class="text-sm font-medium text-cd-ink-muted"
-                            >{{
-                                item.key === 'sleep_minutes' ? '' : item.unit
-                            }}</span
+                            >{{ item.unit }}</span
                         >
                     </p>
                     <p
@@ -278,7 +342,10 @@ const conditionHighlights = computed(() =>
                             <div
                                 class="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary"
                             >
-                                <UtensilsCrossed :size="18" :stroke-width="1.6" />
+                                <UtensilsCrossed
+                                    :size="18"
+                                    :stroke-width="1.6"
+                                />
                             </div>
                             <div>
                                 <h2
@@ -292,47 +359,87 @@ const conditionHighlights = computed(() =>
                             </div>
                         </div>
 
-                        <div>
-                            <p class="font-sans text-sm text-cd-ink-muted">
-                                合計
-                                <span class="font-semibold text-cd-ink">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+                            <div class="min-w-0 flex-1">
+                                <p class="font-sans text-sm text-cd-ink-muted">
+                                    今日の摂取カロリー
+                                </p>
+                                <p
+                                    class="mt-1 font-sans text-2xl font-semibold text-cd-ink"
+                                >
                                     {{
                                         Number(mealTotals.kcal).toLocaleString(
                                             'ja-JP',
                                             { maximumFractionDigits: 0 },
                                         )
                                     }}
-                                </span>
-                                <template v-if="mealGoal">
-                                    /
-                                    {{
-                                        Number(mealGoal.kcal).toLocaleString(
-                                            'ja-JP',
-                                            { maximumFractionDigits: 0 },
-                                        )
-                                    }}
-                                    kcal
-                                </template>
-                                <template v-else> kcal</template>
-                            </p>
-                            <div
-                                v-if="kcalProgress !== null"
-                                class="mt-2 h-2 overflow-hidden rounded-full bg-cd-line/40"
-                            >
+                                    <template v-if="mealGoal">
+                                        <span
+                                            class="text-base font-medium text-cd-ink-muted"
+                                        >
+                                            /
+                                            {{
+                                                Number(
+                                                    mealGoal.kcal,
+                                                ).toLocaleString('ja-JP', {
+                                                    maximumFractionDigits: 0,
+                                                })
+                                            }}
+                                            kcal
+                                        </span>
+                                    </template>
+                                    <template v-else>
+                                        <span
+                                            class="text-base font-medium text-cd-ink-muted"
+                                            >kcal</span
+                                        >
+                                    </template>
+                                </p>
                                 <div
-                                    class="h-full rounded-full bg-primary"
-                                    :style="{ width: `${kcalProgress}%` }"
-                                />
+                                    v-if="kcalProgress !== null"
+                                    class="mt-3 h-2.5 overflow-hidden rounded-full bg-cd-line/40"
+                                >
+                                    <div
+                                        class="h-full rounded-full bg-primary"
+                                        :style="{ width: `${kcalProgress}%` }"
+                                    />
+                                </div>
+                            </div>
+
+                            <div class="flex shrink-0 items-center gap-3">
+                                <div
+                                    class="relative size-20 rounded-full"
+                                    :style="pfcDonutStyle"
+                                >
+                                    <div
+                                        class="absolute inset-[24%] rounded-full bg-cd-surface"
+                                    />
+                                </div>
+                                <div
+                                    class="space-y-1 font-sans text-xs text-cd-ink-muted"
+                                >
+                                    <p class="text-cd-moss">
+                                        P {{ pfcEnergy.p }}%
+                                    </p>
+                                    <p class="text-cd-sunrise">
+                                        F {{ pfcEnergy.f }}%
+                                    </p>
+                                    <p class="text-cd-mist">
+                                        C {{ pfcEnergy.c }}%
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
-                        <ul class="grid grid-cols-2 gap-2">
+                        <ul class="grid grid-cols-2 gap-2 sm:grid-cols-4">
                             <li
                                 v-for="section in mealSections"
                                 :key="section.meal_type"
-                                class="rounded-xl border border-cd-line px-3 py-2"
+                                class="rounded-xl border border-cd-line px-3 py-2.5"
                             >
-                                <div class="flex items-center justify-between gap-2">
+                                <div
+                                    class="flex items-center justify-between gap-2"
+                                >
                                     <span
                                         class="font-sans text-sm font-medium text-cd-ink"
                                         >{{ section.label }}</span
@@ -350,7 +457,9 @@ const conditionHighlights = computed(() =>
                                         :stroke-width="1.6"
                                     />
                                 </div>
-                                <p class="mt-1 font-sans text-xs text-cd-ink-muted">
+                                <p
+                                    class="mt-1 font-sans text-xs text-cd-ink-muted"
+                                >
                                     {{
                                         Number(section.kcal).toLocaleString(
                                             'ja-JP',
@@ -391,11 +500,13 @@ const conditionHighlights = computed(() =>
                             </div>
                         </div>
 
-                        <ul class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        <ul
+                            class="grid grid-cols-2 gap-2 sm:grid-cols-3"
+                        >
                             <li
                                 v-for="item in conditionHighlights"
                                 :key="item.key"
-                                class="rounded-xl border border-cd-line px-3 py-2"
+                                class="rounded-xl border border-cd-line px-3 py-2.5"
                             >
                                 <p class="font-sans text-xs text-cd-ink-muted">
                                     {{ item.label }}
@@ -404,6 +515,16 @@ const conditionHighlights = computed(() =>
                                     class="mt-0.5 font-sans text-sm font-semibold text-cd-ink"
                                 >
                                     {{ item.display }}
+                                    <span
+                                        v-if="
+                                            item.display !== '—' &&
+                                            item.key !== 'sleep_minutes' &&
+                                            item.key !== 'pain_level' &&
+                                            item.key !== 'fatigue_level'
+                                        "
+                                        class="text-xs font-medium text-cd-ink-muted"
+                                        >{{ item.unit }}</span
+                                    >
                                 </p>
                                 <p
                                     v-if="item.delta"
