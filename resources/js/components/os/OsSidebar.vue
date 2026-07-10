@@ -46,10 +46,10 @@ const yoyuTab = computed(() => {
 
 const sidebarImage = computed(() => {
     if (currentProduct.value === 'kioku') {
-        return '/images/products/sidebars/kioku.jpg';
+        return '/images/products/sidebars/kioku-sidebar.jpg';
     }
 
-    return '/images/products/sidebars/yoyu.jpg';
+    return '/images/products/sidebars/yoyu-sidebar.jpg';
 });
 
 const sidebarClass = computed(() =>
