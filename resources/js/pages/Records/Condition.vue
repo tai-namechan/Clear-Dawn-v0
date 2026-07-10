@@ -10,9 +10,11 @@ import {
     Moon,
     Plus,
     Scale,
+    Sparkles,
 } from '@lucide/vue';
 import type { EChartsCoreOption } from 'echarts/core';
-import { computed, ref, watch, type Component } from 'vue';
+import { computed, ref, watch } from 'vue';
+import type { Component } from 'vue';
 import BaseChart from '@/components/charts/BaseChart.vue';
 import DateNavigator from '@/components/DateNavigator.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
@@ -37,6 +39,13 @@ interface Props {
 
 const props = defineProps<Props>();
 
+type DeltaTone = 'good' | 'bad' | 'neutral';
+
+interface DeltaInfo {
+    text: string;
+    tone: DeltaTone;
+}
+
 const metricIcons: Record<string, Component> = {
     weight: Scale,
     sleep_minutes: Moon,
@@ -44,6 +53,20 @@ const metricIcons: Record<string, Component> = {
     pitch_count: Activity,
     pain_level: HeartPulse,
     fatigue_level: HeartPulse,
+};
+
+/**
+ * 各指標の「良い方向」。
+ * true = 高いほど良い / false = 低いほど良い / null = 中立（体重・投球数など）。
+ * 前日比の色分け（改善=緑・悪化=赤）にのみ使う表示上の判定。
+ */
+const higherIsBetter: Record<string, boolean | null> = {
+    weight: null,
+    sleep_minutes: true,
+    pitch_speed_max: true,
+    pitch_count: null,
+    pain_level: false,
+    fatigue_level: false,
 };
 
 /** Always keep form values as strings to avoid Vue number-input trim bugs. */
@@ -116,7 +139,19 @@ function formatDisplay(key: string, value: number | null): string {
     return value.toLocaleString('ja-JP', { maximumFractionDigits: 1 });
 }
 
-function deltaText(key: string): string | null {
+function toneForDelta(key: string, diff: number): DeltaTone {
+    const direction = higherIsBetter[key];
+
+    if (direction === null || direction === undefined) {
+        return 'neutral';
+    }
+
+    const improved = direction ? diff > 0 : diff < 0;
+
+    return improved ? 'good' : 'bad';
+}
+
+function deltaInfo(key: string): DeltaInfo | null {
     const today = metricValue(props.metrics, key);
     const prev = metricValue(props.previousMetrics, key);
 
@@ -127,19 +162,101 @@ function deltaText(key: string): string | null {
     const diff = today - prev;
 
     if (Math.abs(diff) < 0.05) {
-        return '変化なし（前日比）';
+        return { text: '変化なし（前日比）', tone: 'neutral' };
     }
 
     if (key === 'sleep_minutes') {
-        return `${formatSleepDelta(diff)}（前日比）`;
+        return {
+            text: `${formatSleepDelta(diff)}（前日比）`,
+            tone: toneForDelta(key, diff),
+        };
     }
 
     const sign = diff > 0 ? '▲' : '▼';
-
-    return `${sign} ${Math.abs(diff).toLocaleString('ja-JP', {
+    const abs = Math.abs(diff).toLocaleString('ja-JP', {
         maximumFractionDigits: 1,
-    })}（前日比）`;
+    });
+
+    return {
+        text: `${sign} ${abs}（前日比）`,
+        tone: toneForDelta(key, diff),
+    };
 }
+
+function toneClass(tone: DeltaTone): string {
+    if (tone === 'good') {
+        return 'text-cd-moss';
+    }
+
+    if (tone === 'bad') {
+        return 'text-cd-danger';
+    }
+
+    return 'text-cd-ink-muted';
+}
+
+const clamp = (value: number, min: number, max: number): number =>
+    Math.min(max, Math.max(min, value));
+
+/**
+ * 総合コンディション（0-100）。
+ * 回復・体調のシグナル（痛み・疲労・睡眠）を 0-100 に正規化して平均する。
+ * 痛み/疲労は低いほど良い（1→100, 5→0）、睡眠は 8 時間=100 を上限とする。
+ * 入力が 1 つも無ければ null（未算出）。
+ */
+function conditionScore(list: DailyMetricEntry[]): number | null {
+    const pain = metricValue(list, 'pain_level');
+    const fatigue = metricValue(list, 'fatigue_level');
+    const sleep = metricValue(list, 'sleep_minutes');
+
+    const parts: number[] = [];
+
+    if (pain !== null) {
+        parts.push(((5 - clamp(pain, 1, 5)) / 4) * 100);
+    }
+
+    if (fatigue !== null) {
+        parts.push(((5 - clamp(fatigue, 1, 5)) / 4) * 100);
+    }
+
+    if (sleep !== null) {
+        parts.push(clamp(sleep / 480, 0, 1) * 100);
+    }
+
+    if (parts.length === 0) {
+        return null;
+    }
+
+    return Math.round(parts.reduce((sum, part) => sum + part, 0) / parts.length);
+}
+
+const overall = computed(() => {
+    const today = conditionScore(props.metrics);
+    const prev = conditionScore(props.previousMetrics);
+
+    let delta: DeltaInfo | null = null;
+
+    if (today !== null && prev !== null) {
+        const diff = today - prev;
+
+        if (Math.abs(diff) < 1) {
+            delta = { text: '変化なし（前日比）', tone: 'neutral' };
+        } else {
+            const sign = diff > 0 ? '▲' : '▼';
+            delta = {
+                text: `${sign} ${Math.abs(diff)}（前日比）`,
+                tone: diff > 0 ? 'good' : 'bad',
+            };
+        }
+    }
+
+    return {
+        score: today,
+        display: today === null ? '—' : String(today),
+        percent: today ?? 0,
+        delta,
+    };
+});
 
 const summaryCards = computed(() =>
     props.metrics.map((entry) => {
@@ -150,8 +267,13 @@ const summaryCards = computed(() =>
             label: metricLabel(entry.metric.key, entry.metric.label),
             unit: entry.metric.unit,
             display: formatDisplay(entry.metric.key, today),
-            delta: deltaText(entry.metric.key),
+            delta: deltaInfo(entry.metric.key),
             icon: metricIcons[entry.metric.key] ?? Activity,
+            showUnit:
+                today !== null &&
+                entry.metric.key !== 'sleep_minutes' &&
+                entry.metric.key !== 'pain_level' &&
+                entry.metric.key !== 'fatigue_level',
         };
     }),
 );
@@ -331,7 +453,7 @@ async function saveAll(): Promise<void> {
     <Head title="コンディション管理" />
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
-        <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 md:gap-5">
+        <div class="flex w-full flex-1 flex-col gap-4 md:gap-5">
             <div class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
                 <PageSectionCard>
                     <div class="flex flex-col gap-3">
@@ -367,50 +489,99 @@ async function saveAll(): Promise<void> {
                 </PageSectionCard>
             </div>
 
-            <PageSectionCard padding="none" aria-label="本日のコンディションサマリ">
-                <div
-                    class="grid divide-y divide-cd-line sm:grid-cols-2 sm:divide-x md:grid-cols-3 xl:grid-cols-6 xl:divide-y-0"
+            <div
+                class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+                aria-label="本日のコンディションサマリ"
+            >
+                <PageSectionCard
+                    padding="none"
+                    class="border-primary/30 bg-primary/5"
                 >
-                    <div
-                        v-for="card in summaryCards"
-                        :key="card.key"
-                        class="p-4"
-                    >
+                    <div class="flex h-full flex-col justify-between gap-3 p-4">
                         <div class="flex items-start justify-between gap-2">
-                            <p class="font-sans text-xs text-cd-ink-muted">
+                            <p
+                                class="font-sans text-xs font-medium text-cd-ink-muted"
+                            >
+                                総合コンディション
+                            </p>
+                            <span
+                                class="flex size-8 items-center justify-center rounded-full bg-primary/15 text-primary"
+                            >
+                                <Sparkles :size="16" :stroke-width="1.6" />
+                            </span>
+                        </div>
+                        <div>
+                            <p class="font-sans text-3xl font-bold text-cd-ink">
+                                {{ overall.display }}
+                                <span
+                                    v-if="overall.score !== null"
+                                    class="text-base font-medium text-cd-ink-muted"
+                                    >/ 100</span
+                                >
+                            </p>
+                            <div
+                                class="mt-2 h-2 overflow-hidden rounded-full bg-cd-line/40"
+                            >
+                                <div
+                                    class="h-full rounded-full bg-primary transition-[width]"
+                                    :style="{ width: `${overall.percent}%` }"
+                                />
+                            </div>
+                            <p
+                                v-if="overall.delta"
+                                class="mt-1.5 font-sans text-xs font-medium"
+                                :class="toneClass(overall.delta.tone)"
+                            >
+                                {{ overall.delta.text }}
+                            </p>
+                        </div>
+                    </div>
+                </PageSectionCard>
+
+                <PageSectionCard
+                    v-for="card in summaryCards"
+                    :key="card.key"
+                    padding="none"
+                >
+                    <div class="flex h-full flex-col justify-between gap-3 p-4">
+                        <div class="flex items-start justify-between gap-2">
+                            <p
+                                class="font-sans text-xs font-medium text-cd-ink-muted"
+                            >
                                 {{ card.label }}
                             </p>
-                            <component
-                                :is="card.icon"
-                                class="text-primary"
-                                :size="16"
-                                :stroke-width="1.6"
-                            />
-                        </div>
-                        <p
-                            class="mt-2 font-sans text-2xl font-semibold text-cd-ink"
-                        >
-                            {{ card.display }}
                             <span
-                                v-if="
-                                    card.display !== '—' &&
-                                    card.key !== 'sleep_minutes' &&
-                                    card.key !== 'pain_level' &&
-                                    card.key !== 'fatigue_level'
-                                "
-                                class="text-sm font-medium text-cd-ink-muted"
-                                >{{ card.unit }}</span
+                                class="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary"
                             >
-                        </p>
-                        <p
-                            v-if="card.delta"
-                            class="mt-1 font-sans text-xs text-cd-ink-muted"
-                        >
-                            {{ card.delta }}
-                        </p>
+                                <component
+                                    :is="card.icon"
+                                    :size="16"
+                                    :stroke-width="1.6"
+                                />
+                            </span>
+                        </div>
+                        <div>
+                            <p
+                                class="font-sans text-2xl font-semibold text-cd-ink"
+                            >
+                                {{ card.display }}
+                                <span
+                                    v-if="card.showUnit"
+                                    class="text-sm font-medium text-cd-ink-muted"
+                                    >{{ card.unit }}</span
+                                >
+                            </p>
+                            <p
+                                v-if="card.delta"
+                                class="mt-1.5 font-sans text-xs font-medium"
+                                :class="toneClass(card.delta.tone)"
+                            >
+                                {{ card.delta.text }}
+                            </p>
+                        </div>
                     </div>
-                </div>
-            </PageSectionCard>
+                </PageSectionCard>
+            </div>
 
             <PageSectionCard aria-label="7日間の推移">
                 <h2 class="mb-3 font-sans text-base font-semibold text-cd-ink">
@@ -429,13 +600,11 @@ async function saveAll(): Promise<void> {
                     </h2>
                 </div>
 
-                <ul
-                    class="grid divide-y divide-cd-line sm:grid-cols-2 sm:divide-x xl:grid-cols-3"
-                >
+                <ul class="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
                     <li
                         v-for="entry in metrics"
                         :key="entry.metric.key"
-                        class="p-4"
+                        class="rounded-xl border border-cd-line bg-cd-surface p-4"
                     >
                         <div class="flex flex-col gap-3">
                             <div>
@@ -455,10 +624,15 @@ async function saveAll(): Promise<void> {
                                     >
                                 </Label>
                                 <p
-                                    v-if="deltaText(entry.metric.key)"
-                                    class="mt-1 font-sans text-xs text-cd-ink-muted"
+                                    v-if="deltaInfo(entry.metric.key)"
+                                    class="mt-1 font-sans text-xs font-medium"
+                                    :class="
+                                        toneClass(
+                                            deltaInfo(entry.metric.key)!.tone,
+                                        )
+                                    "
                                 >
-                                    {{ deltaText(entry.metric.key) }}
+                                    {{ deltaInfo(entry.metric.key)!.text }}
                                 </p>
                             </div>
 
