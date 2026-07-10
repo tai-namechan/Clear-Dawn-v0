@@ -113,6 +113,9 @@
     --color-cd-danger-surface: var(--cd-danger-surface);
     --color-cd-danger-line: var(--cd-danger-line);
     --color-cd-danger-ink: var(--cd-danger-ink);
+
+    --color-os-yoyu: var(--os-yoyu);
+    --color-os-kioku: var(--os-kioku);
 }
 
 /*
@@ -220,6 +223,10 @@
     ); /* faintest sunrise tint (--cd-accent-light) */
     --cd-moss: hsl(125 13% 50%); /* quiet green (--cd-success family) */
     --cd-mist: hsl(210 29% 56%); /* soft blue-grey (--cd-info family) */
+
+    /* Seed K product accents (ProductSwitcher / OsShell) */
+    --os-yoyu: #129488;
+    --os-kioku: #6f5fc9;
 
     /* Interactive surface tints — readability first, quiet lavender feedback */
     --cd-cell: hsl(45 33% 99%); /* near-white ivory cell base (#FCFBF9) */

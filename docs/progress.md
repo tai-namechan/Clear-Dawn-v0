@@ -1,6 +1,6 @@
 # 実装進捗（v0）
 
-> 最終更新: 2026-07-09  
+> 最終更新: 2026-07-10  
 > 正: [roadmap.md](./roadmap.md) のマイルストーン定義。本ファイルは **実装の現在地** を可視化する。
 
 各マイルストーンは「Route → Controller → Query/Service → Vue → テスト」の縦断で完結させる。
@@ -11,13 +11,18 @@
 |---|---|---|---|---|
 | M0 | — | docs + デザイン基盤 | partial | 装飾 PNG 欠落、フォント配信方針（CDN 利用中） |
 | M1 | 1 | TOP Matrix / 領域 / activity_logs 記録開始 | **done** | — |
-| M2 | 1.5 | メモ + 日次・週次振り返り | **not_started** | テーブル〜画面まで未着手 |
+| M2 | 1.5 | 日次・週次振り返り（メモはキオク移管） | **not_started** | 振り返り未着手。汎用メモは作らない |
 | M3 | 2 | ルーティン / トレーニング + /history | **done** | イベント名の docs ドリフトあり（下記） |
 | M4 | 2.5 | 記録 + グラフ | **partial** | 週次平均・筋力チャート UI・構造化野球など |
 | M5 | 3 | Finance | **not_started** | スコープ未決定 #7 |
 | M6 | 3.5 | 動画 | **partial** | 尺制限・非同期削除・サムネ等の仕上げ |
 | M7 | 4 | AI 支援 | **not_started** | プロバイダ未決定 #6 |
 | M8 | 4.5 | Export API | **not_started** | 認証方式未決定 #8 |
+| SK1 | Seed K | ProductSwitcher + プレースホルダ | **partial** | 切替シェル実装済。プレビュー実データ化は後続 |
+| SK2 | Seed K | キオク P0 | **not_started** | memories + 保存/一覧/検索 |
+| SK3 | Seed K | キオク P1 | **not_started** | Queue AI 整理 |
+| SK4 | Seed K | ヨユウ Today | **not_started** | データ設計確定後 |
+| SK5 | Seed K | ヨユウ秘書 × Recall | **not_started** | 二層コンテキスト |
 
 状態の意味:
 

@@ -1,4 +1,5 @@
 import type { Auth } from '@/types/auth';
+import type { ProductDefinition, ProductKey } from '@/types/product';
 
 declare module 'vite/client' {
     interface ImportMetaEnv {
@@ -18,6 +19,8 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
+            currentProduct: ProductKey;
+            products: ProductDefinition[];
             [key: string]: unknown;
         };
     }

@@ -12,7 +12,8 @@ AI 開発支援（Laravel Boost）は [dev/laravel-boost.md](./dev/laravel-boost
 |---|---|---|---|
 | — | M0 | docs 整備 + デザイン基盤 | partial |
 | Phase 1 | M1 | TOP Matrix、領域管理、activity_logs（M1 記録開始） | done |
-| Phase 1.5 | M2 | メモ、日次・週次振り返り | not_started |
+| Phase 1.5 | M2 | 日次・週次振り返り（汎用メモはキオクへ移管・凍結） | not_started |
+| Seed K | SK1〜 | Personal OS 切替 → キオク P0/P1 → ヨユウ → Recall | SK1 in progress |
 | Phase 2 | M3 | ルーティン / トレーニング、実行履歴 UI（/history） | done |
 | Phase 2.5 | M4 | 記録（体重・睡眠・筋力・野球）、グラフ | partial |
 | Phase 3 | M5 | Finance | not_started |
@@ -28,7 +29,12 @@ M0（docs 整備 + デザイン基盤）は Phase 番号の外で先行する。
 |---|---|---|
 | M0 | docs 整備 + デザイン基盤（`app.css` トークン反映、AppLayout / Sidebar / 背景素材、フォント導入） | フォント配信方法・ダークモード方針を確定（→ 未決定 #2, #10） |
 | M1 | TOP Matrix 縦断（Matrix 中核 4 テーブル + **activity_logs** migration、Dashboard、セル編集モーダル、領域管理、Policy / FormRequest / Query / Service、Feature テスト） | v0 の核。[top-matrix.md](./product/screens/top-matrix.md) を正とする。**activity_logs のテーブル設計と記録開始を M1 で行う**（`matrix_item_completed` / `matrix_item_reopened` のみ） |
-| M2 | メモ + 日次・週次振り返り | M2 初期は `completed_at` 参照。将来的に activity_logs 参照へ移行可能にする |
+| M2 | 日次・週次振り返り（メモはキオク移管） | 汎用メモは作らない。[seed-k-personal-os.md](./product/seed-k-personal-os.md) 参照。振り返りは `completed_at` 参照から開始可 |
+| SK1 | ProductSwitcher + `/yoyu` `/kioku` プレースホルダ | 薄い切替シェルのみ。Clear Dawn 本体は止めない |
+| SK2 | キオク P0（保存・一覧・検索） | memories + Console。Recall は interface のみ可 |
+| SK3 | キオク P1（AI 整理・スキーマレジストリ） | 同期 AI ゼロ。Queue で enrich |
+| SK4 | ヨユウ Today | `yoyu_focus_items` 等はヨユウ設計確定後 |
+| SK5 | ヨユウ秘書 × Kioku Recall | 二層コンテキスト |
 | M3 | ルーティン / トレーニング + **実行履歴 UI（/history）** | 実装イベント名は `routine_session_completed`（roadmap 旧称 `routine_completed`）。ルーティンの TOP 補助表示可否を判断（→ 未決定 #4） |
 | M4 | 記録（体重・睡眠・筋力・野球）+ グラフ | チャートは **ECharts 導入済**（→ 未決定 #1 は実質クローズ候補）。記録系スキーマ確定（→ 未決定 #3）。残: 週次平均等の集計・筋力チャート UI |
 | M5 | Finance | スコープ確定（→ 未決定 #7） |
@@ -71,7 +77,7 @@ M0（docs 整備 + デザイン基盤）は Phase 番号の外で先行する。
 | 9 | matrix_rows の可変化 | v0 は固定 3 行のまま（推奨）。将来ユーザー編集可否 | v1 検討 |
 | 10 | ダークモード / PWA | **確定**: v0 はライトモード固定。Appearance Settings は提供しない。PWA は v0 対象外 | — |
 | 11 | 中間幅レイアウト | サイドバー折りたたみの閾値、最小対応幅 | M0〜M1 |
-| 12 | メモの Markdown 対応 | v0 はプレーンテキスト推奨 | M2 設計時 |
+| 12 | ~~メモの Markdown 対応~~ | **確定**: 汎用メモはキオクへ移管。CD に memos は作らない | — |
 | 13 | 振り返りの完了実績参照 | M2 初期は completed_at。activity_logs 参照への移行時期 | M2 設計時 |
 
 ## 各マイルストーンの完了条件（共通）

@@ -1,49 +1,30 @@
-# メモ仕様
+# メモ仕様（凍結 — キオクへ移管）
 
-対象フェーズ: Phase 1.5
+対象フェーズ: Phase 1.5（**実装凍結**）  
+状態: **キオクへ役割移管**（2026-07-10 確定。詳細は [seed-k-personal-os.md](../seed-k-personal-os.md)）
 
-## 目的
+## 方針変更
 
-思考ログを蓄積する。TOP Matrix が「今の状態の整理」を担うのに対し、
-メモは「考えたことの記録」を担う。TOP に履歴を持たせない方針の受け皿でもある。
+Clear Dawn に独立した汎用メモ（`/memos`・`memos` テーブル）は**作らない**。
 
-## 画面
+| 役割 | 正 |
+|---|---|
+| 汎用の思考・判断・学習の記録 | **キオク**（`memories`） |
+| Clear Dawn 固有エンティティへの紐づけ | キオク memory を目標・ロードマップ等へ関連付ける |
 
-| 画面 | ルート | 概要 |
-|---|---|---|
-| メモ一覧・編集 | GET /memos | 一覧 + インライン / モーダルでの作成・編集 |
+例: ロードマップに対する考えを残す場合
 
-一覧と編集を 1 画面に収め、画面遷移を最小にする（詳細ページは v0 では作らない）。
+1. キオクに memory を保存（`memory_type: thought` / `decision` 等）
+2. Clear Dawn 側で `roadmap_id` 等へ参照を張る
 
-## 主要操作
+これで二重管理を避け、キオクからも Clear Dawn からも同じ記録を見られる。
 
-| 操作 | 入力 | 挙動 |
-|---|---|---|
-| 作成 | body, life_area_id(nullable), title(nullable) | メモを作成 |
-| 編集 | body, life_area_id, title | 上書き更新（版管理はしない） |
-| 削除 | - | soft delete |
-| 領域で絞り込み | life_area_id | 一覧をフィルタ |
-| 検索 | キーワード | title / body の部分一致 |
+## 旧仕様（参考・実装しない）
 
-## TOP Matrix との接続
+以下は移管前のドラフト。実装の正としては扱わない。
 
-- セル項目の編集モーダルに「メモとして残す」導線を追加する（Phase 1.5 で実装）
-  - セル項目の title / memo を初期値にしたメモ作成フォームを開く
-  - 参照 FK（`matrix_cell_item_id`）は nullable で持ち、由来をたどれるようにする
-- メモは `life_area_id` を任意タグとして持つ（領域なしメモも許容）
+- 画面: GET `/memos`
+- テーブル: `memos`（id ULID, user_id, life_area_id, body, …）
+- TOP Matrix セルからの「メモとして残す」導線
 
-## 設計方針
-
-- 本文はプレーンテキスト + 改行を基本とする。Markdown 対応は未決定（v0 では非対応を推奨）
-- 想定件数: 年間数千件級。一覧はページネーション必須、検索はインデックスを意識する
-- 並び順は作成日時の降順を既定とする（ULID 順で代替可能）
-
-## データ（ドラフト）
-
-テーブル定義は [../../data/tables.md](../../data/tables.md) の `memos` を参照。
-主なカラム: id(ULID), user_id, life_area_id(nullable), matrix_cell_item_id(nullable),
-title(nullable), body, deleted_at。
-
-## 認可
-
-- MemoPolicy で自分のメモのみ操作可能にする
+将来、セル項目からキオクへ送る導線が必要になった場合は、キオクのキャプチャ API / 送信コマンドとして再設計する。
