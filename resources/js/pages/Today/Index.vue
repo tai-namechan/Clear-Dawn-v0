@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { CirclePlay } from '@lucide/vue';
-import DateNavigator from '@/components/DateNavigator.vue';
+import { Plus } from '@lucide/vue';
+import { computed, ref } from 'vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
-import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
-import { routinePlanStatusLabels } from '@/lib/routineConstants';
+import TodayPlanCard from '@/components/routine/TodayPlanCard.vue';
+import TodayProgressPanel from '@/components/routine/TodayProgressPanel.vue';
+import { Button } from '@/components/ui/button';
+import {
+    displayDurationMinutes,
+    planRunStatus,
+} from '@/lib/todayPlanDisplay';
 import type { RoutinePlan } from '@/types/routine';
 
 interface Props {
@@ -13,129 +18,145 @@ interface Props {
     plans: RoutinePlan[];
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
-function latestSession(plan: RoutinePlan) {
-    return plan.sessions?.[0] ?? null;
-}
+const showCompleted = ref(false);
+
+const completedPlans = computed(() =>
+    props.plans.filter((plan) => planRunStatus(plan) === 'completed'),
+);
+
+const activePlans = computed(() =>
+    props.plans.filter((plan) => planRunStatus(plan) !== 'completed'),
+);
+
+const visiblePlans = computed(() => {
+    if (showCompleted.value) {
+        return [...activePlans.value, ...completedPlans.value];
+    }
+
+    return activePlans.value;
+});
+
+const completedCount = computed(() => completedPlans.value.length);
+const totalCount = computed(() => props.plans.length);
+
+const totalMinutes = computed(() =>
+    props.plans.reduce((sum, plan) => {
+        return sum + (displayDurationMinutes(plan) ?? 0);
+    }, 0),
+);
 </script>
 
 <template>
     <Head title="今日やる" />
 
-    <div
-        class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6"
-    >
-        <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
-            <PageSectionCard>
-                <PageTitleOrnament
-                    title="今日やる"
-                    subtitle="今日のルーティンを開始・再開します。作成は「ルーティン」タブで行います。"
-                    align="left"
-                />
-                <div class="mt-5">
-                    <RoutinesHubTabs />
-                </div>
-            </PageSectionCard>
-
+    <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
+        <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4">
             <PageSectionCard padding="sm">
-                <DateNavigator
+                <RoutinesHubTabs />
+            </PageSectionCard>
+
+            <div
+                class="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row lg:items-stretch"
+            >
+                <TodayProgressPanel
                     :date="date"
-                    route-url="/today"
-                    :reload-only="['plans', 'date']"
+                    :completed-count="completedCount"
+                    :total-count="totalCount"
+                    :total-minutes="totalMinutes"
                 />
-            </PageSectionCard>
 
-            <PageSectionCard padding="none" aria-label="プラン一覧">
-                <ul v-if="plans.length > 0" class="flex flex-col">
-                    <li
-                        v-for="plan in plans"
-                        :key="plan.id"
-                        class="border-b border-cd-line px-5 py-4 last:border-b-0"
-                    >
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="min-w-0">
-                                <Link
-                                    :href="`/plans/${plan.id}`"
-                                    class="font-sans text-base font-semibold text-cd-ink hover:text-primary"
-                                >
-                                    {{ plan.title }}
-                                </Link>
-                                <p
-                                    class="mt-1 font-sans text-sm text-cd-ink-muted"
-                                >
-                                    {{ plan.steps?.length ?? 0 }} ステップ
-                                    <span
-                                        v-if="plan.life_area"
-                                        class="before:mx-1.5 before:content-['·']"
-                                    >
-                                        {{ plan.life_area.name }}
-                                    </span>
-                                </p>
-                            </div>
-
-                            <span
-                                class="inline-flex shrink-0 rounded-full px-2.5 py-0.5 font-sans text-xs font-medium"
-                                :class="
-                                    latestSession(plan)?.status === 'completed'
-                                        ? 'bg-cd-moss/15 text-cd-moss'
-                                        : latestSession(plan)?.status ===
-                                            'in_progress'
-                                          ? 'bg-cd-sunrise/15 text-cd-sunrise'
-                                          : plan.status === 'ready'
-                                            ? 'bg-primary/10 text-primary'
-                                            : 'bg-muted text-cd-ink-muted'
-                                "
-                            >
-                                {{
-                                    latestSession(plan)?.status === 'in_progress'
-                                        ? '実行中'
-                                        : latestSession(plan)?.status ===
-                                            'completed'
-                                          ? '完了済み'
-                                          : routinePlanStatusLabels[plan.status]
-                                }}
-                            </span>
-                        </div>
-
-                        <div class="mt-3">
-                            <Link
-                                v-if="
-                                    latestSession(plan)?.status === 'in_progress'
-                                "
-                                :href="`/sessions/${latestSession(plan)!.id}`"
-                                class="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-sans text-xs font-medium text-primary transition-colors hover:bg-primary-hover hover:text-primary"
-                            >
-                                <CirclePlay :size="14" :stroke-width="1.6" />
-                                続ける
-                            </Link>
-                            <Link
-                                v-else
-                                :href="`/plans/${plan.id}`"
-                                class="inline-flex items-center gap-1.5 rounded-full border border-cd-line px-3 py-1 font-sans text-xs font-medium text-cd-ink-muted transition-colors hover:border-primary/30 hover:bg-primary-hover hover:text-primary"
-                            >
-                                編集・開始
-                            </Link>
-                        </div>
-                    </li>
-                </ul>
-
-                <div
-                    v-else
-                    class="px-5 py-12 text-center font-sans text-sm text-cd-ink-muted"
+                <section
+                    class="flex min-w-0 flex-1 flex-col rounded-2xl border border-cd-line/80 bg-cd-surface/95 px-5 py-5 shadow-sm md:px-6"
+                    aria-label="今日のトレーニング・練習"
                 >
-                    <p>この日のルーティンはありません。</p>
-                    <p class="mt-2">
-                        <Link
-                            href="/routines"
-                            class="font-medium text-primary underline-offset-2 hover:underline"
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <h1
+                                class="font-sans text-lg font-semibold tracking-tight text-cd-ink"
+                            >
+                                今日のトレーニング・練習
+                            </h1>
+                            <p
+                                class="mt-1 font-sans text-xs text-cd-ink-muted"
+                            >
+                                開始・再開はここから。作成はルーティン一覧で行います。
+                            </p>
+                        </div>
+
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            class="shrink-0 font-sans"
+                            as-child
                         >
-                            ルーティン
-                        </Link>
-                        を作ってから「今日やる」に載せてください。
-                    </p>
-                </div>
-            </PageSectionCard>
+                            <Link href="/routines">
+                                <Plus :size="14" :stroke-width="1.8" />
+                                ルーティンを追加
+                            </Link>
+                        </Button>
+                    </div>
+
+                    <ul
+                        v-if="visiblePlans.length > 0"
+                        class="mt-5 flex flex-col gap-3"
+                    >
+                        <TodayPlanCard
+                            v-for="plan in visiblePlans"
+                            :key="plan.id"
+                            :plan="plan"
+                        />
+                    </ul>
+
+                    <div
+                        v-else-if="plans.length === 0"
+                        class="mt-8 flex flex-1 flex-col items-center justify-center py-10 text-center"
+                    >
+                        <p class="font-sans text-sm text-cd-ink-muted">
+                            この日のルーティンはありません。
+                        </p>
+                        <p class="mt-2 font-sans text-sm text-cd-ink-muted">
+                            <Link
+                                href="/routines"
+                                class="font-medium text-primary underline-offset-2 hover:underline"
+                            >
+                                ルーティン
+                            </Link>
+                            を作ってから「今日やる」に載せてください。
+                        </p>
+                    </div>
+
+                    <div
+                        v-else
+                        class="mt-8 flex flex-1 flex-col items-center justify-center py-8 text-center"
+                    >
+                        <p class="font-sans text-sm text-cd-ink-muted">
+                            未完了のルーティンはありません。
+                        </p>
+                    </div>
+
+                    <button
+                        v-if="completedPlans.length > 0"
+                        type="button"
+                        class="mt-5 inline-flex items-center gap-1.5 self-start font-sans text-sm text-cd-ink-muted transition-colors hover:text-primary"
+                        @click="showCompleted = !showCompleted"
+                    >
+                        <Plus
+                            :size="14"
+                            :stroke-width="1.8"
+                            class="transition-transform"
+                            :class="{ 'rotate-45': showCompleted }"
+                        />
+                        {{
+                            showCompleted
+                                ? '完了したルーティンを隠す'
+                                : '完了したルーティンを表示'
+                        }}
+                    </button>
+                </section>
+            </div>
         </div>
     </div>
 </template>
