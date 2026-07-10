@@ -32,6 +32,17 @@ class MemoryController extends Controller
             limit: 100,
         );
 
+        $owned = Memory::query()
+            ->where('user_id', $user->id)
+            ->get(['memory_type', 'source_type']);
+
+        $typeCounts = $owned
+            ->filter(fn (Memory $m) => filled($m->memory_type))
+            ->countBy('memory_type')
+            ->all();
+
+        $sourceCounts = $owned->countBy('source_type')->all();
+
         return Inertia::render('Kioku/Index', [
             'memories' => MemoryResource::collection($memories)->resolve(),
             'filters' => [
@@ -42,6 +53,9 @@ class MemoryController extends Controller
                 ->map(fn ($type) => ['key' => $type->key(), 'label' => $type->label()])
                 ->values()
                 ->all(),
+            'typeCounts' => $typeCounts,
+            'sourceCounts' => $sourceCounts,
+            'totalCount' => $owned->count(),
         ]);
     }
 

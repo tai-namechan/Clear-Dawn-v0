@@ -46,6 +46,9 @@ class MemoryTest extends TestCase
                 ->has('memories', 1)
                 ->where('memories.0.title', '自分の記憶')
                 ->where('currentProduct', 'kioku')
+                ->has('typeCounts')
+                ->has('sourceCounts')
+                ->where('totalCount', 1)
             );
     }
 

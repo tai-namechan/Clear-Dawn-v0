@@ -28,7 +28,7 @@ final class MockCalendar
             ],
             [
                 'id' => 'e2',
-                'title' => 'ジム：筋トレ',
+                'title' => 'ジム：筋トレ（脚の日）',
                 'start' => $base->copy()->setTime(13, 0)->toIso8601String(),
                 'end' => $base->copy()->setTime(14, 15)->toIso8601String(),
                 'place' => 'ジム',
@@ -37,12 +37,21 @@ final class MockCalendar
             ],
             [
                 'id' => 'e3',
-                'title' => 'ヨガ',
+                'title' => 'ヨガ：リラックス系 75分',
                 'start' => $base->copy()->setTime(18, 30)->toIso8601String(),
                 'end' => $base->copy()->setTime(19, 45)->toIso8601String(),
                 'place' => 'スタジオ',
                 'travel_min' => 25,
                 'color' => '#8A6FC9',
+            ],
+            [
+                'id' => 'e4',
+                'title' => '買い出し',
+                'start' => $base->copy()->setTime(20, 15)->toIso8601String(),
+                'end' => $base->copy()->setTime(20, 45)->toIso8601String(),
+                'place' => 'スーパー',
+                'travel_min' => 10,
+                'color' => '#DF9A2E',
             ],
         ];
     }
@@ -53,7 +62,7 @@ final class MockCalendar
     public static function clearDawnHand(): array
     {
         return [
-            'goal' => '今月中にポートフォリオを整える',
+            'goal' => '7月中に転職ポートフォリオ完成',
             'action' => 'READMEを30分修正する',
             'estimate' => 30,
         ];

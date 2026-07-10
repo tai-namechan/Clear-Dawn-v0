@@ -1,23 +1,34 @@
 <script setup lang="ts">
-import { Form, Head, Link, router } from '@inertiajs/vue3';
-import { Database, RefreshCw, Search } from '@lucide/vue';
+import { Form, Head, router } from '@inertiajs/vue3';
+import { Brain, Database, Plus, RefreshCw, Search, Send, X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import KiokuNav from '@/components/kioku/KiokuNav.vue';
+import MemoryCard from '@/components/kioku/MemoryCard.vue';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { home, settings, sources } from '@/routes/kioku';
-import { show, store } from '@/routes/kioku/memories';
+import {
+    MEMORY_TYPES,
+    SOURCE_TYPES,
+    type MemoryTypeKey,
+    type SourceTypeKey,
+} from '@/lib/kiokuMeta';
+import { home } from '@/routes/kioku';
+import { store } from '@/routes/kioku/memories';
 import type { KiokuMemory, MemoryTypeOption } from '@/types/kioku';
 
 interface Props {
     memories: KiokuMemory[];
     filters: { q: string | null; types: string[] };
     memoryTypes: MemoryTypeOption[];
+    typeCounts: Record<string, number>;
+    sourceCounts: Record<string, number>;
+    totalCount: number;
 }
 
 const props = defineProps<Props>();
 
 const q = ref(props.filters.q ?? '');
 const selectedTypes = ref<string[]>([...props.filters.types]);
+const draft = ref('');
 
 watch(
     () => props.filters,
@@ -29,6 +40,12 @@ watch(
 
 const hasEnriching = computed(() =>
     props.memories.some((m) => m.status === 'enriching' || m.status === 'captured'),
+);
+
+const visibleTypeKeys = computed(() =>
+    (Object.keys(MEMORY_TYPES) as MemoryTypeKey[]).filter(
+        (key) => (props.typeCounts[key] ?? 0) > 0 || selectedTypes.value.includes(key),
+    ),
 );
 
 function applyFilters(): void {
@@ -53,196 +70,219 @@ function toggleType(key: string): void {
     applyFilters();
 }
 
+function clearTypes(): void {
+    selectedTypes.value = [];
+    applyFilters();
+}
+
 function reload(): void {
-    router.reload({ only: ['memories'] });
+    router.reload({ only: ['memories', 'typeCounts', 'sourceCounts', 'totalCount'] });
 }
 
 defineOptions({
     layout: {
         title: 'キオク',
-        subtitle: '記憶の保存・検索・想起',
+        subtitle: '経験を、失わない。 — 過去を思い出す場所',
     },
 });
 </script>
 
 <template>
-    <div class="space-y-6">
+    <div class="space-y-4">
         <Head title="キオク" />
 
-        <nav class="flex flex-wrap gap-2 text-sm">
-            <Link
-                :href="home()"
-                class="rounded-full bg-os-kioku px-3 py-1.5 font-medium text-white"
-            >
-                記憶
-            </Link>
-            <Link
-                :href="sources()"
-                class="rounded-full border border-border px-3 py-1.5 text-muted-foreground hover:bg-muted"
-            >
-                取り込み元
-            </Link>
-            <Link
-                :href="settings()"
-                class="rounded-full border border-border px-3 py-1.5 text-muted-foreground hover:bg-muted"
-            >
-                設定
-            </Link>
-        </nav>
+        <div class="flex items-end justify-between gap-2">
+            <div class="flex items-center gap-2 text-os-kioku">
+                <Database :size="20" />
+                <span class="font-serif text-[22px] font-bold tracking-wide"
+                    >キオク</span
+                >
+            </div>
+            <div class="text-xs text-os-faint">{{ totalCount }}件の記憶</div>
+        </div>
 
-        <div class="grid gap-6 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
-            <aside class="space-y-4">
+        <KiokuNav active="home" />
+
+        <div
+            class="grid gap-5 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:items-start"
+        >
+            <aside class="space-y-3.5 lg:sticky lg:top-5">
                 <section
-                    class="rounded-xl border border-border bg-card p-4 shadow-sm"
+                    class="rounded-2xl border border-os-kioku/25 bg-white p-4 shadow-[0_1px_3px_rgba(43,40,54,0.05)]"
                 >
                     <div
-                        class="mb-3 flex items-center gap-2 text-sm font-semibold text-os-kioku"
+                        class="mb-2.5 flex items-center gap-1.5 text-xs font-bold text-os-kioku"
                     >
-                        <Database :size="16" />
-                        今すぐ保存
+                        <Plus :size="14" />
+                        なんでも、まずここへ
                     </div>
                     <Form
                         v-bind="store.form()"
-                        class="space-y-3"
+                        class="space-y-2.5"
                         #default="{ processing }"
+                        @success="draft = ''"
                     >
                         <textarea
+                            v-model="draft"
                             name="raw_content"
-                            rows="5"
+                            rows="4"
                             required
-                            placeholder="テキストやURLを貼り付け…"
-                            class="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm leading-relaxed outline-none focus-visible:ring-2 focus-visible:ring-os-kioku"
+                            placeholder="エラーメッセージ、考えたこと、URL…&#10;貼るだけ。整理はAIが後からやります。&#10;（Ctrl/⌘+Enterで保存）"
+                            class="w-full resize-y rounded-xl border border-os-line bg-os-kioku-bg px-3.5 py-3 text-[13.5px] leading-relaxed text-os-ink outline-none placeholder:text-os-faint focus-visible:ring-2 focus-visible:ring-os-kioku/40"
+                            @keydown.meta.enter.prevent="
+                                ($event.target as HTMLTextAreaElement).form?.requestSubmit()
+                            "
+                            @keydown.ctrl.enter.prevent="
+                                ($event.target as HTMLTextAreaElement).form?.requestSubmit()
+                            "
                         />
                         <input type="hidden" name="source_type" value="manual" />
                         <Button
                             type="submit"
-                            class="w-full bg-os-kioku text-white hover:bg-os-kioku/90"
-                            :disabled="processing"
+                            class="h-11 w-full gap-2 rounded-xl bg-os-kioku text-[13.5px] font-bold text-white shadow-[0_3px_10px_rgba(111,95,201,0.32)] hover:bg-os-kioku/90"
+                            :disabled="processing || !draft.trim()"
+                            :class="draft.trim() ? 'opacity-100' : 'opacity-40'"
                         >
-                            保存する
+                            <Send :size="15" />
+                            保存（AIが自動整理）
                         </Button>
                     </Form>
                 </section>
 
                 <section
-                    class="rounded-xl border border-border bg-card p-4 shadow-sm"
+                    class="rounded-2xl border border-os-line bg-white p-4 shadow-[0_1px_3px_rgba(43,40,54,0.05)]"
                 >
-                    <div class="mb-3 text-sm font-semibold text-muted-foreground">
-                        フィルター
-                    </div>
-                    <div class="mb-3 flex gap-2">
-                        <Input
-                            v-model="q"
-                            placeholder="キーワード"
-                            class="text-sm"
-                            @keydown.enter.prevent="applyFilters"
-                        />
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            @click="applyFilters"
-                        >
-                            <Search :size="16" />
-                        </Button>
+                    <div
+                        class="mb-2.5 text-[11.5px] font-bold tracking-wide text-os-faint"
+                    >
+                        種別でしぼる
                     </div>
                     <div class="flex flex-wrap gap-1.5">
                         <button
-                            v-for="type in memoryTypes"
-                            :key="type.key"
                             type="button"
-                            class="rounded-full border px-2.5 py-1 text-xs"
+                            class="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs transition-colors"
                             :class="
-                                selectedTypes.includes(type.key)
-                                    ? 'border-os-kioku bg-os-kioku/10 text-os-kioku'
-                                    : 'border-border text-muted-foreground'
+                                selectedTypes.length === 0
+                                    ? 'border-os-kioku/40 bg-os-kioku-soft font-bold text-os-kioku'
+                                    : 'border-os-line bg-[#F1F0F5] text-os-sub'
                             "
-                            @click="toggleType(type.key)"
+                            @click="clearTypes"
                         >
-                            {{ type.label }}
+                            すべて {{ totalCount }}
+                        </button>
+                        <button
+                            v-for="key in visibleTypeKeys"
+                            :key="key"
+                            type="button"
+                            class="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs transition-colors"
+                            :class="
+                                selectedTypes.includes(key)
+                                    ? 'font-bold'
+                                    : 'border-os-line bg-[#F1F0F5] text-os-sub'
+                            "
+                            :style="
+                                selectedTypes.includes(key)
+                                    ? {
+                                          background: MEMORY_TYPES[key].bg,
+                                          color: MEMORY_TYPES[key].color,
+                                          borderColor: MEMORY_TYPES[key].color + '55',
+                                      }
+                                    : undefined
+                            "
+                            @click="toggleType(key)"
+                        >
+                            <component :is="MEMORY_TYPES[key].icon" :size="12" />
+                            {{ MEMORY_TYPES[key].label }}
+                            {{ typeCounts[key] || 0 }}
                         </button>
                     </div>
                 </section>
+
+                <section
+                    class="rounded-2xl border border-os-line bg-white p-4 shadow-[0_1px_3px_rgba(43,40,54,0.05)]"
+                >
+                    <div
+                        class="mb-2.5 text-[11.5px] font-bold tracking-wide text-os-faint"
+                    >
+                        取り込み元
+                    </div>
+                    <div
+                        v-for="(meta, key) in SOURCE_TYPES"
+                        :key="key"
+                        class="flex items-center gap-2 border-b border-os-line py-1.5 text-[12.5px] last:border-0"
+                        :class="meta.muted ? 'opacity-45' : ''"
+                    >
+                        <component :is="meta.icon" :size="13" class="text-os-sub" />
+                        <span class="flex-1 text-os-ink">{{ meta.label }}</span>
+                        <span class="font-mono text-xs text-os-faint">{{
+                            sourceCounts[key as SourceTypeKey] || 0
+                        }}</span>
+                    </div>
+                    <p class="mt-2.5 text-[11px] leading-relaxed text-os-faint">
+                        ヨユウ・Clear Dawnからの自動保存とSlack連携は、本実装ではイベント/コネクタ経由になります。
+                    </p>
+                </section>
             </aside>
 
-            <section class="space-y-3">
-                <div class="flex items-center justify-between gap-2">
-                    <h2 class="text-sm font-semibold text-muted-foreground">
-                        記憶一覧 — {{ memories.length }}件
-                    </h2>
+            <section class="space-y-3.5">
+                <div
+                    class="flex items-center gap-2.5 rounded-2xl border border-os-line bg-white px-4 py-3 shadow-[0_1px_3px_rgba(43,40,54,0.05)]"
+                >
+                    <Search :size="16" class="text-os-faint" />
+                    <input
+                        v-model="q"
+                        placeholder="記憶を検索（例: Vite / 転職 / ヨガ）"
+                        class="min-w-0 flex-1 bg-transparent text-[13.5px] text-os-ink outline-none placeholder:text-os-faint"
+                        @keydown.enter.prevent="applyFilters"
+                    />
+                    <button
+                        v-if="q"
+                        type="button"
+                        class="text-os-faint"
+                        @click="
+                            q = '';
+                            applyFilters();
+                        "
+                    >
+                        <X :size="14" />
+                    </button>
                     <Button
                         v-if="hasEnriching"
                         type="button"
                         variant="outline"
                         size="sm"
-                        class="gap-1.5"
+                        class="gap-1"
                         @click="reload"
                     >
-                        <RefreshCw :size="14" />
+                        <RefreshCw :size="13" />
                         更新
                     </Button>
                 </div>
 
                 <div
                     v-if="memories.length === 0"
-                    class="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground"
+                    class="rounded-2xl border border-os-line bg-white p-9 text-center shadow-[0_1px_3px_rgba(43,40,54,0.05)]"
                 >
-                    まだ記憶がありません。左のボックスから保存してみてください。
+                    <Brain :size="26" class="mx-auto mb-2.5 text-os-faint" />
+                    <p class="text-[13px] leading-relaxed text-os-sub">
+                        {{
+                            q
+                                ? `「${q}」に一致する記憶はありません。`
+                                : 'まだ記憶がありません。左の保存ボックスからどうぞ。'
+                        }}
+                    </p>
                 </div>
 
-                <Link
+                <MemoryCard
                     v-for="memory in memories"
                     :key="memory.id"
-                    :href="show(memory.id)"
-                    class="block rounded-xl border border-border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
-                >
-                    <div class="mb-2 flex flex-wrap items-center gap-2">
-                        <span
-                            class="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium"
-                        >
-                            {{ memory.memory_type_label ?? '未分類' }}
-                        </span>
-                        <span
-                            v-if="
-                                memory.status === 'enriching' ||
-                                memory.status === 'captured'
-                            "
-                            class="rounded-full bg-os-kioku/10 px-2 py-0.5 text-[11px] font-medium text-os-kioku"
-                        >
-                            AIが整理中…
-                        </span>
-                        <span
-                            v-else-if="memory.status === 'failed'"
-                            class="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive"
-                        >
-                            整理失敗（原文は保存済み）
-                        </span>
-                        <span class="text-[11px] text-muted-foreground">
-                            {{ memory.source_type }}
-                        </span>
-                    </div>
-                    <div class="font-medium text-foreground">
-                        {{ memory.title }}
-                    </div>
-                    <p
-                        v-if="memory.summary"
-                        class="mt-1 line-clamp-2 text-sm text-muted-foreground"
-                    >
-                        {{ memory.summary }}
-                    </p>
-                    <div
-                        v-if="memory.tags?.length"
-                        class="mt-2 flex flex-wrap gap-1"
-                    >
-                        <span
-                            v-for="tag in memory.tags"
-                            :key="tag"
-                            class="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground"
-                        >
-                            #{{ tag }}
-                        </span>
-                    </div>
-                </Link>
+                    :memory="memory"
+                />
+
+                <p class="pt-2 text-center text-[11px] leading-relaxed text-os-faint">
+                    保存は即時、AI整理（分類・要約・構造化）は非同期。Laravel Queue
+                    で同じ流れです。
+                </p>
             </section>
         </div>
     </div>

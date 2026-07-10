@@ -1,6 +1,11 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
-import { home, settings, sources } from '@/routes/kioku';
+import { Head } from '@inertiajs/vue3';
+import KiokuNav from '@/components/kioku/KiokuNav.vue';
+import { SOURCE_TYPES, type SourceTypeKey } from '@/lib/kiokuMeta';
+
+defineProps<{
+    sourceCounts?: Record<string, number>;
+}>();
 
 defineOptions({
     layout: {
@@ -11,30 +16,32 @@ defineOptions({
 </script>
 
 <template>
-    <div class="space-y-6">
+    <div class="space-y-5">
         <Head title="取り込み元 — キオク" />
-        <nav class="flex flex-wrap gap-2 text-sm">
-            <Link
-                :href="home()"
-                class="rounded-full border border-border px-3 py-1.5 text-muted-foreground hover:bg-muted"
-                >記憶</Link
-            >
-            <Link
-                :href="sources()"
-                class="rounded-full bg-os-kioku px-3 py-1.5 font-medium text-white"
-                >取り込み元</Link
-            >
-            <Link
-                :href="settings()"
-                class="rounded-full border border-border px-3 py-1.5 text-muted-foreground hover:bg-muted"
-                >設定</Link
-            >
-        </nav>
-        <div
-            class="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground"
+        <KiokuNav active="sources" />
+        <section
+            class="mx-auto max-w-lg rounded-2xl border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(43,40,54,0.05)]"
         >
-            MVPでは manual / url / yoyu / clear_dawn
-            の件数表示のみ予定です。コネクタ連携は後続です。
-        </div>
+            <div
+                class="mb-3 text-[11.5px] font-bold tracking-wide text-os-faint"
+            >
+                取り込み元
+            </div>
+            <div
+                v-for="(meta, key) in SOURCE_TYPES"
+                :key="key"
+                class="flex items-center gap-2 border-b border-os-line py-2 text-[12.5px] last:border-0"
+                :class="meta.muted ? 'opacity-45' : ''"
+            >
+                <component :is="meta.icon" :size="13" class="text-os-sub" />
+                <span class="flex-1 text-os-ink">{{ meta.label }}</span>
+                <span class="font-mono text-xs text-os-faint">{{
+                    sourceCounts?.[key as SourceTypeKey] ?? 0
+                }}</span>
+            </div>
+            <p class="mt-3 text-[11px] leading-relaxed text-os-faint">
+                ヨユウ・Clear Dawnからの自動保存とSlack連携は、本実装ではイベント/コネクタ経由になります。
+            </p>
+        </section>
     </div>
 </template>
