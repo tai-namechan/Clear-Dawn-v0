@@ -15,7 +15,7 @@ defineOptions({
         <Head title="設定 — キオク" />
         <KiokuNav active="settings" />
         <div
-            class="mx-auto max-w-lg rounded-2xl border border-dashed border-os-line bg-white p-10 text-center text-sm leading-relaxed text-os-sub"
+            class="mx-auto max-w-lg rounded-2xl border border-dashed border-os-line bg-os-kioku-paper p-10 text-center text-sm leading-relaxed text-os-sub"
         >
             エクスポート・削除ポリシー・機微フラグ既定値は後続マイルストーンで追加します。
         </div>

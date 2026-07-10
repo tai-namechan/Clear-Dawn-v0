@@ -35,27 +35,28 @@ export type SourceTypeKey =
     | 'ai_chat'
     | 'slack';
 
+/** 書庫トーン: 和紙×墨×藍インク×朱 */
 export const MEMORY_TYPES: Record<
     MemoryTypeKey,
     { label: string; color: string; bg: string; icon: Component }
 > = {
-    error_log: { label: 'エラー', color: '#B86B66', bg: '#F6EEEC', icon: Bug },
-    decision: { label: '判断', color: '#B8894A', bg: '#F7F1E6', icon: Scale },
-    learning: { label: '学び', color: '#5B7AA8', bg: '#EEF2F8', icon: BookOpen },
-    thought: { label: '思考', color: '#3D8A82', bg: '#EAF4F2', icon: Brain },
-    emotion: { label: '感情', color: '#B87496', bg: '#F6EEF3', icon: Heart },
-    idea: { label: 'アイデア', color: '#B08A45', bg: '#F7F2E7', icon: Lightbulb },
-    reference: { label: '資料', color: '#7A7688', bg: '#F1F0F4', icon: Link2 },
+    error_log: { label: 'エラー', color: '#C05A48', bg: '#F8E9E4', icon: Bug },
+    decision: { label: '判断', color: '#B8862B', bg: '#F7EEDA', icon: Scale },
+    learning: { label: '学び', color: '#46628F', bg: '#E9EEF5', icon: BookOpen },
+    thought: { label: '思考', color: '#4E8578', bg: '#E6F0EC', icon: Brain },
+    emotion: { label: '感情', color: '#B56576', bg: '#F6E8EB', icon: Heart },
+    idea: { label: 'アイデア', color: '#C68A3A', bg: '#F8EFDD', icon: Lightbulb },
+    reference: { label: '資料', color: '#7A7668', bg: '#EDEAE0', icon: Link2 },
     event: {
         label: '出来事',
-        color: '#5A9470',
-        bg: '#EAF4EE',
+        color: '#5D8A5F',
+        bg: '#E8F0E5',
         icon: CalendarCheck,
     },
     conversation: {
         label: '相談',
-        color: '#6F5FC9',
-        bg: '#F0EEF8',
+        color: '#7C6FA8',
+        bg: '#EEEBF4',
         icon: MessageSquare,
     },
 };

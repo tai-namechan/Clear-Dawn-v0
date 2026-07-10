@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { router, usePage } from '@inertiajs/vue3';
-import { Check, ChevronDown, Compass, Database, Sun } from '@lucide/vue';
+import { Check, ChevronDown, Compass, Library, Sun } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import {
     Dialog,
@@ -40,7 +40,7 @@ const ringByKey: Record<ProductKey, string> = {
 const iconByKey = {
     clear_dawn: Compass,
     yoyu: Sun,
-    kioku: Database,
+    kioku: Library,
 } as const;
 
 const previewHintByKey: Record<ProductKey, string> = {

@@ -36,7 +36,7 @@ const shellBg = computed(() => {
 
 const titleClass = computed(() => {
     if (currentProduct.value === 'kioku') {
-        return 'font-serif font-normal tracking-[0.04em] text-os-ink';
+        return 'font-serif font-bold tracking-[0.12em] text-os-ink';
     }
 
     if (currentProduct.value === 'yoyu') {

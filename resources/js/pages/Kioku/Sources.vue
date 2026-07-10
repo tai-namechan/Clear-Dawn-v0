@@ -20,7 +20,7 @@ defineOptions({
         <Head title="取り込み元 — キオク" />
         <KiokuNav active="sources" />
         <section
-            class="mx-auto max-w-lg rounded-2xl border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(43,40,54,0.05)]"
+            class="mx-auto max-w-lg rounded-2xl border border-os-line bg-os-kioku-paper p-5 shadow-[0_1px_3px_rgba(43,41,36,0.05)]"
         >
             <div
                 class="mb-3 text-[11.5px] font-bold tracking-wide text-os-faint"

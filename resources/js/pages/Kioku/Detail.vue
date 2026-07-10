@@ -24,15 +24,6 @@ function fieldValue(
     return data?.[key] ?? null;
 }
 
-function stars(n: number): { filled: string; empty: string } {
-    const clamped = Math.min(Math.max(n, 0), 5);
-
-    return {
-        filled: '★'.repeat(clamped),
-        empty: '★'.repeat(5 - clamped),
-    };
-}
-
 defineOptions({
     layout: {
         title: 'キオク',
@@ -54,7 +45,7 @@ defineOptions({
         </Link>
 
         <article
-            class="overflow-hidden rounded-[20px] border border-os-line bg-white shadow-[0_8px_28px_rgba(43,40,54,0.08)]"
+            class="overflow-hidden rounded-[20px] border border-os-line bg-os-kioku-paper shadow-[0_8px_28px_rgba(43,41,36,0.1)]"
         >
             <div class="space-y-3 px-5 pt-5">
                 <div class="flex flex-wrap items-center gap-2.5">
@@ -74,10 +65,10 @@ defineOptions({
                 <h1 class="text-lg font-bold text-os-ink">{{ memory.title }}</h1>
 
                 <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-[11px] tracking-wide text-[#DF9A2E]">
-                        <span>{{ stars(memory.importance).filled }}</span>
+                    <span class="text-[11px] tracking-wide text-[#B8862B]">
+                        <span>{{ '★'.repeat(memory.importance) }}</span>
                         <span class="text-os-line">{{
-                            stars(memory.importance).empty
+                            '★'.repeat(5 - memory.importance)
                         }}</span>
                     </span>
                     <span
@@ -141,8 +132,8 @@ defineOptions({
                                 class="inline-flex rounded-full px-3 py-1 text-[11.5px] font-bold"
                                 :class="
                                     fieldValue(memory.structured_data, field.key)
-                                        ? 'bg-[#E8F5EC] text-[#43A860]'
-                                        : 'bg-[#FBEBE9] text-[#D9645B]'
+                                        ? 'bg-[#E8F0E5] text-[#5D8A5F]'
+                                        : 'bg-[#F8E9E4] text-[#C05A48]'
                                 "
                             >
                                 {{
@@ -154,7 +145,7 @@ defineOptions({
                         </template>
                         <template v-else-if="field.key === 'error_message'">
                             <code
-                                class="block overflow-x-auto rounded-[10px] bg-[#2B2836] px-3.5 py-2.5 font-mono text-xs text-[#F3B0A8]"
+                                class="block overflow-x-auto rounded-[10px] bg-[#2B2924] px-3.5 py-2.5 font-mono text-xs text-[#F0B4A2]"
                                 >{{
                                     fieldValue(memory.structured_data, field.key)
                                 }}</code
@@ -226,7 +217,7 @@ defineOptions({
                 </Button>
                 <Button
                     type="button"
-                    class="gap-1.5 rounded-full border border-[#4A7DC444] bg-[#E9F0FA] text-[#4A7DC4] hover:bg-[#E9F0FA]"
+                    class="gap-1.5 rounded-full border border-[#5C4E8E44] bg-[#EDEAF5] text-[#5C4E8E] hover:bg-[#EDEAF5]"
                     variant="outline"
                     @click="
                         toast.message('Clear Dawnの目標に紐づけました（モック）')
