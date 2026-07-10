@@ -37,6 +37,19 @@ const iconByKey = {
     kioku: Library,
 } as const;
 
+const hoverByKey: Record<ProductKey, string> = {
+    clear_dawn:
+        'hover:ring-2 hover:ring-cd-dawn-deep/45 hover:bg-cd-dawn-deep/8',
+    yoyu: 'hover:ring-2 hover:ring-os-yoyu/45 hover:bg-os-yoyu/10',
+    kioku: 'hover:ring-2 hover:ring-os-kioku/45 hover:bg-os-kioku/10',
+};
+
+const washByKey: Record<ProductKey, string> = {
+    clear_dawn: 'bg-cd-dawn-deep/12',
+    yoyu: 'bg-os-yoyu/14',
+    kioku: 'bg-os-kioku/14',
+};
+
 const previewByKey: Record<ProductKey, { src: string; alt: string }> = {
     clear_dawn: {
         src: '/images/products/clear-dawn.jpg',
@@ -113,7 +126,8 @@ function selectProduct(product: ProductDefinition): void {
                         :key="product.key"
                         type="button"
                         role="listitem"
-                        class="group relative overflow-hidden rounded-xl bg-muted/20 text-left transition-opacity hover:opacity-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        class="group relative overflow-hidden rounded-xl bg-muted/20 text-left transition-[box-shadow,background-color,transform] duration-200 hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        :class="hoverByKey[product.key]"
                         :data-test="`product-card-${product.key}`"
                         :aria-current="
                             product.key === currentProductKey
@@ -122,26 +136,24 @@ function selectProduct(product: ProductDefinition): void {
                         "
                         @click="selectProduct(product)"
                     >
+                        <span class="sr-only">
+                            {{ product.name }} — {{ product.tagline }}
+                        </span>
                         <img
                             :src="previewByKey[product.key].src"
                             :alt="previewByKey[product.key].alt"
-                            class="h-auto w-full object-contain"
+                            class="h-auto w-full object-contain transition-[filter] duration-200 group-hover:brightness-[1.03]"
                             loading="eager"
                             decoding="async"
                         />
-                        <div
-                            class="absolute inset-x-0 top-0 bg-gradient-to-b from-cd-surface/95 via-cd-surface/88 to-transparent px-3 pt-3 pb-8"
-                        >
-                            <div class="pr-16 text-sm font-semibold text-cd-ink">
-                                {{ product.name }}
-                            </div>
-                            <div class="mt-0.5 text-xs leading-snug text-cd-ink-muted">
-                                {{ product.tagline }}
-                            </div>
-                        </div>
+                        <span
+                            class="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                            :class="washByKey[product.key]"
+                            aria-hidden="true"
+                        />
                         <span
                             v-if="product.key === currentProductKey"
-                            class="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-cd-ink/85 px-2.5 py-1 text-[10px] font-semibold text-cd-surface shadow-sm backdrop-blur-sm"
+                            class="absolute top-2 right-2 z-10 inline-flex items-center gap-1 rounded-full bg-cd-ink/85 px-2.5 py-1 text-[10px] font-semibold text-cd-surface shadow-sm backdrop-blur-sm"
                             data-test="product-current-badge"
                         >
                             <Check :size="12" aria-hidden="true" />
