@@ -98,4 +98,14 @@ class ProductSwitcherTest extends TestCase
             $this->assertFileExists(public_path($relativePath));
         }
     }
+
+    public function test_os_sidebar_images_exist_in_public(): void
+    {
+        foreach ([
+            'images/products/sidebars/yoyu-sidebar.jpg',
+            'images/products/sidebars/kioku-sidebar.jpg',
+        ] as $relativePath) {
+            $this->assertFileExists(public_path($relativePath));
+        }
+    }
 }

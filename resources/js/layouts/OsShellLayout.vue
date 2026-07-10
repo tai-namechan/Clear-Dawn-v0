@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import AppContent from '@/components/AppContent.vue';
+import AppShell from '@/components/AppShell.vue';
 import HeaderUserMenu from '@/components/HeaderUserMenu.vue';
+import OsSidebar from '@/components/os/OsSidebar.vue';
 import ProductSwitcher from '@/components/os/ProductSwitcher.vue';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Toaster } from '@/components/ui/sonner';
 import type { ProductKey } from '@/types';
 
@@ -34,6 +38,18 @@ const shellBg = computed(() => {
     return 'bg-background text-foreground';
 });
 
+const headerBg = computed(() => {
+    if (currentProduct.value === 'yoyu') {
+        return 'bg-os-yoyu-bg/90 backdrop-blur-sm';
+    }
+
+    if (currentProduct.value === 'kioku') {
+        return 'bg-os-kioku-bg/90 backdrop-blur-sm';
+    }
+
+    return 'bg-background';
+});
+
 const titleClass = computed(() => {
     if (currentProduct.value === 'kioku') {
         return 'font-serif font-bold tracking-[0.12em] text-os-ink';
@@ -48,41 +64,42 @@ const titleClass = computed(() => {
 </script>
 
 <template>
-    <div class="min-h-screen" :class="shellBg">
-        <header
-            class="flex items-center justify-between gap-3 border-b border-os-line/80 px-4 py-3 md:px-6"
-            :class="
-                currentProduct === 'yoyu'
-                    ? 'bg-os-yoyu-bg/90 backdrop-blur-sm'
-                    : currentProduct === 'kioku'
-                      ? 'bg-os-kioku-bg/90 backdrop-blur-sm'
-                      : 'bg-background'
-            "
+    <AppShell variant="sidebar">
+        <OsSidebar />
+        <AppContent
+            variant="sidebar"
+            class="flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto"
+            :class="shellBg"
         >
-            <div class="flex min-w-0 items-center gap-3">
-                <ProductSwitcher />
-                <div v-if="title" class="min-w-0">
-                    <h1
-                        class="truncate text-base font-bold tracking-wide md:text-lg"
-                        :class="titleClass"
-                    >
-                        {{ title }}
-                    </h1>
-                    <p
-                        v-if="subtitle"
-                        class="truncate text-xs text-os-sub"
-                    >
-                        {{ subtitle }}
-                    </p>
+            <header
+                class="flex shrink-0 items-center justify-between gap-3 border-b border-os-line/80 px-4 py-3 md:px-6"
+                :class="headerBg"
+            >
+                <div class="flex min-w-0 items-center gap-3">
+                    <SidebarTrigger />
+                    <ProductSwitcher />
+                    <div v-if="title" class="min-w-0">
+                        <h1
+                            class="truncate text-base font-bold tracking-wide md:text-lg"
+                            :class="titleClass"
+                        >
+                            {{ title }}
+                        </h1>
+                        <p
+                            v-if="subtitle"
+                            class="truncate text-xs text-os-sub"
+                        >
+                            {{ subtitle }}
+                        </p>
+                    </div>
                 </div>
-            </div>
-            <HeaderUserMenu compact />
-        </header>
+                <HeaderUserMenu compact />
+            </header>
 
-        <main class="mx-auto w-full max-w-[1060px] px-4 py-5 md:px-6 md:py-6">
-            <slot />
-        </main>
-
+            <main class="mx-auto w-full max-w-[1060px] flex-1 px-4 py-5 md:px-6 md:py-6">
+                <slot />
+            </main>
+        </AppContent>
         <Toaster />
-    </div>
+    </AppShell>
 </template>

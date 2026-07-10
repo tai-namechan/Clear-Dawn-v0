@@ -12,7 +12,6 @@ import {
     Database,
     ListTodo,
     MapPin,
-    MessageSquare,
     Moon,
     Plus,
     RefreshCw,
@@ -34,7 +33,7 @@ import {
 } from '@/lib/yoyuCalc';
 import { regenerate } from '@/routes/yoyu/briefing';
 import { store as storeFocus, update as updateFocus } from '@/routes/yoyu/focus';
-import { chat, home } from '@/routes/yoyu';
+import { chat } from '@/routes/yoyu';
 import {
     destroy as destroyTask,
     store as storeTask,
@@ -114,13 +113,6 @@ onUnmounted(() => {
     }
 });
 
-const tabs = [
-    { key: 'today', label: '今日', icon: Sun },
-    { key: 'tasks', label: 'タスク', icon: ListTodo },
-    { key: 'mind', label: '頭の中', icon: Brain },
-    { key: 'chat', label: '秘書', icon: MessageSquare },
-] as const;
-
 const statusLabel: Record<string, { label: string; color: string }> = {
     inbox: { label: '受信箱', color: '#6B7683' },
     planned: { label: '今日やる', color: '#129488' },
@@ -185,11 +177,6 @@ const tubStatus = computed(
     () => yoyuCalc(nowMs.value, props.calendar, doneEventIds.value, props.tasks).status,
 );
 
-function switchTab(key: string): void {
-    currentTab.value = key;
-    router.get(home.url({ query: { tab: key } }), {}, { preserveState: true, replace: true });
-}
-
 function toggleEvent(id: string): void {
     if (doneEventIds.value.includes(id)) {
         doneEventIds.value = doneEventIds.value.filter((x) => x !== id);
@@ -253,25 +240,6 @@ defineOptions({
                     — 焦らず、前へ回すAI秘書
                 </div>
             </div>
-            <nav
-                class="flex gap-0.5 rounded-full border border-os-line bg-white p-1 shadow-[0_1px_4px_rgba(38,48,58,0.06)]"
-            >
-                <button
-                    v-for="tab in tabs"
-                    :key="tab.key"
-                    type="button"
-                    class="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition-all"
-                    :class="
-                        currentTab === tab.key
-                            ? 'bg-os-yoyu text-white shadow-[0_3px_10px_rgba(18,148,136,0.3)]'
-                            : 'text-os-faint hover:text-os-sub'
-                    "
-                    @click="switchTab(tab.key)"
-                >
-                    <component :is="tab.icon" :size="15" />
-                    <span class="hidden sm:inline">{{ tab.label }}</span>
-                </button>
-            </nav>
         </div>
 
         <!-- Today -->

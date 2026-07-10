@@ -2,7 +2,6 @@
 import { Form, Head, router } from '@inertiajs/vue3';
 import { Brain, Library, Plus, RefreshCw, Search, Send, X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
-import KiokuNav from '@/components/kioku/KiokuNav.vue';
 import MemoryCard from '@/components/kioku/MemoryCard.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -105,8 +104,6 @@ defineOptions({
             </div>
             <div class="text-xs text-os-faint">{{ totalCount }}件の記憶</div>
         </header>
-
-        <KiokuNav active="home" />
 
         <div
             class="grid gap-5 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:items-start"
