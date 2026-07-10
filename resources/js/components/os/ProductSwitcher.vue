@@ -44,7 +44,7 @@ const previewByKey: Record<ProductKey, { src: string; alt: string }> = {
     },
     yoyu: {
         src: '/images/products/yoyu.jpg',
-        alt: 'ヨユウ プレビュー — 今日の予定・余裕・秘書',
+        alt: 'ヨユウ プレビュー — 焦らず、前へ回すAI秘書',
     },
     kioku: {
         src: '/images/products/kioku.jpg',
@@ -94,7 +94,7 @@ function selectProduct(product: ProductDefinition): void {
 
         <Dialog :open="open" @update:open="open = $event">
             <DialogContent
-                class="max-h-[min(90vh,44rem)] gap-0 overflow-y-auto border-cd-line bg-cd-surface p-0 sm:max-w-4xl"
+                class="max-h-[min(95vh,58rem)] gap-0 overflow-y-auto border-cd-line bg-cd-surface p-0 sm:max-w-5xl"
                 data-test="product-switcher-modal"
             >
                 <DialogHeader class="sr-only">
@@ -105,7 +105,7 @@ function selectProduct(product: ProductDefinition): void {
                 </DialogHeader>
 
                 <div
-                    class="grid gap-3 p-4 sm:grid-cols-3 sm:gap-4 sm:p-5"
+                    class="grid items-start gap-4 p-4 sm:grid-cols-3 sm:gap-5 sm:p-6"
                     role="list"
                 >
                     <button
@@ -113,7 +113,7 @@ function selectProduct(product: ProductDefinition): void {
                         :key="product.key"
                         type="button"
                         role="listitem"
-                        class="group relative overflow-hidden rounded-xl text-left transition-opacity hover:opacity-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        class="group relative overflow-hidden rounded-xl bg-muted/20 text-left transition-opacity hover:opacity-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         :data-test="`product-card-${product.key}`"
                         :aria-current="
                             product.key === currentProductKey
@@ -122,16 +122,23 @@ function selectProduct(product: ProductDefinition): void {
                         "
                         @click="selectProduct(product)"
                     >
-                        <span class="sr-only">
-                            {{ product.name }} — {{ product.tagline }}
-                        </span>
                         <img
                             :src="previewByKey[product.key].src"
                             :alt="previewByKey[product.key].alt"
-                            class="aspect-[3/4] w-full object-cover object-top"
-                            loading="lazy"
+                            class="h-auto w-full object-contain"
+                            loading="eager"
                             decoding="async"
                         />
+                        <div
+                            class="absolute inset-x-0 top-0 bg-gradient-to-b from-cd-surface/95 via-cd-surface/88 to-transparent px-3 pt-3 pb-8"
+                        >
+                            <div class="pr-16 text-sm font-semibold text-cd-ink">
+                                {{ product.name }}
+                            </div>
+                            <div class="mt-0.5 text-xs leading-snug text-cd-ink-muted">
+                                {{ product.tagline }}
+                            </div>
+                        </div>
                         <span
                             v-if="product.key === currentProductKey"
                             class="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-cd-ink/85 px-2.5 py-1 text-[10px] font-semibold text-cd-surface shadow-sm backdrop-blur-sm"
