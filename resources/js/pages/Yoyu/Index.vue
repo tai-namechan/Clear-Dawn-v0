@@ -227,8 +227,8 @@ function isDone(event: CalEvent): boolean {
 
 defineOptions({
     layout: {
-        title: 'ヨユウ',
-        subtitle: '今日を回す場所',
+        title: '',
+        subtitle: '',
     },
 });
 </script>
@@ -250,7 +250,7 @@ defineOptions({
                             weekday: 'long',
                         })
                     }}
-                    — 今日を回す場所
+                    — 焦らず、前へ回すAI秘書
                 </div>
             </div>
             <nav
