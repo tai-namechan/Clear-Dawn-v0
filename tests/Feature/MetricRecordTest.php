@@ -121,10 +121,50 @@ class MetricRecordTest extends TestCase
             ->get(route('records.index', ['date' => '2026-07-07']))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
+                ->component('Records/Index')
+                ->has('mealTotals')
+                ->has('mealSections')
                 ->where('metrics', fn ($metrics) => collect($metrics)->contains(
                     fn (array $entry): bool => $entry['metric']['key'] === 'weight'
                         && $entry['record'] !== null
                         && $entry['record']['value'] === '70.00',
+                ))
+            );
+    }
+
+    public function test_condition_page_renders_and_is_scoped_to_user(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $metric = Metric::query()->where('key', 'weight')->firstOrFail();
+
+        MetricRecord::factory()->create([
+            'user_id' => $user->id,
+            'metric_id' => $metric->id,
+            'recorded_on' => '2026-07-07',
+            'value' => 70,
+        ]);
+        MetricRecord::factory()->create([
+            'user_id' => $otherUser->id,
+            'metric_id' => $metric->id,
+            'recorded_on' => '2026-07-07',
+            'value' => 99,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('records.condition', ['date' => '2026-07-07']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Records/Condition')
+                ->has('chartSeries')
+                ->where('metrics', fn ($metrics) => collect($metrics)->contains(
+                    fn (array $entry): bool => $entry['metric']['key'] === 'weight'
+                        && $entry['record'] !== null
+                        && $entry['record']['value'] === '70.00',
+                ))
+                ->where('metrics', fn ($metrics) => ! collect($metrics)->contains(
+                    fn (array $entry): bool => $entry['record'] !== null
+                        && $entry['record']['value'] === '99.00',
                 ))
             );
     }

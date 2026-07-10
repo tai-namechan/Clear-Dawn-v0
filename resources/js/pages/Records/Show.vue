@@ -102,7 +102,7 @@ async function deleteRecord(record: MetricRecord): Promise<void> {
             <PageSectionCard>
                 <div class="flex flex-col gap-4">
                     <Link
-                        href="/records"
+                        href="/records/condition"
                         class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
                     >
                         <ArrowLeft :size="16" :stroke-width="1.6" />

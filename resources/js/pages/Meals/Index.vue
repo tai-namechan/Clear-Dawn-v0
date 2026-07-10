@@ -389,21 +389,39 @@ function applyChartFilter(): void {
     <Head title="食事記録" />
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
-        <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
+        <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4">
             <PageSectionCard>
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <PageTitleOrnament
-                        title="食事記録"
-                        subtitle="その日の食事と PFC を記録します。"
-                        align="left"
-                    />
-                    <Link
-                        href="/meals/foods"
-                        class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
-                    >
-                        <UtensilsCrossed :size="14" :stroke-width="1.6" />
-                        マイ食品
-                    </Link>
+                    <div class="flex flex-col gap-2">
+                        <Link
+                            :href="`/records?date=${date}`"
+                            class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
+                        >
+                            ← パフォーマンス管理
+                        </Link>
+                        <PageTitleOrnament
+                            title="食事記録"
+                            subtitle="その日の食事と PFC を、わかりやすく・すばやく記録"
+                            align="left"
+                        />
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="font-sans"
+                            @click="openGoalModal"
+                        >
+                            目標を設定
+                        </Button>
+                        <Link
+                            href="/meals/foods"
+                            class="inline-flex items-center gap-2 rounded-md border border-cd-line px-3 py-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
+                        >
+                            <UtensilsCrossed :size="14" :stroke-width="1.6" />
+                            マイ食品
+                        </Link>
+                    </div>
                 </div>
             </PageSectionCard>
 
@@ -421,174 +439,224 @@ function applyChartFilter(): void {
                 />
             </PageSectionCard>
 
-            <PageSectionCard aria-label="日次サマリ">
-                <div class="flex flex-col gap-4">
-                    <div class="flex items-start justify-between gap-3">
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <PageSectionCard padding="sm">
+                    <p class="font-sans text-xs text-cd-ink-muted">
+                        合計エネルギー
+                    </p>
+                    <p class="mt-1 font-sans text-2xl font-semibold text-cd-ink">
+                        {{ formatNum(totals.kcal) }}
+                        <span class="text-sm font-medium text-cd-ink-muted"
+                            >kcal</span
+                        >
+                    </p>
+                    <p v-if="goal" class="mt-1 font-sans text-xs text-cd-ink-muted">
+                        目標 {{ formatNum(goal.kcal) }} kcal
+                    </p>
+                    <div
+                        v-if="kcalAchievement !== null"
+                        class="mt-3 h-2 overflow-hidden rounded-full bg-cd-line/40"
+                    >
+                        <div
+                            class="h-full rounded-full bg-primary"
+                            :style="{
+                                width: `${Math.min(100, kcalAchievement)}%`,
+                            }"
+                        />
+                    </div>
+                </PageSectionCard>
+
+                <PageSectionCard padding="sm">
+                    <p class="font-sans text-xs text-cd-ink-muted">
+                        PFC バランス
+                    </p>
+                    <div
+                        class="mt-3 flex h-2 overflow-hidden rounded-full bg-cd-line/40"
+                    >
+                        <div
+                            class="bg-[var(--chart-2)]"
+                            :style="{ width: `${pfcEnergy.p}%` }"
+                        />
+                        <div
+                            class="bg-[var(--chart-3)]"
+                            :style="{ width: `${pfcEnergy.f}%` }"
+                        />
+                        <div
+                            class="bg-[var(--chart-4)]"
+                            :style="{ width: `${pfcEnergy.c}%` }"
+                        />
+                    </div>
+                    <div
+                        class="mt-2 space-y-0.5 font-sans text-xs text-cd-ink-muted"
+                    >
+                        <p>P {{ formatNum(totals.protein_g) }}g ({{ pfcEnergy.p }}%)</p>
+                        <p>F {{ formatNum(totals.fat_g) }}g ({{ pfcEnergy.f }}%)</p>
+                        <p>C {{ formatNum(totals.carb_g) }}g ({{ pfcEnergy.c }}%)</p>
+                    </div>
+                </PageSectionCard>
+
+                <PageSectionCard padding="sm">
+                    <p class="font-sans text-xs text-cd-ink-muted">目標達成率</p>
+                    <p
+                        v-if="kcalAchievement !== null"
+                        class="mt-1 font-sans text-3xl font-semibold text-cd-ink"
+                    >
+                        {{ kcalAchievement }}%
+                    </p>
+                    <p v-else class="mt-1 font-sans text-lg text-cd-ink-muted">
+                        未設定
+                    </p>
+                    <p
+                        v-if="goal && kcalAchievement !== null"
+                        class="mt-2 font-sans text-xs text-cd-moss"
+                    >
+                        残り
+                        {{
+                            formatNum(
+                                Math.max(
+                                    0,
+                                    Number(goal.kcal) - totals.kcal,
+                                ),
+                            )
+                        }}
+                        kcal
+                    </p>
+                </PageSectionCard>
+
+                <PageSectionCard padding="sm">
+                    <p class="font-sans text-xs text-cd-ink-muted">今日のヒント</p>
+                    <p class="mt-2 font-sans text-sm leading-relaxed text-cd-ink">
+                        <template v-if="!goal">
+                            目標を設定すると、達成率と残りカロリーがわかります。
+                        </template>
+                        <template
+                            v-else-if="
+                                totals.protein_g < Number(goal.protein_g) * 0.8
+                            "
+                        >
+                            たんぱく質が目標に届いていません。次の食事で意識してみましょう。
+                        </template>
+                        <template v-else>
+                            記録が順調です。このペースを続けましょう。
+                        </template>
+                    </p>
+                </PageSectionCard>
+            </div>
+
+            <p
+                v-if="message"
+                class="font-sans text-sm"
+                :class="
+                    message.includes('失敗')
+                        ? 'text-destructive'
+                        : 'text-cd-moss'
+                "
+            >
+                {{ message }}
+            </p>
+
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <PageSectionCard
+                    v-for="section in sections"
+                    :key="section.meal_type"
+                    padding="none"
+                    :aria-label="section.label"
+                >
+                    <div
+                        class="flex items-center justify-between border-b border-cd-line px-4 py-3"
+                    >
                         <div>
+                            <h2
+                                class="font-sans text-base font-semibold text-cd-ink"
+                            >
+                                {{ section.label }}
+                            </h2>
                             <p class="font-sans text-xs text-cd-ink-muted">
-                                合計エネルギー
-                            </p>
-                            <p
-                                class="mt-1 font-sans text-3xl font-semibold tracking-tight text-cd-ink"
-                            >
-                                {{ formatNum(totals.kcal) }}
-                                <span class="text-base font-medium text-cd-ink-muted"
-                                    >kcal</span
-                                >
-                            </p>
-                            <p
-                                v-if="kcalAchievement !== null"
-                                class="mt-1 font-sans text-sm text-cd-moss"
-                            >
-                                目標達成率 {{ kcalAchievement }}%
-                            </p>
-                            <p
-                                v-else
-                                class="mt-1 font-sans text-sm text-cd-ink-muted"
-                            >
-                                目標未設定
+                                {{ formatNum(section.subtotal.kcal) }} kcal
                             </p>
                         </div>
                         <Button
                             type="button"
+                            size="sm"
                             variant="outline"
                             class="font-sans"
-                            @click="openGoalModal"
+                            @click="openAddEntry(section.meal_type)"
                         >
-                            目標を設定
+                            <Plus :size="14" :stroke-width="1.6" />
+                            追加
                         </Button>
                     </div>
 
-                    <div>
-                        <p class="mb-2 font-sans text-xs text-cd-ink-muted">
-                            PFC バランス（エネルギー比）
-                        </p>
-                        <div
-                            class="flex h-3 overflow-hidden rounded-full bg-cd-line/40"
-                        >
-                            <div
-                                class="bg-[var(--chart-2)]"
-                                :style="{ width: `${pfcEnergy.p}%` }"
-                            />
-                            <div
-                                class="bg-[var(--chart-3)]"
-                                :style="{ width: `${pfcEnergy.f}%` }"
-                            />
-                            <div
-                                class="bg-[var(--chart-4)]"
-                                :style="{ width: `${pfcEnergy.c}%` }"
-                            />
-                        </div>
-                        <div
-                            class="mt-2 flex flex-wrap gap-3 font-sans text-xs text-cd-ink-muted"
-                        >
-                            <span>P {{ formatNum(totals.protein_g) }}g ({{ pfcEnergy.p }}%)</span>
-                            <span>F {{ formatNum(totals.fat_g) }}g ({{ pfcEnergy.f }}%)</span>
-                            <span>C {{ formatNum(totals.carb_g) }}g ({{ pfcEnergy.c }}%)</span>
-                        </div>
-                    </div>
-
                     <p
-                        v-if="message"
-                        class="font-sans text-sm"
-                        :class="
-                            message.includes('失敗')
-                                ? 'text-destructive'
-                                : 'text-cd-moss'
-                        "
+                        class="border-b border-cd-line px-4 py-2 font-sans text-xs text-cd-ink-muted"
                     >
-                        {{ message }}
+                        P {{ formatNum(section.subtotal.protein_g) }} · F
+                        {{ formatNum(section.subtotal.fat_g) }} · C
+                        {{ formatNum(section.subtotal.carb_g) }}
                     </p>
-                </div>
-            </PageSectionCard>
 
-            <PageSectionCard
-                v-for="section in sections"
-                :key="section.meal_type"
-                padding="none"
-                :aria-label="section.label"
-            >
-                <div
-                    class="flex items-center justify-between border-b border-cd-line px-5 py-3"
-                >
-                    <div>
-                        <h2 class="font-sans text-base font-semibold text-cd-ink">
-                            {{ section.label }}
-                        </h2>
-                        <p class="font-sans text-xs text-cd-ink-muted">
-                            {{ formatNum(section.subtotal.kcal) }} kcal · P
-                            {{ formatNum(section.subtotal.protein_g) }} / F
-                            {{ formatNum(section.subtotal.fat_g) }} / C
-                            {{ formatNum(section.subtotal.carb_g) }}
-                        </p>
+                    <ul v-if="section.entries.length > 0" class="flex flex-col">
+                        <li
+                            v-for="entry in section.entries"
+                            :key="entry.id"
+                            class="flex items-start justify-between gap-2 border-b border-cd-line px-4 py-3 last:border-b-0"
+                        >
+                            <div class="min-w-0">
+                                <p
+                                    class="font-sans text-sm font-semibold text-cd-ink"
+                                >
+                                    {{ entry.name }}
+                                    <span class="font-normal text-cd-ink-muted">
+                                        × {{ formatNum(entry.quantity) }}
+                                    </span>
+                                </p>
+                                <p
+                                    class="mt-0.5 font-sans text-xs text-cd-ink-muted"
+                                >
+                                    {{ formatNum(entry.kcal) }} kcal
+                                </p>
+                            </div>
+                            <div class="flex shrink-0 gap-1">
+                                <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    :aria-label="`${entry.name} を編集`"
+                                    @click="openEditEntry(entry)"
+                                >
+                                    <Pencil :size="14" :stroke-width="1.6" />
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    :aria-label="`${entry.name} を削除`"
+                                    @click="deleteEntry(entry)"
+                                >
+                                    <Trash2 :size="14" :stroke-width="1.6" />
+                                </Button>
+                            </div>
+                        </li>
+                    </ul>
+                    <p
+                        v-else
+                        class="px-4 py-4 font-sans text-sm text-cd-ink-muted"
+                    >
+                        まだ記録がありません。
+                    </p>
+
+                    <div class="border-t border-cd-line px-4 py-3">
+                        <Button
+                            type="button"
+                            size="sm"
+                            class="w-full font-sans"
+                            @click="openAddEntry(section.meal_type)"
+                        >
+                            クイック追加
+                        </Button>
                     </div>
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        class="font-sans"
-                        @click="openAddEntry(section.meal_type)"
-                    >
-                        <Plus :size="14" :stroke-width="1.6" />
-                        追加
-                    </Button>
-                </div>
-
-                <ul v-if="section.entries.length > 0" class="flex flex-col">
-                    <li
-                        v-for="entry in section.entries"
-                        :key="entry.id"
-                        class="flex items-start justify-between gap-3 border-b border-cd-line px-5 py-3 last:border-b-0"
-                    >
-                        <div class="min-w-0">
-                            <p class="font-sans text-sm font-semibold text-cd-ink">
-                                {{ entry.name }}
-                                <span class="font-normal text-cd-ink-muted">
-                                    × {{ formatNum(entry.quantity) }}
-                                </span>
-                            </p>
-                            <p class="mt-0.5 font-sans text-xs text-cd-ink-muted">
-                                {{ formatNum(entry.kcal) }} kcal · P
-                                {{ formatNum(entry.protein_g) }} / F
-                                {{ formatNum(entry.fat_g) }} / C
-                                {{ formatNum(entry.carb_g) }}
-                            </p>
-                            <p
-                                v-if="entry.note"
-                                class="mt-1 font-sans text-xs text-cd-ink-muted"
-                            >
-                                {{ entry.note }}
-                            </p>
-                        </div>
-                        <div class="flex shrink-0 gap-1">
-                            <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                :aria-label="`${entry.name} を編集`"
-                                @click="openEditEntry(entry)"
-                            >
-                                <Pencil :size="14" :stroke-width="1.6" />
-                            </Button>
-                            <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                :aria-label="`${entry.name} を削除`"
-                                @click="deleteEntry(entry)"
-                            >
-                                <Trash2 :size="14" :stroke-width="1.6" />
-                            </Button>
-                        </div>
-                    </li>
-                </ul>
-                <p
-                    v-else
-                    class="px-5 py-4 font-sans text-sm text-cd-ink-muted"
-                >
-                    まだ記録がありません。
-                </p>
-            </PageSectionCard>
+                </PageSectionCard>
+            </div>
 
             <PageSectionCard aria-label="推移">
                 <div class="flex flex-col gap-4">
@@ -618,14 +686,18 @@ function applyChartFilter(): void {
                     </div>
 
                     <div>
-                        <h3 class="mb-2 font-sans text-sm font-semibold text-cd-ink">
+                        <h3
+                            class="mb-2 font-sans text-sm font-semibold text-cd-ink"
+                        >
                             エネルギー（kcal）
                         </h3>
                         <BaseChart :option="kcalChartOption" />
                     </div>
 
                     <div>
-                        <h3 class="mb-2 font-sans text-sm font-semibold text-cd-ink">
+                        <h3
+                            class="mb-2 font-sans text-sm font-semibold text-cd-ink"
+                        >
                             PFC（g）
                         </h3>
                         <BaseChart :option="pfcChartOption" />
