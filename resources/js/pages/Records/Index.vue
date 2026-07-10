@@ -3,7 +3,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import {
     Activity,
     ArrowRight,
-    CheckCircle2,
+    Check,
     Circle,
     Flame,
     Gauge,
@@ -22,6 +22,7 @@ import {
     formatSleepMinutes,
     metricLabel,
 } from '@/lib/metricLabels';
+import { PFC_COLORS } from '@/lib/pfcColors';
 import type {
     DailyMetricEntry,
     NutritionGoal,
@@ -158,9 +159,9 @@ const pfcDonutStyle = computed(() => {
 
     return {
         background: `conic-gradient(
-            var(--cd-moss) 0deg ${pEnd}deg,
-            var(--cd-sunrise) ${pEnd}deg ${fEnd}deg,
-            var(--cd-mist) ${fEnd}deg 360deg
+            ${PFC_COLORS.p.css} 0deg ${pEnd}deg,
+            ${PFC_COLORS.f.css} ${pEnd}deg ${fEnd}deg,
+            ${PFC_COLORS.c.css} ${fEnd}deg 360deg
         )`,
     };
 });
@@ -209,7 +210,7 @@ const conditionHighlights = computed(() =>
                     />
                 </PageSectionCard>
 
-                <PageSectionCard padding="sm" class="flex items-center">
+                <PageSectionCard padding="sm" class="flex items-center justify-center">
                     <DateNavigator
                         :date="date"
                         route-url="/records"
@@ -225,115 +226,129 @@ const conditionHighlights = computed(() =>
                 </PageSectionCard>
             </div>
 
-            <div
-                class="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6"
-            >
-                <PageSectionCard padding="sm">
-                    <div class="flex items-start justify-between gap-2">
-                        <p class="font-sans text-xs text-cd-ink-muted">
-                            摂取カロリー
-                        </p>
-                        <Flame
-                            class="text-primary"
-                            :size="16"
-                            :stroke-width="1.6"
-                        />
-                    </div>
-                    <p class="mt-2 font-sans text-2xl font-semibold text-cd-ink">
-                        {{
-                            Number(mealTotals.kcal).toLocaleString('ja-JP', {
-                                maximumFractionDigits: 0,
-                            })
-                        }}
-                        <span class="text-sm font-medium text-cd-ink-muted"
-                            >kcal</span
-                        >
-                    </p>
-                    <p
-                        v-if="mealGoal"
-                        class="mt-1 font-sans text-xs text-cd-ink-muted"
-                    >
-                        目標
-                        {{
-                            Number(mealGoal.kcal).toLocaleString('ja-JP', {
-                                maximumFractionDigits: 0,
-                            })
-                        }}
-                        kcal
-                    </p>
-                    <div
-                        v-if="kcalProgress !== null"
-                        class="mt-3 h-2 overflow-hidden rounded-full bg-cd-line/40"
-                    >
-                        <div
-                            class="h-full rounded-full bg-primary"
-                            :style="{ width: `${kcalProgress}%` }"
-                        />
-                    </div>
-                </PageSectionCard>
-
-                <PageSectionCard padding="sm">
-                    <p class="font-sans text-xs text-cd-ink-muted">
-                        PFC バランス
-                    </p>
-                    <div class="mt-3 flex items-center gap-3">
-                        <div
-                            class="relative size-14 shrink-0 rounded-full"
-                            :style="pfcDonutStyle"
-                        >
-                            <div
-                                class="absolute inset-[22%] rounded-full bg-cd-surface"
+            <PageSectionCard padding="none" aria-label="本日のサマリ">
+                <div
+                    class="grid divide-y divide-cd-line sm:grid-cols-2 sm:divide-x md:grid-cols-3 xl:grid-cols-6 xl:divide-y-0"
+                >
+                    <div class="p-4">
+                        <div class="flex items-start justify-between gap-2">
+                            <p class="font-sans text-xs text-cd-ink-muted">
+                                摂取カロリー
+                            </p>
+                            <Flame
+                                class="text-primary"
+                                :size="16"
+                                :stroke-width="1.6"
                             />
                         </div>
-                        <div
-                            class="flex flex-col gap-1 font-sans text-xs text-cd-ink-muted"
+                        <p
+                            class="mt-2 font-sans text-2xl font-semibold text-cd-ink"
                         >
-                            <span class="text-cd-moss">P {{ pfcEnergy.p }}%</span>
-                            <span class="text-cd-sunrise"
-                                >F {{ pfcEnergy.f }}%</span
+                            {{
+                                Number(mealTotals.kcal).toLocaleString(
+                                    'ja-JP',
+                                    { maximumFractionDigits: 0 },
+                                )
+                            }}
+                            <span class="text-sm font-medium text-cd-ink-muted"
+                                >kcal</span
                             >
-                            <span class="text-cd-mist">C {{ pfcEnergy.c }}%</span>
+                        </p>
+                        <p
+                            v-if="mealGoal"
+                            class="mt-1 font-sans text-xs text-cd-ink-muted"
+                        >
+                            目標
+                            {{
+                                Number(mealGoal.kcal).toLocaleString('ja-JP', {
+                                    maximumFractionDigits: 0,
+                                })
+                            }}
+                            kcal
+                        </p>
+                        <div
+                            v-if="kcalProgress !== null"
+                            class="mt-3 h-2 overflow-hidden rounded-full bg-cd-line/40"
+                        >
+                            <div
+                                class="h-full rounded-full bg-primary"
+                                :style="{ width: `${kcalProgress}%` }"
+                            />
                         </div>
                     </div>
-                </PageSectionCard>
 
-                <PageSectionCard
-                    v-for="item in summaryMetrics"
-                    :key="item.key"
-                    padding="sm"
-                >
-                    <div class="flex items-start justify-between gap-2">
+                    <div class="p-4">
                         <p class="font-sans text-xs text-cd-ink-muted">
-                            {{ item.label }}
+                            PFC バランス
                         </p>
-                        <component
-                            :is="item.icon"
-                            class="text-primary"
-                            :size="16"
-                            :stroke-width="1.6"
-                        />
+                        <div class="mt-3 flex items-center gap-3">
+                            <div
+                                class="relative size-14 shrink-0 rounded-full"
+                                :style="pfcDonutStyle"
+                            >
+                                <div
+                                    class="absolute inset-[22%] rounded-full bg-cd-surface"
+                                />
+                            </div>
+                            <div
+                                class="flex flex-col gap-1 font-sans text-xs"
+                            >
+                                <span class="inline-flex items-center gap-1.5 text-cd-pfc-p">
+                                    <span class="size-2 rounded-sm bg-cd-pfc-p" />
+                                    P {{ pfcEnergy.p }}%
+                                </span>
+                                <span class="inline-flex items-center gap-1.5 text-cd-pfc-f">
+                                    <span class="size-2 rounded-sm bg-cd-pfc-f" />
+                                    F {{ pfcEnergy.f }}%
+                                </span>
+                                <span class="inline-flex items-center gap-1.5 text-cd-pfc-c">
+                                    <span class="size-2 rounded-sm bg-cd-pfc-c" />
+                                    C {{ pfcEnergy.c }}%
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                    <p class="mt-2 font-sans text-2xl font-semibold text-cd-ink">
-                        {{ item.display }}
-                        <span
-                            v-if="
-                                item.display !== '—' &&
-                                item.key !== 'sleep_minutes' &&
-                                item.key !== 'pain_level' &&
-                                item.key !== 'fatigue_level'
-                            "
-                            class="text-sm font-medium text-cd-ink-muted"
-                            >{{ item.unit }}</span
-                        >
-                    </p>
-                    <p
-                        v-if="item.delta"
-                        class="mt-1 font-sans text-xs text-cd-ink-muted"
+
+                    <div
+                        v-for="item in summaryMetrics"
+                        :key="item.key"
+                        class="p-4"
                     >
-                        {{ item.delta }}
-                    </p>
-                </PageSectionCard>
-            </div>
+                        <div class="flex items-start justify-between gap-2">
+                            <p class="font-sans text-xs text-cd-ink-muted">
+                                {{ item.label }}
+                            </p>
+                            <component
+                                :is="item.icon"
+                                class="text-primary"
+                                :size="16"
+                                :stroke-width="1.6"
+                            />
+                        </div>
+                        <p
+                            class="mt-2 font-sans text-2xl font-semibold text-cd-ink"
+                        >
+                            {{ item.display }}
+                            <span
+                                v-if="
+                                    item.display !== '—' &&
+                                    item.key !== 'sleep_minutes' &&
+                                    item.key !== 'pain_level' &&
+                                    item.key !== 'fatigue_level'
+                                "
+                                class="text-sm font-medium text-cd-ink-muted"
+                                >{{ item.unit }}</span
+                            >
+                        </p>
+                        <p
+                            v-if="item.delta"
+                            class="mt-1 font-sans text-xs text-cd-ink-muted"
+                        >
+                            {{ item.delta }}
+                        </p>
+                    </div>
+                </div>
+            </PageSectionCard>
 
             <div class="grid gap-4 lg:grid-cols-2">
                 <PageSectionCard aria-label="食事記録への入り口">
@@ -416,15 +431,18 @@ const conditionHighlights = computed(() =>
                                     />
                                 </div>
                                 <div
-                                    class="space-y-1 font-sans text-xs text-cd-ink-muted"
+                                    class="space-y-1 font-sans text-xs"
                                 >
-                                    <p class="text-cd-moss">
+                                    <p class="inline-flex items-center gap-1.5 text-cd-pfc-p">
+                                        <span class="size-2 rounded-sm bg-cd-pfc-p" />
                                         P {{ pfcEnergy.p }}%
                                     </p>
-                                    <p class="text-cd-sunrise">
+                                    <p class="inline-flex items-center gap-1.5 text-cd-pfc-f">
+                                        <span class="size-2 rounded-sm bg-cd-pfc-f" />
                                         F {{ pfcEnergy.f }}%
                                     </p>
-                                    <p class="text-cd-mist">
+                                    <p class="inline-flex items-center gap-1.5 text-cd-pfc-c">
+                                        <span class="size-2 rounded-sm bg-cd-pfc-c" />
                                         C {{ pfcEnergy.c }}%
                                     </p>
                                 </div>
@@ -444,12 +462,13 @@ const conditionHighlights = computed(() =>
                                         class="font-sans text-sm font-medium text-cd-ink"
                                         >{{ section.label }}</span
                                     >
-                                    <CheckCircle2
+                                    <span
                                         v-if="section.entry_count > 0"
-                                        class="text-cd-moss"
-                                        :size="14"
-                                        :stroke-width="1.8"
-                                    />
+                                        class="inline-flex size-4 items-center justify-center rounded-full bg-cd-pfc-p text-white"
+                                        aria-label="記録済み"
+                                    >
+                                        <Check :size="10" :stroke-width="3" />
+                                    </span>
                                     <Circle
                                         v-else
                                         class="text-cd-ink-muted"
@@ -501,12 +520,12 @@ const conditionHighlights = computed(() =>
                         </div>
 
                         <ul
-                            class="grid grid-cols-2 gap-2 sm:grid-cols-3"
+                            class="overflow-hidden rounded-xl border border-cd-line sm:grid sm:grid-cols-3 sm:divide-x sm:divide-cd-line"
                         >
                             <li
                                 v-for="item in conditionHighlights"
                                 :key="item.key"
-                                class="rounded-xl border border-cd-line px-3 py-2.5"
+                                class="border-b border-cd-line px-3 py-2.5 last:border-b-0 sm:border-b-0"
                             >
                                 <p class="font-sans text-xs text-cd-ink-muted">
                                     {{ item.label }}
