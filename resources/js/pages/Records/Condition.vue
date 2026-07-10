@@ -1,8 +1,18 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ArrowLeft, Minus, Plus } from '@lucide/vue';
+import {
+    Activity,
+    ArrowLeft,
+    ArrowRight,
+    Gauge,
+    HeartPulse,
+    Minus,
+    Moon,
+    Plus,
+    Scale,
+} from '@lucide/vue';
 import type { EChartsCoreOption } from 'echarts/core';
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, type Component } from 'vue';
 import BaseChart from '@/components/charts/BaseChart.vue';
 import DateNavigator from '@/components/DateNavigator.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
@@ -11,6 +21,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiFetch } from '@/lib/apiFetch';
+import {
+    formatSleepDelta,
+    formatSleepMinutes,
+    metricLabel,
+} from '@/lib/metricLabels';
 import type { ChartPoint, DailyMetricEntry } from '@/types/routine';
 
 interface Props {
@@ -21,6 +36,15 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+const metricIcons: Record<string, Component> = {
+    weight: Scale,
+    sleep_minutes: Moon,
+    pitch_speed_max: Gauge,
+    pitch_count: Activity,
+    pain_level: HeartPulse,
+    fatigue_level: HeartPulse,
+};
 
 /** Always keep form values as strings to avoid Vue number-input trim bugs. */
 const values = ref<Record<string, string>>(
@@ -82,10 +106,11 @@ function formatDisplay(key: string, value: number | null): string {
     }
 
     if (key === 'sleep_minutes') {
-        const hours = Math.floor(value / 60);
-        const minutes = Math.round(value % 60);
+        return formatSleepMinutes(value);
+    }
 
-        return `${hours}h ${String(minutes).padStart(2, '0')}m`;
+    if (key === 'pain_level' || key === 'fatigue_level') {
+        return `${Math.round(value)} / 5`;
     }
 
     return value.toLocaleString('ja-JP', { maximumFractionDigits: 1 });
@@ -102,20 +127,18 @@ function deltaText(key: string): string | null {
     const diff = today - prev;
 
     if (Math.abs(diff) < 0.05) {
-        return '変化なし';
+        return '変化なし（前日比）';
+    }
+
+    if (key === 'sleep_minutes') {
+        return `${formatSleepDelta(diff)}（前日比）`;
     }
 
     const sign = diff > 0 ? '▲' : '▼';
 
-    if (key === 'sleep_minutes') {
-        const abs = Math.abs(Math.round(diff));
-
-        return `${sign} ${Math.floor(abs / 60)}h ${abs % 60}m`;
-    }
-
     return `${sign} ${Math.abs(diff).toLocaleString('ja-JP', {
         maximumFractionDigits: 1,
-    })}`;
+    })}（前日比）`;
 }
 
 const summaryCards = computed(() =>
@@ -124,10 +147,11 @@ const summaryCards = computed(() =>
 
         return {
             key: entry.metric.key,
-            label: entry.metric.label,
+            label: metricLabel(entry.metric.key, entry.metric.label),
             unit: entry.metric.unit,
             display: formatDisplay(entry.metric.key, today),
             delta: deltaText(entry.metric.key),
+            icon: metricIcons[entry.metric.key] ?? Activity,
         };
     }),
 );
@@ -237,13 +261,16 @@ const chartOption = computed<EChartsCoreOption>(() => {
             },
         ],
         series: [
-            { ...seriesFor('weight', 'var(--chart-1)', '体重'), yAxisIndex: 0 },
             {
-                ...seriesFor('sleep_minutes', 'var(--chart-2)', '睡眠(分)'),
+                ...seriesFor('weight', 'var(--primary)', '体重'),
+                yAxisIndex: 0,
+            },
+            {
+                ...seriesFor('sleep_minutes', 'var(--cd-mist)', '睡眠時間'),
                 yAxisIndex: 1,
             },
             {
-                ...seriesFor('pitch_speed_max', 'var(--chart-3)', '最高球速'),
+                ...seriesFor('pitch_speed_max', 'var(--cd-moss)', '最高球速'),
                 yAxisIndex: 0,
             },
         ],
@@ -255,7 +282,10 @@ async function saveAll(): Promise<void> {
     saveMessage.value = null;
 
     const records = props.metrics
-        .filter((entry) => String(values.value[entry.metric.key] ?? '').trim() !== '')
+        .filter(
+            (entry) =>
+                String(values.value[entry.metric.key] ?? '').trim() !== '',
+        )
         .map((entry) => ({
             metric_key: entry.metric.key,
             value: Number(String(values.value[entry.metric.key]).trim()),
@@ -301,52 +331,66 @@ async function saveAll(): Promise<void> {
     <Head title="コンディション管理" />
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
-        <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4">
-            <PageSectionCard>
-                <div class="flex flex-col gap-4">
-                    <Link
-                        :href="`/records?date=${date}`"
-                        class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
-                    >
-                        <ArrowLeft :size="16" :stroke-width="1.6" />
-                        パフォーマンス管理
-                    </Link>
-                    <PageTitleOrnament
-                        title="コンディション管理"
-                        subtitle="体調・回復・パフォーマンスをまとめて記録"
-                        align="left"
+        <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 md:gap-5">
+            <div class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
+                <PageSectionCard>
+                    <div class="flex flex-col gap-3">
+                        <Link
+                            :href="`/records?date=${date}`"
+                            class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
+                        >
+                            <ArrowLeft :size="16" :stroke-width="1.6" />
+                            パフォーマンス管理
+                        </Link>
+                        <PageTitleOrnament
+                            title="コンディション管理"
+                            subtitle="体調・回復・パフォーマンスをまとめて記録"
+                            align="left"
+                        />
+                    </div>
+                </PageSectionCard>
+
+                <PageSectionCard padding="sm" class="flex items-center">
+                    <DateNavigator
+                        :date="date"
+                        route-url="/records/condition"
+                        :reload-only="[
+                            'metrics',
+                            'previousMetrics',
+                            'chartSeries',
+                            'date',
+                        ]"
                     />
-                </div>
-            </PageSectionCard>
+                </PageSectionCard>
+            </div>
 
-            <PageSectionCard padding="sm">
-                <DateNavigator
-                    :date="date"
-                    route-url="/records/condition"
-                    :reload-only="[
-                        'metrics',
-                        'previousMetrics',
-                        'chartSeries',
-                        'date',
-                    ]"
-                />
-            </PageSectionCard>
-
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div
+                class="grid gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6"
+            >
                 <PageSectionCard
                     v-for="card in summaryCards"
                     :key="card.key"
                     padding="sm"
                 >
-                    <p class="font-sans text-xs text-cd-ink-muted">
-                        {{ card.label }}
-                    </p>
-                    <p class="mt-1 font-sans text-2xl font-semibold text-cd-ink">
+                    <div class="flex items-start justify-between gap-2">
+                        <p class="font-sans text-xs text-cd-ink-muted">
+                            {{ card.label }}
+                        </p>
+                        <component
+                            :is="card.icon"
+                            class="text-primary"
+                            :size="16"
+                            :stroke-width="1.6"
+                        />
+                    </div>
+                    <p class="mt-2 font-sans text-2xl font-semibold text-cd-ink">
                         {{ card.display }}
                         <span
                             v-if="
                                 card.display !== '—' &&
-                                card.key !== 'sleep_minutes'
+                                card.key !== 'sleep_minutes' &&
+                                card.key !== 'pain_level' &&
+                                card.key !== 'fatigue_level'
                             "
                             class="text-sm font-medium text-cd-ink-muted"
                             >{{ card.unit }}</span
@@ -368,40 +412,44 @@ async function saveAll(): Promise<void> {
                 <BaseChart :option="chartOption" />
             </PageSectionCard>
 
-            <PageSectionCard aria-label="今日のコンディションを記録">
-                <h2 class="mb-4 font-sans text-base font-semibold text-cd-ink">
+            <div>
+                <h2 class="mb-3 font-sans text-base font-semibold text-cd-ink">
                     今日のコンディションを記録
                 </h2>
 
-                <ul class="flex flex-col gap-5">
+                <ul
+                    class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                >
                     <li
                         v-for="entry in metrics"
                         :key="entry.metric.key"
-                        class="border-b border-cd-line pb-5 last:border-b-0 last:pb-0"
                     >
-                        <div
-                            class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
-                        >
-                            <div class="min-w-0 flex-1">
-                                <Label
-                                    :for="`metric-${entry.metric.key}`"
-                                    class="font-sans text-base font-semibold text-cd-ink"
-                                >
-                                    {{ entry.metric.label }}
-                                    <span
-                                        class="ml-1 text-xs font-normal text-cd-ink-muted"
-                                        >({{ entry.metric.unit }})</span
+                        <PageSectionCard padding="sm" class="h-full">
+                            <div class="flex flex-col gap-3">
+                                <div>
+                                    <Label
+                                        :for="`metric-${entry.metric.key}`"
+                                        class="font-sans text-sm font-semibold text-cd-ink"
                                     >
-                                </Label>
-                                <p
-                                    v-if="deltaText(entry.metric.key)"
-                                    class="mt-1 font-sans text-xs text-cd-ink-muted"
-                                >
-                                    前日比 {{ deltaText(entry.metric.key) }}
-                                </p>
-                            </div>
+                                        {{
+                                            metricLabel(
+                                                entry.metric.key,
+                                                entry.metric.label,
+                                            )
+                                        }}
+                                        <span
+                                            class="ml-1 text-xs font-normal text-cd-ink-muted"
+                                            >({{ entry.metric.unit }})</span
+                                        >
+                                    </Label>
+                                    <p
+                                        v-if="deltaText(entry.metric.key)"
+                                        class="mt-1 font-sans text-xs text-cd-ink-muted"
+                                    >
+                                        {{ deltaText(entry.metric.key) }}
+                                    </p>
+                                </div>
 
-                            <div class="flex w-full flex-col gap-2 sm:w-64">
                                 <template
                                     v-if="entry.metric.key === 'sleep_minutes'"
                                 >
@@ -460,7 +508,7 @@ async function saveAll(): Promise<void> {
                                             type="button"
                                             size="icon"
                                             variant="outline"
-                                            :aria-label="`${entry.metric.label} を減らす`"
+                                            :aria-label="`${metricLabel(entry.metric.key, entry.metric.label)} を減らす`"
                                             @click="
                                                 stepValue(
                                                     entry.metric.key,
@@ -494,7 +542,7 @@ async function saveAll(): Promise<void> {
                                             type="button"
                                             size="icon"
                                             variant="outline"
-                                            :aria-label="`${entry.metric.label} を増やす`"
+                                            :aria-label="`${metricLabel(entry.metric.key, entry.metric.label)} を増やす`"
                                             @click="
                                                 stepValue(
                                                     entry.metric.key,
@@ -521,63 +569,65 @@ async function saveAll(): Promise<void> {
                                     class="text-sm"
                                 />
                             </div>
-                        </div>
+                        </PageSectionCard>
+                    </li>
+
+                    <li class="sm:col-span-2 xl:col-span-3">
+                        <PageSectionCard padding="sm">
+                            <Label
+                                class="font-sans text-sm font-semibold text-cd-ink"
+                                >今日の振り返りメモ</Label
+                            >
+                            <textarea
+                                v-model="reflection"
+                                rows="3"
+                                maxlength="500"
+                                class="mt-3 min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 font-sans text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                                placeholder="気づきや体調のメモ（任意）"
+                            />
+                            <p
+                                class="mt-1 text-right font-sans text-xs text-cd-ink-muted"
+                            >
+                                {{ reflection.length }}/500
+                            </p>
+                        </PageSectionCard>
                     </li>
                 </ul>
+            </div>
 
-                <div class="mt-5 flex flex-col gap-2">
-                    <Label class="font-sans text-sm font-semibold text-cd-ink"
-                        >今日の振り返りメモ</Label
+            <div class="flex items-center justify-between gap-3">
+                <p
+                    v-if="saveMessage"
+                    class="font-sans text-sm"
+                    :class="
+                        saveMessage.includes('失敗')
+                            ? 'text-destructive'
+                            : 'text-cd-moss'
+                    "
+                >
+                    {{ saveMessage }}
+                </p>
+                <span v-else />
+                <div class="flex gap-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        class="font-sans"
+                        as-child
                     >
-                    <textarea
-                        v-model="reflection"
-                        rows="3"
-                        maxlength="500"
-                        class="min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 font-sans text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                        placeholder="気づきや体調のメモ（任意）"
-                    />
-                    <p class="text-right font-sans text-xs text-cd-ink-muted">
-                        {{ reflection.length }}/500
-                    </p>
-                </div>
-            </PageSectionCard>
-
-            <PageSectionCard padding="sm">
-                <div class="flex items-center justify-between gap-3">
-                    <p
-                        v-if="saveMessage"
-                        class="font-sans text-sm"
-                        :class="
-                            saveMessage.includes('失敗')
-                                ? 'text-destructive'
-                                : 'text-cd-moss'
-                        "
+                        <Link :href="`/records?date=${date}`">キャンセル</Link>
+                    </Button>
+                    <Button
+                        type="button"
+                        class="font-sans tracking-[0.08em]"
+                        :disabled="saving"
+                        @click="saveAll"
                     >
-                        {{ saveMessage }}
-                    </p>
-                    <span v-else />
-                    <div class="flex gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            class="font-sans"
-                            as-child
-                        >
-                            <Link :href="`/records?date=${date}`"
-                                >キャンセル</Link
-                            >
-                        </Button>
-                        <Button
-                            type="button"
-                            class="font-sans tracking-[0.08em]"
-                            :disabled="saving"
-                            @click="saveAll"
-                        >
-                            記録を保存
-                        </Button>
-                    </div>
+                        記録を保存
+                        <ArrowRight :size="16" :stroke-width="1.6" />
+                    </Button>
                 </div>
-            </PageSectionCard>
+            </div>
         </div>
     </div>
 </template>

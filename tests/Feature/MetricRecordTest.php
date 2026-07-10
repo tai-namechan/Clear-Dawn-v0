@@ -205,4 +205,53 @@ class MetricRecordTest extends TestCase
             ->get(route('records.show', ['metric' => 'unknown_metric']))
             ->assertNotFound();
     }
+
+    public function test_visiting_records_ensures_missing_metrics_with_japanese_labels(): void
+    {
+        Metric::query()->delete();
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('records.index', ['date' => '2026-07-07']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Records/Index')
+                ->where('metrics', fn ($metrics) => collect($metrics)->contains(
+                    fn (array $entry): bool => $entry['metric']['key'] === 'weight'
+                        && $entry['metric']['label'] === '体重',
+                ))
+                ->where('metrics', fn ($metrics) => collect($metrics)->contains(
+                    fn (array $entry): bool => $entry['metric']['key'] === 'sleep_minutes'
+                        && $entry['metric']['label'] === '睡眠時間',
+                ))
+                ->where('metrics', fn ($metrics) => collect($metrics)->contains(
+                    fn (array $entry): bool => $entry['metric']['key'] === 'pain_level'
+                        && $entry['metric']['label'] === '痛みレベル',
+                ))
+                ->where('metrics', fn ($metrics) => collect($metrics)->contains(
+                    fn (array $entry): bool => $entry['metric']['key'] === 'pitch_speed_max'
+                        && $entry['metric']['label'] === '最高球速',
+                ))
+            );
+
+        $this->assertDatabaseHas('metrics', ['key' => 'weight', 'label' => '体重']);
+        $this->assertSame(6, Metric::query()->count());
+    }
+
+    public function test_visiting_condition_ensures_missing_metrics(): void
+    {
+        Metric::query()->delete();
+
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('records.condition', ['date' => '2026-07-07']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Records/Condition')
+                ->has('metrics', 6)
+                ->where('metrics.0.metric.label', '体重')
+            );
+    }
 }
