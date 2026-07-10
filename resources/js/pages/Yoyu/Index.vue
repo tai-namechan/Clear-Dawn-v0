@@ -225,20 +225,15 @@ defineOptions({
         <Head title="ヨユウ" />
 
         <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <div class="font-serif text-xl font-bold tracking-wide text-os-yoyu">
-                    ヨユウ
-                </div>
-                <div class="text-xs text-os-sub">
-                    {{
-                        new Date().toLocaleDateString('ja-JP', {
-                            month: 'long',
-                            day: 'numeric',
-                            weekday: 'long',
-                        })
-                    }}
-                    — 焦らず、前へ回すAI秘書
-                </div>
+            <div class="text-xs text-os-sub">
+                {{
+                    new Date().toLocaleDateString('ja-JP', {
+                        month: 'long',
+                        day: 'numeric',
+                        weekday: 'long',
+                    })
+                }}
+                — 焦らず、前へ回すAI秘書
             </div>
         </div>
 
