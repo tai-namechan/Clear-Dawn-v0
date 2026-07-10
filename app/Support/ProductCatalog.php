@@ -28,7 +28,7 @@ final class ProductCatalog
             [
                 'key' => self::YOYU,
                 'name' => 'ヨユウ',
-                'tagline' => '焦らず、前へ回す秘書',
+                'tagline' => '焦らず、前へ回すAI秘書',
                 'href' => route('yoyu.home'),
             ],
             [
