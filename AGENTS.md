@@ -214,3 +214,15 @@ Vue components must have a single root element.
 - IMPORTANT: Activate `inertia-vue-development` when working with Inertia Vue client-side patterns.
 
 </laravel-boost-guidelines>
+
+## Cursor Cloud specific instructions
+
+Environment: Ubuntu 24.04, **PHP 8.4** (the `composer.lock` pins Symfony 8.1 which requires PHP `>=8.4.1`; PHP 8.3 will fail `composer install`), Composer, Node 22, npm. The startup update script only refreshes dependencies (`composer install`, `npm install`); other one-off setup below persists via the VM snapshot.
+
+- **DB**: local dev uses SQLite at `database/database.sqlite` (gitignored, persisted in the snapshot). If the file is ever missing, recreate it with `touch database/database.sqlite && php artisan migrate`. `.env` and `APP_KEY` are also gitignored/snapshot-persisted; if `.env` is missing, `cp .env.example .env && php artisan key:generate`. Tests use a separate in-memory SQLite (`phpunit.xml`), so `php artisan test` needs no DB setup.
+- **Mail**: `MAIL_MAILER=log` by default. Registration in this config logs the user straight into `/dashboard`; the TOP Matrix board auto-initializes per user on first dashboard load.
+- **Run the app**: `composer dev` runs everything concurrently (Laravel server on `:8000`, Vite on `:5173`, queue worker, logs). Use `php artisan serve` + `npm run dev` if you need to control processes individually. Standard commands live in `project-specific.mdc` and `composer.json`/`package.json`.
+- **Wayfinder**: `resources/js/routes` and `resources/js/actions` are gitignored generated files (snapshot-persisted). If TypeScript route imports are missing, run `php artisan wayfinder:generate --with-form` (also run by `composer dev` and the build).
+- **Pre-existing quality issues (not env problems)**: on a clean checkout, `composer lint:check` (Pint), `composer phpstan:check`, and `npm run lint:check` (ESLint) currently report failures in existing source. `php artisan test` (192 tests) and `npm run build` pass. Because `composer test`/`composer ci:check` chain the failing lint/static-analysis steps, they exit non-zero even though tests pass — run `php artisan test` directly to check tests.
+- **Videos feature** needs AWS S3 (`AWS_VIDEOS_BUCKET`); it is optional and not required for core Matrix/Life Areas/Routines/Records flows.
+
