@@ -29,6 +29,7 @@ class RoutineItemFactory extends Factory
             'tracking_type' => fake()->randomElement(TrackingType::cases()),
             'default_load_unit' => null,
             'default_amount_unit' => null,
+            'default_video_id' => null,
             'note' => fake()->optional()->sentence(),
             'is_active' => true,
         ];

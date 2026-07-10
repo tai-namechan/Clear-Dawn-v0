@@ -22,6 +22,7 @@ class UpdateRoutinePlanStepRequest extends FormRequest
                 'ulid',
                 Rule::exists('routine_items', 'id')->where(fn ($query) => $query->where('user_id', $userId)),
             ],
+            'title' => ['sometimes', 'nullable', 'string', 'max:100'],
             'video_id' => [
                 'sometimes',
                 'nullable',

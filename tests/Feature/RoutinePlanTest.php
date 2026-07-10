@@ -10,6 +10,7 @@ use App\Models\RoutinePlanStep;
 use App\Models\RoutineSession;
 use App\Models\RoutineStep;
 use App\Models\User;
+use App\Models\Video;
 use Database\Seeders\MatrixRowSeeder;
 use Database\Seeders\MetricSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -214,6 +215,8 @@ class RoutinePlanTest extends TestCase
         $this->actingAs($user)
             ->postJson(route('routine-plan-steps.store', $plan), [
                 'routine_item_id' => $routineItem->id,
+                'purpose' => 'strength',
+                'target_blocks' => 1,
             ])
             ->assertForbidden();
     }
@@ -252,5 +255,44 @@ class RoutinePlanTest extends TestCase
 
         $this->assertSame(2, $first->refresh()->sort_order);
         $this->assertSame(1, $second->refresh()->sort_order);
+    }
+
+    public function test_plan_snapshot_copies_title_and_resolves_default_video(): void
+    {
+        $user = User::factory()->create();
+        $routine = Routine::factory()->create(['user_id' => $user->id]);
+        $routineItem = RoutineItem::factory()->create([
+            'user_id' => $user->id,
+            'name' => 'スクワット',
+        ]);
+        $defaultVideo = Video::factory()->ready()->create([
+            'user_id' => $user->id,
+            'routine_item_id' => $routineItem->id,
+            'title' => '通常スクワット動画',
+        ]);
+        $routineItem->update(['default_video_id' => $defaultVideo->id]);
+
+        RoutineStep::factory()->forRoutine($routine)->create([
+            'routine_item_id' => $routineItem->id,
+            'title' => '投手用フォーム確認',
+            'video_id' => null,
+            'sort_order' => 1,
+            'target_blocks' => 3,
+        ]);
+
+        $this->actingAs($user)->postJson(route('routine-plans.store'), [
+            'title' => 'ルーティンA',
+            'scheduled_on' => '2026-07-09',
+            'routine_id' => $routine->id,
+        ])->assertOk();
+
+        $plan = RoutinePlan::query()->where('user_id', $user->id)->firstOrFail();
+
+        $this->assertDatabaseHas('routine_plan_steps', [
+            'routine_plan_id' => $plan->id,
+            'routine_item_id' => $routineItem->id,
+            'title' => '投手用フォーム確認',
+            'video_id' => $defaultVideo->id,
+        ]);
     }
 }

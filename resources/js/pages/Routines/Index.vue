@@ -16,35 +16,10 @@ interface Props {
 
 defineProps<Props>();
 
-const creating = ref(false);
 const applyingId = ref<string | null>(null);
 
 function todayString(): string {
     return todayKey();
-}
-
-async function createRoutine(): Promise<void> {
-    if (creating.value) {
-        return;
-    }
-
-    creating.value = true;
-
-    try {
-        const result = await apiFetch<{ routine: { id: string } }>(
-            '/routines',
-            {
-                method: 'POST',
-                body: JSON.stringify({
-                    name: '新しいルーティン',
-                }),
-            },
-        );
-
-        router.visit(`/routines/${result.routine.id}?new=1`);
-    } finally {
-        creating.value = false;
-    }
 }
 
 async function applyToToday(routine: Routine): Promise<void> {
@@ -91,14 +66,11 @@ async function deleteRoutine(routine: Routine): Promise<void> {
                         align="left"
                     />
 
-                    <Button
-                        type="button"
-                        class="mt-2 shrink-0"
-                        :disabled="creating"
-                        @click="createRoutine"
-                    >
-                        <Plus :size="16" :stroke-width="1.8" />
-                        ルーティンを作る
+                    <Button type="button" class="mt-2 shrink-0" as-child>
+                        <Link href="/routines/create">
+                            <Plus :size="16" :stroke-width="1.8" />
+                            ルーティンを作る
+                        </Link>
                     </Button>
                 </div>
 
@@ -187,13 +159,11 @@ async function deleteRoutine(routine: Routine): Promise<void> {
                             ① ルーティンを作る → ② ステップを追加 → ③ 今日やる、の順で進めます。
                         </p>
                     </div>
-                    <Button
-                        type="button"
-                        :disabled="creating"
-                        @click="createRoutine"
-                    >
-                        <Plus :size="16" :stroke-width="1.8" />
-                        ルーティンを作る
+                    <Button type="button" as-child>
+                        <Link href="/routines/create">
+                            <Plus :size="16" :stroke-width="1.8" />
+                            ルーティンを作る
+                        </Link>
                     </Button>
                 </div>
             </PageSectionCard>

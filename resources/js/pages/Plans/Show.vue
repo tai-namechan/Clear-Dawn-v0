@@ -277,7 +277,9 @@ function stepPurposeKey(step: RoutinePlanStep) {
                     v-if="steps.length"
                     :items="steps"
                     :reorder-url="`/plans/${plan.id}/steps/reorder`"
-                    :item-label="(step) => step.routine_item?.name"
+                    :item-label="
+                        (step) => step.display_name || step.routine_item?.name
+                    "
                 >
                     <template #row="{ item: step, index }">
                         <div class="flex flex-wrap items-center gap-2">
@@ -287,7 +289,17 @@ function stepPurposeKey(step: RoutinePlanStep) {
                             <span
                                 class="font-sans text-base font-semibold text-cd-ink"
                             >
-                                {{ step.routine_item?.name ?? '—' }}
+                                {{
+                                    step.display_name ||
+                                    step.routine_item?.name ||
+                                    '—'
+                                }}
+                            </span>
+                            <span
+                                v-if="step.title && step.routine_item?.name"
+                                class="font-sans text-xs text-cd-ink-muted"
+                            >
+                                （{{ step.routine_item.name }}）
                             </span>
                             <span
                                 class="inline-flex rounded-full border px-2 py-0.5 font-sans text-xs"

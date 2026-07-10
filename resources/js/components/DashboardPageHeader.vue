@@ -2,6 +2,7 @@
 import { Link } from '@inertiajs/vue3';
 import { SlidersHorizontal } from '@lucide/vue';
 import HeaderUserMenu from '@/components/HeaderUserMenu.vue';
+import ProductSwitcher from '@/components/os/ProductSwitcher.vue';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { index as lifeAreasIndex } from '@/routes/life-areas';
 
@@ -29,11 +30,14 @@ const todayIso = [
         <div
             class="col-start-2 row-start-1 flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4"
         >
-            <h1
-                class="font-serif text-[2rem] leading-none font-normal tracking-[0.16em] text-cd-dawn-deep md:text-[2.5rem]"
-            >
-                Clear Dawn
-            </h1>
+            <div class="flex min-w-0 flex-wrap items-center gap-3">
+                <h1
+                    class="font-serif text-[2rem] leading-none font-normal tracking-[0.16em] text-cd-dawn-deep md:text-[2.5rem]"
+                >
+                    Clear Dawn
+                </h1>
+                <ProductSwitcher />
+            </div>
 
             <div class="flex shrink-0 items-center gap-3 md:gap-4">
                 <div

@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import Breadcrumbs from '@/components/Breadcrumbs.vue';
 import DashboardPageHeader from '@/components/DashboardPageHeader.vue';
 import HeaderUserMenu from '@/components/HeaderUserMenu.vue';
+import ProductSwitcher from '@/components/os/ProductSwitcher.vue';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { dashboard } from '@/routes';
@@ -40,7 +41,10 @@ const onDashboard = computed(() => isCurrentUrl(dashboard()));
                 </template>
             </div>
 
-            <HeaderUserMenu compact />
+            <div class="flex shrink-0 items-center gap-2 md:gap-3">
+                <ProductSwitcher />
+                <HeaderUserMenu compact />
+            </div>
         </template>
     </header>
 </template>

@@ -7,6 +7,8 @@ use App\Models\Routine;
 use App\Models\RoutinePlan;
 use App\Models\RoutineStep;
 use App\Models\User;
+use App\Support\RoutineStepDisplay;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class CreateRoutinePlanService
@@ -15,9 +17,12 @@ class CreateRoutinePlanService
      * 空のプラン、またはルーティンからステップをスナップショットして作成する。
      * ルーティンにステップが1件以上ある場合は Ready、空プランは Draft。
      *
+     * 表示名・動画は作成時点で解決してスナップショットする:
+     * title はそのまま、video_id = step.video_id ?? item.default_video_id。
+     *
      * @param  array{
      *     title: string,
-     *     scheduled_on: \Illuminate\Support\Carbon|string,
+     *     scheduled_on: Carbon|string,
      *     life_area_id?: string|null,
      *     routine_id?: string|null,
      *     note?: string|null
@@ -30,7 +35,10 @@ class CreateRoutinePlanService
             $routineSteps = collect();
 
             if ($routine !== null) {
-                $routine->load(['routineSteps' => fn ($query) => $query->orderBy('sort_order')]);
+                $routine->load([
+                    'routineSteps' => fn ($query) => $query->orderBy('sort_order'),
+                    'routineSteps.routineItem',
+                ]);
                 $routineSteps = $routine->routineSteps;
 
                 if ($routineSteps->count() >= 1) {
@@ -49,9 +57,12 @@ class CreateRoutinePlanService
 
             /** @var RoutineStep $step */
             foreach ($routineSteps as $step) {
+                $resolved = RoutineStepDisplay::fromRoutineStep($step);
+
                 $plan->steps()->create([
                     'routine_item_id' => $step->routine_item_id,
-                    'video_id' => $step->video_id,
+                    'title' => $step->title,
+                    'video_id' => $resolved['video_id'],
                     'purpose' => $step->purpose,
                     'sort_order' => $step->sort_order,
                     'target_load' => $step->target_load,

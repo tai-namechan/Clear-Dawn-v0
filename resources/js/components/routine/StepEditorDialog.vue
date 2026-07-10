@@ -25,22 +25,30 @@ import InputError from '@/components/InputError.vue';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
 import { fetchVideosFromPage } from '@/lib/fetchVideos';
 import {
+    amountUnitPresets,
     categoryDefaultPurpose,
     defaultAmountUnitForTracking,
     defaultLoadUnit,
     formatStepTarget,
+    itemNamePlaceholders,
+    loadUnitPresets,
+    resolveStepDisplayName,
     resolveStepPurpose,
     routineItemCategoryLabels,
     routineItemCategoryOptions,
     stepPurposeLabels,
     stepPurposeOptions,
+    stepTitlePlaceholders,
     trackingTypeOptions,
     trackingTypeTabLabels,
+    UNIT_PRESET_OTHER,
+    unitSelectValue,
 } from '@/lib/routineConstants';
 import { purposeChipClasses } from '@/lib/stepPurposeColors';
 import type {
     RoutineItem,
     RoutineItemCategory,
+    RoutineStep,
     StepPurpose,
     TrackingType,
     Video,
@@ -48,6 +56,7 @@ import type {
 
 export type StepEditorPayload = {
     routine_item_id: string;
+    title?: string | null;
     video_id?: string | null;
     purpose?: StepPurpose | null;
     target_blocks: number | null;
@@ -61,11 +70,14 @@ export type StepEditorPayload = {
 
 type FieldErrors = {
     name?: string;
+    title?: string;
     purpose?: string;
     target_blocks?: string;
     rest_seconds?: string;
     target_load?: string;
     target_amount?: string;
+    amount_unit?: string;
+    load_unit?: string;
     general?: string;
 };
 
@@ -74,6 +86,8 @@ interface Props {
     routineItems: RoutineItem[];
     videos?: Video[];
     saving?: boolean;
+    /** When set, dialog edits an existing step (video attach etc.). */
+    editingStep?: RoutineStep | null;
     /** Parent can push server-side field errors after submit fails */
     serverErrors?: FieldErrors | null;
 }
@@ -81,6 +95,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     saving: false,
     videos: () => [],
+    editingStep: null,
     serverErrors: null,
 });
 
@@ -90,9 +105,12 @@ const emit = defineEmits<{
     'items-changed': [];
 }>();
 
+const isEditing = computed(() => props.editingStep !== null);
+
 const mode = ref<'pick' | 'create'>('create');
 const selectedItemId = ref('');
 const newItemName = ref('');
+const stepTitle = ref('');
 const newItemCategory = ref<RoutineItemCategory>('strength');
 const newItemTrackingType = ref<TrackingType>('reps');
 const purpose = ref<StepPurpose | null>('strength');
@@ -100,6 +118,10 @@ const blockCount = ref(3);
 const restSeconds = ref('60');
 const note = ref('');
 const videoId = ref<string | null>(null);
+const amountUnitCustom = ref('');
+const loadUnitCustom = ref('');
+const amountUnitSelect = ref<string>(amountUnitPresets[0] ?? '回');
+const loadUnitSelect = ref<string>(loadUnitPresets[0] ?? 'kg');
 const blockRows = ref<BlockTargetRow[]>([
     { load: '', amount: '10', memo: '' },
 ]);
@@ -107,6 +129,8 @@ const videos = ref<Video[]>([...props.videos]);
 const creatingItem = ref(false);
 const fieldErrors = ref<FieldErrors>({});
 const nameSectionRef = ref<HTMLElement | null>(null);
+const itemNamePlaceholder = itemNamePlaceholders[0];
+const stepTitlePlaceholder = stepTitlePlaceholders[0];
 
 watch(
     () => props.serverErrors,
@@ -157,6 +181,9 @@ function applyApiErrors(error: unknown): void {
         if (body.errors.routine_item_id?.[0]) {
             next.name = body.errors.routine_item_id[0];
         }
+        if (body.errors.title?.[0]) {
+            next.title = body.errors.title[0];
+        }
         if (body.errors.purpose?.[0]) {
             next.purpose = body.errors.purpose[0];
         }
@@ -173,10 +200,10 @@ function applyApiErrors(error: unknown): void {
             next.target_load = body.errors.target_load[0];
         }
         if (body.errors.load_unit?.[0]) {
-            next.target_load = body.errors.load_unit[0];
+            next.load_unit = body.errors.load_unit[0];
         }
         if (body.errors.amount_unit?.[0]) {
-            next.target_amount = body.errors.amount_unit[0];
+            next.amount_unit = body.errors.amount_unit[0];
         }
         if (body.errors.video_id?.[0]) {
             next.general = body.errors.video_id[0];
@@ -241,20 +268,39 @@ const previewPurpose = computed(() =>
 );
 
 const loadUnit = computed(() => {
-    if (mode.value === 'pick' && selectedItem.value?.default_load_unit) {
-        return selectedItem.value.default_load_unit;
+    if (loadUnitSelect.value === UNIT_PRESET_OTHER) {
+        return loadUnitCustom.value.trim() || defaultLoadUnit;
     }
 
-    return defaultLoadUnit;
+    return loadUnitSelect.value || defaultLoadUnit;
 });
 
 const amountUnit = computed(() => {
-    if (mode.value === 'pick' && selectedItem.value?.default_amount_unit) {
-        return selectedItem.value.default_amount_unit;
+    if (amountUnitSelect.value === UNIT_PRESET_OTHER) {
+        return (
+            amountUnitCustom.value.trim() ||
+            defaultAmountUnitForTracking[effectiveTrackingType.value]
+        );
     }
 
-    return defaultAmountUnitForTracking[effectiveTrackingType.value];
+    return (
+        amountUnitSelect.value ||
+        defaultAmountUnitForTracking[effectiveTrackingType.value]
+    );
 });
+
+const showLoadUnitPicker = computed(
+    () => effectiveTrackingType.value === 'weight_reps',
+);
+
+const showAmountUnitPicker = computed(
+    () =>
+        effectiveTrackingType.value === 'weight_reps' ||
+        effectiveTrackingType.value === 'reps' ||
+        effectiveTrackingType.value === 'count' ||
+        effectiveTrackingType.value === 'duration' ||
+        effectiveTrackingType.value === 'distance',
+);
 
 const previewTarget = computed(() =>
     formatStepTarget({
@@ -271,6 +317,43 @@ const previewTarget = computed(() =>
         },
     }),
 );
+
+function syncUnitSelectorsFromItem(item: RoutineItem | null): void {
+    const amountDefault =
+        item?.default_amount_unit ||
+        defaultAmountUnitForTracking[item?.tracking_type ?? 'reps'] ||
+        '回';
+    const loadDefault = item?.default_load_unit || defaultLoadUnit;
+
+    amountUnitSelect.value = unitSelectValue(amountDefault, amountUnitPresets);
+    amountUnitCustom.value =
+        amountUnitSelect.value === UNIT_PRESET_OTHER ? amountDefault : '';
+
+    loadUnitSelect.value = unitSelectValue(loadDefault, loadUnitPresets);
+    loadUnitCustom.value =
+        loadUnitSelect.value === UNIT_PRESET_OTHER ? loadDefault : '';
+}
+
+function syncUnitSelectorsFromValues(
+    load: string | null | undefined,
+    amount: string | null | undefined,
+    item: RoutineItem | null,
+): void {
+    const amountDefault =
+        amount ||
+        item?.default_amount_unit ||
+        defaultAmountUnitForTracking[item?.tracking_type ?? 'reps'] ||
+        '回';
+    const loadDefault = load || item?.default_load_unit || defaultLoadUnit;
+
+    amountUnitSelect.value = unitSelectValue(amountDefault, amountUnitPresets);
+    amountUnitCustom.value =
+        amountUnitSelect.value === UNIT_PRESET_OTHER ? amountDefault : '';
+
+    loadUnitSelect.value = unitSelectValue(loadDefault, loadUnitPresets);
+    loadUnitCustom.value =
+        loadUnitSelect.value === UNIT_PRESET_OTHER ? loadDefault : '';
+}
 
 const categoryOptions = computed(() =>
     routineItemCategoryOptions.map((value) => ({
@@ -297,10 +380,14 @@ const readyVideos = computed(() =>
     videos.value.filter((video) => video.status === 'ready'),
 );
 
-const stepName = computed(() =>
+const itemNamePreview = computed(() =>
     mode.value === 'create'
-        ? newItemName.value.trim() || '新しいステップ'
+        ? newItemName.value.trim() || '実施項目未入力'
         : selectedItem.value?.name || '—',
+);
+
+const stepName = computed(() =>
+    resolveStepDisplayName(stepTitle.value, itemNamePreview.value),
 );
 
 watch(
@@ -311,17 +398,50 @@ watch(
         }
 
         clearFieldErrors();
-        mode.value = props.routineItems.length ? 'pick' : 'create';
-        selectedItemId.value = props.routineItems[0]?.id ?? '';
-        newItemName.value = '';
-        newItemCategory.value = 'strength';
-        newItemTrackingType.value = 'reps';
-        purpose.value = categoryDefaultPurpose.strength;
-        blockCount.value = 3;
-        restSeconds.value = '60';
-        note.value = '';
-        videoId.value = null;
-        blockRows.value = [{ load: '', amount: '10', memo: '' }];
+
+        const step = props.editingStep;
+
+        if (step) {
+            mode.value = 'pick';
+            selectedItemId.value = step.routine_item_id;
+            newItemName.value = '';
+            stepTitle.value = step.title ?? '';
+            purpose.value = step.purpose;
+            blockCount.value = step.target_blocks ?? 1;
+            restSeconds.value =
+                step.rest_seconds !== null && step.rest_seconds !== undefined
+                    ? String(step.rest_seconds)
+                    : '';
+            note.value = step.note ?? '';
+            videoId.value = step.video_id;
+            blockRows.value = [
+                {
+                    load: step.target_load ?? '',
+                    amount: step.target_amount ?? '',
+                    memo: '',
+                },
+            ];
+            syncUnitSelectorsFromValues(
+                step.load_unit,
+                step.amount_unit,
+                step.routine_item ?? null,
+            );
+        } else {
+            mode.value = props.routineItems.length ? 'pick' : 'create';
+            selectedItemId.value = props.routineItems[0]?.id ?? '';
+            newItemName.value = '';
+            stepTitle.value = '';
+            newItemCategory.value = 'strength';
+            newItemTrackingType.value = 'reps';
+            purpose.value = categoryDefaultPurpose.strength;
+            blockCount.value = 3;
+            restSeconds.value = '60';
+            note.value = '';
+            videoId.value = null;
+            blockRows.value = [{ load: '', amount: '10', memo: '' }];
+            syncUnitSelectorsFromItem(props.routineItems[0] ?? null);
+        }
+
         videos.value = props.videos.length
             ? [...props.videos]
             : await fetchVideosFromPage().catch(() => []);
@@ -329,11 +449,28 @@ watch(
 );
 
 watch(selectedItem, (item) => {
-    if (!item || mode.value !== 'pick') {
+    if (!item || mode.value !== 'pick' || isEditing.value) {
         return;
     }
 
     purpose.value = categoryDefaultPurpose[item.category] ?? null;
+    syncUnitSelectorsFromItem(item);
+
+    if (!videoId.value && item.default_video_id) {
+        videoId.value = item.default_video_id;
+    }
+});
+
+watch(newItemTrackingType, (trackingType) => {
+    if (mode.value !== 'create') {
+        return;
+    }
+
+    const amountDefault = defaultAmountUnitForTracking[trackingType] || '回';
+    amountUnitSelect.value = unitSelectValue(amountDefault, amountUnitPresets);
+    amountUnitCustom.value = '';
+    loadUnitSelect.value = unitSelectValue(defaultLoadUnit, loadUnitPresets);
+    loadUnitCustom.value = '';
 });
 
 watch(purpose, () => {
@@ -350,7 +487,7 @@ function close(): void {
 
 async function createInlineItem(): Promise<RoutineItem | null> {
     if (!newItemName.value.trim()) {
-        fieldErrors.value = { name: 'ステップ名を入力してください。' };
+        fieldErrors.value = { name: '実施項目名を入力してください。' };
         scrollToNameField();
 
         return null;
@@ -368,14 +505,12 @@ async function createInlineItem(): Promise<RoutineItem | null> {
                     name: newItemName.value.trim(),
                     category: newItemCategory.value,
                     tracking_type: newItemTrackingType.value,
-                    default_load_unit:
-                        newItemTrackingType.value === 'weight_reps'
-                            ? defaultLoadUnit
-                            : null,
-                    default_amount_unit:
-                        defaultAmountUnitForTracking[
-                            newItemTrackingType.value
-                        ] || null,
+                    default_load_unit: showLoadUnitPicker.value
+                        ? loadUnit.value
+                        : null,
+                    default_amount_unit: showAmountUnitPicker.value
+                        ? amountUnit.value || null
+                        : null,
                 }),
             },
         );
@@ -393,7 +528,7 @@ async function createInlineItem(): Promise<RoutineItem | null> {
                 ...fieldErrors.value,
                 name:
                     fieldErrors.value.general ??
-                    'ステップ名の作成に失敗しました。',
+                    '実施項目の作成に失敗しました。',
             };
             scrollToNameField();
         }
@@ -491,8 +626,32 @@ async function submit(): Promise<void> {
     }
 
     if (!routineItemId) {
-        fieldErrors.value = { name: 'ステップを選択してください。' };
+        fieldErrors.value = { name: '実施項目を選択してください。' };
         scrollToNameField();
+
+        return;
+    }
+
+    if (
+        showAmountUnitPicker.value &&
+        amountUnitSelect.value === UNIT_PRESET_OTHER &&
+        !amountUnitCustom.value.trim()
+    ) {
+        fieldErrors.value = {
+            amount_unit: '単位（その他）を入力してください。',
+        };
+
+        return;
+    }
+
+    if (
+        showLoadUnitPicker.value &&
+        loadUnitSelect.value === UNIT_PRESET_OTHER &&
+        !loadUnitCustom.value.trim()
+    ) {
+        fieldErrors.value = {
+            load_unit: '負荷の単位（その他）を入力してください。',
+        };
 
         return;
     }
@@ -507,16 +666,20 @@ async function submit(): Promise<void> {
     const combinedNote = [asText(note.value), asText(firstRow.memo)]
         .filter(Boolean)
         .join('\n');
+    const titleText = asText(stepTitle.value);
 
     emit('submit', {
         routine_item_id: routineItemId,
+        title: titleText || null,
         video_id: videoId.value,
         purpose: purpose.value,
         target_blocks: blockCount.value || null,
         target_load: loadText ? Number(loadText) : null,
-        load_unit: loadUnit.value || null,
+        load_unit: showLoadUnitPicker.value ? loadUnit.value || null : null,
         target_amount: amountText ? Number(amountText) : null,
-        amount_unit: amountUnit.value || null,
+        amount_unit: showAmountUnitPicker.value
+            ? amountUnit.value || null
+            : null,
         rest_seconds: asText(restSeconds.value)
             ? Number(asText(restSeconds.value))
             : null,
@@ -537,10 +700,14 @@ defineExpose({
         >
             <DialogHeader>
                 <DialogTitle class="font-sans text-lg font-semibold text-cd-ink">
-                    ステップを追加
+                    {{ isEditing ? 'ステップを編集' : 'ステップを追加' }}
                 </DialogTitle>
                 <p class="font-sans text-sm text-cd-ink-muted">
-                    上から順番に入力してください。右側で完成イメージを確認できます。
+                    {{
+                        isEditing
+                            ? '動画の付け替えや目標値の調整ができます。'
+                            : '上から順番に入力してください。右側で完成イメージを確認できます。'
+                    }}
                 </p>
             </DialogHeader>
 
@@ -548,7 +715,7 @@ defineExpose({
                 class="grid min-h-0 flex-1 gap-5 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_240px]"
             >
                 <div class="flex flex-col gap-3">
-                    <div class="flex flex-wrap gap-2">
+                    <div v-if="!isEditing" class="flex flex-wrap gap-2">
                         <Button
                             type="button"
                             size="sm"
@@ -571,12 +738,12 @@ defineExpose({
                     <section ref="nameSectionRef" class="cd-step-section">
                         <div class="cd-step-section__label">
                             <span class="cd-step-section__num">1</span>
-                            ステップ名
+                            実施項目
                         </div>
                         <Input
                             v-if="mode === 'create'"
                             v-model="newItemName"
-                            placeholder="例: スクワット / スケール練習"
+                            :placeholder="itemNamePlaceholder"
                             maxlength="100"
                             :disabled="saving || creatingItem"
                             :aria-invalid="Boolean(fieldErrors.name)"
@@ -585,12 +752,16 @@ defineExpose({
                         <Select
                             v-else
                             v-model="selectedItemId"
-                            :disabled="saving || !routineItems.length"
+                            :disabled="
+                                saving ||
+                                !routineItems.length ||
+                                isEditing
+                            "
                         >
                             <SelectTrigger
                                 :aria-invalid="Boolean(fieldErrors.name)"
                             >
-                                <SelectValue placeholder="既存のステップを選択" />
+                                <SelectValue placeholder="既存の実施項目を選択" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem
@@ -602,7 +773,30 @@ defineExpose({
                                 </SelectItem>
                             </SelectContent>
                         </Select>
+                        <p class="font-sans text-xs text-cd-ink-muted">
+                            カタログ名です。例: WGS / カノン Aパート / AWS IAM章 /
+                            スクワット
+                        </p>
                         <InputError :message="fieldErrors.name" />
+                    </section>
+
+                    <section class="cd-step-section">
+                        <div class="cd-step-section__label">
+                            <span class="cd-step-section__num">1b</span>
+                            ステップ名（任意）
+                        </div>
+                        <Input
+                            v-model="stepTitle"
+                            :placeholder="stepTitlePlaceholder"
+                            maxlength="100"
+                            :disabled="saving"
+                            :aria-invalid="Boolean(fieldErrors.title)"
+                            @input="fieldErrors.title = undefined"
+                        />
+                        <p class="font-sans text-xs text-cd-ink-muted">
+                            このルーティン内だけの表示名。未入力なら実施項目名を表示します。
+                        </p>
+                        <InputError :message="fieldErrors.title" />
                     </section>
 
                     <section class="cd-step-section">
@@ -654,8 +848,98 @@ defineExpose({
                             size="sm"
                         />
                         <p class="font-sans text-xs text-cd-ink-muted">
-                            実行時に入力する単位です。既存項目を選んだ場合は変更できません。
+                            実行時に入力する単位です。既存項目を選んだ場合も、このステップ用に単位を変えられます。
                         </p>
+                        <div
+                            v-if="showAmountUnitPicker || showLoadUnitPicker"
+                            class="mt-3 grid gap-3 sm:grid-cols-2"
+                        >
+                            <div v-if="showLoadUnitPicker" class="space-y-1.5">
+                                <Label class="text-xs text-cd-ink-muted">
+                                    負荷の単位
+                                </Label>
+                                <Select
+                                    v-model="loadUnitSelect"
+                                    :disabled="saving"
+                                >
+                                    <SelectTrigger
+                                        :aria-invalid="
+                                            Boolean(fieldErrors.load_unit)
+                                        "
+                                    >
+                                        <SelectValue placeholder="単位を選択" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem
+                                            v-for="unit in loadUnitPresets"
+                                            :key="unit"
+                                            :value="unit"
+                                        >
+                                            {{ unit }}
+                                        </SelectItem>
+                                        <SelectItem :value="UNIT_PRESET_OTHER">
+                                            その他
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Input
+                                    v-if="loadUnitSelect === UNIT_PRESET_OTHER"
+                                    v-model="loadUnitCustom"
+                                    placeholder="例: バンド"
+                                    maxlength="20"
+                                    :disabled="saving"
+                                    @input="fieldErrors.load_unit = undefined"
+                                />
+                                <InputError :message="fieldErrors.load_unit" />
+                            </div>
+                            <div
+                                v-if="showAmountUnitPicker"
+                                class="space-y-1.5"
+                            >
+                                <Label class="text-xs text-cd-ink-muted">
+                                    量の単位
+                                </Label>
+                                <Select
+                                    v-model="amountUnitSelect"
+                                    :disabled="saving"
+                                >
+                                    <SelectTrigger
+                                        :aria-invalid="
+                                            Boolean(fieldErrors.amount_unit)
+                                        "
+                                    >
+                                        <SelectValue placeholder="単位を選択" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem
+                                            v-for="unit in amountUnitPresets"
+                                            :key="unit"
+                                            :value="unit"
+                                        >
+                                            {{ unit }}
+                                        </SelectItem>
+                                        <SelectItem :value="UNIT_PRESET_OTHER">
+                                            その他
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Input
+                                    v-if="
+                                        amountUnitSelect === UNIT_PRESET_OTHER
+                                    "
+                                    v-model="amountUnitCustom"
+                                    placeholder="例: 小節 / BPM"
+                                    maxlength="20"
+                                    :disabled="saving"
+                                    @input="
+                                        fieldErrors.amount_unit = undefined
+                                    "
+                                />
+                                <InputError
+                                    :message="fieldErrors.amount_unit"
+                                />
+                            </div>
+                        </div>
                     </section>
 
                     <section
@@ -729,7 +1013,7 @@ defineExpose({
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="none">
-                                            なし
+                                            なし（実施項目の既定動画を使う）
                                         </SelectItem>
                                         <SelectItem
                                             v-for="video in readyVideos"
@@ -740,6 +1024,9 @@ defineExpose({
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
+                                <p class="font-sans text-xs text-cd-ink-muted">
+                                    未選択なら実施項目の既定動画を使います。必要ならルーティン用に差し替えられます。
+                                </p>
                             </div>
                         </div>
 
@@ -802,6 +1089,16 @@ defineExpose({
                     <p class="mt-3 font-sans text-base font-semibold text-cd-ink">
                         {{ stepName }}
                     </p>
+                    <p
+                        v-if="
+                            stepTitle.trim() &&
+                            itemNamePreview !== '実施項目未入力' &&
+                            itemNamePreview !== '—'
+                        "
+                        class="mt-1 font-sans text-xs text-cd-ink-muted"
+                    >
+                        実施項目: {{ itemNamePreview }}
+                    </p>
                     <span
                         class="mt-2 inline-flex rounded-full border px-2 py-0.5 font-sans text-xs font-medium"
                         :class="purposeChipClasses(previewPurpose)"
@@ -844,7 +1141,7 @@ defineExpose({
                     :disabled="saving || creatingItem"
                     @click="submit"
                 >
-                    追加する
+                    このステップを保存
                 </Button>
             </DialogFooter>
         </DialogContent>

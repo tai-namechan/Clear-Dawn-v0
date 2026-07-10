@@ -28,4 +28,8 @@ M3 で実装した Training System は筋トレ専用の語彙・ハードコー
 - `activity_logs` の morph alias は `training_run` → `routine_session`
 - イベント種別は `training_run_completed` → `routine_session_completed`
 - フロントは4タブ構成（今日の実行 / ルーティン / 実施項目 / 記録）
-- 本番反映時は `migrate:fresh` により本モジュール外テーブルも初期化されるため、シーダー整備と再登録の段取りが必要
+- ローカル開発は `migrate:fresh` でよい。本番は users / matrix / videos / metrics を保持するため **ルーティン系だけ DROP → CREATE**（`2026_07_09_000000_rebuild_routine_system_preserving_matrix`）でスキーマを揃える。旧 Training / 旧ルーティンのデータ移行は行わない
+
+## 補足（本番スキーマずれ）
+
+ADR-0007 の案Aは create migration を直接書き換えたため、既に旧 Training スキーマで migrations が「済」の本番では物理スキーマとコードが乖離する。本番パスは full `migrate:fresh` ではなく、上記 rebuild migration でルーティン系のみ再構築する。

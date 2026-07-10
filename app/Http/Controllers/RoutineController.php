@@ -35,6 +35,36 @@ class RoutineController extends Controller
         ]);
     }
 
+    public function create(Request $request, GetRoutinesQuery $routinesQuery): Response
+    {
+        $user = $request->user();
+        $lifeAreas = $user->lifeAreas()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get();
+        $otherRoutines = $routinesQuery->handle($user)->take(5)->values();
+
+        return Inertia::render('Routines/Show', [
+            'routine' => [
+                'id' => null,
+                'name' => '',
+                'description' => null,
+                'is_active' => true,
+                'sort_order' => 0,
+                'life_area_id' => null,
+                'life_area' => null,
+                'steps' => [],
+                'steps_count' => 0,
+                'created_at' => null,
+            ],
+            'lifeAreas' => LifeAreaResource::collection($lifeAreas)->resolve(),
+            'otherRoutines' => RoutineResource::collection($otherRoutines)->resolve(),
+            'routineItems' => [],
+            'videos' => [],
+            'isCreating' => true,
+        ]);
+    }
+
     public function show(
         Request $request,
         Routine $routine,
@@ -68,6 +98,7 @@ class RoutineController extends Controller
             'otherRoutines' => RoutineResource::collection($otherRoutines)->resolve(),
             'routineItems' => RoutineItemResource::collection($routineItems)->resolve(),
             'videos' => VideoResource::collection($videos)->resolve(),
+            'isCreating' => false,
         ]);
     }
 

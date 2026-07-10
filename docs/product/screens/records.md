@@ -37,9 +37,9 @@
 
 ## グラフ方針
 
-- チャートライブラリは **未決定**（Chart.js / ECharts / Unovis 等。package 追加は要承認）
-- 配色はデザイントークン `--chart-1`〜`--chart-5` を使用（[design-system.md](../../design/design-system.md)）
-- グラフ描画時に全件取得しない。期間指定 + 必要なら日次集計で件数を抑える
+- チャートライブラリは **ECharts**（`echarts`）。配色はデザイントークン `--chart-1`〜`--chart-5` を使用（[design-system.md](../../design/design-system.md)）
+- グラフ描画時に全件取得しない。期間指定 + 必要なら日次・週次集計で件数を抑える
+- **残作業**: 週次平均などの集計クエリ、筋力チャート UI 配線、仕様タブ（strength / baseball 構造化）とのギャップ解消。詳細は [progress.md](../../progress.md)
 
 ## スキーマ戦略（ハイブリッド推奨・未確定）
 

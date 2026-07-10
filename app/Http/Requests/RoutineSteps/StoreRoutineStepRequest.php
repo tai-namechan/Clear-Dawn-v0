@@ -21,6 +21,7 @@ class StoreRoutineStepRequest extends FormRequest
                 'ulid',
                 Rule::exists('routine_items', 'id')->where(fn ($query) => $query->where('user_id', $userId)),
             ],
+            'title' => ['nullable', 'string', 'max:100'],
             'video_id' => [
                 'nullable',
                 'ulid',
@@ -43,8 +44,8 @@ class StoreRoutineStepRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'routine_item_id.required' => 'ステップ名（実施項目）を選択または作成してください。',
-            'routine_item_id.exists' => '選択したステップが見つかりません。',
+            'routine_item_id.required' => '実施項目を選択または作成してください。',
+            'routine_item_id.exists' => '選択した実施項目が見つかりません。',
             'purpose.required' => '目的を選択してください。',
             'purpose.enum' => '目的の値が不正です。',
             'target_blocks.required' => 'セット数を入力してください。',
@@ -55,6 +56,7 @@ class StoreRoutineStepRequest extends FormRequest
             'rest_seconds.integer' => '休憩は整数で入力してください。',
             'rest_seconds.max' => '休憩は3600秒以下で入力してください。',
             'note.max' => 'メモは500文字以内で入力してください。',
+            'title.max' => 'ステップ名は100文字以内で入力してください。',
             'video_id.exists' => '選択した動画が見つかりません。',
         ];
     }
@@ -65,7 +67,8 @@ class StoreRoutineStepRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'routine_item_id' => 'ステップ',
+            'routine_item_id' => '実施項目',
+            'title' => 'ステップ名',
             'purpose' => '目的',
             'target_blocks' => 'セット数',
             'target_load' => '重量',

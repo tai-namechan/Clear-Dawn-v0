@@ -40,6 +40,13 @@ alwaysApply: true
 | フロント型チェック | `npm run types:check` |
 | CI 相当チェック | `composer ci:check` |
 
+### Laravel Boost（AI 開発支援・local のみ）
+
+- パッケージ: `laravel/boost`（require-dev）。手順・使いどころは `docs/dev/laravel-boost.md`
+- MCP: `.cursor/mcp.json` → `php artisan boost:mcp`
+- 進捗可視化: `docs/progress.md`
+- 更新: `php artisan boost:update`（`composer` の `post-update-cmd` にも登録）
+
 - **Vitest**: 現時点では未導入（フロントエンド単体テストは PHPUnit Feature Test のみ）
 - 実行できない場合や環境を壊す懸念がある場合は、先に報告する
 
