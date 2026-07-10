@@ -31,12 +31,6 @@ const accentByKey: Record<ProductKey, string> = {
     kioku: 'text-os-kioku',
 };
 
-const ringByKey: Record<ProductKey, string> = {
-    clear_dawn: 'ring-cd-dawn-deep/30',
-    yoyu: 'ring-os-yoyu/30',
-    kioku: 'ring-os-kioku/30',
-};
-
 const iconByKey = {
     clear_dawn: Compass,
     yoyu: Sun,
@@ -103,17 +97,15 @@ function selectProduct(product: ProductDefinition): void {
                 class="max-h-[min(90vh,44rem)] gap-0 overflow-y-auto border-cd-line bg-cd-surface p-0 sm:max-w-4xl"
                 data-test="product-switcher-modal"
             >
-                <DialogHeader class="border-b border-cd-line px-6 py-5 text-left">
-                    <DialogTitle class="text-lg font-semibold text-cd-ink">
-                        プロダクト切り替え
-                    </DialogTitle>
-                    <DialogDescription class="text-sm text-cd-ink-muted">
+                <DialogHeader class="sr-only">
+                    <DialogTitle>プロダクト切り替え</DialogTitle>
+                    <DialogDescription>
                         目的に合わせてプロダクトを切り替えられます
                     </DialogDescription>
                 </DialogHeader>
 
                 <div
-                    class="grid gap-4 p-5 sm:grid-cols-3 sm:gap-4 sm:p-6"
+                    class="grid gap-3 p-4 sm:grid-cols-3 sm:gap-4 sm:p-5"
                     role="list"
                 >
                     <button
@@ -121,62 +113,33 @@ function selectProduct(product: ProductDefinition): void {
                         :key="product.key"
                         type="button"
                         role="listitem"
-                        class="flex flex-col overflow-hidden rounded-xl border border-cd-line bg-background text-left shadow-sm transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                        :class="
-                            product.key === currentProductKey
-                                ? `ring-2 ${ringByKey[product.key]}`
-                                : ''
-                        "
+                        class="group relative overflow-hidden rounded-xl text-left transition-opacity hover:opacity-95 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         :data-test="`product-card-${product.key}`"
+                        :aria-current="
+                            product.key === currentProductKey
+                                ? 'true'
+                                : undefined
+                        "
                         @click="selectProduct(product)"
                     >
-                        <div class="flex items-start justify-between gap-2 p-4 pb-3">
-                            <div class="flex min-w-0 items-center gap-2">
-                                <span
-                                    class="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-muted"
-                                    :class="accentByKey[product.key]"
-                                >
-                                    <component
-                                        :is="iconByKey[product.key]"
-                                        :size="16"
-                                        :stroke-width="2"
-                                        aria-hidden="true"
-                                    />
-                                </span>
-                                <div class="min-w-0">
-                                    <div
-                                        class="truncate text-sm font-semibold text-cd-ink"
-                                    >
-                                        {{ product.name }}
-                                    </div>
-                                    <div
-                                        class="truncate text-xs text-cd-ink-muted"
-                                    >
-                                        {{ product.tagline }}
-                                    </div>
-                                </div>
-                            </div>
-                            <span
-                                v-if="product.key === currentProductKey"
-                                class="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-cd-ink"
-                                data-test="product-current-badge"
-                            >
-                                <Check :size="12" aria-hidden="true" />
-                                利用中
-                            </span>
-                        </div>
-
-                        <div
-                            class="mx-4 mb-4 overflow-hidden rounded-lg border border-cd-line bg-muted/30"
+                        <span class="sr-only">
+                            {{ product.name }} — {{ product.tagline }}
+                        </span>
+                        <img
+                            :src="previewByKey[product.key].src"
+                            :alt="previewByKey[product.key].alt"
+                            class="aspect-[3/4] w-full object-cover object-top"
+                            loading="lazy"
+                            decoding="async"
+                        />
+                        <span
+                            v-if="product.key === currentProductKey"
+                            class="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-cd-ink/85 px-2.5 py-1 text-[10px] font-semibold text-cd-surface shadow-sm backdrop-blur-sm"
+                            data-test="product-current-badge"
                         >
-                            <img
-                                :src="previewByKey[product.key].src"
-                                :alt="previewByKey[product.key].alt"
-                                class="aspect-[3/4] w-full object-cover object-top"
-                                loading="lazy"
-                                decoding="async"
-                            />
-                        </div>
+                            <Check :size="12" aria-hidden="true" />
+                            利用中
+                        </span>
                     </button>
                 </div>
             </DialogContent>
