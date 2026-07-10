@@ -26,7 +26,7 @@ final class KiokuSearchService
 
             $builder->where(function ($q) use ($terms): void {
                 foreach ($terms as $term) {
-                    $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $term).'%';
+                    $like = '%'.addcslashes((string) $term, '%_\\').'%';
                     $q->orWhere(function ($inner) use ($like): void {
                         $inner->where('title', 'like', $like)
                             ->orWhere('summary', 'like', $like)

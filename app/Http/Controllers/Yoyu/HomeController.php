@@ -12,6 +12,7 @@ use App\Domain\Yoyu\Models\YoyuFocusItem;
 use App\Domain\Yoyu\Models\YoyuTask;
 use App\Domain\Yoyu\Support\MockCalendar;
 use App\Http\Controllers\Controller;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -54,7 +55,7 @@ class HomeController extends Controller
             ->whereDate('date', today())
             ->first();
 
-        $recallLines = $recall->for((int) $user->id, '今日の予定 余裕 タスク', 5);
+        $recallLines = $recall->for((int) $user->id, '今日の予定 余裕 タスク', 5, countReference: false);
 
         return Inertia::render('Yoyu/Index', [
             'tasks' => $tasks,
@@ -184,7 +185,11 @@ class HomeController extends Controller
         $calendar = MockCalendar::todayEvents();
         $hand = MockCalendar::clearDawnHand();
 
-        $context = "予定:\n".collect($calendar)->map(fn ($e) => "- {$e['title']} {$e['start']}")."\n"
+        $context = "予定:\n".collect($calendar)->map(function (array $e): string {
+            $start = Carbon::parse($e['start'])->format('H:i');
+
+            return "- {$e['title']} {$start}";
+        })->implode("\n")."\n"
             ."Clear Dawnの一手: {$hand['action']}\n"
             ."過去の経験:\n".implode("\n", $recallLines);
 
@@ -219,9 +224,9 @@ class HomeController extends Controller
     {
         $data = $request->validate([
             'message' => ['required', 'string', 'max:4000'],
-            'history' => ['nullable', 'array'],
+            'history' => ['nullable', 'array', 'max:30'],
             'history.*.role' => ['required', 'string', 'in:user,assistant'],
-            'history.*.content' => ['required', 'string'],
+            'history.*.content' => ['required', 'string', 'max:4000'],
         ]);
 
         $user = $request->user();
@@ -232,7 +237,7 @@ class HomeController extends Controller
         $live = "タスク:\n".$tasks->map(fn ($t) => "- [{$t->status}] {$t->title}")->implode("\n")
             ."\nClear Dawnの一手: {$hand['action']}\n過去:\n".implode("\n", $recallLines);
 
-        $history = $data['history'] ?? [];
+        $history = array_slice($data['history'] ?? [], -30);
         $messages = [
             ...collect($history)->map(fn ($m) => ['role' => $m['role'], 'content' => $m['content']])->all(),
             ['role' => 'user', 'content' => $data['message']],
@@ -245,12 +250,12 @@ class HomeController extends Controller
                 prompt: PromptTemplate::make(
                     'yoyu.chat.v1',
                     "あなたはユーザー専属のAI秘書「ヨユウ」です。短く・優先順位を明確に・安心できる口調で答えます。タスク追加を提案する場合のみ末尾に [[TASK: 内容]] を付けます。\n\n{$live}",
-                    $data['message'],
+                    '',
                 ),
                 tier: 'strong',
                 maxTokens: 1100,
                 messages: [
-                    ['role' => 'user', 'content' => "コンテキストを理解したら準備OKとだけ返してください。\n\n{$live}"],
+                    ['role' => 'user', 'content' => 'コンテキストを理解したら「準備OK」とだけ返してください。'],
                     ['role' => 'assistant', 'content' => '準備OK'],
                     ...$messages,
                 ],

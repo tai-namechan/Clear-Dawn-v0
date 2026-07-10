@@ -17,7 +17,7 @@ final class RecallService
     /**
      * @return list<string>
      */
-    public function for(int $userId, string $contextText, int $k = 5): array
+    public function for(int $userId, string $contextText, int $k = 5, bool $countReference = true): array
     {
         /** @var Collection<int, Memory> $memories */
         $memories = $this->search->search($userId, $contextText, [], max($k * 3, 15))
@@ -25,8 +25,10 @@ final class RecallService
             ->take($k)
             ->values();
 
-        foreach ($memories as $memory) {
-            $memory->increment('referenced_count');
+        if ($countReference) {
+            foreach ($memories as $memory) {
+                $memory->increment('referenced_count');
+            }
         }
 
         return $memories

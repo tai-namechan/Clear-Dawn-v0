@@ -106,6 +106,15 @@ class EnrichMemoryJob implements ShouldQueue
         }
     }
 
+    public function failed(?Throwable $exception): void
+    {
+        Memory::query()
+            ->withoutUserScope()
+            ->whereKey($this->memoryId)
+            ->whereIn('status', ['captured', 'enriching'])
+            ->update(['status' => 'failed']);
+    }
+
     /**
      * @return array<string, mixed>
      */

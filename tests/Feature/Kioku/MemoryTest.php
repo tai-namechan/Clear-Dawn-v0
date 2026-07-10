@@ -103,9 +103,8 @@ class MemoryTest extends TestCase
 
     public function test_enrichment_failure_keeps_raw_content(): void
     {
-        Http::preventStrayRequests();
         Http::fake([
-            'api.anthropic.com/*' => Http::response(['error' => 'unauthorized'], 401),
+            $this->anthropicFakePattern() => Http::response(['error' => 'unauthorized'], 401),
         ]);
         config(['ai.anthropic.api_key' => 'test-key']);
 
@@ -130,9 +129,8 @@ class MemoryTest extends TestCase
 
     public function test_successful_enrichment_writes_usage_log(): void
     {
-        Http::preventStrayRequests();
         Http::fake([
-            'api.anthropic.com/*' => Http::sequence()
+            $this->anthropicFakePattern() => Http::sequence()
                 ->push([
                     'content' => [[
                         'type' => 'text',
