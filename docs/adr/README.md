@@ -14,6 +14,8 @@
 | [0005](./0005-query-service-eloquent-layering.md) | Query / Service / Eloquent レイヤリング（Repository 不採用） | 承認済み |
 | [0006](./0006-training-system-plan-run-snapshot.md) | プラン/実行の分離と2段スナップショット（旧 Training System） | 承認済み |
 | [0007](./0007-routine-system-conversion.md) | Training System から Routine System への転換（汎用化と命名） | 承認済み |
+| [0008](./0008-condition-records-hybrid-schema.md) | 記録系ハイブリッドスキーマ（メトリクス汎用 + 食事専用） | 承認済み |
+| [0009](./0009-meal-records-snapshot.md) | 食事記録の栄養スナップショット | 承認済み |
 
 ## フォーマット
 

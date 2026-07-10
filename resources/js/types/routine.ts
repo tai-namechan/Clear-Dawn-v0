@@ -225,6 +225,62 @@ export type ChartPoint = {
     value: string;
 };
 
+export type NutritionTotals = {
+    kcal: number;
+    protein_g: number;
+    fat_g: number;
+    carb_g: number;
+};
+
+export type MealEntry = {
+    id: string;
+    food_item_id: string | null;
+    eaten_on: string;
+    meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+    meal_type_label: string;
+    name: string;
+    quantity: string;
+    kcal: string;
+    protein_g: string;
+    fat_g: string;
+    carb_g: string;
+    note: string | null;
+};
+
+export type MealSection = {
+    meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+    label: string;
+    entries: MealEntry[];
+    subtotal: NutritionTotals;
+};
+
+export type NutritionGoal = {
+    id: string;
+    kcal: string;
+    protein_g: string;
+    fat_g: string;
+    carb_g: string;
+};
+
+export type NutritionChartPoint = {
+    date: string;
+    kcal: number;
+    protein_g: number;
+    fat_g: number;
+    carb_g: number;
+};
+
+export type FoodItem = {
+    id: string;
+    name: string;
+    serving_label: string;
+    kcal: string;
+    protein_g: string;
+    fat_g: string;
+    carb_g: string;
+    updated_at?: string | null;
+};
+
 export type ActivityLogSubjectSummary =
     | {
           type: 'matrix_cell_item';

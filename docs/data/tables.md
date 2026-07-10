@@ -182,9 +182,10 @@ index: (user_id, started_at)。ログは soft delete しない（不変）。
 | is_done | bool | |
 | value | string nullable | 実績値（回数・重量・時間など）。構造化は M4 で再検討 |
 
-## Phase 2.5（ドラフト・スキーマ戦略未確定）
+## Phase 2.5（確定: メトリクス + 食事）
 
-ハイブリッド案（単純数値系は汎用、構造化系は専用）を推奨。M4 着手前に ADR で確定する。
+ハイブリッド案を採用（[ADR-0008](../adr/0008-condition-records-hybrid-schema.md)）。
+単純数値系は汎用、食事は専用テーブル。
 
 ### metrics（マスタ）
 
@@ -212,6 +213,57 @@ unique: (user_id, metric_id, recorded_on)
 
 - 筋力: 種目 × セット × 重量 × 回数。routine_step_logs との重複を避ける設計を M4 で確定
 - 野球: 打撃 / 投球成績・練習記録。項目定義自体を M4 で確定
+
+## Phase 2.5 追加: 食事記録（確定・M4b）
+
+スナップショット方針は [ADR-0009](../adr/0009-meal-records-snapshot.md)。
+画面仕様は [meals.md](../product/screens/meals.md)。
+
+### food_items（マイ食品マスタ）
+
+| カラム | 型 | 備考 |
+|---|---|---|
+| id | ULID | PK |
+| user_id | bigint unsigned | FK(users) |
+| name | string | 食品名 |
+| serving_label | string | 1 サービングの表示（例: 1杯、1個） |
+| kcal | decimal(8,2) | 1 サービングあたり |
+| protein_g | decimal(8,2) | 1 サービングあたり |
+| fat_g | decimal(8,2) | 1 サービングあたり |
+| carb_g | decimal(8,2) | 1 サービングあたり |
+| deleted_at | datetime nullable | soft delete |
+
+index: (user_id, name)
+
+### meal_entries（食事エントリ・スナップショット）
+
+| カラム | 型 | 備考 |
+|---|---|---|
+| id | ULID | PK |
+| user_id | bigint unsigned | FK(users) |
+| food_item_id | ULID nullable | FK(food_items)。直接入力時 null。集計には使わない |
+| eaten_on | date | 摂取日 |
+| meal_type | string(Enum) | breakfast / lunch / dinner / snack |
+| name | string | 表示名スナップショット |
+| quantity | decimal(8,2) | サービング倍率 |
+| kcal | decimal(8,2) | スナップショット（確定値） |
+| protein_g | decimal(8,2) | スナップショット |
+| fat_g | decimal(8,2) | スナップショット |
+| carb_g | decimal(8,2) | スナップショット |
+| note | string nullable | |
+
+index: (user_id, eaten_on)。unique なし（1 日複数エントリ可）。物理削除。
+
+### nutrition_goals（栄養目標）
+
+| カラム | 型 | 備考 |
+|---|---|---|
+| id | ULID | PK |
+| user_id | bigint unsigned | FK(users)。**unique** |
+| kcal | decimal(8,2) | 日次目標 |
+| protein_g | decimal(8,2) | |
+| fat_g | decimal(8,2) | |
+| carb_g | decimal(8,2) | |
 
 ## Phase 3〜4（ドラフト）
 
