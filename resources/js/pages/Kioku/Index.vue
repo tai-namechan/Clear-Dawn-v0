@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, router } from '@inertiajs/vue3';
-import { Brain, Library, Plus, RefreshCw, Search, Send, X } from '@lucide/vue';
+import { Brain, Plus, RefreshCw, Search, Send, X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import MemoryCard from '@/components/kioku/MemoryCard.vue';
 import { Button } from '@/components/ui/button';
@@ -90,20 +90,12 @@ defineOptions({
     <div class="space-y-4">
         <Head title="キオク" />
 
-        <header class="flex flex-wrap items-end justify-between gap-2">
-            <div>
-                <div
-                    class="flex items-center gap-2.5 font-serif text-2xl font-bold tracking-[0.18em] text-os-ink"
-                >
-                    <Library :size="21" class="text-os-kioku" />
-                    キオク
-                </div>
-                <p class="mt-1 text-xs tracking-wide text-os-sub">
-                    経験を、失わない。 — 過去を思い出す場所
-                </p>
-            </div>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <p class="text-xs tracking-wide text-os-sub">
+                経験を、失わない。 — 過去を思い出す場所
+            </p>
             <div class="text-xs text-os-faint">{{ totalCount }}件の記憶</div>
-        </header>
+        </div>
 
         <div
             class="grid gap-5 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:items-start"

@@ -8,7 +8,7 @@ import OsSidebar from '@/components/os/OsSidebar.vue';
 import ProductSwitcher from '@/components/os/ProductSwitcher.vue';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Toaster } from '@/components/ui/sonner';
-import type { ProductKey } from '@/types';
+import type { ProductDefinition, ProductKey } from '@/types';
 
 withDefaults(
     defineProps<{
@@ -25,6 +25,15 @@ const page = usePage();
 const currentProduct = computed(
     () => page.props.currentProduct as ProductKey | undefined,
 );
+const products = computed(
+    () => (page.props.products as ProductDefinition[] | undefined) ?? [],
+);
+
+const productName = computed(() => {
+    const match = products.value.find((p) => p.key === currentProduct.value);
+
+    return match?.name ?? '';
+});
 
 const shellBg = computed(() => {
     if (currentProduct.value === 'kioku') {
@@ -72,26 +81,19 @@ const titleClass = computed(() => {
             :class="shellBg"
         >
             <header
-                class="flex shrink-0 items-center justify-between gap-3 border-b border-os-line/80 px-4 py-3 md:px-6"
+                class="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-os-line/80 px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-6"
                 :class="headerBg"
             >
-                <div class="flex min-w-0 items-center gap-3">
-                    <SidebarTrigger />
+                <div class="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
+                    <SidebarTrigger class="-ml-1 shrink-0" />
+                    <h1
+                        v-if="productName"
+                        class="truncate text-lg tracking-wide md:text-xl"
+                        :class="titleClass"
+                    >
+                        {{ productName }}
+                    </h1>
                     <ProductSwitcher />
-                    <div v-if="title" class="min-w-0">
-                        <h1
-                            class="truncate text-base font-bold tracking-wide md:text-lg"
-                            :class="titleClass"
-                        >
-                            {{ title }}
-                        </h1>
-                        <p
-                            v-if="subtitle"
-                            class="truncate text-xs text-os-sub"
-                        >
-                            {{ subtitle }}
-                        </p>
-                    </div>
                 </div>
                 <HeaderUserMenu compact />
             </header>
