@@ -177,21 +177,21 @@ const pfcChartOption = computed<EChartsCoreOption>(() => ({
             type: 'bar',
             stack: 'pfc',
             data: props.chartPoints.map((point) => point.protein_g),
-            itemStyle: { color: 'var(--chart-2)' },
+            itemStyle: { color: 'var(--cd-moss)' },
         },
         {
             name: 'F',
             type: 'bar',
             stack: 'pfc',
             data: props.chartPoints.map((point) => point.fat_g),
-            itemStyle: { color: 'var(--chart-3)' },
+            itemStyle: { color: 'var(--cd-sunrise)' },
         },
         {
             name: 'C',
             type: 'bar',
             stack: 'pfc',
             data: props.chartPoints.map((point) => point.carb_g),
-            itemStyle: { color: 'var(--chart-4)' },
+            itemStyle: { color: 'var(--cd-mist)' },
         },
     ],
 }));
@@ -389,55 +389,60 @@ function applyChartFilter(): void {
     <Head title="食事記録" />
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
-        <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4">
-            <PageSectionCard>
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div class="flex flex-col gap-2">
-                        <Link
-                            :href="`/records?date=${date}`"
-                            class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
-                        >
-                            ← パフォーマンス管理
-                        </Link>
-                        <PageTitleOrnament
-                            title="食事記録"
-                            subtitle="その日の食事と PFC を、わかりやすく・すばやく記録"
-                            align="left"
-                        />
+        <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 md:gap-5">
+            <div class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
+                <PageSectionCard>
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="flex flex-col gap-2">
+                            <Link
+                                :href="`/records?date=${date}`"
+                                class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
+                            >
+                                ← パフォーマンス管理
+                            </Link>
+                            <PageTitleOrnament
+                                title="食事記録"
+                                subtitle="その日の食事と PFC を、わかりやすく・すばやく記録"
+                                align="left"
+                            />
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                class="font-sans"
+                                @click="openGoalModal"
+                            >
+                                目標を設定
+                            </Button>
+                            <Link
+                                href="/meals/foods"
+                                class="inline-flex items-center gap-2 rounded-md border border-cd-line px-3 py-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
+                            >
+                                <UtensilsCrossed
+                                    :size="14"
+                                    :stroke-width="1.6"
+                                />
+                                マイ食品
+                            </Link>
+                        </div>
                     </div>
-                    <div class="flex flex-wrap gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            class="font-sans"
-                            @click="openGoalModal"
-                        >
-                            目標を設定
-                        </Button>
-                        <Link
-                            href="/meals/foods"
-                            class="inline-flex items-center gap-2 rounded-md border border-cd-line px-3 py-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
-                        >
-                            <UtensilsCrossed :size="14" :stroke-width="1.6" />
-                            マイ食品
-                        </Link>
-                    </div>
-                </div>
-            </PageSectionCard>
+                </PageSectionCard>
 
-            <PageSectionCard padding="sm">
-                <DateNavigator
-                    :date="date"
-                    route-url="/meals"
-                    :reload-only="[
-                        'sections',
-                        'totals',
-                        'goal',
-                        'date',
-                        'chartPoints',
-                    ]"
-                />
-            </PageSectionCard>
+                <PageSectionCard padding="sm" class="flex items-center">
+                    <DateNavigator
+                        :date="date"
+                        route-url="/meals"
+                        :reload-only="[
+                            'sections',
+                            'totals',
+                            'goal',
+                            'date',
+                            'chartPoints',
+                        ]"
+                    />
+                </PageSectionCard>
+            </div>
 
             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <PageSectionCard padding="sm">
@@ -474,24 +479,34 @@ function applyChartFilter(): void {
                         class="mt-3 flex h-2 overflow-hidden rounded-full bg-cd-line/40"
                     >
                         <div
-                            class="bg-[var(--chart-2)]"
+                            class="bg-cd-moss"
                             :style="{ width: `${pfcEnergy.p}%` }"
                         />
                         <div
-                            class="bg-[var(--chart-3)]"
+                            class="bg-cd-sunrise"
                             :style="{ width: `${pfcEnergy.f}%` }"
                         />
                         <div
-                            class="bg-[var(--chart-4)]"
+                            class="bg-cd-mist"
                             :style="{ width: `${pfcEnergy.c}%` }"
                         />
                     </div>
-                    <div
-                        class="mt-2 space-y-0.5 font-sans text-xs text-cd-ink-muted"
-                    >
-                        <p>P {{ formatNum(totals.protein_g) }}g ({{ pfcEnergy.p }}%)</p>
-                        <p>F {{ formatNum(totals.fat_g) }}g ({{ pfcEnergy.f }}%)</p>
-                        <p>C {{ formatNum(totals.carb_g) }}g ({{ pfcEnergy.c }}%)</p>
+                    <div class="mt-2 space-y-0.5 font-sans text-xs">
+                        <p class="text-cd-moss">
+                            P {{ formatNum(totals.protein_g) }}g ({{
+                                pfcEnergy.p
+                            }}%)
+                        </p>
+                        <p class="text-cd-sunrise">
+                            F {{ formatNum(totals.fat_g) }}g ({{
+                                pfcEnergy.f
+                            }}%)
+                        </p>
+                        <p class="text-cd-mist">
+                            C {{ formatNum(totals.carb_g) }}g ({{
+                                pfcEnergy.c
+                            }}%)
+                        </p>
                     </div>
                 </PageSectionCard>
 
@@ -555,6 +570,43 @@ function applyChartFilter(): void {
                 {{ message }}
             </p>
 
+            <PageSectionCard padding="sm" aria-label="食事タイムライン">
+                <ol
+                    class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"
+                >
+                    <li
+                        v-for="section in sections"
+                        :key="`timeline-${section.meal_type}`"
+                        class="rounded-xl border border-cd-line px-3 py-3"
+                    >
+                        <div class="flex items-center justify-between gap-2">
+                            <p
+                                class="font-sans text-sm font-semibold text-cd-ink"
+                            >
+                                {{ section.label }}
+                            </p>
+                            <span
+                                class="rounded-full px-2 py-0.5 font-sans text-[11px] font-medium"
+                                :class="
+                                    section.entries.length > 0
+                                        ? 'bg-cd-moss/15 text-cd-moss'
+                                        : 'bg-muted text-cd-ink-muted'
+                                "
+                            >
+                                {{
+                                    section.entries.length > 0
+                                        ? '記録済み'
+                                        : '未記録'
+                                }}
+                            </span>
+                        </div>
+                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">
+                            {{ formatNum(section.subtotal.kcal) }} kcal
+                        </p>
+                    </li>
+                </ol>
+            </PageSectionCard>
+
             <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <PageSectionCard
                     v-for="section in sections"
@@ -588,11 +640,19 @@ function applyChartFilter(): void {
                     </div>
 
                     <p
-                        class="border-b border-cd-line px-4 py-2 font-sans text-xs text-cd-ink-muted"
+                        class="border-b border-cd-line px-4 py-2 font-sans text-xs"
                     >
-                        P {{ formatNum(section.subtotal.protein_g) }} · F
-                        {{ formatNum(section.subtotal.fat_g) }} · C
-                        {{ formatNum(section.subtotal.carb_g) }}
+                        <span class="text-cd-moss"
+                            >P {{ formatNum(section.subtotal.protein_g) }}</span
+                        >
+                        ·
+                        <span class="text-cd-sunrise"
+                            >F {{ formatNum(section.subtotal.fat_g) }}</span
+                        >
+                        ·
+                        <span class="text-cd-mist"
+                            >C {{ formatNum(section.subtotal.carb_g) }}</span
+                        >
                     </p>
 
                     <ul v-if="section.entries.length > 0" class="flex flex-col">
