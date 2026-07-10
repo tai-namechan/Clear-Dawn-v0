@@ -336,6 +336,7 @@ class MealEntryTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Records/Index')
                 ->where('mealTotals.kcal', 450)
+                ->has('mealSections')
             );
     }
 }
