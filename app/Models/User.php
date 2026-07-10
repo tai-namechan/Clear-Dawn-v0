@@ -120,4 +120,28 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->hasMany(MetricRecord::class);
     }
+
+    /**
+     * @return HasMany<FoodItem, $this>
+     */
+    public function foodItems(): HasMany
+    {
+        return $this->hasMany(FoodItem::class);
+    }
+
+    /**
+     * @return HasMany<MealEntry, $this>
+     */
+    public function mealEntries(): HasMany
+    {
+        return $this->hasMany(MealEntry::class);
+    }
+
+    /**
+     * @return HasMany<NutritionGoal, $this>
+     */
+    public function nutritionGoals(): HasMany
+    {
+        return $this->hasMany(NutritionGoal::class);
+    }
 }
