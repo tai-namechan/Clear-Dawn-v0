@@ -64,10 +64,12 @@ export type RoutineItem = {
     tracking_type: TrackingType;
     default_load_unit: string | null;
     default_amount_unit: string | null;
+    default_video_id: string | null;
     note: string | null;
     is_active: boolean;
     life_area_id: string | null;
     videos_count?: number;
+    default_video?: Video | null;
     created_at: string | null;
 };
 
@@ -75,7 +77,10 @@ export type RoutineStep = {
     id: string;
     routine_id: string;
     routine_item_id: string;
+    title: string | null;
+    display_name: string;
     video_id: string | null;
+    resolved_video_id: string | null;
     purpose: StepPurpose | null;
     sort_order: number;
     target_blocks: number | null;
@@ -100,7 +105,8 @@ export type Routine = {
     created_at: string | null;
 };
 
-export type RoutineEditor = Routine & {
+export type RoutineEditor = Omit<Routine, 'id'> & {
+    id: string | null;
     life_area?: LifeArea;
     steps: RoutineStep[];
 };
@@ -109,7 +115,10 @@ export type RoutinePlanStep = {
     id: string;
     routine_plan_id: string;
     routine_item_id: string;
+    title: string | null;
+    display_name: string;
     video_id: string | null;
+    resolved_video_id: string | null;
     purpose: StepPurpose | null;
     sort_order: number;
     target_blocks: number | null;

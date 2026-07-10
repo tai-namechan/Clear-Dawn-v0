@@ -4,22 +4,56 @@ import { ChevronRight, History, Layers } from '@lucide/vue';
 import { computed } from 'vue';
 import type { Routine, RoutineEditor } from '@/types/routine';
 
+type FlowPhase = 'name' | 'steps' | 'ready';
+
 interface Props {
     routine: RoutineEditor;
     otherRoutines?: Routine[];
+    flowPhase?: FlowPhase;
+    applyingToToday?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     otherRoutines: () => [],
+    flowPhase: 'ready',
+    applyingToToday: false,
 });
+
+const emit = defineEmits<{
+    'apply-to-today': [];
+}>();
 
 const recommended = computed(() =>
     props.otherRoutines
-        .filter((item) => item.id !== props.routine.id)
+        .filter(
+            (item) =>
+                props.routine.id === null || item.id !== props.routine.id,
+        )
         .slice(0, 3),
 );
 
 const stepCount = computed(() => props.routine.steps?.length ?? 0);
+
+const helpLines = computed(() => {
+    if (props.flowPhase === 'name') {
+        return [
+            'いまは①です。名前を入力して「① 名前を保存して次へ」を押してください。',
+            'この時点ではまだルーティンは作られません。',
+        ];
+    }
+
+    if (props.flowPhase === 'steps') {
+        return [
+            'いまは②です。「ステップを追加」→ 内容入力 → 「このステップを保存」です。',
+            'ステップは1件ごとに保存します。必要なだけ繰り返してください。',
+        ];
+    }
+
+    return [
+        'いまは③です。「今日やるに登録して進む」で今日の予定に載せます。',
+        `現在 ${stepCount.value} ステップです。同じルーティンを複数回登録しても構いません。`,
+    ];
+});
 </script>
 
 <template>
@@ -29,17 +63,42 @@ const stepCount = computed(() => props.routine.steps?.length ?? 0);
                 次にやること
             </h2>
             <ul class="mt-3 space-y-2 font-sans text-sm">
-                <li>
-                    <Link
-                        href="/today"
-                        class="flex items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 font-medium text-primary transition-colors hover:bg-primary/10"
+                <li v-if="flowPhase === 'ready'">
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-between gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-left font-medium text-primary transition-colors hover:bg-primary/10 disabled:opacity-60"
+                        :disabled="applyingToToday"
+                        @click="emit('apply-to-today')"
                     >
                         <span class="inline-flex items-center gap-2">
                             <Layers :size="15" :stroke-width="1.6" />
-                            今日やるへ進む
+                            {{
+                                applyingToToday
+                                    ? '登録中…'
+                                    : '今日やるに登録して進む'
+                            }}
                         </span>
                         <ChevronRight :size="14" :stroke-width="1.6" />
-                    </Link>
+                    </button>
+                </li>
+                <li
+                    v-else
+                    class="rounded-lg border border-dashed border-cd-line px-3 py-2 text-cd-ink-muted"
+                >
+                    <p class="font-medium text-cd-ink">
+                        {{
+                            flowPhase === 'name'
+                                ? '① 名前を保存する'
+                                : '② ステップを保存する'
+                        }}
+                    </p>
+                    <p class="mt-1 text-xs">
+                        {{
+                            flowPhase === 'name'
+                                ? '基本情報のボタンから進めます'
+                                : '「ステップを追加」ダイアログで保存します'
+                        }}
+                    </p>
                 </li>
                 <li>
                     <Link
@@ -83,14 +142,37 @@ const stepCount = computed(() => props.routine.steps?.length ?? 0);
 
         <section aria-label="ヘルプ" class="cd-panel px-4 py-4">
             <h2 class="font-sans text-sm font-semibold text-cd-ink">
-                ヘルプ
+                手順
             </h2>
-            <p class="mt-2 font-sans text-xs leading-relaxed text-cd-ink-muted">
-                ① 「ステップを追加」でやることを登録 → ② 今日やる → ③
-                実行画面で1つずつ完了。 現在 {{ stepCount }} ステップです。
-            </p>
-            <p class="mt-2 font-sans text-xs leading-relaxed text-cd-ink-muted">
-                ※ ステップの中身（スクワットなど）は「ステップを追加」時にその場で作れます。別画面の整理用一覧は不要なら使わなくて大丈夫です。
+            <ol class="mt-2 space-y-2 font-sans text-xs leading-relaxed text-cd-ink-muted">
+                <li
+                    :class="{
+                        'font-medium text-cd-ink': flowPhase === 'name',
+                    }"
+                >
+                    ① 名前を入力して保存
+                </li>
+                <li
+                    :class="{
+                        'font-medium text-cd-ink': flowPhase === 'steps',
+                    }"
+                >
+                    ② 「ステップを追加」でやることを登録（1件ずつ保存）
+                </li>
+                <li
+                    :class="{
+                        'font-medium text-cd-ink': flowPhase === 'ready',
+                    }"
+                >
+                    ③ 今日やるに登録
+                </li>
+            </ol>
+            <p
+                v-for="(line, index) in helpLines"
+                :key="index"
+                class="mt-2 font-sans text-xs leading-relaxed text-cd-ink-muted"
+            >
+                {{ line }}
             </p>
         </section>
     </aside>

@@ -68,6 +68,72 @@ export const defaultAmountUnitForTracking: Record<TrackingType, string> = {
     text: '',
 };
 
+/** 単位セレクトの「その他」値（自由入力に切替） */
+export const UNIT_PRESET_OTHER = '__other__';
+
+export const amountUnitPresets: string[] = [
+    '回',
+    'ページ',
+    '問',
+    '小節',
+    'BPM',
+    'レベル',
+    '点',
+    '秒',
+    '分',
+    'km',
+    'm',
+];
+
+export const loadUnitPresets: string[] = ['kg', 'lb'];
+
+export const itemNamePlaceholders = [
+    '例: WGS',
+    '例: カノン Aパート',
+    '例: AWS IAM章',
+    '例: スクワット',
+] as const;
+
+export const stepTitlePlaceholders = [
+    '例: ゆっくり確認',
+    '例: 権限まわりを復習',
+    '例: 通常スクワット',
+] as const;
+
+export const videoPlaceholders = [
+    '例: 通常スクワット動画',
+] as const;
+
+/**
+ * ステップ表示名: title があればそれ、なければ実施項目名。
+ */
+export function resolveStepDisplayName(
+    title: string | null | undefined,
+    itemName: string | null | undefined,
+): string {
+    const trimmed = title?.trim() ?? '';
+
+    if (trimmed !== '') {
+        return trimmed;
+    }
+
+    return itemName?.trim() || '—';
+}
+
+/**
+ * 保存済み単位がプリセットに含まれるか判定し、セレクト用の値を返す。
+ */
+export function unitSelectValue(
+    unit: string | null | undefined,
+    presets: string[],
+): string {
+    if (!unit) {
+        return presets[0] ?? UNIT_PRESET_OTHER;
+    }
+
+    return presets.includes(unit) ? unit : UNIT_PRESET_OTHER;
+}
+
 export const trackingTypeOptions: TrackingType[] = [
     'reps',
     'duration',
@@ -209,32 +275,36 @@ export function formatVideoDuration(seconds: number | null): string {
 }
 
 export function formatLoadTarget(
-    load: string | null,
-    unit: string | null,
+    load: string | number | null | undefined,
+    unit: string | null | undefined,
 ): string | null {
-    if (!load) {
+    if (load === null || load === undefined || load === '') {
         return null;
     }
 
-    return unit ? `${load}${unit}` : load;
+    const text = String(load);
+
+    return unit ? `${text}${unit}` : text;
 }
 
 export function formatAmountTarget(
-    amount: string | null,
-    unit: string | null,
+    amount: string | number | null | undefined,
+    unit: string | null | undefined,
 ): string | null {
-    if (!amount) {
+    if (amount === null || amount === undefined || amount === '') {
         return null;
     }
 
-    return unit ? `${amount}${unit}` : amount;
+    const text = String(amount);
+
+    return unit ? `${text}${unit}` : text;
 }
 
 export function formatStepTarget(step: {
     target_blocks?: number | null;
-    target_load?: string | null;
+    target_load?: string | number | null;
     load_unit?: string | null;
-    target_amount?: string | null;
+    target_amount?: string | number | null;
     amount_unit?: string | null;
     routine_item?: { category?: RoutineItemCategory } | null;
 }): string {
@@ -263,9 +333,9 @@ export function formatStepTarget(step: {
 }
 
 export function formatBlockLog(log: {
-    load_value?: string | null;
+    load_value?: string | number | null;
     load_unit?: string | null;
-    amount_value?: string | null;
+    amount_value?: string | number | null;
     amount_unit?: string | null;
 }): string {
     const parts: string[] = [];

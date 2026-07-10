@@ -96,6 +96,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('routine-items/{item}', [RoutineItemController::class, 'destroy'])->name('routine-items.destroy');
 
     Route::get('routines', [RoutineController::class, 'index'])->name('routines.index');
+    Route::get('routines/create', [RoutineController::class, 'create'])->name('routines.create');
     Route::post('routines', [RoutineController::class, 'store'])->name('routines.store');
     Route::get('routines/{routine}', [RoutineController::class, 'show'])->name('routines.show');
     Route::patch('routines/{routine}', [RoutineController::class, 'update'])->name('routines.update');
@@ -144,3 +145,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 require __DIR__.'/settings.php';
+require __DIR__.'/yoyu.php';
+require __DIR__.'/kioku.php';

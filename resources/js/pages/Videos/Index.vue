@@ -3,7 +3,6 @@ import { Head, router } from '@inertiajs/vue3';
 import {
     AlertTriangle,
     Clapperboard,
-    Play,
     Plus,
     Trash2,
     Upload,
@@ -21,6 +20,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import VideoThumb from '@/components/video/VideoThumb.vue';
 import { useVideoUpload } from '@/composables/useVideoUpload';
 import { apiFetch } from '@/lib/apiFetch';
 import {
@@ -198,21 +198,11 @@ async function deleteVideo(video: Video): Promise<void> {
                     >
                         <button
                             type="button"
-                            class="relative flex aspect-video w-full flex-col items-center justify-center bg-cd-dawn-soft/20 transition-colors hover:bg-cd-dawn-soft/30 disabled:cursor-not-allowed disabled:opacity-60"
+                            class="relative w-full transition-colors disabled:cursor-not-allowed disabled:opacity-60"
                             :disabled="video.status !== 'ready'"
                             @click="openPlayback(video)"
                         >
-                            <Clapperboard
-                                :size="32"
-                                :stroke-width="1.4"
-                                class="text-cd-ink-muted/50"
-                            />
-                            <Play
-                                v-if="video.status === 'ready'"
-                                :size="20"
-                                :stroke-width="1.6"
-                                class="absolute text-primary opacity-0 transition-opacity group-hover:opacity-100"
-                            />
+                            <VideoThumb :video="video" />
                             <span
                                 v-if="video.duration_seconds"
                                 class="absolute right-2 bottom-2 rounded bg-cd-ink/70 px-1.5 py-0.5 font-sans text-[0.65rem] text-white"

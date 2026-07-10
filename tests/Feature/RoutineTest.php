@@ -2,14 +2,15 @@
 
 namespace Tests\Feature;
 
-use App\Models\RoutineItem;
 use App\Models\Routine;
+use App\Models\RoutineItem;
 use App\Models\RoutineStep;
 use App\Models\User;
 use App\Models\Video;
 use Database\Seeders\MatrixRowSeeder;
 use Database\Seeders\MetricSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -31,11 +32,34 @@ class RoutineTest extends TestCase
         $step = RoutineStep::factory()->forRoutine($routine)->create();
 
         $this->get(route('routines.index'))->assertRedirect(route('login'));
+        $this->get(route('routines.create'))->assertRedirect(route('login'));
         $this->postJson(route('routines.store'), ['name' => '新規'])->assertUnauthorized();
         $this->get(route('routines.show', $routine))->assertRedirect(route('login'));
         $this->patchJson(route('routines.update', $routine), ['name' => '改ざん'])->assertUnauthorized();
         $this->deleteJson(route('routines.destroy', $routine))->assertUnauthorized();
         $this->postJson(route('routine-steps.store', $routine), ['routine_item_id' => $step->routine_item_id])->assertUnauthorized();
+    }
+
+    public function test_create_page_does_not_persist_a_routine(): void
+    {
+        $user = User::factory()->create();
+        $countBefore = Routine::query()->where('user_id', $user->id)->count();
+
+        $this->actingAs($user)
+            ->get(route('routines.create'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Routines/Show')
+                ->where('isCreating', true)
+                ->where('routine.id', null)
+                ->where('routine.name', '')
+                ->has('routine.steps', 0)
+            );
+
+        $this->assertSame(
+            $countBefore,
+            Routine::query()->where('user_id', $user->id)->count(),
+        );
     }
 
     public function test_index_shows_only_the_authenticated_users_active_routines(): void
@@ -87,9 +111,12 @@ class RoutineTest extends TestCase
                 ->component('Routines/Show')
                 ->where('routine.name', '編集対象')
                 ->has('routine.steps', 1)
-                ->where('routine.steps', fn ($steps) => is_array($steps) && array_is_list($steps))
+                ->where('routine.steps', fn ($steps) => $steps instanceof Collection
+                    ? $steps->values()->all() === $steps->all()
+                    : (is_array($steps) && array_is_list($steps)))
                 ->has('routineItems')
                 ->has('videos')
+                ->where('isCreating', false)
             );
     }
 
@@ -232,6 +259,33 @@ class RoutineTest extends TestCase
             ->assertOk();
 
         $this->assertSoftDeleted('routine_steps', ['id' => $step->id]);
+    }
+
+    public function test_user_can_attach_a_video_to_an_existing_step(): void
+    {
+        $user = User::factory()->create();
+        $routine = Routine::factory()->create(['user_id' => $user->id]);
+        $routineItem = RoutineItem::factory()->create(['user_id' => $user->id]);
+        $step = RoutineStep::factory()->forRoutine($routine)->create([
+            'routine_item_id' => $routineItem->id,
+            'video_id' => null,
+        ]);
+        $video = Video::factory()->ready()->create([
+            'user_id' => $user->id,
+            'routine_item_id' => $routineItem->id,
+        ]);
+
+        $this->actingAs($user)
+            ->patchJson(route('routine-steps.update', [$routine, $step]), [
+                'video_id' => $video->id,
+            ])
+            ->assertOk()
+            ->assertJsonPath('step.video_id', $video->id);
+
+        $this->assertDatabaseHas('routine_steps', [
+            'id' => $step->id,
+            'video_id' => $video->id,
+        ]);
     }
 
     public function test_storing_a_step_rejects_another_users_routine_item_id(): void

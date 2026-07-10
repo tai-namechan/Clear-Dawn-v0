@@ -38,6 +38,7 @@ alwaysApply: true
    | 角丸 | `--radius` | `rounded-lg` 等 |
    | サイドバー | `--sidebar-background` 等 | `bg-sidebar` 等 |
    | ダークモード | `.dark` 配下で上記を上書き | `dark:` 修飾子 |
+   | ヨユウ / キオク accent | `--os-yoyu` / `--os-kioku` | `text-os-yoyu` / `text-os-kioku` |
 
    トークンを追加・変更したら `app.css` とこの一覧の両方を更新する。
 

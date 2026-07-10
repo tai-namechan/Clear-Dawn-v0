@@ -14,6 +14,7 @@ class CreateRoutineStepService
      *
      * @param  array{
      *     routine_item_id: string,
+     *     title?: string|null,
      *     video_id?: string|null,
      *     purpose?: StepPurpose|string|null,
      *     target_load?: float|string|null,
@@ -32,6 +33,7 @@ class CreateRoutineStepService
 
             return $routine->routineSteps()->create([
                 'routine_item_id' => $attributes['routine_item_id'],
+                'title' => $this->normalizeTitle($attributes['title'] ?? null),
                 'video_id' => $attributes['video_id'] ?? null,
                 'purpose' => $attributes['purpose'] ?? null,
                 'sort_order' => $nextSortOrder,
@@ -44,5 +46,16 @@ class CreateRoutineStepService
                 'note' => $attributes['note'] ?? null,
             ]);
         });
+    }
+
+    private function normalizeTitle(?string $title): ?string
+    {
+        if ($title === null) {
+            return null;
+        }
+
+        $trimmed = trim($title);
+
+        return $trimmed === '' ? null : $trimmed;
     }
 }
