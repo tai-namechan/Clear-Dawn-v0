@@ -69,7 +69,7 @@ class ProductSwitcherTest extends TestCase
                 ->has('products', 3)
                 ->where('products.0.key', ProductCatalog::CLEAR_DAWN)
                 ->where('products.0.tagline', '思考の整理・人生の方針')
-                ->where('products.1.tagline', '焦らず、前へ回す秘書')
+                ->where('products.1.tagline', '焦らず、前へ回すAI秘書')
                 ->where('products.2.tagline', '記憶の保存・検索・想起')
             );
     }
