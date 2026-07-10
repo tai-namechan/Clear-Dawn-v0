@@ -105,8 +105,41 @@ export function useVideoUpload(options: UseVideoUploadOptions = {}) {
             xhr = new XMLHttpRequest();
             xhr.open('PUT', upload.url, true);
 
+            // Browsers forbid setting Host / Content-Length etc. on XHR.
+            // Presigned S3/R2 responses often include Host in signed headers.
+            const unsafeHeaders = new Set([
+                'host',
+                'content-length',
+                'connection',
+                'cookie',
+                'origin',
+                'referer',
+                'transfer-encoding',
+                'keep-alive',
+                'te',
+                'trailer',
+                'upgrade',
+                'via',
+                'accept-encoding',
+                'accept-charset',
+            ]);
+
             Object.entries(upload.headers).forEach(([key, value]) => {
-                xhr?.setRequestHeader(key, value);
+                const lower = key.toLowerCase();
+
+                if (
+                    unsafeHeaders.has(lower) ||
+                    lower.startsWith('proxy-') ||
+                    lower.startsWith('sec-')
+                ) {
+                    return;
+                }
+
+                const headerValue = Array.isArray(value)
+                    ? value.join(', ')
+                    : String(value);
+
+                xhr?.setRequestHeader(key, headerValue);
             });
 
             xhr.upload.onprogress = (event) => {

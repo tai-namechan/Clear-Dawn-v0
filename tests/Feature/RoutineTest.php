@@ -261,6 +261,33 @@ class RoutineTest extends TestCase
         $this->assertSoftDeleted('routine_steps', ['id' => $step->id]);
     }
 
+    public function test_user_can_attach_a_video_to_an_existing_step(): void
+    {
+        $user = User::factory()->create();
+        $routine = Routine::factory()->create(['user_id' => $user->id]);
+        $routineItem = RoutineItem::factory()->create(['user_id' => $user->id]);
+        $step = RoutineStep::factory()->forRoutine($routine)->create([
+            'routine_item_id' => $routineItem->id,
+            'video_id' => null,
+        ]);
+        $video = Video::factory()->ready()->create([
+            'user_id' => $user->id,
+            'routine_item_id' => $routineItem->id,
+        ]);
+
+        $this->actingAs($user)
+            ->patchJson(route('routine-steps.update', [$routine, $step]), [
+                'video_id' => $video->id,
+            ])
+            ->assertOk()
+            ->assertJsonPath('step.video_id', $video->id);
+
+        $this->assertDatabaseHas('routine_steps', [
+            'id' => $step->id,
+            'video_id' => $video->id,
+        ]);
+    }
+
     public function test_storing_a_step_rejects_another_users_routine_item_id(): void
     {
         $user = User::factory()->create();

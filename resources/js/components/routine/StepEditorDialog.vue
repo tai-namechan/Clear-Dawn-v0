@@ -48,6 +48,7 @@ import { purposeChipClasses } from '@/lib/stepPurposeColors';
 import type {
     RoutineItem,
     RoutineItemCategory,
+    RoutineStep,
     StepPurpose,
     TrackingType,
     Video,
@@ -85,6 +86,8 @@ interface Props {
     routineItems: RoutineItem[];
     videos?: Video[];
     saving?: boolean;
+    /** When set, dialog edits an existing step (video attach etc.). */
+    editingStep?: RoutineStep | null;
     /** Parent can push server-side field errors after submit fails */
     serverErrors?: FieldErrors | null;
 }
@@ -92,6 +95,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     saving: false,
     videos: () => [],
+    editingStep: null,
     serverErrors: null,
 });
 
@@ -100,6 +104,8 @@ const emit = defineEmits<{
     submit: [payload: StepEditorPayload];
     'items-changed': [];
 }>();
+
+const isEditing = computed(() => props.editingStep !== null);
 
 const mode = ref<'pick' | 'create'>('create');
 const selectedItemId = ref('');
@@ -328,6 +334,27 @@ function syncUnitSelectorsFromItem(item: RoutineItem | null): void {
         loadUnitSelect.value === UNIT_PRESET_OTHER ? loadDefault : '';
 }
 
+function syncUnitSelectorsFromValues(
+    load: string | null | undefined,
+    amount: string | null | undefined,
+    item: RoutineItem | null,
+): void {
+    const amountDefault =
+        amount ||
+        item?.default_amount_unit ||
+        defaultAmountUnitForTracking[item?.tracking_type ?? 'reps'] ||
+        '回';
+    const loadDefault = load || item?.default_load_unit || defaultLoadUnit;
+
+    amountUnitSelect.value = unitSelectValue(amountDefault, amountUnitPresets);
+    amountUnitCustom.value =
+        amountUnitSelect.value === UNIT_PRESET_OTHER ? amountDefault : '';
+
+    loadUnitSelect.value = unitSelectValue(loadDefault, loadUnitPresets);
+    loadUnitCustom.value =
+        loadUnitSelect.value === UNIT_PRESET_OTHER ? loadDefault : '';
+}
+
 const categoryOptions = computed(() =>
     routineItemCategoryOptions.map((value) => ({
         value,
@@ -371,19 +398,50 @@ watch(
         }
 
         clearFieldErrors();
-        mode.value = props.routineItems.length ? 'pick' : 'create';
-        selectedItemId.value = props.routineItems[0]?.id ?? '';
-        newItemName.value = '';
-        stepTitle.value = '';
-        newItemCategory.value = 'strength';
-        newItemTrackingType.value = 'reps';
-        purpose.value = categoryDefaultPurpose.strength;
-        blockCount.value = 3;
-        restSeconds.value = '60';
-        note.value = '';
-        videoId.value = null;
-        blockRows.value = [{ load: '', amount: '10', memo: '' }];
-        syncUnitSelectorsFromItem(props.routineItems[0] ?? null);
+
+        const step = props.editingStep;
+
+        if (step) {
+            mode.value = 'pick';
+            selectedItemId.value = step.routine_item_id;
+            newItemName.value = '';
+            stepTitle.value = step.title ?? '';
+            purpose.value = step.purpose;
+            blockCount.value = step.target_blocks ?? 1;
+            restSeconds.value =
+                step.rest_seconds !== null && step.rest_seconds !== undefined
+                    ? String(step.rest_seconds)
+                    : '';
+            note.value = step.note ?? '';
+            videoId.value = step.video_id;
+            blockRows.value = [
+                {
+                    load: step.target_load ?? '',
+                    amount: step.target_amount ?? '',
+                    memo: '',
+                },
+            ];
+            syncUnitSelectorsFromValues(
+                step.load_unit,
+                step.amount_unit,
+                step.routine_item ?? null,
+            );
+        } else {
+            mode.value = props.routineItems.length ? 'pick' : 'create';
+            selectedItemId.value = props.routineItems[0]?.id ?? '';
+            newItemName.value = '';
+            stepTitle.value = '';
+            newItemCategory.value = 'strength';
+            newItemTrackingType.value = 'reps';
+            purpose.value = categoryDefaultPurpose.strength;
+            blockCount.value = 3;
+            restSeconds.value = '60';
+            note.value = '';
+            videoId.value = null;
+            blockRows.value = [{ load: '', amount: '10', memo: '' }];
+            syncUnitSelectorsFromItem(props.routineItems[0] ?? null);
+        }
+
         videos.value = props.videos.length
             ? [...props.videos]
             : await fetchVideosFromPage().catch(() => []);
@@ -391,7 +449,7 @@ watch(
 );
 
 watch(selectedItem, (item) => {
-    if (!item || mode.value !== 'pick') {
+    if (!item || mode.value !== 'pick' || isEditing.value) {
         return;
     }
 
@@ -642,10 +700,14 @@ defineExpose({
         >
             <DialogHeader>
                 <DialogTitle class="font-sans text-lg font-semibold text-cd-ink">
-                    ステップを追加
+                    {{ isEditing ? 'ステップを編集' : 'ステップを追加' }}
                 </DialogTitle>
                 <p class="font-sans text-sm text-cd-ink-muted">
-                    上から順番に入力してください。右側で完成イメージを確認できます。
+                    {{
+                        isEditing
+                            ? '動画の付け替えや目標値の調整ができます。'
+                            : '上から順番に入力してください。右側で完成イメージを確認できます。'
+                    }}
                 </p>
             </DialogHeader>
 
@@ -653,7 +715,7 @@ defineExpose({
                 class="grid min-h-0 flex-1 gap-5 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_240px]"
             >
                 <div class="flex flex-col gap-3">
-                    <div class="flex flex-wrap gap-2">
+                    <div v-if="!isEditing" class="flex flex-wrap gap-2">
                         <Button
                             type="button"
                             size="sm"
@@ -690,7 +752,11 @@ defineExpose({
                         <Select
                             v-else
                             v-model="selectedItemId"
-                            :disabled="saving || !routineItems.length"
+                            :disabled="
+                                saving ||
+                                !routineItems.length ||
+                                isEditing
+                            "
                         >
                             <SelectTrigger
                                 :aria-invalid="Boolean(fieldErrors.name)"
