@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { LineChart } from '@lucide/vue';
+import { LineChart, UtensilsCrossed } from '@lucide/vue';
 import { ref } from 'vue';
 import DateNavigator from '@/components/DateNavigator.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
@@ -8,11 +8,12 @@ import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiFetch } from '@/lib/apiFetch';
-import type { DailyMetricEntry } from '@/types/routine';
+import type { DailyMetricEntry, NutritionTotals } from '@/types/routine';
 
 interface Props {
     date: string;
     metrics: DailyMetricEntry[];
+    mealTotals: NutritionTotals;
 }
 
 const props = defineProps<Props>();
@@ -70,7 +71,7 @@ async function saveAll(): Promise<void> {
         });
 
         saveMessage.value = '保存しました。';
-        router.reload({ only: ['metrics', 'date'] });
+        router.reload({ only: ['metrics', 'date', 'mealTotals'] });
     } catch {
         saveMessage.value = '保存に失敗しました。';
     } finally {
@@ -98,8 +99,41 @@ async function saveAll(): Promise<void> {
                 <DateNavigator
                     :date="date"
                     route-url="/records"
-                    :reload-only="['metrics', 'date']"
+                    :reload-only="['metrics', 'date', 'mealTotals']"
                 />
+            </PageSectionCard>
+
+            <PageSectionCard padding="none" aria-label="食事への導線">
+                <Link
+                    :href="`/meals?date=${date}`"
+                    class="flex items-center justify-between gap-3 px-5 py-4 transition-colors hover:bg-muted/30"
+                >
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex size-9 items-center justify-center rounded-full bg-primary/10 text-primary"
+                        >
+                            <UtensilsCrossed :size="16" :stroke-width="1.6" />
+                        </div>
+                        <div>
+                            <p
+                                class="font-sans text-base font-semibold text-cd-ink"
+                            >
+                                食事
+                            </p>
+                            <p class="font-sans text-xs text-cd-ink-muted">
+                                当日の合計
+                                {{
+                                    Number(mealTotals.kcal).toLocaleString(
+                                        'ja-JP',
+                                        { maximumFractionDigits: 1 },
+                                    )
+                                }}
+                                kcal
+                            </p>
+                        </div>
+                    </div>
+                    <span class="font-sans text-sm text-primary">開く</span>
+                </Link>
             </PageSectionCard>
 
             <PageSectionCard padding="none" aria-label="日次入力">
