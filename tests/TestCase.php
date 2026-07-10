@@ -13,11 +13,6 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
 
         $this->withoutVite();
-
-        // Inertia SSR may POST to Vite hot URL when public/hot exists; disable in tests
-        // so Http::preventStrayRequests() does not treat it as a stray outbound call.
-        config(['inertia.ssr.enabled' => false]);
-
         Http::preventStrayRequests();
     }
 

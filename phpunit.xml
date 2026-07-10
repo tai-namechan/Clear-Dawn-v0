@@ -35,5 +35,7 @@
         <env name="APP_LOCALE" value="ja"/>
         <env name="ANTHROPIC_API_KEY" value=""/>
         <env name="ANTHROPIC_BASE_URL" value="https://api.anthropic.com/v1"/>
+        <!-- Keep Http::preventStrayRequests() hermetic: Inertia SSR must not POST to Vite/SSR. -->
+        <env name="INERTIA_SSR_ENABLED" value="false"/>
     </php>
 </phpunit>
