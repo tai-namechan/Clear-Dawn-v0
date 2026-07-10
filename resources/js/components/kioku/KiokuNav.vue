@@ -8,14 +8,14 @@ defineProps<{
 </script>
 
 <template>
-    <nav class="flex flex-wrap justify-center gap-1.5 text-sm">
+    <nav class="flex flex-wrap gap-1.5 text-sm">
         <Link
             :href="home()"
             class="rounded-full px-3.5 py-1.5 font-medium transition-colors"
             :class="
                 active === 'home'
-                    ? 'bg-os-kioku text-white'
-                    : 'border border-os-line text-os-sub hover:bg-white'
+                    ? 'bg-os-kioku-soft text-os-kioku'
+                    : 'text-os-sub hover:bg-white/80'
             "
         >
             記憶
@@ -25,8 +25,8 @@ defineProps<{
             class="rounded-full px-3.5 py-1.5 font-medium transition-colors"
             :class="
                 active === 'sources'
-                    ? 'bg-os-kioku text-white'
-                    : 'border border-os-line text-os-sub hover:bg-white'
+                    ? 'bg-os-kioku-soft text-os-kioku'
+                    : 'text-os-sub hover:bg-white/80'
             "
         >
             取り込み元
@@ -36,8 +36,8 @@ defineProps<{
             class="rounded-full px-3.5 py-1.5 font-medium transition-colors"
             :class="
                 active === 'settings'
-                    ? 'bg-os-kioku text-white'
-                    : 'border border-os-line text-os-sub hover:bg-white'
+                    ? 'bg-os-kioku-soft text-os-kioku'
+                    : 'text-os-sub hover:bg-white/80'
             "
         >
             設定

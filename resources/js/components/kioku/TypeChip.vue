@@ -17,11 +17,11 @@ const meta = computed(() => memoryTypeMeta(props.type));
 
 <template>
     <span
-        class="inline-flex items-center gap-1.5 rounded-full font-bold"
-        :class="small ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs'"
+        class="inline-flex items-center gap-1 rounded-full font-medium"
+        :class="small ? 'px-2 py-0.5 text-[10.5px]' : 'px-2.5 py-1 text-[11.5px]'"
         :style="{ color: meta.color, background: meta.bg }"
     >
-        <component :is="meta.icon" :size="small ? 11 : 13" />
+        <component :is="meta.icon" :size="small ? 10 : 12" />
         {{ meta.label }}
     </span>
 </template>

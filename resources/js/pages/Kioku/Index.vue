@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, router } from '@inertiajs/vue3';
-import { Brain, Database, Plus, RefreshCw, Search, Send, X } from '@lucide/vue';
+import { Brain, Plus, RefreshCw, Search, Send, X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import KiokuNav from '@/components/kioku/KiokuNav.vue';
 import MemoryCard from '@/components/kioku/MemoryCard.vue';
@@ -82,40 +82,57 @@ function reload(): void {
 defineOptions({
     layout: {
         title: 'キオク',
-        subtitle: '経験を、失わない。 — 過去を思い出す場所',
+        subtitle: '記憶の保存・検索・想起',
     },
 });
 </script>
 
 <template>
-    <div class="space-y-4">
+    <div class="space-y-5">
         <Head title="キオク" />
 
-        <div class="flex items-end justify-between gap-2">
-            <div class="flex items-center gap-2 text-os-kioku">
-                <Database :size="20" />
-                <span class="font-serif text-[22px] font-bold tracking-wide"
-                    >キオク</span
+        <!-- Brand header (soft Console tone, without "Console" label) -->
+        <header class="flex flex-wrap items-end justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div
+                    class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#2B2836] font-serif text-[1.35rem] leading-none text-white shadow-sm"
+                    aria-hidden="true"
                 >
+                    K
+                </div>
+                <div>
+                    <h2
+                        class="font-serif text-[1.55rem] leading-none font-normal tracking-[0.04em] text-os-ink"
+                    >
+                        キオク
+                    </h2>
+                    <p class="mt-1 text-xs text-os-sub">
+                        記憶の保存・検索・想起
+                    </p>
+                </div>
             </div>
             <div class="text-xs text-os-faint">{{ totalCount }}件の記憶</div>
+        </header>
+
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <KiokuNav active="home" />
         </div>
 
-        <KiokuNav active="home" />
-
         <div
-            class="grid gap-5 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:items-start"
+            class="grid gap-5 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)] lg:items-start"
         >
             <aside class="space-y-3.5 lg:sticky lg:top-5">
+                <!-- Soft paper capture CTA -->
                 <section
-                    class="rounded-2xl border border-os-kioku/25 bg-white p-4 shadow-[0_1px_3px_rgba(43,40,54,0.05)]"
+                    class="rounded-2xl border border-[#e6e0d4] bg-os-kioku-paper px-4 py-4"
                 >
-                    <div
-                        class="mb-2.5 flex items-center gap-1.5 text-xs font-bold text-os-kioku"
-                    >
-                        <Plus :size="14" />
-                        なんでも、まずここへ
+                    <div class="mb-1 text-center text-sm font-semibold text-os-ink">
+                        <span class="mr-1 text-os-kioku">+</span>
+                        メモを今すぐ保存する
                     </div>
+                    <p class="mb-3 text-center text-[11.5px] leading-relaxed text-os-sub">
+                        思いついたこと、知識、気づきをすぐに記録
+                    </p>
                     <Form
                         v-bind="store.form()"
                         class="space-y-2.5"
@@ -127,8 +144,8 @@ defineOptions({
                             name="raw_content"
                             rows="4"
                             required
-                            placeholder="エラーメッセージ、考えたこと、URL…&#10;貼るだけ。整理はAIが後からやります。&#10;（Ctrl/⌘+Enterで保存）"
-                            class="w-full resize-y rounded-xl border border-os-line bg-os-kioku-bg px-3.5 py-3 text-[13.5px] leading-relaxed text-os-ink outline-none placeholder:text-os-faint focus-visible:ring-2 focus-visible:ring-os-kioku/40"
+                            placeholder="エラー、考え、URL… 貼るだけ。整理はAIが後から。"
+                            class="w-full resize-y rounded-xl border border-[#e0dbd0] bg-white/80 px-3.5 py-3 text-[13.5px] leading-relaxed text-os-ink outline-none placeholder:text-os-faint focus-visible:ring-2 focus-visible:ring-os-kioku/30"
                             @keydown.meta.enter.prevent="
                                 ($event.target as HTMLTextAreaElement).form?.requestSubmit()
                             "
@@ -139,21 +156,19 @@ defineOptions({
                         <input type="hidden" name="source_type" value="manual" />
                         <Button
                             type="submit"
-                            class="h-11 w-full gap-2 rounded-xl bg-os-kioku text-[13.5px] font-bold text-white shadow-[0_3px_10px_rgba(111,95,201,0.32)] hover:bg-os-kioku/90"
+                            class="h-10 w-full gap-2 rounded-xl bg-os-kioku text-[13px] font-semibold text-white hover:bg-os-kioku/90"
                             :disabled="processing || !draft.trim()"
-                            :class="draft.trim() ? 'opacity-100' : 'opacity-40'"
+                            :class="draft.trim() ? 'opacity-100' : 'opacity-45'"
                         >
-                            <Send :size="15" />
-                            保存（AIが自動整理）
+                            <Send :size="14" />
+                            保存する
                         </Button>
                     </Form>
                 </section>
 
-                <section
-                    class="rounded-2xl border border-os-line bg-white p-4 shadow-[0_1px_3px_rgba(43,40,54,0.05)]"
-                >
+                <section class="rounded-2xl border border-os-line bg-white px-4 py-3.5">
                     <div
-                        class="mb-2.5 text-[11.5px] font-bold tracking-wide text-os-faint"
+                        class="mb-2.5 text-[11px] font-semibold tracking-wide text-os-faint"
                     >
                         種別でしぼる
                     </div>
@@ -163,8 +178,8 @@ defineOptions({
                             class="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs transition-colors"
                             :class="
                                 selectedTypes.length === 0
-                                    ? 'border-os-kioku/40 bg-os-kioku-soft font-bold text-os-kioku'
-                                    : 'border-os-line bg-[#F1F0F5] text-os-sub'
+                                    ? 'border-os-kioku/30 bg-os-kioku-soft font-semibold text-os-kioku'
+                                    : 'border-os-line bg-[#F7F6FA] text-os-sub'
                             "
                             @click="clearTypes"
                         >
@@ -177,15 +192,15 @@ defineOptions({
                             class="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs transition-colors"
                             :class="
                                 selectedTypes.includes(key)
-                                    ? 'font-bold'
-                                    : 'border-os-line bg-[#F1F0F5] text-os-sub'
+                                    ? 'font-semibold'
+                                    : 'border-os-line bg-[#F7F6FA] text-os-sub'
                             "
                             :style="
                                 selectedTypes.includes(key)
                                     ? {
                                           background: MEMORY_TYPES[key].bg,
                                           color: MEMORY_TYPES[key].color,
-                                          borderColor: MEMORY_TYPES[key].color + '55',
+                                          borderColor: MEMORY_TYPES[key].color + '40',
                                       }
                                     : undefined
                             "
@@ -198,18 +213,16 @@ defineOptions({
                     </div>
                 </section>
 
-                <section
-                    class="rounded-2xl border border-os-line bg-white p-4 shadow-[0_1px_3px_rgba(43,40,54,0.05)]"
-                >
+                <section class="rounded-2xl border border-os-line bg-white px-4 py-3.5">
                     <div
-                        class="mb-2.5 text-[11.5px] font-bold tracking-wide text-os-faint"
+                        class="mb-2.5 text-[11px] font-semibold tracking-wide text-os-faint"
                     >
                         取り込み元
                     </div>
                     <div
                         v-for="(meta, key) in SOURCE_TYPES"
                         :key="key"
-                        class="flex items-center gap-2 border-b border-os-line py-1.5 text-[12.5px] last:border-0"
+                        class="flex items-center gap-2 border-b border-os-line/80 py-1.5 text-[12.5px] last:border-0"
                         :class="meta.muted ? 'opacity-45' : ''"
                     >
                         <component :is="meta.icon" :size="13" class="text-os-sub" />
@@ -218,20 +231,17 @@ defineOptions({
                             sourceCounts[key as SourceTypeKey] || 0
                         }}</span>
                     </div>
-                    <p class="mt-2.5 text-[11px] leading-relaxed text-os-faint">
-                        ヨユウ・Clear Dawnからの自動保存とSlack連携は、本実装ではイベント/コネクタ経由になります。
-                    </p>
                 </section>
             </aside>
 
-            <section class="space-y-3.5">
+            <section class="space-y-3">
                 <div
-                    class="flex items-center gap-2.5 rounded-2xl border border-os-line bg-white px-4 py-3 shadow-[0_1px_3px_rgba(43,40,54,0.05)]"
+                    class="flex items-center gap-2.5 rounded-2xl border border-os-line bg-white px-4 py-3"
                 >
                     <Search :size="16" class="text-os-faint" />
                     <input
                         v-model="q"
-                        placeholder="記憶を検索（例: Vite / 転職 / ヨガ）"
+                        placeholder="キーワード、タグ、日付で検索…"
                         class="min-w-0 flex-1 bg-transparent text-[13.5px] text-os-ink outline-none placeholder:text-os-faint"
                         @keydown.enter.prevent="applyFilters"
                     />
@@ -259,29 +269,38 @@ defineOptions({
                     </Button>
                 </div>
 
+                <div class="flex items-baseline justify-between gap-2 px-0.5">
+                    <h3 class="text-sm font-semibold text-os-ink">最近の記憶</h3>
+                    <span class="text-xs text-os-kioku">{{ memories.length }}件</span>
+                </div>
+
                 <div
                     v-if="memories.length === 0"
-                    class="rounded-2xl border border-os-line bg-white p-9 text-center shadow-[0_1px_3px_rgba(43,40,54,0.05)]"
+                    class="rounded-2xl border border-dashed border-os-line bg-white/70 p-10 text-center"
                 >
-                    <Brain :size="26" class="mx-auto mb-2.5 text-os-faint" />
+                    <Brain :size="24" class="mx-auto mb-2 text-os-faint" />
                     <p class="text-[13px] leading-relaxed text-os-sub">
                         {{
                             q
                                 ? `「${q}」に一致する記憶はありません。`
-                                : 'まだ記憶がありません。左の保存ボックスからどうぞ。'
+                                : 'まだ記憶がありません。左から保存してみてください。'
                         }}
                     </p>
                 </div>
 
-                <MemoryCard
-                    v-for="memory in memories"
-                    :key="memory.id"
-                    :memory="memory"
-                />
+                <div class="space-y-2.5">
+                    <MemoryCard
+                        v-for="memory in memories"
+                        :key="memory.id"
+                        :memory="memory"
+                    />
+                </div>
 
-                <p class="pt-2 text-center text-[11px] leading-relaxed text-os-faint">
-                    保存は即時、AI整理（分類・要約・構造化）は非同期。Laravel Queue
-                    で同じ流れです。
+                <p
+                    class="mx-auto max-w-md pt-4 text-center text-[11.5px] leading-relaxed text-os-faint"
+                >
+                    大切な情報や学びを蓄積し、必要なときにすぐ取り出せる。<br />
+                    あなたの記憶を、未来の行動に変換していきます。
                 </p>
             </section>
         </div>

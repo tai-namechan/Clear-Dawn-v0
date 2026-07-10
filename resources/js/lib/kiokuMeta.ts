@@ -39,23 +39,23 @@ export const MEMORY_TYPES: Record<
     MemoryTypeKey,
     { label: string; color: string; bg: string; icon: Component }
 > = {
-    error_log: { label: 'エラー', color: '#D9645B', bg: '#FBEBE9', icon: Bug },
-    decision: { label: '判断', color: '#DF9A2E', bg: '#FBF1DE', icon: Scale },
-    learning: { label: '学び', color: '#4A7DC4', bg: '#E9F0FA', icon: BookOpen },
-    thought: { label: '思考', color: '#129488', bg: '#E4F4F2', icon: Brain },
-    emotion: { label: '感情', color: '#D66A9C', bg: '#FAEAF2', icon: Heart },
-    idea: { label: 'アイデア', color: '#C98A2E', bg: '#FAF0DC', icon: Lightbulb },
-    reference: { label: '資料', color: '#6E6A7C', bg: '#EFEEF3', icon: Link2 },
+    error_log: { label: 'エラー', color: '#B86B66', bg: '#F6EEEC', icon: Bug },
+    decision: { label: '判断', color: '#B8894A', bg: '#F7F1E6', icon: Scale },
+    learning: { label: '学び', color: '#5B7AA8', bg: '#EEF2F8', icon: BookOpen },
+    thought: { label: '思考', color: '#3D8A82', bg: '#EAF4F2', icon: Brain },
+    emotion: { label: '感情', color: '#B87496', bg: '#F6EEF3', icon: Heart },
+    idea: { label: 'アイデア', color: '#B08A45', bg: '#F7F2E7', icon: Lightbulb },
+    reference: { label: '資料', color: '#7A7688', bg: '#F1F0F4', icon: Link2 },
     event: {
         label: '出来事',
-        color: '#43A860',
-        bg: '#E8F5EC',
+        color: '#5A9470',
+        bg: '#EAF4EE',
         icon: CalendarCheck,
     },
     conversation: {
         label: '相談',
         color: '#6F5FC9',
-        bg: '#EDEAF9',
+        bg: '#F0EEF8',
         icon: MessageSquare,
     },
 };

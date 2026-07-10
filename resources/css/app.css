@@ -123,6 +123,7 @@
     --color-os-kioku-bg: var(--os-kioku-bg);
     --color-os-yoyu-soft: var(--os-yoyu-soft);
     --color-os-kioku-soft: var(--os-kioku-soft);
+    --color-os-kioku-paper: var(--os-kioku-paper);
     --color-os-ink: var(--os-ink);
     --color-os-sub: var(--os-sub);
     --color-os-faint: var(--os-faint);
@@ -243,13 +244,14 @@
     --os-yoyu: #129488;
     --os-kioku: #6f5fc9;
     --os-yoyu-bg: #f5f6f2;
-    --os-kioku-bg: #f6f5f9;
+    --os-kioku-bg: #f7f6fa;
     --os-yoyu-soft: #e4f4f2;
-    --os-kioku-soft: #edeaf9;
+    --os-kioku-soft: #f0eef8;
+    --os-kioku-paper: #f4f1ea;
     --os-ink: #2b2836;
     --os-sub: #6e6a7c;
     --os-faint: #a5a1b2;
-    --os-line: #e8e6ee;
+    --os-line: #ebe9f0;
 
     /* Interactive surface tints — readability first, quiet lavender feedback */
     --cd-cell: hsl(45 33% 99%); /* near-white ivory cell base (#FCFBF9) */

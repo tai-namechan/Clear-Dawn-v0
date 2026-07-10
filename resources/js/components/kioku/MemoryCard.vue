@@ -10,40 +10,26 @@ import type { KiokuMemory } from '@/types/kioku';
 defineProps<{
     memory: KiokuMemory;
 }>();
-
-function stars(n: number): string {
-    const filled = '★'.repeat(Math.min(Math.max(n, 0), 5));
-    const empty = '★'.repeat(5 - Math.min(Math.max(n, 0), 5));
-
-    return filled + empty;
-}
 </script>
 
 <template>
     <Link
         :href="show(memory.id)"
-        class="group relative block rounded-2xl border border-os-line bg-white p-4 shadow-[0_1px_3px_rgba(43,40,54,0.05)] transition-[border-color,transform] hover:border-os-kioku/40"
+        class="group block rounded-2xl border border-os-line/90 bg-white px-4 py-3.5 transition-colors hover:border-os-kioku/25 hover:bg-white"
         :class="
             memory.status === 'enriching' || memory.status === 'captured'
                 ? 'cursor-default'
                 : 'cursor-pointer'
         "
     >
-        <div
-            class="absolute top-4 bottom-4 left-0 w-[3px] rounded-full opacity-70"
-            :style="{
-                background: memoryTypeMeta(memory.memory_type).color,
-            }"
-        />
-
-        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-            <div class="flex flex-wrap items-center gap-2">
+        <div class="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                 <span
                     v-if="
                         memory.status === 'enriching' ||
                         memory.status === 'captured'
                     "
-                    class="inline-flex items-center gap-1.5 rounded-full bg-os-kioku-soft px-2.5 py-1 text-[11.5px] font-bold text-os-kioku"
+                    class="inline-flex items-center gap-1.5 rounded-full bg-os-kioku-soft px-2.5 py-1 text-[11px] font-medium text-os-kioku"
                 >
                     <Loader2 :size="11" class="animate-spin" />
                     AIが整理中…
@@ -55,49 +41,51 @@ function stars(n: number): string {
                 />
                 <span
                     v-else-if="memory.status === 'failed'"
-                    class="rounded-full bg-[#FBEBE9] px-2.5 py-1 text-[11.5px] font-bold text-[#D9645B]"
+                    class="rounded-full bg-[#F6EEEC] px-2.5 py-1 text-[11px] font-medium text-[#B86B66]"
                 >
                     整理失敗（原文は保存済み）
                 </span>
-                <SourceBadge :source="memory.source_type" />
+                <h3 class="truncate text-[14px] font-semibold text-os-ink">
+                    {{ memory.title }}
+                </h3>
             </div>
-            <span class="text-[11px] text-os-faint">{{
-                formatAgo(memory.captured_at)
-            }}</span>
+            <span class="shrink-0 text-[11px] text-os-faint">
+                {{ formatAgo(memory.captured_at) }}
+            </span>
         </div>
 
-        <div class="text-[14.5px] font-bold text-os-ink">
-            {{ memory.title }}
-        </div>
-        <p class="mt-1 text-[13px] leading-relaxed text-os-sub">
+        <p class="line-clamp-2 text-[12.5px] leading-relaxed text-os-sub">
             <template
                 v-if="
                     memory.status === 'enriching' || memory.status === 'captured'
                 "
             >
-                {{ memory.raw_content.slice(0, 80) }}
+                {{ memory.raw_content.slice(0, 100) }}
             </template>
             <template v-else>
-                {{ memory.summary || memory.raw_content.slice(0, 80) }}
+                {{ memory.summary || memory.raw_content.slice(0, 100) }}
             </template>
         </p>
 
         <div
-            v-if="memory.status === 'ready'"
-            class="mt-2.5 flex flex-wrap items-center gap-2.5"
+            v-if="memory.status === 'ready' && memory.tags?.length"
+            class="mt-2 flex flex-wrap items-center gap-1.5"
         >
-            <span class="text-[11px] tracking-wide text-[#DF9A2E]">
-                <span>{{ stars(memory.importance).slice(0, memory.importance) }}</span>
-                <span class="text-os-line">{{
-                    stars(memory.importance).slice(memory.importance)
-                }}</span>
-            </span>
+            <SourceBadge :source="memory.source_type" />
             <span
                 v-for="tag in memory.tags"
                 :key="tag"
-                class="text-[11px] text-os-kioku"
+                class="rounded-full bg-os-kioku-soft/70 px-2 py-0.5 text-[10.5px] text-os-kioku"
             >
                 #{{ tag }}
+            </span>
+            <span
+                class="ml-auto text-[10px] tracking-wide"
+                :style="{ color: memoryTypeMeta(memory.memory_type).color }"
+                aria-label="重要度"
+            >
+                {{ '★'.repeat(memory.importance)
+                }}{{ '☆'.repeat(5 - memory.importance) }}
             </span>
         </div>
     </Link>
