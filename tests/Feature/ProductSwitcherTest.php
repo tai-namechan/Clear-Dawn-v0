@@ -32,7 +32,7 @@ class ProductSwitcherTest extends TestCase
             ->get(route('yoyu.home'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('Yoyu/ComingSoon')
+                ->component('Yoyu/Index')
                 ->where('currentProduct', ProductCatalog::YOYU)
                 ->has('products', 3)
                 ->where('products.1.key', ProductCatalog::YOYU)
@@ -48,7 +48,7 @@ class ProductSwitcherTest extends TestCase
             ->get(route('kioku.home'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('Kioku/ComingSoon')
+                ->component('Kioku/Index')
                 ->where('currentProduct', ProductCatalog::KIOKU)
                 ->has('products', 3)
                 ->where('products.2.key', ProductCatalog::KIOKU)
