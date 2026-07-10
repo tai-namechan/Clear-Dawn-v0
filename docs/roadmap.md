@@ -10,7 +10,7 @@ v0 の実装をマイルストーン（MS）単位で管理する。カレンダ
 | Phase 1 | M1 | TOP Matrix、領域管理、activity_logs（M1 記録開始） |
 | Phase 1.5 | M2 | メモ、日次・週次振り返り |
 | Phase 2 | M3 | ルーティン / トレーニング、実行履歴 UI（/history） |
-| Phase 2.5 | M4 | 記録（体重・睡眠・筋力・野球）、グラフ |
+| Phase 2.5 | M4 | 記録（体重・睡眠・筋力・野球）、グラフ、食事記録（M4b） |
 | Phase 3 | M5 | Finance |
 | Phase 3.5 | M6 | 動画 |
 | Phase 4 | M7 | AI 支援 |
@@ -26,7 +26,7 @@ M0（docs 整備 + デザイン基盤）は Phase 番号の外で先行する。
 | M1 | TOP Matrix 縦断（Matrix 中核 4 テーブル + **activity_logs** migration、Dashboard、セル編集モーダル、領域管理、Policy / FormRequest / Query / Service、Feature テスト） | v0 の核。[top-matrix.md](./product/screens/top-matrix.md) を正とする。**activity_logs のテーブル設計と記録開始を M1 で行う**（`matrix_item_completed` / `matrix_item_reopened` のみ） |
 | M2 | メモ + 日次・週次振り返り | M2 初期は `completed_at` 参照。将来的に activity_logs 参照へ移行可能にする |
 | M3 | ルーティン / トレーニング + **実行履歴 UI（/history）** | `routine_completed` を activity_logs に追加。ルーティンの TOP 補助表示可否を判断（→ 未決定 #4） |
-| M4 | 記録（体重・睡眠・筋力・野球）+ グラフ | チャートライブラリ選定（→ 未決定 #1）、記録系スキーマ確定（→ 未決定 #3） |
+| M4 | 記録（体重・睡眠・筋力・野球）+ グラフ + **食事記録（M4b）** | チャートは ECharts 採用済み。記録系スキーマは [ADR-0008](./adr/0008-condition-records-hybrid-schema.md)。食事スナップショットは [ADR-0009](./adr/0009-meal-records-snapshot.md) |
 | M5 | Finance | スコープ確定（→ 未決定 #7） |
 | M6 | 動画（Laravel Cloud Object Storage、署名付き URL） | ローカルは MinIO 検討。サイズ・尺の上限確定 |
 | M7 | AI 支援 | プロバイダ・コスト・形態・ログ保存を確定（→ 未決定 #6） |
@@ -56,9 +56,9 @@ M0（docs 整備 + デザイン基盤）は Phase 番号の外で先行する。
 
 | # | 事項 | 選択肢・論点 | 決定期限 |
 |---|---|---|---|
-| 1 | チャートライブラリ | Chart.js / ECharts / Unovis 等。package 追加は要承認 | M4 着手前 |
+| 1 | ~~チャートライブラリ~~ | **確定**: ECharts（`BaseChart.vue`） | — |
 | 2 | フォント配信 | セルフホスト（public/fonts）or CDN。プライバシーと表示安定性ならセルフホスト推奨 | M0 |
-| 3 | 記録系スキーマ | 汎用テーブル一本 vs ハイブリッド（推奨: ハイブリッド） | M4 設計時 |
+| 3 | ~~記録系スキーマ~~ | **確定**: ハイブリッド（[ADR-0008](./adr/0008-condition-records-hybrid-schema.md)）。食事は専用（[ADR-0009](./adr/0009-meal-records-snapshot.md)） | — |
 | 4 | ルーティンの TOP 表示 | 当日実施予定を TOP に補助表示するか、完全独立か | M3 設計時 |
 | 5 | ~~実行履歴の範囲~~ | **確定**: activity_logs でマトリクス完了 + ルーティン完了を統合。テーブル設計・M1 記録開始、UI は M3 | — |
 | 6 | AI 支援の形態 | 提案パネル埋め込み vs 独立チャット画面。プロバイダ・API キー管理・コスト | M7 前 |
