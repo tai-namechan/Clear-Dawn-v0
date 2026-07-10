@@ -600,7 +600,7 @@ async function saveAll(): Promise<void> {
                     </h2>
                 </div>
 
-                <ul class="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4">
+                <ul class="grid gap-3 p-4 sm:grid-cols-2">
                     <li
                         v-for="entry in metrics"
                         :key="entry.metric.key"
@@ -752,23 +752,30 @@ async function saveAll(): Promise<void> {
                             />
                         </div>
                     </li>
-                </ul>
 
-                <div class="border-t border-cd-line px-5 py-4">
-                    <Label class="font-sans text-sm font-semibold text-cd-ink"
-                        >今日の振り返りメモ</Label
+                    <li
+                        class="flex flex-col rounded-xl border border-cd-line bg-cd-surface p-4 sm:col-span-2"
                     >
-                    <textarea
-                        v-model="reflection"
-                        rows="3"
-                        maxlength="500"
-                        class="mt-3 min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 font-sans text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                        placeholder="気づきや体調のメモ（任意）"
-                    />
-                    <p class="mt-1 text-right font-sans text-xs text-cd-ink-muted">
-                        {{ reflection.length }}/500
-                    </p>
-                </div>
+                        <Label
+                            for="reflection-note"
+                            class="font-sans text-sm font-semibold text-cd-ink"
+                            >今日の振り返りメモ</Label
+                        >
+                        <textarea
+                            id="reflection-note"
+                            v-model="reflection"
+                            rows="3"
+                            maxlength="500"
+                            class="mt-3 min-h-24 w-full flex-1 rounded-md border border-input bg-transparent px-3 py-2 font-sans text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                            placeholder="気づきや体調のメモ（任意）"
+                        />
+                        <p
+                            class="mt-1 text-right font-sans text-xs text-cd-ink-muted"
+                        >
+                            {{ reflection.length }}/500
+                        </p>
+                    </li>
+                </ul>
             </PageSectionCard>
 
             <div class="flex items-center justify-between gap-3">
