@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\Rules\Password;
 use Laravel\Fortify\Features;
 use Tests\TestCase;
 
@@ -35,5 +36,23 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_password_mixed_case_error_is_japanese(): void
+    {
+        Password::defaults(fn (): Password => Password::min(8)->mixedCase());
+
+        $response = $this->from(route('register'))->post(route('register.store'), [
+            'name' => 'Test User',
+            'email' => 'mixed-case@example.com',
+            'password' => 'alllowercase1',
+            'password_confirmation' => 'alllowercase1',
+        ]);
+
+        $response->assertRedirect(route('register'));
+        $response->assertSessionHasErrors([
+            'password' => 'パスワードには大文字と小文字の両方を含めてください。',
+        ]);
+        $this->assertGuest();
     }
 }

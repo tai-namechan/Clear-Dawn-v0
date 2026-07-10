@@ -74,7 +74,7 @@
             "npm run lint:check",
             "npm run format:check",
             "npm run types:check",
-            "npm run build",
+            "npm run build:ssr",
             "@test"
         ],
         "types:check": [

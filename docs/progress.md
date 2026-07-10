@@ -18,11 +18,11 @@
 | M6 | 3.5 | 動画 | **partial** | 尺制限・非同期削除・サムネ等の仕上げ |
 | M7 | 4 | AI 支援 | **not_started** | プロバイダ未決定 #6 |
 | M8 | 4.5 | Export API | **not_started** | 認証方式未決定 #8 |
-| SK1 | Seed K | ProductSwitcher + プレースホルダ | **partial** | 切替シェル実装済。プレビュー実データ化は後続 |
-| SK2 | Seed K | キオク P0 | **not_started** | memories + 保存/一覧/検索 |
-| SK3 | Seed K | キオク P1 | **not_started** | Queue AI 整理 |
-| SK4 | Seed K | ヨユウ Today | **not_started** | データ設計確定後 |
-| SK5 | Seed K | ヨユウ秘書 × Recall | **not_started** | 二層コンテキスト |
+| SK1 | Seed K | ProductSwitcher + プレースホルダ | **done** | 切替シェル完了 |
+| SK2 | Seed K | キオク P0 | **done** | 保存・一覧・検索 |
+| SK3 | Seed K | キオク P1 | **done** | AI整理・レジストリ・usage log |
+| SK4 | Seed K | ヨユウ Today | **done** | モック予定・タスク・頭の中 |
+| SK5 | Seed K | ヨユウ秘書 × Recall | **done** | 二層コンテキスト（キー無しはフォールバック） |
 
 状態の意味:
 
