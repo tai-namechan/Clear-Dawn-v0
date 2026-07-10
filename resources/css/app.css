@@ -582,6 +582,23 @@
 }
 
 /*
+ * Yoyu / Kioku sidebar width — same 168px shell as Clear Dawn.
+ * Background art is swapped via public/images/products/sidebars/{yoyu,kioku}.jpg
+ */
+.group\/sidebar-wrapper:has(.os-sidebar) {
+    --sidebar-width: 10.5rem !important;
+}
+
+.os-sidebar [data-sidebar='sidebar'] {
+    overflow: hidden;
+    background-color: var(--os-yoyu-bg, #f6f5f9);
+}
+
+.os-sidebar-kioku [data-sidebar='sidebar'] {
+    background-color: var(--os-kioku-bg, #f5f2ea);
+}
+
+/*
  * Clear Dawn sidebar gradient.
  * Kept outside @layer so it wins over the `bg-sidebar` utility applied inside
  * the ui/sidebar component (which must not be modified directly).

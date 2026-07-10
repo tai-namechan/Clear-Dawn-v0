@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import KiokuNav from '@/components/kioku/KiokuNav.vue';
 
 defineOptions({
     layout: {
@@ -13,7 +12,6 @@ defineOptions({
 <template>
     <div class="space-y-5">
         <Head title="設定 — キオク" />
-        <KiokuNav active="settings" />
         <div
             class="mx-auto max-w-lg rounded-2xl border border-dashed border-os-line bg-os-kioku-paper p-10 text-center text-sm leading-relaxed text-os-sub"
         >
