@@ -35,7 +35,7 @@ const navItems: CdNavItem[] = [
         matchPrefix: true,
     },
     {
-        title: 'ヘルス記録',
+        title: 'パフォーマンス管理',
         icon: ChartLine,
         href: '/records',
         matchPrefix: true,

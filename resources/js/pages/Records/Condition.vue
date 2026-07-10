@@ -309,7 +309,7 @@ async function saveAll(): Promise<void> {
                         class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
                     >
                         <ArrowLeft :size="16" :stroke-width="1.6" />
-                        ヘルス記録
+                        パフォーマンス管理
                     </Link>
                     <PageTitleOrnament
                         title="コンディション管理"

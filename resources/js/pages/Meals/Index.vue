@@ -397,7 +397,7 @@ function applyChartFilter(): void {
                             :href="`/records?date=${date}`"
                             class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
                         >
-                            ← ヘルス記録
+                            ← パフォーマンス管理
                         </Link>
                         <PageTitleOrnament
                             title="食事記録"

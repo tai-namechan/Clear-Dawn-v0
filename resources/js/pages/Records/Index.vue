@@ -159,13 +159,13 @@ const conditionHighlights = computed(() =>
 </script>
 
 <template>
-    <Head title="ヘルス記録" />
+    <Head title="パフォーマンス管理" />
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4">
             <PageSectionCard>
                 <PageTitleOrnament
-                    title="ヘルス記録"
+                    title="パフォーマンス管理"
                     subtitle="食事とコンディションを、すぐ記録して、すぐ振り返る"
                     align="left"
                 />
