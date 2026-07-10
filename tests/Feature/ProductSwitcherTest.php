@@ -87,4 +87,15 @@ class ProductSwitcherTest extends TestCase
                 ->where('products.2.href', route('kioku.home'))
             );
     }
+
+    public function test_product_switcher_preview_images_exist_in_public(): void
+    {
+        foreach ([
+            'images/products/clear-dawn.jpg',
+            'images/products/yoyu.jpg',
+            'images/products/kioku.jpg',
+        ] as $relativePath) {
+            $this->assertFileExists(public_path($relativePath));
+        }
+    }
 }

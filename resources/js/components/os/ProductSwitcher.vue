@@ -43,15 +43,25 @@ const iconByKey = {
     kioku: Library,
 } as const;
 
-const previewHintByKey: Record<ProductKey, string> = {
-    clear_dawn: 'マトリクスで人生の方針を整理',
-    yoyu: '今日の予定・余裕・秘書',
-    kioku: '記憶の保存・検索・想起',
+const previewByKey: Record<ProductKey, { src: string; alt: string }> = {
+    clear_dawn: {
+        src: '/images/products/clear-dawn.jpg',
+        alt: 'Clear Dawn プレビュー — マトリクスで人生の方針を整理',
+    },
+    yoyu: {
+        src: '/images/products/yoyu.jpg',
+        alt: 'ヨユウ プレビュー — 今日の予定・余裕・秘書',
+    },
+    kioku: {
+        src: '/images/products/kioku.jpg',
+        alt: 'キオク プレビュー — 記憶の保存・検索・想起',
+    },
 };
 
 function selectProduct(product: ProductDefinition): void {
     if (product.key === currentProductKey.value) {
         open.value = false;
+
         return;
     }
 
@@ -90,7 +100,7 @@ function selectProduct(product: ProductDefinition): void {
 
         <Dialog :open="open" @update:open="open = $event">
             <DialogContent
-                class="max-h-[min(90vh,40rem)] gap-0 overflow-y-auto border-cd-line bg-cd-surface p-0 sm:max-w-3xl"
+                class="max-h-[min(90vh,44rem)] gap-0 overflow-y-auto border-cd-line bg-cd-surface p-0 sm:max-w-4xl"
                 data-test="product-switcher-modal"
             >
                 <DialogHeader class="border-b border-cd-line px-6 py-5 text-left">
@@ -103,7 +113,7 @@ function selectProduct(product: ProductDefinition): void {
                 </DialogHeader>
 
                 <div
-                    class="grid gap-4 p-5 sm:grid-cols-3 sm:gap-3 sm:p-6"
+                    class="grid gap-4 p-5 sm:grid-cols-3 sm:gap-4 sm:p-6"
                     role="list"
                 >
                     <button
@@ -111,7 +121,7 @@ function selectProduct(product: ProductDefinition): void {
                         :key="product.key"
                         type="button"
                         role="listitem"
-                        class="flex flex-col rounded-xl border border-cd-line bg-background p-4 text-left shadow-sm transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        class="flex flex-col overflow-hidden rounded-xl border border-cd-line bg-background text-left shadow-sm transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         :class="
                             product.key === currentProductKey
                                 ? `ring-2 ${ringByKey[product.key]}`
@@ -120,7 +130,7 @@ function selectProduct(product: ProductDefinition): void {
                         :data-test="`product-card-${product.key}`"
                         @click="selectProduct(product)"
                     >
-                        <div class="mb-3 flex items-start justify-between gap-2">
+                        <div class="flex items-start justify-between gap-2 p-4 pb-3">
                             <div class="flex min-w-0 items-center gap-2">
                                 <span
                                     class="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-muted"
@@ -157,10 +167,15 @@ function selectProduct(product: ProductDefinition): void {
                         </div>
 
                         <div
-                            class="flex min-h-24 flex-1 items-center justify-center rounded-lg border border-dashed border-cd-line bg-muted/40 px-3 py-4 text-center text-xs leading-relaxed text-cd-ink-muted"
-                            aria-hidden="true"
+                            class="mx-4 mb-4 overflow-hidden rounded-lg border border-cd-line bg-muted/30"
                         >
-                            {{ previewHintByKey[product.key] }}
+                            <img
+                                :src="previewByKey[product.key].src"
+                                :alt="previewByKey[product.key].alt"
+                                class="aspect-[3/4] w-full object-cover object-top"
+                                loading="lazy"
+                                decoding="async"
+                            />
                         </div>
                     </button>
                 </div>
