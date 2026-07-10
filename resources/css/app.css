@@ -598,6 +598,17 @@
     background-color: var(--os-kioku-bg, #f5f2ea);
 }
 
+/* Collapsed (icon) mode: solid product theme color, no background art. */
+.group[data-collapsible='icon'] .os-sidebar-yoyu [data-sidebar='sidebar'] {
+    background-color: var(--os-yoyu);
+    color: hsl(0 0% 100%);
+}
+
+.group[data-collapsible='icon'] .os-sidebar-kioku [data-sidebar='sidebar'] {
+    background-color: var(--os-kioku);
+    color: hsl(0 0% 100%);
+}
+
 /*
  * Clear Dawn sidebar gradient.
  * Kept outside @layer so it wins over the `bg-sidebar` utility applied inside

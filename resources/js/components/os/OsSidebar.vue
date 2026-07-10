@@ -99,14 +99,14 @@ const navItems = computed((): OsNavItem[] => {
 
 const accentClass = computed(() =>
     currentProduct.value === 'kioku'
-        ? 'border-os-kioku/20 bg-os-kioku text-white'
-        : 'border-os-yoyu/20 bg-os-yoyu text-white',
+        ? 'border-os-kioku/20 bg-os-kioku text-white group-data-[collapsible=icon]:border-white/25 group-data-[collapsible=icon]:bg-white/20'
+        : 'border-os-yoyu/20 bg-os-yoyu text-white group-data-[collapsible=icon]:border-white/25 group-data-[collapsible=icon]:bg-white/20',
 );
 
 const idleClass = computed(() =>
     currentProduct.value === 'kioku'
-        ? 'border-transparent text-os-ink/80 hover:bg-os-kioku/10 hover:text-os-ink'
-        : 'border-transparent text-os-ink/80 hover:bg-os-yoyu/10 hover:text-os-ink',
+        ? 'border-transparent text-os-ink/80 hover:bg-os-kioku/10 hover:text-os-ink group-data-[collapsible=icon]:text-white/90 group-data-[collapsible=icon]:hover:bg-white/10 group-data-[collapsible=icon]:hover:text-white'
+        : 'border-transparent text-os-ink/80 hover:bg-os-yoyu/10 hover:text-os-ink group-data-[collapsible=icon]:text-white/90 group-data-[collapsible=icon]:hover:bg-white/10 group-data-[collapsible=icon]:hover:text-white',
 );
 </script>
 
@@ -123,17 +123,17 @@ const idleClass = computed(() =>
             <img
                 :src="sidebarImage"
                 alt=""
-                class="h-full w-full object-cover object-top group-data-[collapsible=icon]:opacity-40"
+                class="h-full w-full object-cover object-top group-data-[collapsible=icon]:hidden"
             />
         </div>
 
         <!-- Branding + tagline live in the sidebar image; reserve space so nav clears them. -->
-        <SidebarHeader class="relative z-10 min-h-40 group-data-[collapsible=icon]:min-h-8" />
+        <SidebarHeader class="relative z-10 min-h-48 group-data-[collapsible=icon]:min-h-8" />
 
         <SidebarContent class="relative z-10 overflow-visible">
             <nav
                 aria-label="プロダクトメニュー"
-                class="mt-14 flex flex-col items-center gap-3 group-data-[collapsible=icon]:mt-4 group-data-[collapsible=icon]:gap-4"
+                class="mt-20 flex flex-col items-center gap-3 group-data-[collapsible=icon]:mt-4 group-data-[collapsible=icon]:gap-4"
             >
                 <Link
                     v-for="item in navItems"
