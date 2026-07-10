@@ -7,6 +7,7 @@ use App\Http\Resources\MetricRecordResource;
 use App\Http\Resources\MetricResource;
 use App\Models\Metric;
 use App\Models\MetricRecord;
+use App\Queries\GetDailyMealsQuery;
 use App\Queries\GetDailyMetricsQuery;
 use App\Queries\GetMetricChartQuery;
 use App\Queries\GetMetricHistoryQuery;
@@ -20,10 +21,11 @@ use Inertia\Response;
 
 class MetricRecordController extends Controller
 {
-    public function index(Request $request, GetDailyMetricsQuery $query): Response
+    public function index(Request $request, GetDailyMetricsQuery $query, GetDailyMealsQuery $mealsQuery): Response
     {
         $recordedOn = Carbon::parse($request->input('date', now()->toDateString()));
         $daily = $query->handle($request->user(), $recordedOn);
+        $meals = $mealsQuery->handle($request->user(), $recordedOn);
 
         return Inertia::render('Records/Index', [
             'date' => $recordedOn->toDateString(),
@@ -33,6 +35,7 @@ class MetricRecordController extends Controller
                     ? MetricRecordResource::make($item['record'])->resolve()
                     : null,
             ], $daily),
+            'mealTotals' => $meals['totals'],
         ]);
     }
 
