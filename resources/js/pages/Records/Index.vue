@@ -17,7 +17,7 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const values = ref<Record<string, string>>(
+const values = ref<Record<string, string | number>>(
     Object.fromEntries(
         props.metrics.map((entry) => [
             entry.metric.key,
@@ -43,11 +43,14 @@ async function saveAll(): Promise<void> {
     saveMessage.value = null;
 
     const records = props.metrics
-        .filter((entry) => values.value[entry.metric.key]?.trim())
+        .filter(
+            (entry) =>
+                String(values.value[entry.metric.key] ?? '').trim() !== '',
+        )
         .map((entry) => ({
             metric_key: entry.metric.key,
             value: Number(values.value[entry.metric.key]),
-            note: notes.value[entry.metric.key]?.trim() || null,
+            note: String(notes.value[entry.metric.key] ?? '').trim() || null,
         }));
 
     if (records.length === 0) {
