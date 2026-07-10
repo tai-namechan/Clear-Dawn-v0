@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FoodItemController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\LifeAreaController;
 use App\Http\Controllers\MatrixCellItemController;
+use App\Http\Controllers\MealEntryController;
 use App\Http\Controllers\MetricRecordController;
+use App\Http\Controllers\NutritionGoalController;
 use App\Http\Controllers\RoutineBlockLogController;
 use App\Http\Controllers\RoutineController;
 use App\Http\Controllers\RoutineItemController;
@@ -127,6 +130,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('records/daily', [MetricRecordController::class, 'upsertDaily'])->name('records.upsert-daily');
     Route::get('records/{metric}', [MetricRecordController::class, 'show'])->name('records.show');
     Route::delete('records/{metric}/{metricRecord}', [MetricRecordController::class, 'destroy'])->name('records.destroy');
+
+    Route::get('meals', [MealEntryController::class, 'index'])->name('meals.index');
+    Route::post('meals', [MealEntryController::class, 'store'])->name('meals.store');
+    Route::get('meals/foods', [FoodItemController::class, 'index'])->name('meals.foods.index');
+    Route::post('meals/foods', [FoodItemController::class, 'store'])->name('meals.foods.store');
+    Route::patch('meals/foods/{foodItem}', [FoodItemController::class, 'update'])->name('meals.foods.update');
+    Route::delete('meals/foods/{foodItem}', [FoodItemController::class, 'destroy'])->name('meals.foods.destroy');
+    Route::put('meals/goals', [NutritionGoalController::class, 'upsert'])->name('meals.goals.upsert');
+    Route::patch('meals/{mealEntry}', [MealEntryController::class, 'update'])->name('meals.update');
+    Route::delete('meals/{mealEntry}', [MealEntryController::class, 'destroy'])->name('meals.destroy');
 });
 
 require __DIR__.'/settings.php';

@@ -22,9 +22,9 @@
 
 | 区分 | 方針 | 対象例 |
 |---|---|---|
-| ユーザー入力データ | soft delete（`deleted_at`） | matrix_cell_items, memos, routines, videos, finance_entries |
+| ユーザー入力データ | soft delete（`deleted_at`） | matrix_cell_items, memos, routines, videos, finance_entries, food_items |
 | 事実ログ | 削除しない（不変） | routine_logs, activity_logs |
-| 単純記録 | 物理削除でよい（入力ミス訂正優先） | metric_records |
+| 単純記録 | 物理削除でよい（入力ミス訂正優先） | metric_records, meal_entries |
 | 領域（life_areas） | 削除より `is_active = false`（非表示）を既定とする | - |
 
 ## 日付・タイムゾーン
