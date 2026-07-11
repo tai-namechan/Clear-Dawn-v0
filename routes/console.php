@@ -9,3 +9,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('videos:prune-pending')->daily();
+
+Schedule::command('ai:usage-reap')
+    ->everyMinute()
+    ->withoutOverlapping();

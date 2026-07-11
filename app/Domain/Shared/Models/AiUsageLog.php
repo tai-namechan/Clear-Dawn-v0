@@ -11,6 +11,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
+ * @property string|null $usage_request_id
  * @property int $user_id
  * @property string $feature
  * @property string $model
@@ -20,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  */
 #[Fillable([
+    'usage_request_id',
     'user_id',
     'feature',
     'model',
