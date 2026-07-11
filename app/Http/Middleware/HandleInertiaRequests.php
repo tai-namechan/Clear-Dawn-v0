@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Domain\Shared\AI\AiUsageSummary;
 use App\Support\ProductCatalog;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -51,6 +52,9 @@ class HandleInertiaRequests extends Middleware
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'currentProduct' => ProductCatalog::resolveFromPath($request->path()),
             'products' => $user !== null ? ProductCatalog::all() : [],
+            'aiUsageBanner' => $user !== null
+                ? app(AiUsageSummary::class)->bannerForUser((int) $user->id)
+                : null,
         ];
     }
 }

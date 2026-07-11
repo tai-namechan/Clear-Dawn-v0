@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { ShieldCheck, SlidersHorizontal, User } from '@lucide/vue';
+import { Bot, ShieldCheck, SlidersHorizontal, User } from '@lucide/vue';
 import type { Component } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { toUrl } from '@/lib/utils';
+import { edit as editAiUsage } from '@/routes/ai-usage';
 import { index as lifeAreasIndex } from '@/routes/life-areas';
 import { edit as editProfile } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
@@ -30,6 +31,12 @@ const sidebarNavItems: SettingsNavItem[] = [
         description: 'パスワードやログイン設定',
         icon: ShieldCheck,
         href: editSecurity(),
+    },
+    {
+        title: 'AI利用量',
+        description: '今月の利用額と上限',
+        icon: Bot,
+        href: editAiUsage(),
     },
     {
         title: '領域管理',

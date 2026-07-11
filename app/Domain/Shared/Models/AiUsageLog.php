@@ -11,6 +11,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
+ * @property string|null $usage_request_id
  * @property int $user_id
  * @property string $feature
  * @property string $model
@@ -20,6 +21,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  */
 #[Fillable([
+    'usage_request_id',
     'user_id',
     'feature',
     'model',
@@ -48,7 +50,7 @@ class AiUsageLog extends Model
         return [
             'input_tokens' => 'integer',
             'output_tokens' => 'integer',
-            'estimated_cost_usd' => 'decimal:4',
+            'estimated_cost_usd' => 'decimal:6',
             'created_at' => 'datetime',
         ];
     }

@@ -21,6 +21,15 @@ declare module '@inertiajs/core' {
             sidebarOpen: boolean;
             currentProduct: ProductKey;
             products: ProductDefinition[];
+            aiUsageBanner: {
+                warning: boolean;
+                at_limit: boolean;
+                progress_ratio: string;
+                remaining_usd: string;
+                limit_usd: string;
+                spent_usd: string;
+                reserved_usd: string;
+            } | null;
             [key: string]: unknown;
         };
     }

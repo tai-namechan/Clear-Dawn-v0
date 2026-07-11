@@ -22,8 +22,14 @@ return [
     ],
 
     'limits' => [
-        'monthly_usd_per_user' => (float) env('AI_MONTHLY_USD_PER_USER', 10),
+        // Stored/compared as decimal strings via AiMoney; cast kept for env parsing.
+        'monthly_usd_per_user' => env('AI_MONTHLY_USD_PER_USER', '10'),
     ],
 
     'timeout' => (int) env('AI_HTTP_TIMEOUT', 60),
+    'connect_timeout' => (int) env('AI_HTTP_CONNECT_TIMEOUT', 10),
+
+    'warnings' => [
+        'usage_ratio' => '0.80',
+    ],
 ];

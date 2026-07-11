@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Settings\AiUsageController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use Illuminate\Auth\Middleware\RequirePassword;
@@ -10,6 +11,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
+
+    Route::get('settings/ai-usage', [AiUsageController::class, 'edit'])->name('ai-usage.edit');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

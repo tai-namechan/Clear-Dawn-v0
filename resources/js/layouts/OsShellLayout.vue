@@ -3,6 +3,7 @@ import { usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppContent from '@/components/AppContent.vue';
 import AppShell from '@/components/AppShell.vue';
+import AiUsageBanner from '@/components/AiUsageBanner.vue';
 import HeaderUserMenu from '@/components/HeaderUserMenu.vue';
 import OsSidebar from '@/components/os/OsSidebar.vue';
 import ProductSwitcher from '@/components/os/ProductSwitcher.vue';
@@ -97,6 +98,8 @@ const titleClass = computed(() => {
                 </div>
                 <HeaderUserMenu compact />
             </header>
+
+            <AiUsageBanner />
 
             <main class="mx-auto w-full max-w-[1060px] flex-1 px-4 py-5 md:px-6 md:py-6">
                 <slot />

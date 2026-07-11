@@ -28,6 +28,7 @@ import {
     yoyuBriefingLabel,
     type YoyuBriefingStatus,
 } from '@/composables/useYoyuBriefingPoll';
+import { isYoyuChatQuotaExceeded } from '@/lib/aiUsageMessages';
 import {
     BUFFER_MIN,
     departInfo,
@@ -70,6 +71,7 @@ interface Props {
     recallPreview: string[];
     tab: string;
     chatReply: string | null;
+    chatErrorCode: string | null;
     chatRecallCount: number | null;
 }
 
@@ -131,6 +133,10 @@ watch(
         }
     },
     { immediate: true },
+);
+
+const isQuotaExceededChat = computed(() =>
+    isYoyuChatQuotaExceeded(props.chatErrorCode),
 );
 
 onMounted(() => {
@@ -815,6 +821,13 @@ defineOptions({
                                 msg.role === 'user'
                                     ? 'rounded-br-sm bg-os-yoyu text-white'
                                     : 'rounded-bl-sm border border-os-line bg-white text-os-ink'
+                            "
+                            :data-test="
+                                msg.role === 'assistant' &&
+                                idx === chatHistory.length - 1 &&
+                                isQuotaExceededChat
+                                    ? 'yoyu-chat-quota-exceeded'
+                                    : undefined
                             "
                         >
                             {{ msg.content }}

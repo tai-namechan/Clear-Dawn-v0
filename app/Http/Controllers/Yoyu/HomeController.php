@@ -7,6 +7,7 @@ use App\Domain\Kioku\Models\Memory;
 use App\Domain\Kioku\Services\RecallService;
 use App\Domain\Shared\AI\AiGateway;
 use App\Domain\Shared\AI\PromptTemplate;
+use App\Domain\Shared\AI\QuotaExceededException;
 use App\Domain\Yoyu\Jobs\GenerateYoyuBriefingJob;
 use App\Domain\Yoyu\Models\YoyuBriefing;
 use App\Domain\Yoyu\Models\YoyuFocusItem;
@@ -67,6 +68,7 @@ class HomeController extends Controller
             'recallPreview' => $recallLines,
             'tab' => $request->string('tab')->toString() ?: 'today',
             'chatReply' => $request->session()->pull('chat_reply'),
+            'chatErrorCode' => $request->session()->pull('chat_error_code'),
             'chatRecallCount' => $request->session()->pull('chat_recall_count'),
         ]);
     }
@@ -246,13 +248,24 @@ class HomeController extends Controller
                 ],
             );
             $reply = trim($result['text']);
+            $errorCode = null;
+        } catch (QuotaExceededException) {
+            $reply = '今月のAI利用上限に達しました。原文の保存やタスク操作など、AI以外の機能は引き続き使えます。';
+            $errorCode = 'quota_exceeded';
         } catch (Throwable) {
             $reply = '接続エラーです。少し待ってからもう一度送ってください。';
+            $errorCode = 'connection_error';
         }
 
-        return redirect()
+        $redirect = redirect()
             ->route('yoyu.home', ['tab' => 'chat'])
             ->with('chat_reply', $reply)
             ->with('chat_recall_count', count($recallLines));
+
+        if ($errorCode !== null) {
+            $redirect->with('chat_error_code', $errorCode);
+        }
+
+        return $redirect;
     }
 }
