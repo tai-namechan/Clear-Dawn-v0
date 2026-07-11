@@ -20,6 +20,11 @@ class GenerateYoyuBriefingJob implements ShouldQueue
     public int $tries = 2;
 
     /**
+     * One AI call at up to 60s HTTP timeout, plus DB work.
+     */
+    public int $timeout = 90;
+
+    /**
      * @var list<int>
      */
     public array $backoff = [15, 45];

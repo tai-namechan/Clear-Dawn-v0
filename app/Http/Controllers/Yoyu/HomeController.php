@@ -197,7 +197,8 @@ class HomeController extends Controller
             ],
         );
 
-        GenerateYoyuBriefingJob::dispatch($briefing->id)->afterResponse();
+        // Queue worker (not afterResponse/dispatchSync) so the web request stays free.
+        GenerateYoyuBriefingJob::dispatch($briefing->id);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => '朝ブリーフィングの生成を開始しました。']);
 

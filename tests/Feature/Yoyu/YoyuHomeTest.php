@@ -99,7 +99,9 @@ class YoyuHomeTest extends TestCase
             'status' => 'generating',
         ]);
 
+        // Queued (not afterResponse/dispatchSync) so AI runs on a worker.
         Bus::assertDispatched(GenerateYoyuBriefingJob::class);
+        Bus::assertNotDispatchedSync(GenerateYoyuBriefingJob::class);
     }
 
     public function test_yoyu_home_shares_briefing_status(): void
