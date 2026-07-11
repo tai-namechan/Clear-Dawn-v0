@@ -4,6 +4,7 @@ namespace App\Domain\Shared\AI;
 
 use App\Domain\Shared\Models\AiUsageLog;
 use App\Domain\Shared\Models\AiUsageMonthly;
+use App\Domain\Shared\Models\AiUsageRequest;
 use App\Enums\AiUsageRequestStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -16,21 +17,33 @@ final class AiUsageReconciler
     ) {}
 
     /**
-     * Idempotently align monthly spent_usd with settled logs + expired charges for a period.
+     * Idempotently align monthly spent_usd with canonical spent for a period.
      *
      * @return array{users: int, adjusted: int}
      */
     public function reconcilePeriod(string $period): array
     {
+        [$from, $to] = $this->periods->utcBounds($period);
+
         $userIds = AiUsageLog::query()
             ->withoutUserScope()
-            ->whereBetween('created_at', array_map(
-                fn ($bound) => $bound->toDateTimeString(),
-                $this->periods->utcBounds($period),
-            ))
+            ->whereNull('usage_request_id')
+            ->whereBetween('created_at', [$from->toDateTimeString(), $to->toDateTimeString()])
             ->distinct()
             ->orderBy('user_id')
             ->pluck('user_id')
+            ->merge(
+                AiUsageRequest::query()
+                    ->withoutUserScope()
+                    ->where('period', $period)
+                    ->whereIn('status', [
+                        AiUsageRequestStatus::Settled->value,
+                        AiUsageRequestStatus::Expired->value,
+                    ])
+                    ->distinct()
+                    ->orderBy('user_id')
+                    ->pluck('user_id')
+            )
             ->merge(
                 AiUsageMonthly::query()
                     ->withoutUserScope()
@@ -46,18 +59,7 @@ final class AiUsageReconciler
         foreach ($userIds as $userId) {
             $userId = (int) $userId;
             $monthly = $this->ledger->ensureMonthly($userId, $period);
-
-            $logsSpent = $this->ledger->sumExistingLogs($userId, $period);
-            $expiredCharged = AiMoney::fromAggregate(
-                DB::table('ai_usage_requests')
-                    ->where('user_id', $userId)
-                    ->where('period', $period)
-                    ->where('status', AiUsageRequestStatus::Expired->value)
-                    ->selectRaw('COALESCE(SUM(charged_usd), 0) as total')
-                    ->value('total')
-            );
-
-            $expectedSpent = $logsSpent->add($expiredCharged);
+            $expectedSpent = $this->ledger->sumCanonicalSpent($userId, $period);
             $currentSpent = AiMoney::of((string) $monthly->spent_usd);
 
             if ($currentSpent->compare($expectedSpent) === 0) {

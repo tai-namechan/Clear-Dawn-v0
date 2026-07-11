@@ -125,7 +125,7 @@ final class AiMoney
     }
 
     /**
-     * ceil(used / limit) at SCALE fractional digits, as a ratio string (e.g. 0.800000).
+     * Truncating used/limit ratio at SCALE fractional digits (e.g. 0.799999).
      */
     public function ratioOf(self $limit): string
     {
@@ -133,11 +133,23 @@ final class AiMoney
             return '0.000000';
         }
 
-        // ratioMicros = ceil(used * 1e6 / limit)
-        $numerator = $this->micros * self::MICRO_FACTOR;
-        $ratioMicros = intdiv($numerator + $limit->micros - 1, $limit->micros);
+        $ratioMicros = intdiv($this->micros * self::MICRO_FACTOR, $limit->micros);
 
         return self::microsToDecimalString($ratioMicros, self::SCALE);
+    }
+
+    /**
+     * True when used/limit >= threshold (e.g. "0.80") using integer arithmetic only.
+     */
+    public function meetsOrExceedsRatio(self $limit, string $threshold): bool
+    {
+        if ($limit->micros <= 0) {
+            return false;
+        }
+
+        $thresholdMicros = self::decimalStringToMicros($threshold, ceil: false);
+
+        return ($this->micros * self::MICRO_FACTOR) >= ($limit->micros * $thresholdMicros);
     }
 
     public function __toString(): string

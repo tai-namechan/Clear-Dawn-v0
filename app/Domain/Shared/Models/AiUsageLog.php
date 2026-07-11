@@ -50,7 +50,7 @@ class AiUsageLog extends Model
         return [
             'input_tokens' => 'integer',
             'output_tokens' => 'integer',
-            'estimated_cost_usd' => 'decimal:4',
+            'estimated_cost_usd' => 'decimal:6',
             'created_at' => 'datetime',
         ];
     }

@@ -257,7 +257,7 @@ final class AiUsageLedger
             return $existing;
         }
 
-        $spent = $this->sumExistingLogs($userId, $period);
+        $spent = $this->sumCanonicalSpent($userId, $period);
 
         try {
             return AiUsageMonthly::query()->withoutUserScope()->create([
@@ -285,15 +285,52 @@ final class AiUsageLedger
         }
     }
 
+    /**
+     * Source of truth for spent_usd:
+     * - ledger-era: SUM(charged_usd) for settled|expired requests
+     * - pre-ledger: SUM(estimated_cost_usd) for logs with usage_request_id IS NULL
+     * Never double-count request-linked logs.
+     */
+    public function sumCanonicalSpent(int $userId, string $period): AiMoney
+    {
+        return $this->sumLegacyLogs($userId, $period)
+            ->add($this->sumChargedRequests($userId, $period));
+    }
+
+    /**
+     * @deprecated Prefer sumCanonicalSpent(); kept for callers that need legacy-only.
+     */
     public function sumExistingLogs(int $userId, string $period): AiMoney
+    {
+        return $this->sumLegacyLogs($userId, $period);
+    }
+
+    public function sumLegacyLogs(int $userId, string $period): AiMoney
     {
         [$from, $to] = $this->periods->utcBounds($period);
 
         $sum = AiUsageLog::query()
             ->withoutUserScope()
             ->where('user_id', $userId)
+            ->whereNull('usage_request_id')
             ->whereBetween('created_at', [$from->toDateTimeString(), $to->toDateTimeString()])
             ->selectRaw('COALESCE(SUM(estimated_cost_usd), 0) as total')
+            ->value('total');
+
+        return AiMoney::fromAggregate($sum);
+    }
+
+    public function sumChargedRequests(int $userId, string $period): AiMoney
+    {
+        $sum = AiUsageRequest::query()
+            ->withoutUserScope()
+            ->where('user_id', $userId)
+            ->where('period', $period)
+            ->whereIn('status', [
+                AiUsageRequestStatus::Settled->value,
+                AiUsageRequestStatus::Expired->value,
+            ])
+            ->selectRaw('COALESCE(SUM(charged_usd), 0) as total')
             ->value('total');
 
         return AiMoney::fromAggregate($sum);
@@ -321,7 +358,7 @@ final class AiUsageLedger
             'model' => $request->model,
             'input_tokens' => $inputTokens,
             'output_tokens' => $outputTokens,
-            'estimated_cost_usd' => $this->costs->toLogAmount($actual),
+            'estimated_cost_usd' => $actual->toString(),
             'created_at' => now(),
         ]);
     }

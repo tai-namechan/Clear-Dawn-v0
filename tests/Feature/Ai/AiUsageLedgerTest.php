@@ -260,6 +260,40 @@ class AiUsageLedgerTest extends TestCase
         $this->assertSame(1, AiUsageLog::query()->withoutUserScope()->where('usage_request_id', $request->id)->count());
     }
 
+    public function test_actual_over_estimate_still_settles_full_actual(): void
+    {
+        $user = User::factory()->create();
+        $ledger = app(AiUsageLedger::class);
+        $request = $ledger->reserve(
+            $user->id,
+            'kioku.classify',
+            'claude-haiku-4-5-20251001',
+            AiMoney::of('0.000100'),
+        );
+        $ledger->markInFlight($request->id);
+
+        $settled = $ledger->settle($request->id, AiMoney::of('0.000500'), 100, 50);
+
+        $this->assertSame(AiUsageRequestStatus::Settled, $settled->status);
+        $this->assertSame('0.000500', AiMoney::of((string) $settled->actual_usd)->toString());
+        $this->assertSame('0.000500', AiMoney::of((string) $settled->charged_usd)->toString());
+
+        $monthly = AiUsageMonthly::query()->withoutUserScope()->where('user_id', $user->id)->first();
+        $this->assertNotNull($monthly);
+        $this->assertSame('0.000000', AiMoney::of((string) $monthly->reserved_usd)->toString());
+        $this->assertSame('0.000500', AiMoney::of((string) $monthly->spent_usd)->toString());
+        $this->assertSame(1, AiUsageLog::query()->withoutUserScope()->where('usage_request_id', $request->id)->count());
+        $this->assertSame(
+            '0.000500',
+            AiMoney::of((string) AiUsageLog::query()->withoutUserScope()->where('usage_request_id', $request->id)->value('estimated_cost_usd'))->toString(),
+        );
+
+        // Next reservation sees the elevated spent.
+        config(['ai.limits.monthly_usd_per_user' => '0.000500']);
+        $this->expectException(QuotaExceededException::class);
+        $ledger->reserve($user->id, 'kioku.classify', 'claude-haiku-4-5-20251001', AiMoney::of('0.000001'));
+    }
+
     public function test_jst_month_boundary_for_period_and_log_init(): void
     {
         config(['app.timezone' => 'Asia/Tokyo']);

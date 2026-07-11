@@ -55,11 +55,12 @@ final class AiGateway
 
         $estimated = $this->costs->estimateReservation($model, $body, $maxTokens);
         $usageRequest = $this->ledger->reserve($userId, $feature, $model, $estimated);
-        $providerStarted = false;
+        $httpAttempted = false;
 
         try {
             $this->ledger->markInFlight($usageRequest->id);
-            $providerStarted = true;
+            // From this point, HTTP may have begun; ambiguous transport failures stay in_flight.
+            $httpAttempted = true;
 
             $response = Http::baseUrl((string) config('ai.anthropic.base_url'))
                 ->timeout((int) config('ai.timeout', 60))
@@ -72,6 +73,7 @@ final class AiGateway
                 ->post('/messages', $body);
 
             if ($response->failed()) {
+                // Clear non-success HTTP response received: not a successful billable completion.
                 $this->ledger->release($usageRequest->id, 'provider_http_error');
 
                 throw new RuntimeException('AI API request failed: '.$response->status());
@@ -83,7 +85,8 @@ final class AiGateway
             $outputTokens = (int) ($data['usage']['output_tokens'] ?? 0);
             $actual = $this->costs->actualCost($model, $inputTokens, $outputTokens);
 
-            // Settle on usage success even if later response-body handling fails.
+            // Settle on usage success even if later response-body handling fails,
+            // and even when actual exceeds the conservative estimate.
             $this->ledger->settle($usageRequest->id, $actual, $inputTokens, $outputTokens);
 
             if ($actual->greaterThan($estimated)) {
@@ -94,6 +97,8 @@ final class AiGateway
                     'model' => $model,
                     'estimated_usd' => $estimated->toString(),
                     'actual_usd' => $actual->toString(),
+                    'input_tokens' => $inputTokens,
+                    'output_tokens' => $outputTokens,
                 ]);
             }
 
@@ -111,20 +116,18 @@ final class AiGateway
             ];
         } catch (QuotaExceededException $e) {
             throw $e;
-        } catch (ConnectionException $e) {
-            if (! $providerStarted) {
-                $this->safeRelease($usageRequest, 'connect_failure');
-            }
-            // After HTTP start, leave in_flight for the reaper to expire conservatively.
-
-            throw new RuntimeException('AI API connection failed.', 0, $e);
-        } catch (RequestException $e) {
-            $this->safeRelease($usageRequest, 'provider_http_error');
-
-            throw new RuntimeException('AI API request failed.', 0, $e);
         } catch (Throwable $e) {
-            if (! $providerStarted) {
-                $this->safeRelease($usageRequest, 'pre_http_failure');
+            if ($this->shouldReleaseReservation($httpAttempted, $e)) {
+                $this->safeRelease($usageRequest, $this->failureCodeFor($e, $httpAttempted));
+            }
+            // Otherwise leave in_flight for the reaper to expire conservatively.
+
+            if ($e instanceof ConnectionException) {
+                throw new RuntimeException('AI API connection failed.', 0, $e);
+            }
+
+            if ($e instanceof RequestException) {
+                throw new RuntimeException('AI API request failed.', 0, $e);
             }
 
             throw $e;
@@ -145,6 +148,44 @@ final class AiGateway
         if ($used->greaterThanOrEqual($limit)) {
             throw new QuotaExceededException;
         }
+    }
+
+    /**
+     * Release only when billing did not occur / request clearly never reached an ambiguous send.
+     *
+     * Classification uses exception type and HTTP lifecycle flags — not message substrings.
+     */
+    private function shouldReleaseReservation(bool $httpAttempted, Throwable $e): bool
+    {
+        if (! $httpAttempted) {
+            return true;
+        }
+
+        // A concrete HTTP response was received (non-2xx path uses release before throw;
+        // RequestException also implies a response object exists).
+        if ($e instanceof RequestException && $e->response !== null) {
+            return true;
+        }
+
+        // ConnectionException after HTTP attempt: connect/read timeout/reset — outcome unknown.
+        return false;
+    }
+
+    private function failureCodeFor(Throwable $e, bool $httpAttempted): string
+    {
+        if (! $httpAttempted) {
+            return 'pre_http_failure';
+        }
+
+        if ($e instanceof RequestException) {
+            return 'provider_http_error';
+        }
+
+        if ($e instanceof ConnectionException) {
+            return 'connect_failure';
+        }
+
+        return 'pre_http_failure';
     }
 
     private function safeRelease(AiUsageRequest $usageRequest, string $failureCode): void

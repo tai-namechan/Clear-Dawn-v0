@@ -12,4 +12,5 @@ Schedule::command('videos:prune-pending')->daily();
 
 Schedule::command('ai:usage-reap')
     ->everyMinute()
-    ->withoutOverlapping();
+    ->withoutOverlapping(5)
+    ->onOneServer();
