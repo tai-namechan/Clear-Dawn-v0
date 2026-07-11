@@ -6,6 +6,7 @@ use App\Domain\Connectors\Calendar\CalendarEventData;
 use App\Domain\Connectors\Google\GoogleCalendarApiClient;
 use App\Domain\Connectors\Google\GoogleTokenManager;
 use App\Domain\Connectors\Google\ReauthorizationRequiredException;
+use App\Domain\Connectors\Google\StaleConnectionGenerationException;
 use App\Domain\Connectors\Google\UnauthorizedGoogleRequestException;
 use App\Domain\Kioku\Models\Connector;
 use App\Domain\Yoyu\Models\YoyuCalendarEvent;
@@ -32,20 +33,28 @@ class SyncGoogleCalendarJob implements ShouldBeUnique, ShouldQueue
 
     public int $uniqueFor = 900;
 
-    public function __construct(public string $connectorId)
-    {
+    public function __construct(
+        public string $connectorId,
+        public int $connectionVersion,
+    ) {
         $this->onQueue('integrations');
     }
 
     public function uniqueId(): string
     {
-        return $this->connectorId;
+        // Include generation so a new account sync is not blocked by an old job's lock.
+        return $this->connectorId.':'.$this->connectionVersion;
     }
 
     public function handle(GoogleTokenManager $tokens, GoogleCalendarApiClient $api): void
     {
-        $connector = Connector::query()->withoutUserScope()->find($this->connectorId);
-        if ($connector === null || $connector->source_type !== Connector::SOURCE_GOOGLE_CALENDAR) {
+        // Final defense: never talk to Google when the feature flag is off.
+        if (! (bool) config('services.google.calendar_enabled')) {
+            return;
+        }
+
+        $connector = $this->loadMatchingConnector();
+        if ($connector === null) {
             return;
         }
 
@@ -53,10 +62,21 @@ class SyncGoogleCalendarJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $connector->update([
-            'status' => 'syncing',
-            'last_sync_attempt_at' => now(),
-        ]);
+        $marked = Connector::query()
+            ->withoutUserScope()
+            ->whereKey($this->connectorId)
+            ->where('connection_version', $this->connectionVersion)
+            ->where('status', '!=', 'revoking')
+            ->update([
+                'status' => 'syncing',
+                'last_sync_attempt_at' => now(),
+            ]);
+
+        if ($marked === 0) {
+            return;
+        }
+
+        $connector->refresh();
 
         $timezone = (string) config('app.timezone', 'UTC');
         $pastDays = (int) config('calendar.sync_past_days', 1);
@@ -66,38 +86,69 @@ class SyncGoogleCalendarJob implements ShouldBeUnique, ShouldQueue
         $windowEnd = CarbonImmutable::now($timezone)->startOfDay()->addDays($futureDays + 1);
 
         try {
-            $accessToken = $tokens->validAccessToken($connector);
+            $accessToken = $tokens->validAccessToken($connector, $this->connectionVersion);
 
             try {
                 $events = $api->listPrimaryEvents($accessToken, $windowStart, $windowEnd, $timezone);
             } catch (UnauthorizedGoogleRequestException) {
                 // Token may have just been revoked/rotated: refresh once, retry once.
-                $connector->update(['token_expires_at' => now()->subMinute()]);
-                $accessToken = $tokens->validAccessToken($connector);
+                $expired = Connector::query()
+                    ->withoutUserScope()
+                    ->whereKey($this->connectorId)
+                    ->where('connection_version', $this->connectionVersion)
+                    ->where('status', '!=', 'revoking')
+                    ->update(['token_expires_at' => now()->subMinute()]);
+
+                if ($expired === 0) {
+                    return;
+                }
+
+                $connector->refresh();
+                if (! $this->stillCurrentGeneration()) {
+                    return;
+                }
+
+                $accessToken = $tokens->validAccessToken($connector, $this->connectionVersion);
                 $events = $api->listPrimaryEvents($accessToken, $windowStart, $windowEnd, $timezone);
             }
 
-            $this->persist($connector, $events, $windowStart, $windowEnd, $timezone);
+            if (! $this->persist($events, $windowStart, $windowEnd, $timezone)) {
+                return;
+            }
 
-            $connector->update([
-                'status' => 'connected',
-                'last_synced_at' => now(),
-                'last_error_code' => null,
-                'last_error_at' => null,
-            ]);
+            Connector::query()
+                ->withoutUserScope()
+                ->whereKey($this->connectorId)
+                ->where('connection_version', $this->connectionVersion)
+                ->where('status', '!=', 'revoking')
+                ->update([
+                    'status' => 'connected',
+                    'last_synced_at' => now(),
+                    'last_error_code' => null,
+                    'last_error_at' => null,
+                ]);
+        } catch (StaleConnectionGenerationException) {
+            // A newer OAuth generation won; leave its cache/status untouched.
+            return;
         } catch (ReauthorizationRequiredException) {
             // Terminal until the user reconnects; token manager already
             // recorded the error state. Existing cache stays untouched.
             return;
         } catch (Throwable $e) {
-            $connector->update([
-                'status' => 'error',
-                'last_error_code' => 'sync_failed',
-                'last_error_at' => now(),
-            ]);
+            Connector::query()
+                ->withoutUserScope()
+                ->whereKey($this->connectorId)
+                ->where('connection_version', $this->connectionVersion)
+                ->where('status', '!=', 'revoking')
+                ->update([
+                    'status' => 'error',
+                    'last_error_code' => 'sync_failed',
+                    'last_error_at' => now(),
+                ]);
 
             Log::warning('Google Calendar sync failed.', [
                 'connector_id' => $this->connectorId,
+                'connection_version' => $this->connectionVersion,
                 'attempt' => $this->attempts(),
                 'message' => $e->getMessage(),
             ]);
@@ -108,21 +159,33 @@ class SyncGoogleCalendarJob implements ShouldBeUnique, ShouldQueue
 
     /**
      * Fetched pages are normalized outside any transaction; only the final
-     * cache swap runs inside one.
+     * cache swap runs inside one. Returns false when the generation has changed.
      *
      * @param  list<CalendarEventData>  $events
      */
     private function persist(
-        Connector $connector,
         array $events,
         CarbonImmutable $windowStart,
         CarbonImmutable $windowEnd,
         string $timezone,
-    ): void {
+    ): bool {
         $seenIds = [];
         $now = now();
+        $persisted = false;
 
-        DB::transaction(function () use ($connector, $events, $windowStart, $windowEnd, $timezone, &$seenIds, $now): void {
+        DB::transaction(function () use ($events, $windowStart, $windowEnd, $timezone, &$seenIds, $now, &$persisted): void {
+            $connector = Connector::query()
+                ->withoutUserScope()
+                ->whereKey($this->connectorId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($connector === null
+                || (int) $connector->connection_version !== $this->connectionVersion
+                || $connector->status === 'revoking') {
+                return;
+            }
+
             foreach ($events as $event) {
                 $seenIds[] = $event->externalId;
 
@@ -183,7 +246,11 @@ class SyncGoogleCalendarJob implements ShouldBeUnique, ShouldQueue
                     });
                 })
                 ->delete();
+
+            $persisted = true;
         });
+
+        return $persisted;
     }
 
     public function failed(?Throwable $exception): void
@@ -191,11 +258,41 @@ class SyncGoogleCalendarJob implements ShouldBeUnique, ShouldQueue
         Connector::query()
             ->withoutUserScope()
             ->whereKey($this->connectorId)
+            ->where('connection_version', $this->connectionVersion)
             ->where('status', 'syncing')
             ->update([
                 'status' => 'error',
                 'last_error_code' => 'sync_failed',
                 'last_error_at' => now(),
             ]);
+    }
+
+    private function loadMatchingConnector(): ?Connector
+    {
+        $connector = Connector::query()->withoutUserScope()->find($this->connectorId);
+        if ($connector === null || $connector->source_type !== Connector::SOURCE_GOOGLE_CALENDAR) {
+            return null;
+        }
+
+        if ((int) $connector->connection_version !== $this->connectionVersion) {
+            return null;
+        }
+
+        if ($connector->status === 'revoking') {
+            return null;
+        }
+
+        return $connector;
+    }
+
+    private function stillCurrentGeneration(): bool
+    {
+        return Connector::query()
+            ->withoutUserScope()
+            ->whereKey($this->connectorId)
+            ->where('source_type', Connector::SOURCE_GOOGLE_CALENDAR)
+            ->where('connection_version', $this->connectionVersion)
+            ->where('status', '!=', 'revoking')
+            ->exists();
     }
 }

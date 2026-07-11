@@ -6,6 +6,8 @@ use App\Domain\Connectors\Calendar\CalendarSyncCoordinator;
 use App\Domain\Connectors\Google\GoogleCalendarApiClient;
 use App\Domain\Connectors\Google\GoogleTokenManager;
 use App\Domain\Connectors\Google\ReauthorizationRequiredException;
+use App\Domain\Connectors\Google\StaleConnectionGenerationException;
+use App\Domain\Connectors\Jobs\DisconnectGoogleCalendarJob;
 use App\Domain\Connectors\Jobs\SyncGoogleCalendarJob;
 use App\Domain\Kioku\Models\Connector;
 use App\Domain\Yoyu\Models\YoyuCalendarEvent;
@@ -27,6 +29,7 @@ class GoogleCalendarSyncTest extends TestCase
         config([
             'services.google.client_id' => 'test-client',
             'services.google.client_secret' => 'test-secret',
+            'services.google.calendar_enabled' => true,
         ]);
     }
 
@@ -191,7 +194,7 @@ class GoogleCalendarSyncTest extends TestCase
             'www.googleapis.com/*' => Http::response($this->googleEventsResponse($items)),
         ]);
 
-        (new SyncGoogleCalendarJob($connector->id))->handle(
+        (new SyncGoogleCalendarJob($connector->id, (int) $connector->connection_version))->handle(
             app(GoogleTokenManager::class),
             app(GoogleCalendarApiClient::class),
         );
@@ -199,7 +202,7 @@ class GoogleCalendarSyncTest extends TestCase
         Http::fake([
             'www.googleapis.com/*' => Http::response($this->googleEventsResponse($items)),
         ]);
-        (new SyncGoogleCalendarJob($connector->id))->handle(
+        (new SyncGoogleCalendarJob($connector->id, (int) $connector->connection_version))->handle(
             app(GoogleTokenManager::class),
             app(GoogleCalendarApiClient::class),
         );
@@ -228,7 +231,7 @@ class GoogleCalendarSyncTest extends TestCase
             'www.googleapis.com/*' => Http::response($this->googleEventsResponse([])),
         ]);
 
-        (new SyncGoogleCalendarJob($connector->id))->handle(
+        (new SyncGoogleCalendarJob($connector->id, (int) $connector->connection_version))->handle(
             app(GoogleTokenManager::class),
             app(GoogleCalendarApiClient::class),
         );
@@ -258,7 +261,7 @@ class GoogleCalendarSyncTest extends TestCase
         ]);
 
         try {
-            (new SyncGoogleCalendarJob($connector->id))->handle(
+            (new SyncGoogleCalendarJob($connector->id, (int) $connector->connection_version))->handle(
                 app(GoogleTokenManager::class),
                 app(GoogleCalendarApiClient::class),
             );
@@ -311,7 +314,347 @@ class GoogleCalendarSyncTest extends TestCase
         $this->artisan('calendar:sync-stale')->assertSuccessful();
 
         Bus::assertDispatchedTimes(SyncGoogleCalendarJob::class, 1);
-        Bus::assertDispatched(SyncGoogleCalendarJob::class, fn ($job) => $job->connectorId === $stale->id);
+        Bus::assertDispatched(SyncGoogleCalendarJob::class, fn ($job) => $job->connectorId === $stale->id
+            && $job->connectionVersion === (int) $stale->connection_version);
+    }
+
+    public function test_disabled_calendar_never_dispatches_or_calls_google(): void
+    {
+        config(['services.google.calendar_enabled' => false]);
+        Http::preventStrayRequests();
+        Bus::fake([SyncGoogleCalendarJob::class]);
+
+        $user = User::factory()->create();
+        $connector = $this->makeConnector($user, ['last_synced_at' => now()->subHour()]);
+
+        app(CalendarSyncCoordinator::class)->syncIfStale($user);
+        app(CalendarSyncCoordinator::class)->forceSync($user);
+        $this->artisan('calendar:sync-stale')->assertSuccessful();
+
+        Bus::assertNotDispatched(SyncGoogleCalendarJob::class);
+
+        (new SyncGoogleCalendarJob($connector->id, (int) $connector->connection_version))->handle(
+            app(GoogleTokenManager::class),
+            app(GoogleCalendarApiClient::class),
+        );
+
+        Http::assertNothingSent();
+        $connector->refresh();
+        $this->assertSame('connected', $connector->status);
+        $this->assertTrue($connector->last_synced_at->lt(now()->subMinutes(30)));
+    }
+
+    public function test_manual_sync_endpoint_does_not_dispatch_when_disabled(): void
+    {
+        config(['services.google.calendar_enabled' => false]);
+        Bus::fake([SyncGoogleCalendarJob::class]);
+        $user = User::factory()->create();
+        $this->makeConnector($user);
+
+        $this->actingAs($user)
+            ->post(route('yoyu.calendar.sync'))
+            ->assertRedirect(route('yoyu.settings'));
+
+        Bus::assertNotDispatched(SyncGoogleCalendarJob::class);
+    }
+
+    public function test_stale_generation_sync_does_not_overwrite_cache_or_status(): void
+    {
+        Http::fake([
+            'www.googleapis.com/*' => Http::response($this->googleEventsResponse([
+                $this->timedItem('from-a', '旧アカウント予定', '2026-07-11T01:00:00Z', '2026-07-11T02:00:00Z'),
+            ])),
+        ]);
+
+        $user = User::factory()->create();
+        $connector = $this->makeConnector($user, [
+            'connection_version' => 2,
+            'status' => 'connected',
+            'last_synced_at' => now()->subMinute(),
+            'external_account_email' => 'b@example.com',
+        ]);
+        $today = CarbonImmutable::now('UTC')->startOfDay();
+        YoyuCalendarEvent::query()->withoutUserScope()->create([
+            'user_id' => $user->id,
+            'connector_id' => $connector->id,
+            'external_id' => 'from-b',
+            'title' => '新アカウント予定',
+            'all_day' => false,
+            'starts_at' => $today->setTime(9, 0),
+            'ends_at' => $today->setTime(10, 0),
+            'synced_at' => now(),
+        ]);
+        $syncedAtBefore = $connector->last_synced_at->copy();
+
+        // Generation 1 job (account A) finishing after switch to B (version 2).
+        (new SyncGoogleCalendarJob($connector->id, 1))->handle(
+            app(GoogleTokenManager::class),
+            app(GoogleCalendarApiClient::class),
+        );
+
+        $connector->refresh();
+        $this->assertSame(2, (int) $connector->connection_version);
+        $this->assertSame('connected', $connector->status);
+        $this->assertTrue($connector->last_synced_at->equalTo($syncedAtBefore));
+        $this->assertSame(1, YoyuCalendarEvent::query()->withoutUserScope()->count());
+        $this->assertSame('from-b', YoyuCalendarEvent::query()->withoutUserScope()->value('external_id'));
+        Http::assertNothingSent();
+    }
+
+    public function test_new_generation_unique_id_differs_from_old_generation(): void
+    {
+        $old = new SyncGoogleCalendarJob('connector-1', 1);
+        $new = new SyncGoogleCalendarJob('connector-1', 2);
+
+        $this->assertNotSame($old->uniqueId(), $new->uniqueId());
+        $this->assertSame('connector-1:1', $old->uniqueId());
+        $this->assertSame('connector-1:2', $new->uniqueId());
+    }
+
+    public function test_disconnect_job_skips_when_generation_advanced_by_reconnect(): void
+    {
+        Http::fake();
+        $user = User::factory()->create();
+        $connector = $this->makeConnector($user, [
+            'status' => 'syncing',
+            'connection_version' => 2,
+            'refresh_token' => 'new-refresh',
+        ]);
+        YoyuCalendarEvent::query()->withoutUserScope()->create([
+            'user_id' => $user->id,
+            'connector_id' => $connector->id,
+            'external_id' => 'keep-me',
+            'title' => '再接続後の予定',
+            'all_day' => false,
+            'starts_at' => now(),
+            'ends_at' => now()->addHour(),
+            'synced_at' => now(),
+        ]);
+
+        // Old disconnect for generation 1 must not delete the reconnected connector.
+        (new DisconnectGoogleCalendarJob($connector->id, 1))->handle();
+
+        $this->assertNotNull(Connector::query()->withoutUserScope()->find($connector->id));
+        $this->assertSame(1, YoyuCalendarEvent::query()->withoutUserScope()->count());
+        Http::assertNothingSent();
+    }
+
+    public function test_old_sync_cannot_overwrite_revoking_after_disconnect_bump(): void
+    {
+        $user = User::factory()->create();
+        $connector = $this->makeConnector($user, [
+            'connection_version' => 1,
+            'status' => 'syncing',
+            'last_synced_at' => now()->subHour(),
+        ]);
+        $syncedAtBefore = $connector->last_synced_at->copy();
+
+        // Disconnect bumps 1 → 2 and marks revoking.
+        $connector->update([
+            'connection_version' => 2,
+            'status' => 'revoking',
+        ]);
+
+        Http::fake([
+            'www.googleapis.com/*' => Http::response($this->googleEventsResponse([
+                $this->timedItem('stale-a', '旧予定', '2026-07-11T01:00:00Z', '2026-07-11T02:00:00Z'),
+            ])),
+        ]);
+
+        (new SyncGoogleCalendarJob($connector->id, 1))->handle(
+            app(GoogleTokenManager::class),
+            app(GoogleCalendarApiClient::class),
+        );
+
+        $connector->refresh();
+        $this->assertSame('revoking', $connector->status);
+        $this->assertSame(2, (int) $connector->connection_version);
+        $this->assertTrue($connector->last_synced_at->equalTo($syncedAtBefore));
+        $this->assertSame(0, YoyuCalendarEvent::query()->withoutUserScope()->count());
+        Http::assertNothingSent();
+    }
+
+    public function test_old_sync_failure_cannot_mark_error_while_revoking(): void
+    {
+        $user = User::factory()->create();
+        $connector = $this->makeConnector($user, [
+            'connection_version' => 1,
+            'status' => 'syncing',
+        ]);
+
+        // Start sync N, then disconnect bumps to revoking N+1 mid-flight after mark.
+        // Simulate: job N already past initial guard with a fresh connector object,
+        // but DB is now revoking/v2 before failure write.
+        Http::fake([
+            'www.googleapis.com/*' => Http::response(['error' => 'backend'], 503),
+        ]);
+
+        // Mark syncing for v1 first (as job would), then disconnect advances generation.
+        $connector->update(['status' => 'syncing', 'connection_version' => 1]);
+        Connector::query()->withoutUserScope()->whereKey($connector->id)->update([
+            'status' => 'revoking',
+            'connection_version' => 2,
+        ]);
+
+        try {
+            (new SyncGoogleCalendarJob($connector->id, 1))->handle(
+                app(GoogleTokenManager::class),
+                app(GoogleCalendarApiClient::class),
+            );
+        } catch (\RuntimeException) {
+            // May or may not throw depending on early return before HTTP.
+        }
+
+        $connector->refresh();
+        $this->assertSame('revoking', $connector->status);
+        $this->assertSame(2, (int) $connector->connection_version);
+        $this->assertNotSame('sync_failed', $connector->last_error_code);
+    }
+
+    public function test_old_token_refresh_does_not_write_while_revoking(): void
+    {
+        Http::fake([
+            'oauth2.googleapis.com/token' => Http::response([
+                'access_token' => 'should-not-save',
+                'expires_in' => 3600,
+            ]),
+        ]);
+        $user = User::factory()->create();
+        $connector = $this->makeConnector($user, [
+            'connection_version' => 1,
+            'status' => 'revoking',
+            'token_expires_at' => now()->subMinute(),
+            'access_token' => 'old-access',
+            'refresh_token' => 'old-refresh',
+        ]);
+
+        try {
+            app(GoogleTokenManager::class)->validAccessToken($connector, 1);
+            $this->fail('Expected stale generation abort.');
+        } catch (StaleConnectionGenerationException) {
+            // expected
+        }
+
+        $connector->refresh();
+        $this->assertSame('revoking', $connector->status);
+        $this->assertSame('old-access', $connector->access_token);
+        $this->assertNull($connector->last_error_code);
+        Http::assertNothingSent();
+    }
+
+    public function test_disconnect_job_skips_when_status_is_not_revoking(): void
+    {
+        Http::fake();
+        $user = User::factory()->create();
+        $connector = $this->makeConnector($user, [
+            'status' => 'connected',
+            'connection_version' => 5,
+            'refresh_token' => 'keep-refresh',
+        ]);
+        YoyuCalendarEvent::query()->withoutUserScope()->create([
+            'user_id' => $user->id,
+            'connector_id' => $connector->id,
+            'external_id' => 'keep',
+            'title' => '残す',
+            'all_day' => false,
+            'starts_at' => now(),
+            'ends_at' => now()->addHour(),
+            'synced_at' => now(),
+        ]);
+
+        (new DisconnectGoogleCalendarJob($connector->id, 5))->handle();
+
+        $this->assertNotNull(Connector::query()->withoutUserScope()->find($connector->id));
+        $this->assertSame(1, YoyuCalendarEvent::query()->withoutUserScope()->count());
+        Http::assertNothingSent();
+    }
+
+    public function test_sync_mid_http_account_switch_does_not_persist_old_events(): void
+    {
+        $user = User::factory()->create();
+        $connector = $this->makeConnector($user, [
+            'connection_version' => 1,
+            'status' => 'connected',
+            'last_synced_at' => null,
+        ]);
+
+        Http::fake(function ($request) use ($connector) {
+            if (str_contains($request->url(), 'googleapis.com/calendar')) {
+                // Account switch during the outbound Calendar HTTP round-trip.
+                Connector::query()->withoutUserScope()->whereKey($connector->id)->update([
+                    'connection_version' => 2,
+                    'status' => 'syncing',
+                    'external_account_id' => 'account-b',
+                    'last_synced_at' => null,
+                ]);
+                YoyuCalendarEvent::query()->withoutUserScope()->where('connector_id', $connector->id)->delete();
+
+                return Http::response($this->googleEventsResponse([
+                    $this->timedItem('from-a', '旧アカウント予定', '2026-07-11T01:00:00Z', '2026-07-11T02:00:00Z'),
+                ]));
+            }
+
+            return Http::response(['error' => 'unexpected'], 500);
+        });
+
+        (new SyncGoogleCalendarJob($connector->id, 1))->handle(
+            app(GoogleTokenManager::class),
+            app(GoogleCalendarApiClient::class),
+        );
+
+        $connector->refresh();
+        $this->assertSame(2, (int) $connector->connection_version);
+        $this->assertSame('syncing', $connector->status);
+        $this->assertNull($connector->last_synced_at);
+        $this->assertSame(0, YoyuCalendarEvent::query()->withoutUserScope()->count());
+    }
+
+    public function test_disconnect_job_skips_delete_when_reconnected_during_revoke_http(): void
+    {
+        $user = User::factory()->create();
+        $connector = $this->makeConnector($user, [
+            'status' => 'revoking',
+            'connection_version' => 2,
+            'refresh_token' => 'old-refresh',
+        ]);
+
+        Http::fake(function ($request) use ($connector, $user) {
+            if (str_contains($request->url(), 'oauth2.googleapis.com/revoke')) {
+                // Reconnect while revoke HTTP is in flight: bump version and restore connected.
+                $live = Connector::query()->withoutUserScope()->findOrFail($connector->id);
+                $live->fill([
+                    'status' => 'syncing',
+                    'connection_version' => 3,
+                    'refresh_token' => 'new-refresh',
+                    'access_token' => 'new-access',
+                ]);
+                $live->save();
+                YoyuCalendarEvent::query()->withoutUserScope()->create([
+                    'user_id' => $user->id,
+                    'connector_id' => $connector->id,
+                    'external_id' => 'after-reconnect',
+                    'title' => '再接続後',
+                    'all_day' => false,
+                    'starts_at' => now(),
+                    'ends_at' => now()->addHour(),
+                    'synced_at' => now(),
+                ]);
+
+                return Http::response([], 200);
+            }
+
+            return Http::response(['error' => 'unexpected'], 500);
+        });
+
+        (new DisconnectGoogleCalendarJob($connector->id, 2))->handle();
+
+        $fresh = Connector::query()->withoutUserScope()->find($connector->id);
+        $this->assertNotNull($fresh);
+        $this->assertSame(3, (int) $fresh->connection_version);
+        $this->assertSame('syncing', $fresh->status);
+        $this->assertSame('new-refresh', $fresh->refresh_token);
+        $this->assertSame(1, YoyuCalendarEvent::query()->withoutUserScope()->count());
+        $this->assertSame('after-reconnect', YoyuCalendarEvent::query()->withoutUserScope()->value('external_id'));
     }
 
     public function test_yoyu_home_serves_empty_calendar_when_disconnected(): void

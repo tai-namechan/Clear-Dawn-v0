@@ -241,6 +241,31 @@ const hero = computed(() => {
     return { event, d, min, mood, moodBg, moodText };
 });
 
+const calendarEmptyMessage = computed(() => {
+    const status = props.calendarConnection.status;
+
+    if (status === 'disconnected') {
+        return 'Googleカレンダーを接続すると、今日の予定が表示されます。';
+    }
+
+    if (status === 'syncing' || status === 'idle') {
+        return 'カレンダーを同期しています…';
+    }
+
+    if (status === 'error') {
+        return props.calendarConnection.warning_code ===
+            'reauthorization_required'
+            ? 'Googleカレンダーの再接続が必要です。'
+            : 'カレンダーの同期に失敗しました。設定から再試行できます。';
+    }
+
+    if (props.calendar.length === 0) {
+        return '今日の予定はありません';
+    }
+
+    return '今日の予定はすべて終わりました';
+});
+
 const tubStatus = computed(
     () =>
         yoyuCalc(nowMs.value, props.calendar, doneEventIds.value, props.tasks)
@@ -320,6 +345,8 @@ defineOptions({
             v-if="
                 currentTab === 'today' &&
                 (calendarConnection.status === 'disconnected' ||
+                    calendarConnection.status === 'syncing' ||
+                    calendarConnection.status === 'idle' ||
                     calendarConnection.status === 'error')
             "
             class="flex flex-wrap items-center justify-between gap-2 rounded-[14px] border border-os-line bg-white px-4 py-3 text-[12.5px] text-os-sub"
@@ -328,11 +355,22 @@ defineOptions({
                 <Calendar :size="14" class="text-[#4A7DC4]" />
                 {{
                     calendarConnection.status === 'error'
-                        ? 'Googleカレンダーとの接続が切れています。'
-                        : 'Googleカレンダーを接続すると、今日の予定が表示されます。'
+                        ? calendarConnection.warning_code ===
+                          'reauthorization_required'
+                            ? 'Googleカレンダーの再接続が必要です。'
+                            : 'カレンダーの同期に失敗しました。しばらくして再試行してください。'
+                        : calendarConnection.status === 'syncing' ||
+                            calendarConnection.status === 'idle'
+                          ? 'カレンダーを同期しています…'
+                          : 'Googleカレンダーを接続すると、今日の予定が表示されます。'
                 }}
             </span>
             <Link
+                v-if="
+                    calendarConnection.status === 'disconnected' ||
+                    calendarConnection.warning_code ===
+                        'reauthorization_required'
+                "
                 :href="settings()"
                 class="font-bold text-[#4A7DC4] hover:underline"
             >
@@ -341,6 +379,13 @@ defineOptions({
                         ? '再接続する'
                         : '接続する'
                 }}
+            </Link>
+            <Link
+                v-else-if="calendarConnection.status === 'error'"
+                :href="settings()"
+                class="font-bold text-[#4A7DC4] hover:underline"
+            >
+                設定を開く
             </Link>
         </div>
 
@@ -442,7 +487,7 @@ defineOptions({
                     class="rounded-[18px] border border-[#43A86044] bg-[#E8F5EC] p-[18px] text-center"
                 >
                     <div class="text-[15px] font-bold text-[#43A860]">
-                        今日の予定はすべて終わりました
+                        {{ calendarEmptyMessage }}
                     </div>
                 </div>
 

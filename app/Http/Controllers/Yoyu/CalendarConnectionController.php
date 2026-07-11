@@ -84,6 +84,10 @@ class CalendarConnectionController extends Controller
 
             $sameAccount = $existing !== null && $existing->external_account_id === $externalId;
 
+            // Always advance generation on OAuth write so in-flight sync/disconnect
+            // jobs for the previous generation become no-ops.
+            $nextVersion = $existing === null ? 1 : $existing->nextConnectionVersion();
+
             if ($existing !== null && ! $sameAccount) {
                 // Account switch: the old account's cache and tokens are dead.
                 YoyuCalendarEvent::query()
@@ -94,6 +98,12 @@ class CalendarConnectionController extends Controller
             }
 
             $effectiveRefresh = $refreshToken ?? ($sameAccount ? $existing->refresh_token : null);
+
+            // Switching accounts invalidates sync freshness; same-account reconnect keeps cache.
+            $freshnessReset = $sameAccount ? [] : [
+                'last_synced_at' => null,
+                'last_sync_attempt_at' => null,
+            ];
 
             if ($effectiveRefresh === null) {
                 // Cannot sync in the background without a refresh token.
@@ -106,8 +116,10 @@ class CalendarConnectionController extends Controller
                         'refresh_token' => null,
                         'token_expires_at' => null,
                         'status' => 'error',
+                        'connection_version' => $nextVersion,
                         'last_error_code' => 'reauthorization_required',
                         'last_error_at' => now(),
+                        ...$freshnessReset,
                     ],
                 );
 
@@ -124,8 +136,10 @@ class CalendarConnectionController extends Controller
                     'token_expires_at' => now()->addSeconds($this->positiveIntOr($oauthUser->expiresIn, 3600)),
                     'scopes' => $this->stringList($oauthUser->approvedScopes, [self::CALENDAR_SCOPE]),
                     'status' => 'syncing',
+                    'connection_version' => $nextVersion,
                     'last_error_code' => null,
                     'last_error_at' => null,
+                    ...$freshnessReset,
                 ],
             );
         });
@@ -136,7 +150,7 @@ class CalendarConnectionController extends Controller
             return redirect()->route('yoyu.settings');
         }
 
-        SyncGoogleCalendarJob::dispatch($connector->id);
+        SyncGoogleCalendarJob::dispatch($connector->id, (int) $connector->connection_version);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Googleカレンダーを接続しました。同期しています…']);
 
@@ -159,14 +173,23 @@ class CalendarConnectionController extends Controller
         $connector = $this->connectorFor($request);
 
         if ($connector !== null) {
+            $version = (int) $connector->connection_version;
+            $nextVersion = $version + 1;
+
+            // Bump generation with revoking so in-flight Sync(N) cannot write
+            // status/token/cache after disconnect starts.
             $updated = Connector::query()
                 ->withoutUserScope()
                 ->whereKey($connector->id)
                 ->where('status', '!=', 'revoking')
-                ->update(['status' => 'revoking']);
+                ->where('connection_version', $version)
+                ->update([
+                    'status' => 'revoking',
+                    'connection_version' => $nextVersion,
+                ]);
 
             if ($updated === 1) {
-                DisconnectGoogleCalendarJob::dispatch($connector->id);
+                DisconnectGoogleCalendarJob::dispatch($connector->id, $nextVersion);
             }
         }
 

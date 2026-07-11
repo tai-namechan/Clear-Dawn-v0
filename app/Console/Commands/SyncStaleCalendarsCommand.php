@@ -18,6 +18,12 @@ class SyncStaleCalendarsCommand extends Command
 
     public function handle(): int
     {
+        if (! (bool) config('services.google.calendar_enabled')) {
+            $this->info('Google Calendar is disabled; nothing dispatched.');
+
+            return self::SUCCESS;
+        }
+
         $ttlMinutes = (int) config('calendar.sync_ttl_minutes', 15);
         $dispatched = 0;
 
@@ -34,9 +40,9 @@ class SyncStaleCalendarsCommand extends Command
                 ->orWhere('last_error_code', '!=', 'reauthorization_required'))
             ->orderBy('id')
             ->limit(max(1, (int) $this->option('limit')))
-            ->pluck('id')
-            ->each(function (string $connectorId) use (&$dispatched): void {
-                SyncGoogleCalendarJob::dispatch($connectorId);
+            ->get(['id', 'connection_version'])
+            ->each(function (Connector $connector) use (&$dispatched): void {
+                SyncGoogleCalendarJob::dispatch($connector->id, (int) $connector->connection_version);
                 $dispatched++;
             });
 

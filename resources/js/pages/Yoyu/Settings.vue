@@ -44,9 +44,6 @@ function syncedLabel(iso: string | null): string {
     });
 }
 
-const needsReconnect = (): boolean =>
-    props.calendarConnection?.status === 'error';
-
 defineOptions({
     layout: {
         title: 'ヨユウ',
@@ -85,7 +82,7 @@ defineOptions({
 
             <template v-else-if="calendarConnection === null">
                 <p class="mb-3 text-[13px] leading-relaxed text-os-sub">
-                    接続すると、今日の予定を読み取ってヨユウのTodayとブリーフィングに反映します（読み取り専用）。
+                    接続すると、今日の予定をヨユウのTodayに表示します（読み取り専用）。ブリーフィングへの反映は今後のアップデートで追加予定です。
                 </p>
                 <Button as="a" :href="connect.url()">
                     Googleカレンダーを接続
@@ -114,7 +111,11 @@ defineOptions({
                                     syncing: '同期中…',
                                     idle: '同期待ち',
                                     revoking: '解除中…',
-                                    error: '要再接続',
+                                    error:
+                                        calendarConnection.last_error_code ===
+                                        'reauthorization_required'
+                                            ? '要再接続'
+                                            : '同期失敗',
                                 }[calendarConnection.status] ??
                                 calendarConnection.status
                             }}
@@ -133,16 +134,30 @@ defineOptions({
                     </p>
 
                     <p
-                        v-if="needsReconnect()"
+                        v-if="
+                            calendarConnection.last_error_code ===
+                            'reauthorization_required'
+                        "
                         class="text-[12.5px] text-[#C05A48]"
                     >
-                        Googleとの接続が切れています。再接続してください。
+                        Googleとの認可が無効です。再接続して権限を許可し直してください。
+                    </p>
+                    <p
+                        v-else-if="
+                            calendarConnection.last_error_code === 'sync_failed'
+                        "
+                        class="text-[12.5px] text-[#C05A48]"
+                    >
+                        一時的に同期できませんでした。しばらくして「今すぐ同期」を試すか、続く場合は再接続してください。
                     </p>
                 </div>
 
                 <div class="mt-4 flex flex-wrap gap-2">
                     <Button
-                        v-if="needsReconnect()"
+                        v-if="
+                            calendarConnection.last_error_code ===
+                            'reauthorization_required'
+                        "
                         as="a"
                         :href="connect.url()"
                     >
