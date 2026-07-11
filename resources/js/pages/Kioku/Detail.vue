@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
-import { ArrowLeft, ChevronRight, Clock, Compass, Sparkles, Sun } from '@lucide/vue';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { ArrowLeft, ChevronRight, Clock, Compass, RefreshCw, Sparkles, Sun } from '@lucide/vue';
 import { toast } from 'vue-sonner';
 import SourceBadge from '@/components/kioku/SourceBadge.vue';
 import TypeChip from '@/components/kioku/TypeChip.vue';
 import { Button } from '@/components/ui/button';
 import { formatAgo } from '@/lib/kiokuMeta';
 import { home } from '@/routes/kioku';
-import { show } from '@/routes/kioku/memories';
+import { reenrich, show } from '@/routes/kioku/memories';
 import type { KiokuMemory } from '@/types/kioku';
 
 interface Props {
@@ -15,7 +15,11 @@ interface Props {
     related: KiokuMemory[];
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
+
+function requestReenrich(): void {
+    router.post(reenrich.url(props.memory.id), {}, { preserveScroll: true });
+}
 
 function fieldValue(
     data: Record<string, unknown> | null,
@@ -225,6 +229,18 @@ defineOptions({
                 >
                     <Compass :size="13" />
                     Clear Dawnへ
+                </Button>
+                <Button
+                    v-if="
+                        memory.status === 'ready' || memory.status === 'failed'
+                    "
+                    type="button"
+                    class="gap-1.5 rounded-full border border-os-line text-os-sub hover:bg-os-kioku-soft"
+                    variant="outline"
+                    @click="requestReenrich"
+                >
+                    <RefreshCw :size="13" />
+                    AIで再整理
                 </Button>
             </div>
         </article>

@@ -4,6 +4,7 @@ namespace Tests\Feature\Kioku;
 
 use App\Domain\Kioku\Jobs\EnrichMemoryJob;
 use App\Domain\Kioku\Models\Memory;
+use App\Domain\Kioku\Services\MemoryClassifier;
 use App\Domain\Kioku\Services\RelatedMemoryService;
 use App\Domain\Kioku\Types\MemoryTypeRegistry;
 use App\Domain\Shared\AI\AiGateway;
@@ -77,7 +78,6 @@ class MemoryTest extends TestCase
     public function test_store_responds_without_running_ai_and_queues_job(): void
     {
         config(['queue.default' => 'database']);
-        Http::preventStrayRequests();
         Http::fake();
 
         $user = User::factory()->create();
@@ -99,9 +99,8 @@ class MemoryTest extends TestCase
     public function test_queue_worker_enriches_memory_to_ready(): void
     {
         config(['queue.default' => 'database']);
-        Http::preventStrayRequests();
         Http::fake([
-            'api.anthropic.com/*' => Http::sequence()
+            $this->anthropicFakePattern() => Http::sequence()
                 ->push([
                     'content' => [[
                         'type' => 'text',
@@ -153,7 +152,6 @@ class MemoryTest extends TestCase
 
     public function test_ready_memory_is_not_reprocessed(): void
     {
-        Http::preventStrayRequests();
         Http::fake();
         config(['ai.anthropic.api_key' => 'test-key']);
 
@@ -167,6 +165,7 @@ class MemoryTest extends TestCase
         (new EnrichMemoryJob($memory->id))->handle(
             app(AiGateway::class),
             app(MemoryTypeRegistry::class),
+            app(MemoryClassifier::class),
             app(RelatedMemoryService::class),
         );
 
@@ -176,9 +175,8 @@ class MemoryTest extends TestCase
 
     public function test_persisted_classification_is_not_rebilled_on_retry(): void
     {
-        Http::preventStrayRequests();
         Http::fake([
-            'api.anthropic.com/*' => Http::response([
+            $this->anthropicFakePattern() => Http::response([
                 'content' => [[
                     'type' => 'text',
                     'text' => '{"summary":"再試行の要約","structured_data":null}',
@@ -198,6 +196,7 @@ class MemoryTest extends TestCase
         (new EnrichMemoryJob($memory->id))->handle(
             app(AiGateway::class),
             app(MemoryTypeRegistry::class),
+            app(MemoryClassifier::class),
             app(RelatedMemoryService::class),
         );
 
@@ -206,6 +205,84 @@ class MemoryTest extends TestCase
         $this->assertSame('ready', $memory->status);
         $this->assertSame('前回のclassify結果', $memory->title);
         $this->assertSame(1, AiUsageLog::query()->withoutUserScope()->where('user_id', $user->id)->count());
+    }
+
+    public function test_owner_can_reenrich_ready_memory(): void
+    {
+        Bus::fake([EnrichMemoryJob::class]);
+
+        $user = User::factory()->create();
+        $memory = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'memory_type' => 'error_log',
+            'summary' => '古い要約',
+            'tags' => ['古いタグ'],
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('kioku.memories.reenrich', $memory))
+            ->assertRedirect(route('kioku.memories.show', $memory));
+
+        $memory->refresh();
+        $this->assertSame('captured', $memory->status);
+        $this->assertNull($memory->memory_type);
+        $this->assertNull($memory->summary);
+        Bus::assertDispatched(EnrichMemoryJob::class);
+    }
+
+    public function test_reenrich_does_not_reset_in_flight_memory(): void
+    {
+        Bus::fake([EnrichMemoryJob::class]);
+
+        $user = User::factory()->create();
+        $memory = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'enriching',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('kioku.memories.reenrich', $memory))
+            ->assertRedirect(route('kioku.memories.show', $memory));
+
+        $this->assertSame('enriching', $memory->fresh()->status);
+        Bus::assertNotDispatched(EnrichMemoryJob::class);
+    }
+
+    public function test_user_cannot_reenrich_another_users_memory(): void
+    {
+        $user = User::factory()->create();
+        $memory = Memory::factory()->create([
+            'user_id' => User::factory()->create()->id,
+            'status' => 'ready',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('kioku.memories.reenrich', $memory))
+            ->assertNotFound();
+    }
+
+    public function test_classify_eval_command_runs_against_fixture(): void
+    {
+        Http::fake([
+            $this->anthropicFakePattern() => Http::response([
+                'content' => [[
+                    'type' => 'text',
+                    'text' => '{"memory_type":"thought","importance":3,"tags":["メモ"],"title":"テストのメモ"}',
+                ]],
+                'usage' => ['input_tokens' => 10, 'output_tokens' => 20],
+            ]),
+        ]);
+        config(['ai.anthropic.api_key' => 'test-key']);
+
+        User::factory()->create();
+
+        $this->artisan('kioku:eval-classify', [
+            '--fixture' => 'tests/Fixtures/kioku-classify-eval-smoke.json',
+            '--yes' => true,
+        ])
+            ->expectsOutputToContain('合格: 1/1')
+            ->assertSuccessful();
     }
 
     public function test_job_is_queued_only_after_transaction_commit(): void
@@ -294,6 +371,7 @@ class MemoryTest extends TestCase
         $job->handle(
             app(AiGateway::class),
             app(MemoryTypeRegistry::class),
+            app(MemoryClassifier::class),
             app(RelatedMemoryService::class),
         );
 
@@ -332,6 +410,7 @@ class MemoryTest extends TestCase
         (new EnrichMemoryJob($memory->id))->handle(
             app(AiGateway::class),
             app(MemoryTypeRegistry::class),
+            app(MemoryClassifier::class),
             app(RelatedMemoryService::class),
         );
 
