@@ -79,9 +79,7 @@ class MemoryController extends Controller
             'status' => 'captured',
         ]);
 
-        EnrichMemoryJob::dispatch($memory->id)->afterResponse();
-
-        $memory->update(['status' => 'enriching']);
+        EnrichMemoryJob::dispatch($memory->id);
 
         Inertia::flash('toast', [
             'type' => 'success',
