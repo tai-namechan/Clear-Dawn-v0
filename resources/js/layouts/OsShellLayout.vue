@@ -61,14 +61,14 @@ const headerBg = computed(() => {
 
 const titleClass = computed(() => {
     if (currentProduct.value === 'kioku') {
-        return 'font-serif font-bold tracking-[0.12em] text-os-ink';
+        return 'font-serif font-normal tracking-[0.16em] text-os-ink';
     }
 
     if (currentProduct.value === 'yoyu') {
-        return 'font-serif text-os-yoyu';
+        return 'font-serif font-normal tracking-[0.16em] text-os-yoyu';
     }
 
-    return '';
+    return 'font-serif font-normal tracking-[0.16em]';
 });
 </script>
 
@@ -81,14 +81,14 @@ const titleClass = computed(() => {
             :class="shellBg"
         >
             <header
-                class="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-os-line/80 px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-6"
+                class="flex min-h-16 shrink-0 items-center justify-between gap-2 border-b border-os-line/80 px-4 py-3 transition-[width,height] ease-linear md:px-6 md:py-4"
                 :class="headerBg"
             >
                 <div class="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
                     <SidebarTrigger class="-ml-1 shrink-0" />
                     <h1
                         v-if="productName"
-                        class="truncate text-lg tracking-wide md:text-xl"
+                        class="truncate text-[2rem] leading-none md:text-[2.5rem]"
                         :class="titleClass"
                     >
                         {{ productName }}
