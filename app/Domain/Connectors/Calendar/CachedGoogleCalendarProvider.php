@@ -38,7 +38,12 @@ final class CachedGoogleCalendarProvider implements CalendarProvider
 
         // Never synced yet: no trustworthy cache to show.
         if ($syncedAt === null) {
-            $warning = $status === CalendarConnectionStatus::Error ? 'reconnect_required' : 'sync_pending';
+            $warning = match (true) {
+                $status === CalendarConnectionStatus::Error
+                    && $this->connector->last_error_code === 'reauthorization_required' => 'reauthorization_required',
+                $status === CalendarConnectionStatus::Error => 'sync_failed',
+                default => 'sync_pending',
+            };
 
             return new CalendarSnapshot(
                 connectionStatus: $status,
@@ -54,7 +59,9 @@ final class CachedGoogleCalendarProvider implements CalendarProvider
 
         $warning = null;
         if ($status === CalendarConnectionStatus::Error) {
-            $warning = 'stale_cache_reconnect';
+            $warning = $this->connector->last_error_code === 'reauthorization_required'
+                ? 'reauthorization_required'
+                : 'sync_failed';
         } elseif ($isStale) {
             $warning = 'stale_cache';
         }
@@ -87,10 +94,11 @@ final class CachedGoogleCalendarProvider implements CalendarProvider
                         ->where('starts_at', '<', $to->utc()->toDateTimeString())
                         ->where('ends_at', '>', $from->utc()->toDateTimeString());
                 })
-                    // All-day events overlapping [fromDate, toDate] (ends_on exclusive)
+                    // All-day events overlapping [fromDate, toDate) — ends_on is exclusive
+                    // (Google convention). starts_on < toDate so tomorrow's all-day is out.
                     ->orWhere(function ($allDay) use ($fromDate, $toDate): void {
                         $allDay->where('all_day', true)
-                            ->where('starts_on', '<=', $toDate)
+                            ->where('starts_on', '<', $toDate)
                             ->where('ends_on', '>', $fromDate);
                     });
             })

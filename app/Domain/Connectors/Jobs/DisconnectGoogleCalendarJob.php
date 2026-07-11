@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\Http;
 use Throwable;
 
 /**
- * Best-effort external revoke, then unconditional local cleanup.
- * Idempotent: a vanished connector is a completed disconnect.
+ * Best-effort external revoke, then local cleanup only when the captured
+ * connection generation still matches (reconnect after disconnect must win).
  */
 class DisconnectGoogleCalendarJob implements ShouldQueue
 {
@@ -22,8 +22,10 @@ class DisconnectGoogleCalendarJob implements ShouldQueue
 
     public int $timeout = 60;
 
-    public function __construct(public string $connectorId)
-    {
+    public function __construct(
+        public string $connectorId,
+        public int $connectionVersion,
+    ) {
         $this->onQueue('integrations');
     }
 
@@ -31,6 +33,11 @@ class DisconnectGoogleCalendarJob implements ShouldQueue
     {
         $connector = Connector::query()->withoutUserScope()->find($this->connectorId);
         if ($connector === null) {
+            return;
+        }
+
+        if ((int) $connector->connection_version !== $this->connectionVersion) {
+            // Reconnected (or otherwise advanced) while this job waited.
             return;
         }
 
@@ -46,7 +53,18 @@ class DisconnectGoogleCalendarJob implements ShouldQueue
             // Best effort only: local cleanup must happen regardless.
         }
 
-        DB::transaction(function () use ($connector): void {
+        DB::transaction(function (): void {
+            $connector = Connector::query()
+                ->withoutUserScope()
+                ->whereKey($this->connectorId)
+                ->lockForUpdate()
+                ->first();
+
+            if ($connector === null
+                || (int) $connector->connection_version !== $this->connectionVersion) {
+                return;
+            }
+
             YoyuCalendarEvent::query()
                 ->withoutUserScope()
                 ->where('connector_id', $connector->id)

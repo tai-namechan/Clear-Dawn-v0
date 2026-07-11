@@ -108,7 +108,8 @@ class GoogleCalendarOAuthTest extends TestCase
         $this->assertStringNotContainsString('new-access-token', (string) $raw->access_token);
         $this->assertStringNotContainsString('new-refresh-token', (string) $raw->refresh_token);
 
-        Bus::assertDispatched(SyncGoogleCalendarJob::class, fn ($job) => $job->connectorId === $connector->id);
+        Bus::assertDispatched(SyncGoogleCalendarJob::class, fn ($job) => $job->connectorId === $connector->id
+            && $job->connectionVersion === (int) $connector->connection_version);
     }
 
     public function test_callback_without_calendar_scope_is_rejected(): void
@@ -131,12 +132,13 @@ class GoogleCalendarOAuthTest extends TestCase
     {
         Bus::fake([SyncGoogleCalendarJob::class]);
         $user = User::factory()->create();
-        Connector::query()->withoutUserScope()->create([
+        $connector = Connector::query()->withoutUserScope()->create([
             'user_id' => $user->id,
             'source_type' => Connector::SOURCE_GOOGLE_CALENDAR,
             'external_account_id' => 'google-account-1',
             'refresh_token' => 'original-refresh-token',
             'status' => 'connected',
+            'connection_version' => 1,
         ]);
 
         $this->mockSocialiteCallback($this->fakeCallbackUser(['refreshToken' => null]));
@@ -148,7 +150,8 @@ class GoogleCalendarOAuthTest extends TestCase
         $connector = Connector::query()->withoutUserScope()->where('user_id', $user->id)->first();
         $this->assertSame('original-refresh-token', $connector->refresh_token);
         $this->assertSame('syncing', $connector->status);
-        Bus::assertDispatched(SyncGoogleCalendarJob::class);
+        $this->assertSame(2, (int) $connector->connection_version);
+        Bus::assertDispatched(SyncGoogleCalendarJob::class, fn ($job) => $job->connectionVersion === 2);
     }
 
     public function test_switching_accounts_clears_old_cache_and_never_reuses_old_refresh_token(): void
@@ -242,6 +245,11 @@ class GoogleCalendarOAuthTest extends TestCase
 
         $this->assertSame('revoking', $connector->fresh()->status);
         Bus::assertDispatchedTimes(DisconnectGoogleCalendarJob::class, 1);
+        Bus::assertDispatched(
+            DisconnectGoogleCalendarJob::class,
+            fn ($job) => $job->connectorId === $connector->id
+                && $job->connectionVersion === (int) $connector->connection_version,
+        );
     }
 
     public function test_disconnect_job_removes_tokens_cache_and_row(): void
@@ -251,6 +259,7 @@ class GoogleCalendarOAuthTest extends TestCase
             'user_id' => $user->id,
             'source_type' => Connector::SOURCE_GOOGLE_CALENDAR,
             'status' => 'revoking',
+            'connection_version' => 3,
             'refresh_token' => 'refresh-token',
         ]);
         YoyuCalendarEvent::query()->withoutUserScope()->create([
@@ -268,11 +277,41 @@ class GoogleCalendarOAuthTest extends TestCase
             'oauth2.googleapis.com/revoke' => Http::response([], 200),
         ]);
 
-        (new DisconnectGoogleCalendarJob($connector->id))->handle();
+        (new DisconnectGoogleCalendarJob($connector->id, 3))->handle();
         // Idempotent: second run is a no-op.
-        (new DisconnectGoogleCalendarJob($connector->id))->handle();
+        (new DisconnectGoogleCalendarJob($connector->id, 3))->handle();
 
         $this->assertSame(0, Connector::query()->withoutUserScope()->count());
         $this->assertSame(0, YoyuCalendarEvent::query()->withoutUserScope()->count());
+    }
+
+    public function test_account_switch_bumps_connection_version(): void
+    {
+        Bus::fake([SyncGoogleCalendarJob::class]);
+        $user = User::factory()->create();
+        Connector::query()->withoutUserScope()->create([
+            'user_id' => $user->id,
+            'source_type' => Connector::SOURCE_GOOGLE_CALENDAR,
+            'external_account_id' => 'old-account',
+            'refresh_token' => 'old-refresh-token',
+            'status' => 'connected',
+            'connection_version' => 4,
+            'last_synced_at' => now(),
+        ]);
+
+        $this->mockSocialiteCallback($this->fakeCallbackUser([
+            'id' => 'new-account',
+            'email' => 'new@example.com',
+            'refreshToken' => 'brand-new-refresh',
+        ]));
+
+        $this->actingAs($user)
+            ->get(route('yoyu.calendar.callback', ['code' => 'x', 'state' => 'y']))
+            ->assertRedirect(route('yoyu.settings'));
+
+        $connector = Connector::query()->withoutUserScope()->where('user_id', $user->id)->first();
+        $this->assertSame(5, (int) $connector->connection_version);
+        $this->assertSame('new-account', $connector->external_account_id);
+        Bus::assertDispatched(SyncGoogleCalendarJob::class, fn ($job) => $job->connectionVersion === 5);
     }
 }

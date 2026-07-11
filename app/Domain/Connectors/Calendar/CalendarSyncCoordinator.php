@@ -14,6 +14,10 @@ final class CalendarSyncCoordinator
 {
     public function syncIfStale(User $user): void
     {
+        if (! $this->calendarEnabled()) {
+            return;
+        }
+
         $connector = Connector::query()
             ->withoutUserScope()
             ->where('user_id', $user->id)
@@ -45,11 +49,15 @@ final class CalendarSyncCoordinator
             return;
         }
 
-        SyncGoogleCalendarJob::dispatch($connector->id);
+        SyncGoogleCalendarJob::dispatch($connector->id, (int) $connector->connection_version);
     }
 
     public function forceSync(User $user): bool
     {
+        if (! $this->calendarEnabled()) {
+            return false;
+        }
+
         $connector = Connector::query()
             ->withoutUserScope()
             ->where('user_id', $user->id)
@@ -60,8 +68,13 @@ final class CalendarSyncCoordinator
             return false;
         }
 
-        SyncGoogleCalendarJob::dispatch($connector->id);
+        SyncGoogleCalendarJob::dispatch($connector->id, (int) $connector->connection_version);
 
         return true;
+    }
+
+    private function calendarEnabled(): bool
+    {
+        return (bool) config('services.google.calendar_enabled');
     }
 }

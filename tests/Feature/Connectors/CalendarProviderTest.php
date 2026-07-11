@@ -137,7 +137,71 @@ class CalendarProviderTest extends TestCase
         $this->assertSame(CalendarConnectionStatus::Error, $snapshot->connectionStatus);
         $this->assertCount(1, $snapshot->events);
         $this->assertTrue($snapshot->isStale);
-        $this->assertSame('stale_cache_reconnect', $snapshot->warningCode);
+        $this->assertSame('sync_failed', $snapshot->warningCode);
+    }
+
+    public function test_reauthorization_error_uses_distinct_warning_code(): void
+    {
+        $user = User::factory()->create();
+        $this->makeConnector($user, [
+            'status' => 'error',
+            'last_error_code' => 'reauthorization_required',
+            'last_synced_at' => now()->subHours(2),
+        ]);
+
+        $snapshot = $this->snapshotFor($user);
+
+        $this->assertSame('reauthorization_required', $snapshot->warningCode);
+    }
+
+    public function test_all_day_snapshot_uses_exclusive_end_boundary(): void
+    {
+        $user = User::factory()->create();
+        $connector = $this->makeConnector($user);
+        $today = CarbonImmutable::today('UTC');
+        $tomorrow = $today->addDay();
+        $yesterday = $today->subDay();
+
+        // Today only (ends_on exclusive tomorrow) — include
+        YoyuCalendarEvent::query()->withoutUserScope()->create([
+            'user_id' => $user->id,
+            'connector_id' => $connector->id,
+            'external_id' => 'today-allday',
+            'title' => '今日の終日',
+            'all_day' => true,
+            'starts_on' => $today->toDateString(),
+            'ends_on' => $tomorrow->toDateString(),
+            'synced_at' => now(),
+        ]);
+        // Starts tomorrow — exclude from [today, tomorrow)
+        YoyuCalendarEvent::query()->withoutUserScope()->create([
+            'user_id' => $user->id,
+            'connector_id' => $connector->id,
+            'external_id' => 'tomorrow-allday',
+            'title' => '翌日の終日',
+            'all_day' => true,
+            'starts_on' => $tomorrow->toDateString(),
+            'ends_on' => $tomorrow->addDay()->toDateString(),
+            'synced_at' => now(),
+        ]);
+        // Multi-day spanning yesterday..tomorrow exclusive end — include
+        YoyuCalendarEvent::query()->withoutUserScope()->create([
+            'user_id' => $user->id,
+            'connector_id' => $connector->id,
+            'external_id' => 'multi-allday',
+            'title' => '複数日',
+            'all_day' => true,
+            'starts_on' => $yesterday->toDateString(),
+            'ends_on' => $tomorrow->toDateString(),
+            'synced_at' => now(),
+        ]);
+
+        $snapshot = $this->snapshotFor($user);
+        $titles = $snapshot->allDayTitles();
+
+        $this->assertContains('今日の終日', $titles);
+        $this->assertContains('複数日', $titles);
+        $this->assertNotContains('翌日の終日', $titles);
     }
 
     public function test_snapshot_separates_timed_allday_cancelled_transparent(): void
