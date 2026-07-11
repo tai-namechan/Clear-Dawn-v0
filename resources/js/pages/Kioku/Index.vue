@@ -5,10 +5,7 @@ import { computed, ref, watch } from 'vue';
 import MemoryCard from '@/components/kioku/MemoryCard.vue';
 import { Button } from '@/components/ui/button';
 import { useKiokuStatusPoll } from '@/composables/useKiokuStatusPoll';
-import {
-    MEMORY_TYPES,
-    SOURCE_TYPES,
-} from '@/lib/kiokuMeta';
+import { MEMORY_TYPES, SOURCE_TYPES } from '@/lib/kiokuMeta';
 import type { MemoryTypeKey, SourceTypeKey } from '@/lib/kiokuMeta';
 import { home } from '@/routes/kioku';
 import { store } from '@/routes/kioku/memories';
@@ -48,7 +45,9 @@ function manualReload(): void {
 
 const visibleTypeKeys = computed(() =>
     (Object.keys(MEMORY_TYPES) as MemoryTypeKey[]).filter(
-        (key) => (props.typeCounts[key] ?? 0) > 0 || selectedTypes.value.includes(key),
+        (key) =>
+            (props.typeCounts[key] ?? 0) > 0 ||
+            selectedTypes.value.includes(key),
     ),
 );
 
@@ -57,7 +56,9 @@ function applyFilters(): void {
         home.url({
             query: {
                 q: q.value || undefined,
-                types: selectedTypes.value.length ? selectedTypes.value : undefined,
+                types: selectedTypes.value.length
+                    ? selectedTypes.value
+                    : undefined,
             },
         }),
         {},
@@ -96,7 +97,7 @@ defineOptions({
             <p class="text-xs tracking-wide text-os-sub">
                 経験を、失わない。 — 過去を思い出す場所
             </p>
-            <div class="text-xs text-os-faint">{{ totalCount }}件の記憶</div>
+            <div class="text-xs text-os-sub">{{ totalCount }}件の記憶</div>
         </div>
 
         <div
@@ -142,13 +143,21 @@ defineOptions({
                             placeholder="エラーメッセージ、考えたこと、URL…&#10;貼るだけ。整理はAIが後からやります。&#10;（Ctrl/⌘+Enterで保存）"
                             class="w-full resize-y rounded-xl border border-os-line bg-os-kioku-bg px-3.5 py-3 text-[13.5px] leading-relaxed text-os-ink outline-none placeholder:text-[#B3AC99] focus-visible:ring-2 focus-visible:ring-os-kioku/35"
                             @keydown.meta.enter.prevent="
-                                ($event.target as HTMLTextAreaElement).form?.requestSubmit()
+                                (
+                                    $event.target as HTMLTextAreaElement
+                                ).form?.requestSubmit()
                             "
                             @keydown.ctrl.enter.prevent="
-                                ($event.target as HTMLTextAreaElement).form?.requestSubmit()
+                                (
+                                    $event.target as HTMLTextAreaElement
+                                ).form?.requestSubmit()
                             "
                         />
-                        <input type="hidden" name="source_type" value="manual" />
+                        <input
+                            type="hidden"
+                            name="source_type"
+                            value="manual"
+                        />
                         <Button
                             type="submit"
                             class="h-11 w-full gap-2 rounded-xl bg-os-kioku text-[13.5px] font-bold text-white shadow-[0_3px_10px_rgba(62,86,136,0.28)] hover:bg-os-kioku/90"
@@ -165,7 +174,7 @@ defineOptions({
                     class="rounded-2xl border border-os-line bg-os-kioku-paper p-4 shadow-[0_1px_3px_rgba(43,41,36,0.05)]"
                 >
                     <div
-                        class="mb-2.5 text-[11.5px] font-bold tracking-wide text-os-faint"
+                        class="mb-2.5 text-[11.5px] font-bold tracking-wide text-os-sub"
                     >
                         種別でしぼる
                     </div>
@@ -197,13 +206,17 @@ defineOptions({
                                     ? {
                                           background: MEMORY_TYPES[key].bg,
                                           color: MEMORY_TYPES[key].color,
-                                          borderColor: MEMORY_TYPES[key].color + '55',
+                                          borderColor:
+                                              MEMORY_TYPES[key].color + '55',
                                       }
                                     : undefined
                             "
                             @click="toggleType(key)"
                         >
-                            <component :is="MEMORY_TYPES[key].icon" :size="12" />
+                            <component
+                                :is="MEMORY_TYPES[key].icon"
+                                :size="12"
+                            />
                             {{ MEMORY_TYPES[key].label }}
                             {{ typeCounts[key] || 0 }}
                         </button>
@@ -214,7 +227,7 @@ defineOptions({
                     class="rounded-2xl border border-os-line bg-os-kioku-paper p-4 shadow-[0_1px_3px_rgba(43,41,36,0.05)]"
                 >
                     <div
-                        class="mb-2.5 text-[11.5px] font-bold tracking-wide text-os-faint"
+                        class="mb-2.5 text-[11.5px] font-bold tracking-wide text-os-sub"
                     >
                         取り込み元
                     </div>
@@ -224,14 +237,19 @@ defineOptions({
                         class="flex items-center gap-2 border-b border-os-line py-1.5 text-[12.5px] last:border-0"
                         :class="meta.muted ? 'opacity-45' : ''"
                     >
-                        <component :is="meta.icon" :size="13" class="text-os-sub" />
+                        <component
+                            :is="meta.icon"
+                            :size="13"
+                            class="text-os-sub"
+                        />
                         <span class="flex-1 text-os-ink">{{ meta.label }}</span>
-                        <span class="font-mono text-xs text-os-faint">{{
+                        <span class="font-mono text-xs text-os-sub">{{
                             sourceCounts[key as SourceTypeKey] || 0
                         }}</span>
                     </div>
-                    <p class="mt-2.5 text-[11px] leading-relaxed text-os-faint">
-                        ヨユウ・Clear Dawnからの自動保存とSlack連携は、本実装ではイベント/コネクタ経由になります。
+                    <p class="mt-2.5 text-[11px] leading-relaxed text-os-sub">
+                        ヨユウ・Clear
+                        Dawnからの自動保存とSlack連携は、本実装ではイベント/コネクタ経由になります。
                     </p>
                 </section>
             </aside>
@@ -250,7 +268,7 @@ defineOptions({
                     <button
                         v-if="q"
                         type="button"
-                        class="text-os-faint"
+                        class="text-os-sub"
                         @click="
                             q = '';
                             applyFilters();
@@ -280,9 +298,11 @@ defineOptions({
                     :memory="memory"
                 />
 
-                <p class="pt-2 text-center text-[11px] leading-relaxed text-os-faint">
-                    保存は即時、AI整理（分類・要約・構造化）は非同期。Laravel Queue
-                    で同じ流れです。
+                <p
+                    class="pt-2 text-center text-[11px] leading-relaxed text-os-sub"
+                >
+                    保存は即時、AI整理（分類・要約・構造化）は非同期。Laravel
+                    Queue で同じ流れです。
                 </p>
             </section>
         </div>

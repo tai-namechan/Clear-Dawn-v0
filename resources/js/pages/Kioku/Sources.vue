@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { SOURCE_TYPES, type SourceTypeKey } from '@/lib/kiokuMeta';
+import { SOURCE_TYPES  } from '@/lib/kiokuMeta';
+import type {SourceTypeKey} from '@/lib/kiokuMeta';
 
 defineProps<{
     sourceCounts?: Record<string, number>;
@@ -20,9 +21,7 @@ defineOptions({
         <section
             class="mx-auto max-w-lg rounded-2xl border border-os-line bg-os-kioku-paper p-5 shadow-[0_1px_3px_rgba(43,41,36,0.05)]"
         >
-            <div
-                class="mb-3 text-[11.5px] font-bold tracking-wide text-os-faint"
-            >
+            <div class="mb-3 text-[11.5px] font-bold tracking-wide text-os-sub">
                 取り込み元
             </div>
             <div
@@ -33,12 +32,13 @@ defineOptions({
             >
                 <component :is="meta.icon" :size="13" class="text-os-sub" />
                 <span class="flex-1 text-os-ink">{{ meta.label }}</span>
-                <span class="font-mono text-xs text-os-faint">{{
+                <span class="font-mono text-xs text-os-sub">{{
                     sourceCounts?.[key as SourceTypeKey] ?? 0
                 }}</span>
             </div>
-            <p class="mt-3 text-[11px] leading-relaxed text-os-faint">
-                ヨユウ・Clear Dawnからの自動保存とSlack連携は、本実装ではイベント/コネクタ経由になります。
+            <p class="mt-3 text-[11px] leading-relaxed text-os-sub">
+                ヨユウ・Clear
+                Dawnからの自動保存とSlack連携は、本実装ではイベント/コネクタ経由になります。
             </p>
         </section>
     </div>
