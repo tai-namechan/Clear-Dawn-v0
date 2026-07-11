@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { computed } from 'vue';
 import { Bot } from '@lucide/vue';
+import { computed } from 'vue';
 import Heading from '@/components/Heading.vue';
 import { edit } from '@/routes/ai-usage';
 
@@ -49,6 +49,7 @@ defineOptions({
 
 const progressPercent = computed(() => {
     const ratio = Number(props.usage.progress_ratio);
+
     if (!Number.isFinite(ratio) || ratio <= 0) {
         return 0;
     }
@@ -74,6 +75,7 @@ function labelFeature(feature: string): string {
 
 function formatUsd(value: string): string {
     const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(value.trim());
+
     if (!match) {
         return `$${value}`;
     }

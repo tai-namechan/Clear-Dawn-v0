@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import AiUsageBanner from '@/components/AiUsageBanner.vue';
 import AppContent from '@/components/AppContent.vue';
 import AppShell from '@/components/AppShell.vue';
-import AiUsageBanner from '@/components/AiUsageBanner.vue';
 import HeaderUserMenu from '@/components/HeaderUserMenu.vue';
 import OsSidebar from '@/components/os/OsSidebar.vue';
 import ProductSwitcher from '@/components/os/ProductSwitcher.vue';
