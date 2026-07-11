@@ -92,18 +92,19 @@ class SyncGoogleCalendarJob implements ShouldBeUnique, ShouldQueue
                 $events = $api->listPrimaryEvents($accessToken, $windowStart, $windowEnd, $timezone);
             } catch (UnauthorizedGoogleRequestException) {
                 // Token may have just been revoked/rotated: refresh once, retry once.
-                if (! $this->stillCurrentGeneration()) {
-                    return;
-                }
-
-                Connector::query()
+                $expired = Connector::query()
                     ->withoutUserScope()
                     ->whereKey($this->connectorId)
                     ->where('connection_version', $this->connectionVersion)
+                    ->where('status', '!=', 'revoking')
                     ->update(['token_expires_at' => now()->subMinute()]);
 
+                if ($expired === 0) {
+                    return;
+                }
+
                 $connector->refresh();
-                if ((int) $connector->connection_version !== $this->connectionVersion) {
+                if (! $this->stillCurrentGeneration()) {
                     return;
                 }
 
@@ -119,6 +120,7 @@ class SyncGoogleCalendarJob implements ShouldBeUnique, ShouldQueue
                 ->withoutUserScope()
                 ->whereKey($this->connectorId)
                 ->where('connection_version', $this->connectionVersion)
+                ->where('status', '!=', 'revoking')
                 ->update([
                     'status' => 'connected',
                     'last_synced_at' => now(),
@@ -137,6 +139,7 @@ class SyncGoogleCalendarJob implements ShouldBeUnique, ShouldQueue
                 ->withoutUserScope()
                 ->whereKey($this->connectorId)
                 ->where('connection_version', $this->connectionVersion)
+                ->where('status', '!=', 'revoking')
                 ->update([
                     'status' => 'error',
                     'last_error_code' => 'sync_failed',
@@ -275,6 +278,10 @@ class SyncGoogleCalendarJob implements ShouldBeUnique, ShouldQueue
             return null;
         }
 
+        if ($connector->status === 'revoking') {
+            return null;
+        }
+
         return $connector;
     }
 
@@ -283,7 +290,9 @@ class SyncGoogleCalendarJob implements ShouldBeUnique, ShouldQueue
         return Connector::query()
             ->withoutUserScope()
             ->whereKey($this->connectorId)
+            ->where('source_type', Connector::SOURCE_GOOGLE_CALENDAR)
             ->where('connection_version', $this->connectionVersion)
+            ->where('status', '!=', 'revoking')
             ->exists();
     }
 }

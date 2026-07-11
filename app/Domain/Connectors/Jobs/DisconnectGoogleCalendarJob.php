@@ -11,8 +11,8 @@ use Illuminate\Support\Facades\Http;
 use Throwable;
 
 /**
- * Best-effort external revoke, then local cleanup only when the captured
- * connection generation still matches (reconnect after disconnect must win).
+ * Best-effort external revoke, then local cleanup only while the connector
+ * remains the disconnect target generation (status=revoking + version match).
  */
 class DisconnectGoogleCalendarJob implements ShouldQueue
 {
@@ -31,13 +31,8 @@ class DisconnectGoogleCalendarJob implements ShouldQueue
 
     public function handle(): void
     {
-        $connector = Connector::query()->withoutUserScope()->find($this->connectorId);
+        $connector = $this->loadRevokingConnector();
         if ($connector === null) {
-            return;
-        }
-
-        if ((int) $connector->connection_version !== $this->connectionVersion) {
-            // Reconnected (or otherwise advanced) while this job waited.
             return;
         }
 
@@ -50,18 +45,21 @@ class DisconnectGoogleCalendarJob implements ShouldQueue
                     ->post('https://oauth2.googleapis.com/revoke', ['token' => $token]);
             }
         } catch (Throwable) {
-            // Best effort only: local cleanup must happen regardless.
+            // Best effort only: local cleanup must happen regardless when still revoking.
         }
 
         DB::transaction(function (): void {
             $connector = Connector::query()
                 ->withoutUserScope()
                 ->whereKey($this->connectorId)
+                ->where('source_type', Connector::SOURCE_GOOGLE_CALENDAR)
+                ->where('connection_version', $this->connectionVersion)
+                ->where('status', 'revoking')
                 ->lockForUpdate()
                 ->first();
 
-            if ($connector === null
-                || (int) $connector->connection_version !== $this->connectionVersion) {
+            if ($connector === null) {
+                // Reconnected (or otherwise left revoking) while revoke HTTP ran.
                 return;
             }
 
@@ -72,5 +70,16 @@ class DisconnectGoogleCalendarJob implements ShouldQueue
 
             $connector->delete();
         });
+    }
+
+    private function loadRevokingConnector(): ?Connector
+    {
+        return Connector::query()
+            ->withoutUserScope()
+            ->whereKey($this->connectorId)
+            ->where('source_type', Connector::SOURCE_GOOGLE_CALENDAR)
+            ->where('connection_version', $this->connectionVersion)
+            ->where('status', 'revoking')
+            ->first();
     }
 }

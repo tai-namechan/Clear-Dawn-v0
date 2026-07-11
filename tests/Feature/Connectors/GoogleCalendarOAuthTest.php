@@ -226,7 +226,7 @@ class GoogleCalendarOAuthTest extends TestCase
         $this->assertSame(0, Connector::query()->withoutUserScope()->count());
     }
 
-    public function test_disconnect_marks_revoking_and_dispatches_job_once(): void
+    public function test_disconnect_bumps_version_and_dispatches_job_once(): void
     {
         Bus::fake([DisconnectGoogleCalendarJob::class]);
         $user = User::factory()->create();
@@ -234,6 +234,7 @@ class GoogleCalendarOAuthTest extends TestCase
             'user_id' => $user->id,
             'source_type' => Connector::SOURCE_GOOGLE_CALENDAR,
             'status' => 'connected',
+            'connection_version' => 1,
         ]);
 
         $this->actingAs($user)
@@ -243,12 +244,14 @@ class GoogleCalendarOAuthTest extends TestCase
             ->delete(route('yoyu.calendar.disconnect'))
             ->assertRedirect(route('yoyu.settings'));
 
-        $this->assertSame('revoking', $connector->fresh()->status);
+        $fresh = $connector->fresh();
+        $this->assertSame('revoking', $fresh->status);
+        $this->assertSame(2, (int) $fresh->connection_version);
         Bus::assertDispatchedTimes(DisconnectGoogleCalendarJob::class, 1);
         Bus::assertDispatched(
             DisconnectGoogleCalendarJob::class,
             fn ($job) => $job->connectorId === $connector->id
-                && $job->connectionVersion === (int) $connector->connection_version,
+                && $job->connectionVersion === 2,
         );
     }
 
@@ -285,7 +288,7 @@ class GoogleCalendarOAuthTest extends TestCase
         $this->assertSame(0, YoyuCalendarEvent::query()->withoutUserScope()->count());
     }
 
-    public function test_account_switch_bumps_connection_version(): void
+    public function test_account_switch_bumps_connection_version_and_clears_sync_freshness(): void
     {
         Bus::fake([SyncGoogleCalendarJob::class]);
         $user = User::factory()->create();
@@ -297,6 +300,7 @@ class GoogleCalendarOAuthTest extends TestCase
             'status' => 'connected',
             'connection_version' => 4,
             'last_synced_at' => now(),
+            'last_sync_attempt_at' => now()->subMinute(),
         ]);
 
         $this->mockSocialiteCallback($this->fakeCallbackUser([
@@ -312,6 +316,39 @@ class GoogleCalendarOAuthTest extends TestCase
         $connector = Connector::query()->withoutUserScope()->where('user_id', $user->id)->first();
         $this->assertSame(5, (int) $connector->connection_version);
         $this->assertSame('new-account', $connector->external_account_id);
+        $this->assertNull($connector->last_synced_at);
+        $this->assertNull($connector->last_sync_attempt_at);
         Bus::assertDispatched(SyncGoogleCalendarJob::class, fn ($job) => $job->connectionVersion === 5);
+    }
+
+    public function test_same_account_reconnect_keeps_last_synced_at(): void
+    {
+        Bus::fake([SyncGoogleCalendarJob::class]);
+        $user = User::factory()->create();
+        $syncedAt = now()->subMinutes(5);
+        Connector::query()->withoutUserScope()->create([
+            'user_id' => $user->id,
+            'source_type' => Connector::SOURCE_GOOGLE_CALENDAR,
+            'external_account_id' => 'google-account-1',
+            'refresh_token' => 'original-refresh-token',
+            'status' => 'connected',
+            'connection_version' => 2,
+            'last_synced_at' => $syncedAt,
+            'last_sync_attempt_at' => $syncedAt,
+        ]);
+
+        $this->mockSocialiteCallback($this->fakeCallbackUser(['refreshToken' => null]));
+
+        $this->actingAs($user)
+            ->get(route('yoyu.calendar.callback', ['code' => 'x', 'state' => 'y']))
+            ->assertRedirect(route('yoyu.settings'));
+
+        $connector = Connector::query()->withoutUserScope()->where('user_id', $user->id)->first();
+        $this->assertSame(3, (int) $connector->connection_version);
+        $this->assertNotNull($connector->last_synced_at);
+        $this->assertSame(
+            $syncedAt->copy()->utc()->format('Y-m-d H:i:s'),
+            $connector->last_synced_at->copy()->utc()->format('Y-m-d H:i:s'),
+        );
     }
 }

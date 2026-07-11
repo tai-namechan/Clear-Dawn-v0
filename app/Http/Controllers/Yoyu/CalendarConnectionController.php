@@ -99,6 +99,12 @@ class CalendarConnectionController extends Controller
 
             $effectiveRefresh = $refreshToken ?? ($sameAccount ? $existing->refresh_token : null);
 
+            // Switching accounts invalidates sync freshness; same-account reconnect keeps cache.
+            $freshnessReset = $sameAccount ? [] : [
+                'last_synced_at' => null,
+                'last_sync_attempt_at' => null,
+            ];
+
             if ($effectiveRefresh === null) {
                 // Cannot sync in the background without a refresh token.
                 Connector::query()->withoutUserScope()->updateOrCreate(
@@ -113,6 +119,7 @@ class CalendarConnectionController extends Controller
                         'connection_version' => $nextVersion,
                         'last_error_code' => 'reauthorization_required',
                         'last_error_at' => now(),
+                        ...$freshnessReset,
                     ],
                 );
 
@@ -132,6 +139,7 @@ class CalendarConnectionController extends Controller
                     'connection_version' => $nextVersion,
                     'last_error_code' => null,
                     'last_error_at' => null,
+                    ...$freshnessReset,
                 ],
             );
         });
@@ -166,15 +174,22 @@ class CalendarConnectionController extends Controller
 
         if ($connector !== null) {
             $version = (int) $connector->connection_version;
+            $nextVersion = $version + 1;
+
+            // Bump generation with revoking so in-flight Sync(N) cannot write
+            // status/token/cache after disconnect starts.
             $updated = Connector::query()
                 ->withoutUserScope()
                 ->whereKey($connector->id)
                 ->where('status', '!=', 'revoking')
                 ->where('connection_version', $version)
-                ->update(['status' => 'revoking']);
+                ->update([
+                    'status' => 'revoking',
+                    'connection_version' => $nextVersion,
+                ]);
 
             if ($updated === 1) {
-                DisconnectGoogleCalendarJob::dispatch($connector->id, $version);
+                DisconnectGoogleCalendarJob::dispatch($connector->id, $nextVersion);
             }
         }
 

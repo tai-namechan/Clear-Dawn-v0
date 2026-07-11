@@ -20,8 +20,7 @@ class GoogleTokenManager
 
     public function validAccessToken(Connector $connector, ?int $expectedConnectionVersion = null): string
     {
-        if ($expectedConnectionVersion !== null
-            && (int) $connector->connection_version !== $expectedConnectionVersion) {
+        if ($this->isStaleGeneration($connector, $expectedConnectionVersion)) {
             throw new StaleConnectionGenerationException;
         }
 
@@ -35,8 +34,7 @@ class GoogleTokenManager
             // Another worker may have refreshed while we waited for the lock.
             $connector->refresh();
 
-            if ($expectedConnectionVersion !== null
-                && (int) $connector->connection_version !== $expectedConnectionVersion) {
+            if ($this->isStaleGeneration($connector, $expectedConnectionVersion)) {
                 throw new StaleConnectionGenerationException;
             }
 
@@ -116,7 +114,7 @@ class GoogleTokenManager
 
     /**
      * Persist via Eloquent so encrypted casts apply. No-op (throws) when the
-     * connection generation has advanced.
+     * connection generation has advanced or disconnect has started.
      *
      * @param  array<string, mixed>  $attributes
      */
@@ -129,6 +127,7 @@ class GoogleTokenManager
             $query = Connector::query()
                 ->withoutUserScope()
                 ->whereKey($connector->id)
+                ->where('status', '!=', 'revoking')
                 ->lockForUpdate();
 
             if ($expectedConnectionVersion !== null) {
@@ -144,5 +143,15 @@ class GoogleTokenManager
             $fresh->save();
             $connector->fill($fresh->only(array_keys($attributes)));
         });
+    }
+
+    private function isStaleGeneration(Connector $connector, ?int $expectedConnectionVersion): bool
+    {
+        if ($connector->status === 'revoking') {
+            return true;
+        }
+
+        return $expectedConnectionVersion !== null
+            && (int) $connector->connection_version !== $expectedConnectionVersion;
     }
 }
