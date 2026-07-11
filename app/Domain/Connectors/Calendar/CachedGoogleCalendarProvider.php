@@ -77,7 +77,7 @@ final class CachedGoogleCalendarProvider implements CalendarProvider
         $fromDate = $from->timezone($timezone)->toDateString();
         $toDate = $to->timezone($timezone)->toDateString();
 
-        return YoyuCalendarEvent::query()
+        return array_values(YoyuCalendarEvent::query()
             ->where('user_id', $user->id)
             ->where('connector_id', $this->connector->id)
             ->where(function ($query) use ($from, $to, $fromDate, $toDate): void {
@@ -111,7 +111,6 @@ final class CachedGoogleCalendarProvider implements CalendarProvider
                 transparency: $event->transparency,
                 location: $event->location,
             ))
-            ->values()
-            ->all();
+            ->all());
     }
 }

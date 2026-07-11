@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Form, Head, router } from '@inertiajs/vue3';
+import { Form, Head, Link, router } from '@inertiajs/vue3';
 import {
     Archive,
     Bot,
     Brain,
+    Calendar,
     Car,
     CheckCircle2,
     Circle,
@@ -16,6 +17,7 @@ import {
     Plus,
     RefreshCw,
     Send,
+    Settings,
     Sun,
     Trash2,
 } from '@lucide/vue';
@@ -25,9 +27,10 @@ import YoyuTub from '@/components/yoyu/YoyuTub.vue';
 import {
     isYoyuBriefingPending,
     useYoyuBriefingPoll,
-    yoyuBriefingLabel,
-    type YoyuBriefingStatus,
+    yoyuBriefingLabel
+    
 } from '@/composables/useYoyuBriefingPoll';
+import type {YoyuBriefingStatus} from '@/composables/useYoyuBriefingPoll';
 import { isYoyuChatQuotaExceeded } from '@/lib/aiUsageMessages';
 import {
     BUFFER_MIN,
@@ -35,12 +38,16 @@ import {
     fmtTime,
     PREP_MIN,
     TUB_LABEL,
-    yoyuCalc,
-    type CalEvent,
+    yoyuCalc
+    
 } from '@/lib/yoyuCalc';
+import type {CalEvent} from '@/lib/yoyuCalc';
+import { chat, settings } from '@/routes/yoyu';
 import { regenerate } from '@/routes/yoyu/briefing';
-import { store as storeFocus, update as updateFocus } from '@/routes/yoyu/focus';
-import { chat } from '@/routes/yoyu';
+import {
+    store as storeFocus,
+    update as updateFocus,
+} from '@/routes/yoyu/focus';
 import {
     destroy as destroyTask,
     store as storeTask,
@@ -61,12 +68,22 @@ type FocusItem = {
     memory_id: string;
 };
 
+type CalendarConnection = {
+    status: string;
+    synced_at: string | null;
+    is_stale: boolean;
+    warning_code: string | null;
+    account_email: string | null;
+    all_day_titles: string[];
+};
+
 interface Props {
     tasks: Task[];
     focusItems: FocusItem[];
     briefing: string | null;
     briefingStatus: YoyuBriefingStatus;
     calendar: CalEvent[];
+    calendarConnection: CalendarConnection;
     clearDawnHand: { goal: string; action: string; estimate: number };
     recallPreview: string[];
     tab: string;
@@ -94,13 +111,20 @@ const briefingPending = computed(() =>
 );
 
 const briefingStatusLabel = computed(() =>
-    yoyuBriefingLabel(props.briefingStatus, briefingStartedAt.value, nowMs.value),
+    yoyuBriefingLabel(
+        props.briefingStatus,
+        briefingStartedAt.value,
+        nowMs.value,
+    ),
 );
 
 watch(
     () => props.briefingStatus,
     (status, previous) => {
-        if (isYoyuBriefingPending(status) && !isYoyuBriefingPending(previous ?? null)) {
+        if (
+            isYoyuBriefingPending(status) &&
+            !isYoyuBriefingPending(previous ?? null)
+        ) {
             briefingStartedAt.value = Date.now();
         }
 
@@ -162,7 +186,9 @@ const statusLabel: Record<string, { label: string; color: string }> = {
 const taskGroups = computed(() => [
     {
         label: '今日やる',
-        items: props.tasks.filter((t) => t.status === 'planned' || t.status === 'doing'),
+        items: props.tasks.filter(
+            (t) => t.status === 'planned' || t.status === 'doing',
+        ),
     },
     {
         label: '受信箱',
@@ -188,12 +214,15 @@ const nextEvent = computed(() =>
 
 const hero = computed(() => {
     const event = nextEvent.value;
+
     if (!event) {
         return null;
     }
 
     const d = departInfo(event, nowMs.value);
-    const min = d.travel ? d.min : Math.round((new Date(event.start).getTime() - nowMs.value) / 60000);
+    const min = d.travel
+        ? d.min
+        : Math.round((new Date(event.start).getTime() - nowMs.value) / 60000);
     let mood = '#43A860';
     let moodBg = '#E8F5EC';
     let moodText = 'まだ余裕があります';
@@ -201,7 +230,8 @@ const hero = computed(() => {
     if (min <= 10) {
         mood = '#D9534F';
         moodBg = '#FBE8E7';
-        moodText = min >= 0 ? '急がず、でも今すぐ動きましょう' : '時刻を過ぎています';
+        moodText =
+            min >= 0 ? '急がず、でも今すぐ動きましょう' : '時刻を過ぎています';
     } else if (min <= 30) {
         mood = '#DF9A2E';
         moodBg = '#FBF1DE';
@@ -212,7 +242,9 @@ const hero = computed(() => {
 });
 
 const tubStatus = computed(
-    () => yoyuCalc(nowMs.value, props.calendar, doneEventIds.value, props.tasks).status,
+    () =>
+        yoyuCalc(nowMs.value, props.calendar, doneEventIds.value, props.tasks)
+            .status,
 );
 
 function toggleEvent(id: string): void {
@@ -225,9 +257,11 @@ function toggleEvent(id: string): void {
 
 function sendChat(message?: string): void {
     const text = (message ?? chatInput.value).trim();
+
     if (!text) {
         return;
     }
+
     chatHistory.value.push({ role: 'user', content: text });
     chatInput.value = '';
     router.post(chat.url(), {
@@ -273,6 +307,58 @@ defineOptions({
                 }}
                 — 焦らず、前へ回すAI秘書
             </div>
+            <Link
+                :href="settings()"
+                class="inline-flex items-center gap-1 text-xs text-os-sub hover:text-os-ink"
+            >
+                <Settings :size="13" />
+                設定
+            </Link>
+        </div>
+
+        <div
+            v-if="
+                currentTab === 'today' &&
+                (calendarConnection.status === 'disconnected' ||
+                    calendarConnection.status === 'error')
+            "
+            class="flex flex-wrap items-center justify-between gap-2 rounded-[14px] border border-os-line bg-white px-4 py-3 text-[12.5px] text-os-sub"
+        >
+            <span class="inline-flex items-center gap-1.5">
+                <Calendar :size="14" class="text-[#4A7DC4]" />
+                {{
+                    calendarConnection.status === 'error'
+                        ? 'Googleカレンダーとの接続が切れています。'
+                        : 'Googleカレンダーを接続すると、今日の予定が表示されます。'
+                }}
+            </span>
+            <Link
+                :href="settings()"
+                class="font-bold text-[#4A7DC4] hover:underline"
+            >
+                {{
+                    calendarConnection.status === 'error'
+                        ? '再接続する'
+                        : '接続する'
+                }}
+            </Link>
+        </div>
+
+        <div
+            v-if="
+                currentTab === 'today' &&
+                calendarConnection.all_day_titles.length
+            "
+            class="flex flex-wrap items-center gap-2 text-[12px] text-os-sub"
+        >
+            <span class="font-bold">終日:</span>
+            <span
+                v-for="title in calendarConnection.all_day_titles"
+                :key="title"
+                class="rounded-full bg-os-line/40 px-2.5 py-0.5"
+            >
+                {{ title }}
+            </span>
         </div>
 
         <!-- Today -->
@@ -316,7 +402,9 @@ defineOptions({
                                     new Date(
                                         hero.d.travel
                                             ? hero.d.depart
-                                            : new Date(hero.event.start).getTime(),
+                                            : new Date(
+                                                  hero.event.start,
+                                              ).getTime(),
                                     ).toISOString(),
                                 )
                             }}）
@@ -337,7 +425,9 @@ defineOptions({
                                 v-if="hero.d.travel"
                                 class="inline-flex items-center gap-1"
                             >
-                                <Car :size="13" />移動{{ hero.event.travel_min }}分
+                                <Car :size="13" />移動{{
+                                    hero.event.travel_min
+                                }}分
                             </span>
                             <span class="inline-flex items-center gap-1">
                                 <Clock :size="13" />支度{{ PREP_MIN }}分＋余白{{
@@ -365,14 +455,20 @@ defineOptions({
                         <Compass :size="14" />
                         Clear Dawnからの、夢に向かう一手
                     </div>
-                    <div class="text-sm font-bold">{{ clearDawnHand.action }}</div>
+                    <div class="text-sm font-bold">
+                        {{ clearDawnHand.action }}
+                    </div>
                     <div class="mt-1 mb-3 text-xs text-os-sub">
                         目標: {{ clearDawnHand.goal }}（所要 約{{
                             clearDawnHand.estimate
                         }}分）
                     </div>
                     <Form v-bind="storeTask.form()" #default="{ processing }">
-                        <input type="hidden" name="title" :value="clearDawnHand.action" />
+                        <input
+                            type="hidden"
+                            name="title"
+                            :value="clearDawnHand.action"
+                        />
                         <input
                             type="hidden"
                             name="estimate_minutes"
@@ -413,7 +509,9 @@ defineOptions({
                             >
                                 <RefreshCw
                                     :size="13"
-                                    :class="briefingPending ? 'animate-spin' : ''"
+                                    :class="
+                                        briefingPending ? 'animate-spin' : ''
+                                    "
                                 />
                                 更新
                             </Button>
@@ -435,13 +533,14 @@ defineOptions({
                         >{{
                             briefing ||
                             'まだありません。「更新」で生成できます。'
-                        }}</pre
-                    >
+                        }}</pre>
                     <div
                         v-if="tubStatus === 'over'"
                         class="mt-2.5 rounded-[10px] bg-[#FBE8E7] px-3 py-2 text-[12.5px] text-[#D9534F]"
                     >
-                        通知: 余裕メーターが「{{ TUB_LABEL.over }}」です。何か1つ手放す提案を秘書に相談できます。
+                        通知: 余裕メーターが「{{
+                            TUB_LABEL.over
+                        }}」です。何か1つ手放す提案を秘書に相談できます。
                     </div>
                     <div
                         v-if="recallPreview.length"
@@ -463,7 +562,7 @@ defineOptions({
                         v-for="event in calendar"
                         :key="event.id"
                         class="flex items-start gap-3 border-b border-os-line py-3 last:border-0"
-                        :class="isDone(event) ? 'opacity-45' : ''"
+                        :class="isDone(event) ? 'opacity-60' : ''"
                     >
                         <button
                             type="button"
@@ -479,12 +578,16 @@ defineOptions({
                                 v-else
                                 :size="18"
                                 :style="{
-                                    color: isLive(event) ? event.color : '#A2ACB8',
+                                    color: isLive(event)
+                                        ? event.color
+                                        : '#A2ACB8',
                                 }"
                             />
                         </button>
                         <div class="min-w-0 flex-1">
-                            <div class="text-[13.5px] font-semibold text-os-ink">
+                            <div
+                                class="text-[13.5px] font-semibold text-os-ink"
+                            >
                                 <span
                                     class="font-serif"
                                     :style="{ color: event.color }"
@@ -501,7 +604,10 @@ defineOptions({
                                 v-if="!isDone(event) && event.travel_min > 0"
                                 class="mt-1 flex flex-wrap items-center gap-1 text-xs text-os-sub"
                             >
-                                <Car :size="12" :style="{ color: event.color }" />
+                                <Car
+                                    :size="12"
+                                    :style="{ color: event.color }"
+                                />
                                 <span
                                     class="font-bold"
                                     :style="{ color: event.color }"
@@ -530,7 +636,7 @@ defineOptions({
                             </div>
                         </div>
                     </div>
-                    <p class="mt-3 text-[11.5px] leading-relaxed text-os-faint">
+                    <p class="mt-3 text-[11.5px] leading-relaxed text-os-sub">
                         移動時間は場所ごとに手動登録。MVPでは Maps API 不使用。
                     </p>
                 </div>
@@ -571,8 +677,9 @@ defineOptions({
                         <Plus :size="16" />
                     </Button>
                 </div>
-                <p class="mt-2.5 text-[11.5px] leading-relaxed text-os-faint">
-                    目標・ロードマップはClear Dawnで。ここに入るのは「実行」だけ。所要時間は既定30分（余裕メーターに算入）。
+                <p class="mt-2.5 text-[11.5px] leading-relaxed text-os-sub">
+                    目標・ロードマップはClear
+                    Dawnで。ここに入るのは「実行」だけ。所要時間は既定30分（余裕メーターに算入）。
                 </p>
             </Form>
 
@@ -596,7 +703,9 @@ defineOptions({
                             <input
                                 type="hidden"
                                 name="status"
-                                :value="task.status === 'done' ? 'planned' : 'done'"
+                                :value="
+                                    task.status === 'done' ? 'planned' : 'done'
+                                "
                             />
                             <button type="submit">
                                 <CheckCircle2
@@ -604,7 +713,11 @@ defineOptions({
                                     :size="17"
                                     class="text-[#43A860]"
                                 />
-                                <Circle v-else :size="17" class="text-os-faint" />
+                                <Circle
+                                    v-else
+                                    :size="17"
+                                    class="text-os-faint"
+                                />
                             </button>
                         </Form>
                         <div class="min-w-0 flex-1">
@@ -624,18 +737,28 @@ defineOptions({
                                         '#6B7683',
                                 }"
                             >
-                                {{ statusLabel[task.status]?.label || task.status }}
+                                {{
+                                    statusLabel[task.status]?.label ||
+                                    task.status
+                                }}
                                 ・ {{ task.estimate_minutes }}分
                             </div>
                         </div>
                         <Form
-                            v-if="task.status !== 'done' && task.status !== 'snoozed'"
+                            v-if="
+                                task.status !== 'done' &&
+                                task.status !== 'snoozed'
+                            "
                             v-bind="updateTask.form(task.id)"
                         >
-                            <input type="hidden" name="status" value="snoozed" />
+                            <input
+                                type="hidden"
+                                name="status"
+                                value="snoozed"
+                            />
                             <button
                                 type="submit"
-                                class="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] border border-os-line bg-[#F2F3EF] text-os-faint"
+                                class="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] border border-os-line bg-[#F2F3EF] text-os-sub"
                                 title="後回し"
                             >
                                 <Moon :size="13" />
@@ -644,7 +767,7 @@ defineOptions({
                         <Form v-bind="destroyTask.form(task.id)">
                             <button
                                 type="submit"
-                                class="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] border border-os-line bg-[#F2F3EF] text-os-faint hover:text-destructive"
+                                class="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] border border-os-line bg-[#F2F3EF] text-os-sub hover:text-destructive"
                             >
                                 <Trash2 :size="13" />
                             </button>
@@ -653,7 +776,7 @@ defineOptions({
                 </div>
                 <div
                     v-if="tasks.length === 0"
-                    class="rounded-[18px] border border-os-line bg-white p-8 text-center text-[12.5px] text-os-faint"
+                    class="rounded-[18px] border border-os-line bg-white p-8 text-center text-[12.5px] text-os-sub"
                 >
                     タスクはありません。
                 </div>
@@ -719,7 +842,7 @@ defineOptions({
                     </div>
                     <div
                         v-if="focusItems.length === 0"
-                        class="text-[12.5px] text-os-faint"
+                        class="text-[12.5px] text-os-sub"
                     >
                         頭の中は空っぽです。いい状態。
                     </div>
@@ -738,8 +861,16 @@ defineOptions({
                         </p>
                         <div class="flex flex-wrap gap-1.5">
                             <Form v-bind="updateFocus.form(item.id)">
-                                <input type="hidden" name="convert_to_task" value="1" />
-                                <input type="hidden" name="status" value="tasked" />
+                                <input
+                                    type="hidden"
+                                    name="convert_to_task"
+                                    value="1"
+                                />
+                                <input
+                                    type="hidden"
+                                    name="status"
+                                    value="tasked"
+                                />
                                 <button
                                     type="submit"
                                     class="inline-flex items-center gap-1 rounded-full border border-os-yoyu/40 bg-os-yoyu-soft px-2.5 py-1.5 text-[11.5px] font-bold text-os-yoyu"
@@ -749,7 +880,11 @@ defineOptions({
                                 </button>
                             </Form>
                             <Form v-bind="updateFocus.form(item.id)">
-                                <input type="hidden" name="status" value="snoozed" />
+                                <input
+                                    type="hidden"
+                                    name="status"
+                                    value="snoozed"
+                                />
                                 <button
                                     type="submit"
                                     class="inline-flex items-center gap-1 rounded-full border border-[#DF9A2E55] bg-[#FBF1DE] px-2.5 py-1.5 text-[11.5px] font-bold text-[#DF9A2E]"
@@ -759,7 +894,11 @@ defineOptions({
                                 </button>
                             </Form>
                             <Form v-bind="updateFocus.form(item.id)">
-                                <input type="hidden" name="status" value="done" />
+                                <input
+                                    type="hidden"
+                                    name="status"
+                                    value="done"
+                                />
                                 <button
                                     type="submit"
                                     class="inline-flex items-center gap-1 rounded-full border border-os-kioku/40 bg-[#F0EDFA] px-2.5 py-1.5 text-[11.5px] font-bold text-os-kioku"
@@ -788,7 +927,9 @@ defineOptions({
                     >
                         <Bot :size="25" class="text-white" />
                     </div>
-                    <div class="mb-1.5 text-[15px] font-bold">秘書のヨユウです</div>
+                    <div class="mb-1.5 text-[15px] font-bold">
+                        秘書のヨユウです
+                    </div>
                     <p class="mb-4 text-[12.5px] leading-relaxed text-os-sub">
                         現在の予定・タスクはライブで、過去の経験はキオクから見ています。<br />
                         タスクや予定は、あなたの確認なしに変更しません。
@@ -866,7 +1007,7 @@ defineOptions({
                     <Send :size="15" />
                 </Button>
             </div>
-            <p class="text-center text-[11px] leading-relaxed text-os-faint">
+            <p class="text-center text-[11px] leading-relaxed text-os-sub">
                 現在=ライブデータ／過去=キオクRecallの二層でAIに渡しています。AIキー未設定時はフォールバック応答になります。
             </p>
         </div>

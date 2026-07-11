@@ -30,6 +30,8 @@ final class MockCalendarProvider implements CalendarProvider
                 endsOn: null,
                 timezone: $timezone,
                 location: $event['place'],
+                travelMin: $event['travel_min'],
+                color: $event['color'],
             ),
             MockCalendar::todayEvents(),
         );

@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\Yoyu;
 
+use App\Domain\Connectors\Calendar\CalendarEventData;
+use App\Domain\Connectors\Calendar\CalendarProviderResolver;
+use App\Domain\Connectors\Calendar\CalendarSyncCoordinator;
 use App\Domain\Kioku\Jobs\EnrichMemoryJob;
 use App\Domain\Kioku\Models\Memory;
 use App\Domain\Kioku\Services\RecallService;
@@ -14,6 +17,7 @@ use App\Domain\Yoyu\Models\YoyuFocusItem;
 use App\Domain\Yoyu\Models\YoyuTask;
 use App\Domain\Yoyu\Support\MockCalendar;
 use App\Http\Controllers\Controller;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,9 +27,20 @@ use Throwable;
 
 class HomeController extends Controller
 {
-    public function index(Request $request, RecallService $recall): Response
-    {
+    public function index(
+        Request $request,
+        RecallService $recall,
+        CalendarProviderResolver $calendars,
+        CalendarSyncCoordinator $syncCoordinator,
+    ): Response {
         $user = $request->user();
+
+        // DB staleness check + queue dispatch only; never synchronous Google HTTP.
+        $syncCoordinator->syncIfStale($user);
+
+        $timezone = (string) config('app.timezone', 'UTC');
+        $todayStart = CarbonImmutable::now($timezone)->startOfDay();
+        $snapshot = $calendars->for($user)->snapshotFor($user, $todayStart, $todayStart->addDay(), $timezone);
 
         $tasks = YoyuTask::query()
             ->where('user_id', $user->id)
@@ -63,7 +78,18 @@ class HomeController extends Controller
             'focusItems' => $focusItems,
             'briefing' => $briefing?->body,
             'briefingStatus' => $briefing?->status,
-            'calendar' => MockCalendar::todayEvents(),
+            'calendar' => array_map(
+                fn (CalendarEventData $event): array => $event->toClientArray($timezone),
+                $snapshot->timedEvents(),
+            ),
+            'calendarConnection' => [
+                'status' => $snapshot->connectionStatus->value,
+                'synced_at' => $snapshot->syncedAt?->toIso8601String(),
+                'is_stale' => $snapshot->isStale,
+                'warning_code' => $snapshot->warningCode,
+                'account_email' => $snapshot->accountEmail,
+                'all_day_titles' => $snapshot->allDayTitles(),
+            ],
             'clearDawnHand' => MockCalendar::clearDawnHand(),
             'recallPreview' => $recallLines,
             'tab' => $request->string('tab')->toString() ?: 'today',

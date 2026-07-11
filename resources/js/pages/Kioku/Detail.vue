@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ArrowLeft, ChevronRight, Clock, Compass, RefreshCw, Sparkles, Sun } from '@lucide/vue';
+import {
+    ArrowLeft,
+    ChevronRight,
+    Clock,
+    Compass,
+    RefreshCw,
+    Sparkles,
+    Sun,
+} from '@lucide/vue';
 import { toast } from 'vue-sonner';
 import SourceBadge from '@/components/kioku/SourceBadge.vue';
 import TypeChip from '@/components/kioku/TypeChip.vue';
@@ -59,14 +67,16 @@ defineOptions({
                     />
                     <SourceBadge :source="memory.source_type" />
                     <span
-                        class="inline-flex items-center gap-1 text-[11px] text-os-faint"
+                        class="inline-flex items-center gap-1 text-[11px] text-os-sub"
                     >
                         <Clock :size="11" />
                         {{ formatAgo(memory.captured_at) }}
                     </span>
                 </div>
 
-                <h1 class="text-lg font-bold text-os-ink">{{ memory.title }}</h1>
+                <h1 class="text-lg font-bold text-os-ink">
+                    {{ memory.title }}
+                </h1>
 
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="text-[11px] tracking-wide text-[#B8862B]">
@@ -90,15 +100,16 @@ defineOptions({
                     v-if="memory.summary"
                     class="rounded-xl bg-os-kioku-soft px-3.5 py-3 text-[13.5px] leading-relaxed text-os-ink"
                 >
-                    <span
-                        class="mb-1 block text-[11px] font-bold text-os-kioku"
+                    <span class="mb-1 block text-[11px] font-bold text-os-kioku"
                         >AI要約</span
                     >
                     {{ memory.summary }}
                 </div>
 
                 <div
-                    v-if="memory.display_fields.length && memory.structured_data"
+                    v-if="
+                        memory.display_fields.length && memory.structured_data
+                    "
                     class="space-y-3"
                 >
                     <div
@@ -106,7 +117,7 @@ defineOptions({
                         :key="field.key"
                     >
                         <div
-                            class="mb-1.5 text-[11px] font-bold tracking-wide text-os-faint"
+                            class="mb-1.5 text-[11px] font-bold tracking-wide text-os-sub"
                         >
                             {{ field.label }}
                         </div>
@@ -135,13 +146,19 @@ defineOptions({
                             <span
                                 class="inline-flex rounded-full px-3 py-1 text-[11.5px] font-bold"
                                 :class="
-                                    fieldValue(memory.structured_data, field.key)
+                                    fieldValue(
+                                        memory.structured_data,
+                                        field.key,
+                                    )
                                         ? 'bg-[#E8F0E5] text-[#5D8A5F]'
                                         : 'bg-[#F8E9E4] text-[#C05A48]'
                                 "
                             >
                                 {{
-                                    fieldValue(memory.structured_data, field.key)
+                                    fieldValue(
+                                        memory.structured_data,
+                                        field.key,
+                                    )
                                         ? '解決済み'
                                         : '未解決'
                                 }}
@@ -151,7 +168,10 @@ defineOptions({
                             <code
                                 class="block overflow-x-auto rounded-[10px] bg-[#2B2924] px-3.5 py-2.5 font-mono text-xs text-[#F0B4A2]"
                                 >{{
-                                    fieldValue(memory.structured_data, field.key)
+                                    fieldValue(
+                                        memory.structured_data,
+                                        field.key,
+                                    )
                                 }}</code
                             >
                         </template>
@@ -160,8 +180,10 @@ defineOptions({
                                 class="text-[13px] leading-relaxed whitespace-pre-wrap text-os-ink"
                             >
                                 {{
-                                    fieldValue(memory.structured_data, field.key) ??
-                                    '—'
+                                    fieldValue(
+                                        memory.structured_data,
+                                        field.key,
+                                    ) ?? '—'
                                 }}
                             </p>
                         </template>
@@ -170,7 +192,7 @@ defineOptions({
 
                 <div>
                     <div
-                        class="mb-1.5 text-[11px] font-bold tracking-wide text-os-faint"
+                        class="mb-1.5 text-[11px] font-bold tracking-wide text-os-sub"
                     >
                         原文
                     </div>
@@ -207,14 +229,14 @@ defineOptions({
                 </div>
             </div>
 
-            <div
-                class="flex flex-wrap gap-2 border-t border-os-line px-5 py-4"
-            >
+            <div class="flex flex-wrap gap-2 border-t border-os-line px-5 py-4">
                 <Button
                     type="button"
                     class="gap-1.5 rounded-full border border-[#12948844] bg-[#E4F4F2] text-[#129488] hover:bg-[#E4F4F2]"
                     variant="outline"
-                    @click="toast.message('ヨユウのタスクに送信しました（モック）')"
+                    @click="
+                        toast.message('ヨユウのタスクに送信しました（モック）')
+                    "
                 >
                     <Sun :size="13" />
                     ヨユウのタスクへ
@@ -224,7 +246,9 @@ defineOptions({
                     class="gap-1.5 rounded-full border border-[#5C4E8E44] bg-[#EDEAF5] text-[#5C4E8E] hover:bg-[#EDEAF5]"
                     variant="outline"
                     @click="
-                        toast.message('Clear Dawnの目標に紐づけました（モック）')
+                        toast.message(
+                            'Clear Dawnの目標に紐づけました（モック）',
+                        )
                     "
                 >
                     <Compass :size="13" />

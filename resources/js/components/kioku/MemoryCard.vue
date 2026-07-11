@@ -95,7 +95,7 @@ watch(pending, () => {
                 />
                 <SourceBadge :source="memory.source_type" />
             </div>
-            <span class="text-[11px] text-os-faint">{{
+            <span class="text-[11px] text-os-sub">{{
                 formatAgo(memory.captured_at)
             }}</span>
         </div>

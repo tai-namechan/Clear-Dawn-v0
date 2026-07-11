@@ -14,3 +14,8 @@ Schedule::command('ai:usage-reap')
     ->everyMinute()
     ->withoutOverlapping(5)
     ->onOneServer();
+
+Schedule::command('calendar:sync-stale')
+    ->hourly()
+    ->withoutOverlapping(10)
+    ->onOneServer();

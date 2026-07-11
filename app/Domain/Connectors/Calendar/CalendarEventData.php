@@ -22,6 +22,8 @@ final readonly class CalendarEventData
         public string $status = 'confirmed',
         public string $transparency = 'opaque',
         public ?string $location = null,
+        public int $travelMin = 0,
+        public ?string $color = null,
     ) {}
 
     public function isCancelled(): bool
@@ -48,8 +50,8 @@ final readonly class CalendarEventData
             'start' => (string) $this->startsAt?->timezone($timezone)->toIso8601String(),
             'end' => (string) $this->endsAt?->timezone($timezone)->toIso8601String(),
             'place' => (string) ($this->location ?? ''),
-            'travel_min' => 0,
-            'color' => '#4A7DC4',
+            'travel_min' => $this->travelMin,
+            'color' => $this->color ?? '#4A7DC4',
         ];
     }
 }
