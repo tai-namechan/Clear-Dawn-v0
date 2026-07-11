@@ -10,7 +10,11 @@
         "format:check": "prettier --check resources/",
         "lint": "eslint . --fix",
         "lint:check": "eslint .",
+        "test:js": "node --test tests/JavaScript/kiokuStatusPoll.test.mjs",
         "types:check": "vue-tsc --noEmit"
+    },
+    "engines": {
+        "node": "^20.19.0 || >=22.12.0"
     },
     "devDependencies": {
         "@eslint/js": "^9.19.0",

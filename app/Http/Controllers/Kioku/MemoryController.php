@@ -8,8 +8,11 @@ use App\Domain\Kioku\Services\KiokuSearchService;
 use App\Domain\Kioku\Services\RelatedMemoryService;
 use App\Domain\Kioku\Types\MemoryTypeRegistry;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Kioku\MemoryStatusRequest;
 use App\Http\Requests\Kioku\StoreMemoryRequest;
 use App\Http\Resources\Kioku\MemoryResource;
+use App\Http\Resources\Kioku\MemoryStatusResource;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -57,6 +60,21 @@ class MemoryController extends Controller
             'sourceCounts' => $sourceCounts,
             'totalCount' => $owned->count(),
         ]);
+    }
+
+    public function status(MemoryStatusRequest $request): JsonResponse
+    {
+        /** @var list<string> $ids */
+        $ids = array_values($request->validated('ids'));
+
+        $found = Memory::query()
+            ->where('user_id', $request->user()->id)
+            ->whereIn('id', $ids)
+            ->get(['id', 'status']);
+
+        return response()->json(
+            (new MemoryStatusResource($found, $ids))->resolve(),
+        );
     }
 
     public function store(StoreMemoryRequest $request): RedirectResponse
