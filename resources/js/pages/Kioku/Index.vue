@@ -4,13 +4,12 @@ import { Brain, Plus, Search, Send, X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import MemoryCard from '@/components/kioku/MemoryCard.vue';
 import { Button } from '@/components/ui/button';
-import { useKiokuEnrichmentPoll } from '@/composables/useKiokuEnrichmentPoll';
+import { useKiokuStatusPoll } from '@/composables/useKiokuStatusPoll';
 import {
     MEMORY_TYPES,
     SOURCE_TYPES,
-    type MemoryTypeKey,
-    type SourceTypeKey,
 } from '@/lib/kiokuMeta';
+import type { MemoryTypeKey, SourceTypeKey } from '@/lib/kiokuMeta';
 import { home } from '@/routes/kioku';
 import { store } from '@/routes/kioku/memories';
 import type { KiokuMemory, MemoryTypeOption } from '@/types/kioku';
@@ -38,7 +37,14 @@ watch(
     },
 );
 
-useKiokuEnrichmentPoll(() => props.memories);
+const { timedOut, timeoutMessage } = useKiokuStatusPoll(() => props.memories);
+
+function manualReload(): void {
+    router.reload({
+        only: ['memories', 'typeCounts', 'sourceCounts', 'totalCount'],
+        preserveUrl: true,
+    });
+}
 
 const visibleTypeKeys = computed(() =>
     (Object.keys(MEMORY_TYPES) as MemoryTypeKey[]).filter(
@@ -65,6 +71,7 @@ function toggleType(key: string): void {
     } else {
         selectedTypes.value = [...selectedTypes.value, key];
     }
+
     applyFilters();
 }
 
@@ -90,6 +97,22 @@ defineOptions({
                 経験を、失わない。 — 過去を思い出す場所
             </p>
             <div class="text-xs text-os-faint">{{ totalCount }}件の記憶</div>
+        </div>
+
+        <div
+            v-if="timedOut"
+            class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-os-line bg-os-kioku-paper px-4 py-3 text-[13px] text-os-sub shadow-[0_1px_3px_rgba(43,41,36,0.05)]"
+            role="status"
+        >
+            <p>{{ timeoutMessage }}</p>
+            <Button
+                type="button"
+                variant="outline"
+                class="h-9 rounded-xl border-os-kioku/30 text-os-kioku"
+                @click="manualReload"
+            >
+                更新する
+            </Button>
         </div>
 
         <div
