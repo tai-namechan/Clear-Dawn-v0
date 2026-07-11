@@ -137,8 +137,7 @@ class HomeController extends Controller
                 'status' => 'open',
             ]);
 
-            EnrichMemoryJob::dispatch($memory->id)->afterResponse();
-            $memory->update(['status' => 'enriching']);
+            EnrichMemoryJob::dispatch($memory->id)->afterCommit();
         });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => '頭の中に下ろしました（キオクにも保存）。']);
