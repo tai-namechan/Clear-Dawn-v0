@@ -3,6 +3,7 @@
 namespace App\Domain\Kioku\Jobs;
 
 use App\Domain\Kioku\Models\Memory;
+use App\Domain\Kioku\Services\MemoryClassifier;
 use App\Domain\Kioku\Services\RelatedMemoryService;
 use App\Domain\Kioku\Types\MemoryTypeRegistry;
 use App\Domain\Shared\AI\AiGateway;
@@ -41,6 +42,7 @@ class EnrichMemoryJob implements ShouldBeUnique, ShouldQueue
     public function handle(
         AiGateway $ai,
         MemoryTypeRegistry $registry,
+        MemoryClassifier $classifier,
         RelatedMemoryService $relatedMemoryService,
     ): void {
         $memory = Memory::query()->withoutUserScope()->find($this->memoryId);
@@ -59,7 +61,7 @@ class EnrichMemoryJob implements ShouldBeUnique, ShouldQueue
         // No DB transaction is held here: each update below is autocommit so
         // the external AI calls never run inside an open transaction.
         try {
-            $this->classify($ai, $registry, $memory);
+            $this->classify($ai, $registry, $classifier, $memory);
 
             $type = $registry->get((string) $memory->memory_type);
             $tier = in_array($memory->memory_type, ['error_log', 'decision'], true) ? 'strong' : 'cheap';
@@ -151,37 +153,23 @@ class EnrichMemoryJob implements ShouldBeUnique, ShouldQueue
      * extract failure never re-bills the classify call. A retry that finds
      * memory_type already set skips the AI call entirely.
      */
-    private function classify(AiGateway $ai, MemoryTypeRegistry $registry, Memory $memory): void
-    {
+    private function classify(
+        AiGateway $ai,
+        MemoryTypeRegistry $registry,
+        MemoryClassifier $classifier,
+        Memory $memory,
+    ): void {
         if ($memory->memory_type !== null && in_array($memory->memory_type, $registry->keys(), true)) {
             return;
         }
 
-        $classifyPrompt = PromptTemplate::make(
-            'classify.v1',
-            'You classify personal memories. Reply with JSON only.',
-            "Classify this memory. Return JSON: {\"memory_type\":\"one of thought,emotion,decision,learning,error_log,idea,reference,event,conversation\",\"importance\":1-5,\"tags\":[\"...\"],\"title\":\"short title\"}\n\n".$memory->raw_content,
-        );
-
-        $classified = $ai->complete(
-            userId: (int) $memory->user_id,
-            feature: 'kioku.classify',
-            prompt: $classifyPrompt,
-            tier: 'cheap',
-            maxTokens: 400,
-        );
-
-        $classification = $this->decodeJson($classified['text']);
-        $memoryType = (string) ($classification['memory_type'] ?? 'thought');
-        if (! in_array($memoryType, $registry->keys(), true)) {
-            $memoryType = 'thought';
-        }
+        $classification = $classifier->classify($ai, (int) $memory->user_id, $memory->raw_content);
 
         $memory->update([
-            'memory_type' => $memoryType,
-            'title' => (string) ($classification['title'] ?? mb_substr($memory->raw_content, 0, 40)),
-            'tags' => is_array($classification['tags'] ?? null) ? array_values($classification['tags']) : [],
-            'importance' => max(1, min(5, (int) ($classification['importance'] ?? 3))),
+            'memory_type' => $classification['memory_type'],
+            'title' => $classification['title'] ?? mb_substr($memory->raw_content, 0, 40),
+            'tags' => $classification['tags'],
+            'importance' => $classification['importance'],
         ]);
     }
 

@@ -1,0 +1,53 @@
+{
+    "description": "classify プロンプトの回帰evalケース。kioku:eval-classify で実行する。プロンプト変更時はここへ失敗ケースを追加してから直すこと。",
+    "cases": [
+        {
+            "name": "生活上のうっかり忘れはerror_logにしない（v2のきっかけになった実例）",
+            "raw_content": "黒染めをするのを忘れていた",
+            "expected_types": ["thought", "event"],
+            "expect_japanese": true
+        },
+        {
+            "name": "開発エラーはerror_log",
+            "raw_content": "Laravelで Vite manifest not found エラーが出た。npm run build を実行したら解決した。",
+            "expected_types": ["error_log"],
+            "expect_japanese": true
+        },
+        {
+            "name": "アイデアはidea",
+            "raw_content": "キオクに音声入力を付けたら、朝の記録がもっと楽になりそう",
+            "expected_types": ["idea"],
+            "expect_japanese": true
+        },
+        {
+            "name": "感情が主題ならemotion",
+            "raw_content": "今日は一日中なんとなく不安だった。理由ははっきりしない。",
+            "expected_types": ["emotion"],
+            "expect_japanese": true
+        },
+        {
+            "name": "URLメモはreference",
+            "raw_content": "https://laravel.com/docs/queues あとで読む",
+            "expected_types": ["reference"],
+            "expect_japanese": false
+        },
+        {
+            "name": "決断はdecision",
+            "raw_content": "転職はしないことにした。今の職場であと1年は経験を積むと決めた。",
+            "expected_types": ["decision"],
+            "expect_japanese": true
+        },
+        {
+            "name": "出来事はevent",
+            "raw_content": "朝9時に歯医者へ行った。次回は3週間後。",
+            "expected_types": ["event"],
+            "expect_japanese": true
+        },
+        {
+            "name": "学びはlearning",
+            "raw_content": "InnoDBは外部キー制約を作ると自動でインデックスも作られると学んだ",
+            "expected_types": ["learning"],
+            "expect_japanese": true
+        }
+    ]
+}
