@@ -65,4 +65,29 @@ class AiUsageReconcileCommandTest extends TestCase
 
         $this->assertSame('0.300000', AiMoney::of((string) $monthly->fresh()->spent_usd)->toString());
     }
+
+    public function test_reconcile_adjusted_count_only_increments_when_spent_changes(): void
+    {
+        config(['app.timezone' => 'UTC']);
+        $user = User::factory()->create();
+        $period = now()->format('Y-m');
+
+        AiUsageLog::factory()->create([
+            'user_id' => $user->id,
+            'estimated_cost_usd' => '0.250000',
+            'created_at' => now(),
+        ]);
+
+        $ledger = app(AiUsageLedger::class);
+        $monthly = $ledger->ensureMonthly($user->id, $period);
+        $monthly->update(['spent_usd' => '0.000000']);
+
+        $first = app(AiUsageReconciler::class)->reconcilePeriod($period);
+        $this->assertSame(1, $first['adjusted']);
+        $this->assertSame('0.250000', AiMoney::of((string) $monthly->fresh()->spent_usd)->toString());
+
+        $second = app(AiUsageReconciler::class)->reconcilePeriod($period);
+        $this->assertSame(0, $second['adjusted']);
+        $this->assertSame('0.250000', AiMoney::of((string) $monthly->fresh()->spent_usd)->toString());
+    }
 }

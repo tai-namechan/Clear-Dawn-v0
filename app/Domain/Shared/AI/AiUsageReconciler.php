@@ -58,18 +58,15 @@ final class AiUsageReconciler
 
         foreach ($userIds as $userId) {
             $userId = (int) $userId;
-            $monthly = $this->ledger->ensureMonthly($userId, $period);
-            $expectedSpent = $this->ledger->sumCanonicalSpent($userId, $period);
-            $currentSpent = AiMoney::of((string) $monthly->spent_usd);
+            $this->ledger->ensureMonthly($userId, $period);
 
-            if ($currentSpent->compare($expectedSpent) === 0) {
-                continue;
-            }
+            $didAdjust = false;
+            $fromAmount = null;
+            $toAmount = null;
 
-            DB::transaction(function () use ($userId, $period, $expectedSpent, $monthly): void {
+            DB::transaction(function () use ($userId, $period, &$didAdjust, &$fromAmount, &$toAmount): void {
                 $locked = AiUsageMonthly::query()
                     ->withoutUserScope()
-                    ->whereKey($monthly->id)
                     ->where('user_id', $userId)
                     ->where('period', $period)
                     ->lockForUpdate()
@@ -79,18 +76,34 @@ final class AiUsageReconciler
                     return;
                 }
 
+                // Aggregate without locking request rows to avoid deadlock with settle.
+                $expectedSpent = $this->ledger->sumCanonicalSpent($userId, $period);
+                $currentSpent = AiMoney::of((string) $locked->spent_usd);
+
+                if ($currentSpent->compare($expectedSpent) === 0) {
+                    return;
+                }
+
                 $locked->update([
                     'spent_usd' => $expectedSpent->toString(),
                 ]);
+
+                $didAdjust = true;
+                $fromAmount = $currentSpent->toString();
+                $toAmount = $expectedSpent->toString();
             });
+
+            if (! $didAdjust) {
+                continue;
+            }
 
             $adjusted++;
 
             Log::info('AI usage monthly reconciled.', [
                 'user_id' => $userId,
                 'period' => $period,
-                'from' => $currentSpent->toString(),
-                'to' => $expectedSpent->toString(),
+                'from' => $fromAmount,
+                'to' => $toAmount,
             ]);
         }
 

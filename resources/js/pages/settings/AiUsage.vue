@@ -49,11 +49,16 @@ defineOptions({
 
 const progressPercent = computed(() => {
     const ratio = Number(props.usage.progress_ratio);
-    if (!Number.isFinite(ratio)) {
+    if (!Number.isFinite(ratio) || ratio <= 0) {
         return 0;
     }
 
-    return Math.min(100, Math.max(0, Math.round(ratio * 100)));
+    if (props.usage.at_limit) {
+        return 100;
+    }
+
+    // Floor so under-limit usage never rounds up to a false 100%.
+    return Math.min(99, Math.max(0, Math.floor(ratio * 100)));
 });
 
 const featureLabels: Record<string, string> = {
@@ -68,12 +73,20 @@ function labelFeature(feature: string): string {
 }
 
 function formatUsd(value: string): string {
-    const n = Number(value);
-    if (!Number.isFinite(n)) {
+    const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(value.trim());
+    if (!match) {
         return `$${value}`;
     }
 
-    return `$${n.toFixed(4)}`;
+    const [, sign, whole, frac = ''] = match;
+    const six = (frac + '000000').slice(0, 6);
+
+    // Keep 4 digits for typical amounts; escalate to 6 when micros would otherwise hide as $0.0000.
+    if (six.slice(4) !== '00') {
+        return `$${sign}${whole}.${six}`;
+    }
+
+    return `$${sign}${whole}.${six.slice(0, 4)}`;
 }
 </script>
 

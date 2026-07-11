@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
 
-final class AiUsageLedger
+class AiUsageLedger
 {
     public function __construct(
         private AiUsagePeriodResolver $periods,
@@ -81,11 +81,15 @@ final class AiUsageLedger
             }
 
             if ($request->status->isTerminal()) {
-                return $request;
+                throw new RuntimeException(
+                    "Cannot mark AI usage request [{$requestId}] in_flight from terminal status {$request->status->value}."
+                );
             }
 
             if ($request->status !== AiUsageRequestStatus::Reserved) {
-                throw new RuntimeException("Cannot mark AI usage request [{$requestId}] in_flight from {$request->status->value}.");
+                throw new RuntimeException(
+                    "Cannot mark AI usage request [{$requestId}] in_flight from {$request->status->value}."
+                );
             }
 
             $request->update([
@@ -110,12 +114,10 @@ final class AiUsageLedger
                 return $request;
             }
 
-            if ($request->status->isTerminal()) {
-                return $request;
-            }
-
-            if (! in_array($request->status, [AiUsageRequestStatus::Reserved, AiUsageRequestStatus::InFlight], true)) {
-                throw new RuntimeException("Cannot settle AI usage request [{$requestId}] from {$request->status->value}.");
+            if ($request->status !== AiUsageRequestStatus::InFlight) {
+                throw new RuntimeException(
+                    "Cannot settle AI usage request [{$requestId}] from {$request->status->value}; in_flight required."
+                );
             }
 
             $monthly = $this->lockMonthly((int) $request->user_id, $request->period);

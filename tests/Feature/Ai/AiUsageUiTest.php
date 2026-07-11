@@ -166,6 +166,49 @@ class AiUsageUiTest extends TestCase
             );
     }
 
+    public function test_near_limit_progress_ratio_stays_below_one_when_not_at_limit(): void
+    {
+        config(['ai.limits.monthly_usd_per_user' => '10']);
+        $user = User::factory()->create();
+        $ledger = app(AiUsageLedger::class);
+        $period = now()->format('Y-m');
+        $monthly = $ledger->ensureMonthly($user->id, $period);
+        $monthly->update([
+            'spent_usd' => '9.999999',
+            'reserved_usd' => '0.000000',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('ai-usage.edit'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('usage.at_limit', false)
+                ->where('usage.progress_ratio', '0.999999')
+                ->where('usage.remaining_usd', '0.000001')
+            );
+    }
+
+    public function test_six_digit_micro_amounts_are_exposed_without_rounding_to_zero(): void
+    {
+        config(['ai.limits.monthly_usd_per_user' => '10']);
+        $user = User::factory()->create();
+        $ledger = app(AiUsageLedger::class);
+        $period = now()->format('Y-m');
+        $monthly = $ledger->ensureMonthly($user->id, $period);
+        $monthly->update([
+            'spent_usd' => '0.000037',
+            'reserved_usd' => '0.000000',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('ai-usage.edit'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('usage.spent_usd', '0.000037')
+                ->where('usage.remaining_usd', '9.999963')
+            );
+    }
+
     public function test_other_user_cannot_see_foreign_usage_via_page(): void
     {
         config(['ai.limits.monthly_usd_per_user' => '10']);

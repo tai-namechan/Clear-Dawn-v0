@@ -36,11 +36,6 @@ final class AiCostCalculator
         );
     }
 
-    public function toLogAmount(AiMoney $amount): string
-    {
-        return $amount->toLogAmount();
-    }
-
     public function monthlyLimit(): AiMoney
     {
         $limit = config('ai.limits.monthly_usd_per_user', '10');

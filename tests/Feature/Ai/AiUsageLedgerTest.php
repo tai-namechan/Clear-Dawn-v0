@@ -359,4 +359,245 @@ class AiUsageLedgerTest extends TestCase
             'raw_content' => '上限でも原文は保存できる',
         ]);
     }
+
+    public function test_mark_in_flight_rejects_released_without_mutating_counts(): void
+    {
+        $user = User::factory()->create();
+        $ledger = app(AiUsageLedger::class);
+        $request = $ledger->reserve($user->id, 'kioku.classify', 'claude-haiku-4-5-20251001', AiMoney::of('0.050000'));
+        $ledger->release($request->id, 'stale_reserved');
+
+        $monthlyBefore = AiUsageMonthly::query()->withoutUserScope()->where('user_id', $user->id)->firstOrFail();
+        $requestBefore = $request->fresh();
+        $logCountBefore = AiUsageLog::query()->withoutUserScope()->where('user_id', $user->id)->count();
+
+        try {
+            $ledger->markInFlight($request->id);
+            $this->fail('Expected markInFlight to reject a released reservation.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('terminal status', $e->getMessage());
+        }
+
+        $monthlyAfter = $monthlyBefore->fresh();
+        $requestAfter = $requestBefore->fresh();
+
+        $this->assertSame(AiUsageRequestStatus::Released, $requestAfter->status);
+        $this->assertSame((string) $monthlyBefore->spent_usd, (string) $monthlyAfter->spent_usd);
+        $this->assertSame((string) $monthlyBefore->reserved_usd, (string) $monthlyAfter->reserved_usd);
+        $this->assertSame($logCountBefore, AiUsageLog::query()->withoutUserScope()->where('user_id', $user->id)->count());
+        $this->assertSame(1, AiUsageRequest::query()->withoutUserScope()->where('user_id', $user->id)->count());
+    }
+
+    public function test_mark_in_flight_is_idempotent_for_in_flight(): void
+    {
+        $user = User::factory()->create();
+        $ledger = app(AiUsageLedger::class);
+        $request = $ledger->reserve($user->id, 'kioku.classify', 'claude-haiku-4-5-20251001', AiMoney::of('0.050000'));
+        $first = $ledger->markInFlight($request->id);
+        $second = $ledger->markInFlight($request->id);
+
+        $this->assertSame(AiUsageRequestStatus::InFlight, $first->status);
+        $this->assertSame(AiUsageRequestStatus::InFlight, $second->status);
+        $this->assertSame((string) $first->provider_started_at, (string) $second->provider_started_at);
+    }
+
+    public function test_settle_rejects_reserved_without_mark_in_flight(): void
+    {
+        $user = User::factory()->create();
+        $ledger = app(AiUsageLedger::class);
+        $request = $ledger->reserve($user->id, 'kioku.classify', 'claude-haiku-4-5-20251001', AiMoney::of('0.050000'));
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('in_flight required');
+        $ledger->settle($request->id, AiMoney::of('0.010000'), 1, 1);
+    }
+
+    public function test_gateway_skips_provider_http_when_reservation_is_terminal(): void
+    {
+        config([
+            'ai.anthropic.api_key' => 'test-key',
+            'ai.models.cheap' => 'claude-haiku-4-5-20251001',
+        ]);
+
+        Http::fake([
+            $this->anthropicFakePattern() => Http::response([
+                'content' => [['type' => 'text', 'text' => 'should-not-run']],
+                'usage' => ['input_tokens' => 1, 'output_tokens' => 1],
+            ]),
+        ]);
+
+        $user = User::factory()->create();
+        $realLedger = app(AiUsageLedger::class);
+        $released = $realLedger->reserve(
+            $user->id,
+            'kioku.classify',
+            'claude-haiku-4-5-20251001',
+            AiMoney::of('0.050000'),
+        );
+        $realLedger->release($released->id, 'stale_reserved');
+        $released = $released->fresh();
+
+        $monthlyBefore = AiUsageMonthly::query()->withoutUserScope()->where('user_id', $user->id)->firstOrFail();
+        $logCountBefore = AiUsageLog::query()->withoutUserScope()->where('user_id', $user->id)->count();
+        $requestCountBefore = AiUsageRequest::query()->withoutUserScope()->where('user_id', $user->id)->count();
+
+        $this->app->instance(
+            AiUsageLedger::class,
+            new FixedReservationAiUsageLedgerStub($released, $realLedger),
+        );
+        $this->app->forgetInstance(AiGateway::class);
+
+        try {
+            app(AiGateway::class)->complete(
+                userId: $user->id,
+                feature: 'kioku.classify',
+                prompt: PromptTemplate::make('t', 'prefix', 'suffix'),
+                tier: 'cheap',
+                maxTokens: 40,
+            );
+            $this->fail('Expected gateway to abort before provider HTTP.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('terminal status', $e->getMessage());
+        }
+
+        Http::assertNothingSent();
+        $this->assertSame((string) $monthlyBefore->spent_usd, (string) $monthlyBefore->fresh()->spent_usd);
+        $this->assertSame((string) $monthlyBefore->reserved_usd, (string) $monthlyBefore->fresh()->reserved_usd);
+        $this->assertSame($logCountBefore, AiUsageLog::query()->withoutUserScope()->where('user_id', $user->id)->count());
+        $this->assertSame($requestCountBefore, AiUsageRequest::query()->withoutUserScope()->where('user_id', $user->id)->count());
+        $this->assertSame(AiUsageRequestStatus::Released, $released->fresh()->status);
+    }
+
+    public function test_gateway_keeps_in_flight_when_provider_usage_is_missing(): void
+    {
+        config([
+            'ai.anthropic.api_key' => 'test-key',
+            'ai.models.cheap' => 'claude-haiku-4-5-20251001',
+            'ai.timeout' => 60,
+        ]);
+
+        Http::fake([
+            $this->anthropicFakePattern() => Http::response([
+                'content' => [['type' => 'text', 'text' => 'ok']],
+                // usage intentionally omitted / invalid
+            ], 200),
+        ]);
+
+        $user = User::factory()->create();
+
+        try {
+            app(AiGateway::class)->complete(
+                userId: $user->id,
+                feature: 'kioku.classify',
+                prompt: PromptTemplate::make('t', 'prefix', 'suffix'),
+                tier: 'cheap',
+                maxTokens: 40,
+            );
+            $this->fail('Expected missing usage to abort settle.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('missing valid usage', $e->getMessage());
+            $this->assertStringNotContainsString('sk-', $e->getMessage());
+            $this->assertStringNotContainsString('test-key', $e->getMessage());
+        }
+
+        $request = AiUsageRequest::query()->withoutUserScope()->where('user_id', $user->id)->first();
+        $this->assertNotNull($request);
+        $this->assertSame(AiUsageRequestStatus::InFlight, $request->status);
+        $this->assertSame(0, AiUsageLog::query()->withoutUserScope()->where('usage_request_id', $request->id)->count());
+
+        $monthly = AiUsageMonthly::query()->withoutUserScope()->where('user_id', $user->id)->firstOrFail();
+        $this->assertTrue(AiMoney::of((string) $monthly->reserved_usd)->greaterThan(AiMoney::zero()));
+        $this->assertSame('0.000000', AiMoney::of((string) $monthly->spent_usd)->toString());
+
+        AiUsageRequest::query()->withoutUserScope()->whereKey($request->id)->update([
+            'provider_started_at' => now()->subSeconds(400),
+            'updated_at' => now()->subSeconds(400),
+        ]);
+
+        Artisan::call('ai:usage-reap');
+
+        $expired = $request->fresh();
+        $this->assertSame(AiUsageRequestStatus::Expired, $expired->status);
+        $this->assertSame(
+            AiMoney::of((string) $expired->estimated_usd)->toString(),
+            AiMoney::of((string) $expired->charged_usd)->toString(),
+        );
+        $this->assertSame(
+            AiMoney::of((string) $expired->estimated_usd)->toString(),
+            AiMoney::of((string) $monthly->fresh()->spent_usd)->toString(),
+        );
+        $this->assertSame('0.000000', AiMoney::of((string) $monthly->fresh()->reserved_usd)->toString());
+        $this->assertSame(0, AiUsageLog::query()->withoutUserScope()->where('usage_request_id', $request->id)->count());
+    }
+
+    public function test_gateway_keeps_in_flight_when_provider_usage_tokens_are_negative(): void
+    {
+        config([
+            'ai.anthropic.api_key' => 'test-key',
+            'ai.models.cheap' => 'claude-haiku-4-5-20251001',
+        ]);
+
+        Http::fake([
+            $this->anthropicFakePattern() => Http::response([
+                'content' => [['type' => 'text', 'text' => 'ok']],
+                'usage' => ['input_tokens' => -1, 'output_tokens' => 2],
+            ], 200),
+        ]);
+
+        $user = User::factory()->create();
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('missing valid usage');
+
+        try {
+            app(AiGateway::class)->complete(
+                userId: $user->id,
+                feature: 'kioku.classify',
+                prompt: PromptTemplate::make('t', 'prefix', 'suffix'),
+                tier: 'cheap',
+                maxTokens: 40,
+            );
+        } finally {
+            $request = AiUsageRequest::query()->withoutUserScope()->where('user_id', $user->id)->first();
+            $this->assertNotNull($request);
+            $this->assertSame(AiUsageRequestStatus::InFlight, $request->status);
+            $this->assertSame(0, AiUsageLog::query()->withoutUserScope()->where('usage_request_id', $request->id)->count());
+        }
+    }
+}
+
+/**
+ * Test double: returns a fixed (already terminal) reservation from reserve().
+ */
+class FixedReservationAiUsageLedgerStub extends AiUsageLedger
+{
+    public function __construct(
+        private AiUsageRequest $fixedReservation,
+        private AiUsageLedger $inner,
+    ) {}
+
+    public function reserve(
+        int $userId,
+        string $feature,
+        string $model,
+        AiMoney $estimated,
+        ?string $period = null,
+    ): AiUsageRequest {
+        return $this->fixedReservation;
+    }
+
+    public function markInFlight(string $requestId): AiUsageRequest
+    {
+        return $this->inner->markInFlight($requestId);
+    }
+
+    public function settle(string $requestId, AiMoney $actual, int $inputTokens, int $outputTokens): AiUsageRequest
+    {
+        throw new \RuntimeException('settle must not be called for terminal reservations.');
+    }
+
+    public function release(string $requestId, ?string $failureCode = null): AiUsageRequest
+    {
+        return $this->inner->release($requestId, $failureCode);
+    }
 }

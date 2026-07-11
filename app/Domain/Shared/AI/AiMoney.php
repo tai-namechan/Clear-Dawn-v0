@@ -12,8 +12,6 @@ final class AiMoney
 {
     public const SCALE = 6;
 
-    public const LOG_SCALE = 4;
-
     private const MICRO_FACTOR = 1_000_000;
 
     private function __construct(private readonly int $micros) {}
@@ -107,21 +105,9 @@ final class AiMoney
         return new self($inputMicros + $outputMicros);
     }
 
-    public function toLogAmount(): string
+    public function toString(): string
     {
-        // Ceil to 4 decimal places for ai_usage_logs.estimated_cost_usd.
-        $logMicros = intdiv($this->micros + 99, 100);
-
-        return self::microsToDecimalString($logMicros * 100, self::LOG_SCALE);
-    }
-
-    public function toString(int $scale = self::SCALE): string
-    {
-        if ($scale === self::LOG_SCALE) {
-            return $this->toLogAmount();
-        }
-
-        return self::microsToDecimalString($this->micros, self::SCALE);
+        return self::microsToDecimalString($this->micros);
     }
 
     /**
@@ -135,7 +121,7 @@ final class AiMoney
 
         $ratioMicros = intdiv($this->micros * self::MICRO_FACTOR, $limit->micros);
 
-        return self::microsToDecimalString($ratioMicros, self::SCALE);
+        return self::microsToDecimalString($ratioMicros);
     }
 
     /**
@@ -196,17 +182,10 @@ final class AiMoney
         return intdiv($numerator + $divisor - 1, $divisor);
     }
 
-    private static function microsToDecimalString(int $micros, int $scale): string
+    private static function microsToDecimalString(int $micros): string
     {
         $negative = $micros < 0;
         $micros = abs($micros);
-
-        if ($scale === self::LOG_SCALE) {
-            $whole = intdiv($micros, self::MICRO_FACTOR);
-            $fraction = intdiv($micros % self::MICRO_FACTOR, 100);
-
-            return ($negative ? '-' : '').sprintf('%d.%04d', $whole, $fraction);
-        }
 
         $whole = intdiv($micros, self::MICRO_FACTOR);
         $fraction = $micros % self::MICRO_FACTOR;

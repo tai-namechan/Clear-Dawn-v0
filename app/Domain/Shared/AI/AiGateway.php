@@ -3,6 +3,7 @@
 namespace App\Domain\Shared\AI;
 
 use App\Domain\Shared\Models\AiUsageRequest;
+use App\Enums\AiUsageRequestStatus;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
@@ -58,8 +59,13 @@ final class AiGateway
         $httpAttempted = false;
 
         try {
-            $this->ledger->markInFlight($usageRequest->id);
-            // From this point, HTTP may have begun; ambiguous transport failures stay in_flight.
+            $inFlight = $this->ledger->markInFlight($usageRequest->id);
+            if ($inFlight->status !== AiUsageRequestStatus::InFlight) {
+                throw new RuntimeException(
+                    "AI usage request [{$usageRequest->id}] is not in_flight; refusing provider HTTP."
+                );
+            }
+            // Only after a confirmed in_flight reservation may HTTP begin.
             $httpAttempted = true;
 
             $response = Http::baseUrl((string) config('ai.anthropic.base_url'))
@@ -73,20 +79,41 @@ final class AiGateway
                 ->post('/messages', $body);
 
             if ($response->failed()) {
-                // Clear non-success HTTP response received: not a successful billable completion.
                 $this->ledger->release($usageRequest->id, 'provider_http_error');
 
                 throw new RuntimeException('AI API request failed: '.$response->status());
             }
 
-            /** @var array{content?: list<array{type?: string, text?: string}>, usage?: array{input_tokens?: int, output_tokens?: int}} $data */
             $data = $response->json();
-            $inputTokens = (int) ($data['usage']['input_tokens'] ?? 0);
-            $outputTokens = (int) ($data['usage']['output_tokens'] ?? 0);
+            if (! is_array($data)) {
+                Log::warning('AI provider response body was not a JSON object.', [
+                    'usage_request_id' => $usageRequest->id,
+                    'user_id' => $userId,
+                    'feature' => $feature,
+                    'http_status' => $response->status(),
+                ]);
+
+                throw new RuntimeException('AI API response is missing valid usage.');
+            }
+
+            /** @var mixed $usage */
+            $usage = $data['usage'] ?? null;
+            $tokens = $this->parseUsageTokens($usage);
+            if ($tokens === null) {
+                Log::warning('AI provider response missing valid usage tokens.', [
+                    'usage_request_id' => $usageRequest->id,
+                    'user_id' => $userId,
+                    'feature' => $feature,
+                    'http_status' => $response->status(),
+                ]);
+
+                // Billing outcome unknown: leave in_flight for the reaper to expire.
+                throw new RuntimeException('AI API response is missing valid usage.');
+            }
+
+            [$inputTokens, $outputTokens] = $tokens;
             $actual = $this->costs->actualCost($model, $inputTokens, $outputTokens);
 
-            // Settle on usage success even if later response-body handling fails,
-            // and even when actual exceeds the conservative estimate.
             $this->ledger->settle($usageRequest->id, $actual, $inputTokens, $outputTokens);
 
             if ($actual->greaterThan($estimated)) {
@@ -102,10 +129,19 @@ final class AiGateway
                 ]);
             }
 
-            $text = collect($data['content'] ?? [])
-                ->filter(fn ($block) => ($block['type'] ?? null) === 'text')
-                ->map(fn ($block) => (string) ($block['text'] ?? ''))
-                ->implode('');
+            $content = $data['content'] ?? [];
+            $text = '';
+            if (is_array($content)) {
+                foreach ($content as $block) {
+                    if (! is_array($block)) {
+                        continue;
+                    }
+                    if (($block['type'] ?? null) !== 'text') {
+                        continue;
+                    }
+                    $text .= (string) ($block['text'] ?? '');
+                }
+            }
 
             return [
                 'text' => $text,
@@ -120,7 +156,6 @@ final class AiGateway
             if ($this->shouldReleaseReservation($httpAttempted, $e)) {
                 $this->safeRelease($usageRequest, $this->failureCodeFor($e, $httpAttempted));
             }
-            // Otherwise leave in_flight for the reaper to expire conservatively.
 
             if ($e instanceof ConnectionException) {
                 throw new RuntimeException('AI API connection failed.', 0, $e);
@@ -151,6 +186,38 @@ final class AiGateway
     }
 
     /**
+     * @return array{0: int, 1: int}|null
+     */
+    private function parseUsageTokens(mixed $usage): ?array
+    {
+        if (! is_array($usage)) {
+            return null;
+        }
+
+        if (! array_key_exists('input_tokens', $usage) || ! array_key_exists('output_tokens', $usage)) {
+            return null;
+        }
+
+        $input = $usage['input_tokens'];
+        $output = $usage['output_tokens'];
+
+        if (! $this->isNonNegativeIntToken($input) || ! $this->isNonNegativeIntToken($output)) {
+            return null;
+        }
+
+        return [(int) $input, (int) $output];
+    }
+
+    private function isNonNegativeIntToken(mixed $value): bool
+    {
+        if (is_int($value)) {
+            return $value >= 0;
+        }
+
+        return is_string($value) && preg_match('/^\d+$/', $value) === 1;
+    }
+
+    /**
      * Release only when billing did not occur / request clearly never reached an ambiguous send.
      *
      * Classification uses exception type and HTTP lifecycle flags — not message substrings.
@@ -161,13 +228,10 @@ final class AiGateway
             return true;
         }
 
-        // A concrete HTTP response was received (non-2xx path uses release before throw;
-        // RequestException also implies a response object exists).
         if ($e instanceof RequestException && $e->response !== null) {
             return true;
         }
 
-        // ConnectionException after HTTP attempt: connect/read timeout/reset — outcome unknown.
         return false;
     }
 
