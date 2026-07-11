@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Form, Head, router } from '@inertiajs/vue3';
-import { Brain, Plus, RefreshCw, Search, Send, X } from '@lucide/vue';
+import { Brain, Plus, Search, Send, X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import MemoryCard from '@/components/kioku/MemoryCard.vue';
 import { Button } from '@/components/ui/button';
+import { useKiokuEnrichmentPoll } from '@/composables/useKiokuEnrichmentPoll';
 import {
     MEMORY_TYPES,
     SOURCE_TYPES,
@@ -37,9 +38,7 @@ watch(
     },
 );
 
-const hasEnriching = computed(() =>
-    props.memories.some((m) => m.status === 'enriching' || m.status === 'captured'),
-);
+useKiokuEnrichmentPoll(() => props.memories);
 
 const visibleTypeKeys = computed(() =>
     (Object.keys(MEMORY_TYPES) as MemoryTypeKey[]).filter(
@@ -72,10 +71,6 @@ function toggleType(key: string): void {
 function clearTypes(): void {
     selectedTypes.value = [];
     applyFilters();
-}
-
-function reload(): void {
-    router.reload({ only: ['memories', 'typeCounts', 'sourceCounts', 'totalCount'] });
 }
 
 defineOptions({
@@ -240,17 +235,6 @@ defineOptions({
                     >
                         <X :size="14" />
                     </button>
-                    <Button
-                        v-if="hasEnriching"
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        class="gap-1 border-os-line"
-                        @click="reload"
-                    >
-                        <RefreshCw :size="13" />
-                        更新
-                    </Button>
                 </div>
 
                 <div

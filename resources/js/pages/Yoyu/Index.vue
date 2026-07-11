@@ -20,8 +20,14 @@ import {
     Trash2,
 } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import YoyuTub from '@/components/yoyu/YoyuTub.vue';
 import { Button } from '@/components/ui/button';
+import YoyuTub from '@/components/yoyu/YoyuTub.vue';
+import {
+    isYoyuBriefingPending,
+    useYoyuBriefingPoll,
+    yoyuBriefingLabel,
+    type YoyuBriefingStatus,
+} from '@/composables/useYoyuBriefingPoll';
 import {
     BUFFER_MIN,
     departInfo,
@@ -58,6 +64,7 @@ interface Props {
     tasks: Task[];
     focusItems: FocusItem[];
     briefing: string | null;
+    briefingStatus: YoyuBriefingStatus;
     calendar: CalEvent[];
     clearDawnHand: { goal: string; action: string; estimate: number };
     recallPreview: string[];
@@ -75,7 +82,32 @@ const chatInput = ref('');
 const chatHistory = ref<Array<{ role: string; content: string }>>([]);
 const nowMs = ref(Date.now());
 const doneEventIds = ref<string[]>([]);
+const briefingStartedAt = ref<number | null>(null);
 let timer: ReturnType<typeof setInterval> | undefined;
+
+useYoyuBriefingPoll(() => props.briefingStatus);
+
+const briefingPending = computed(() =>
+    isYoyuBriefingPending(props.briefingStatus),
+);
+
+const briefingStatusLabel = computed(() =>
+    yoyuBriefingLabel(props.briefingStatus, briefingStartedAt.value, nowMs.value),
+);
+
+watch(
+    () => props.briefingStatus,
+    (status, previous) => {
+        if (isYoyuBriefingPending(status) && !isYoyuBriefingPending(previous ?? null)) {
+            briefingStartedAt.value = Date.now();
+        }
+
+        if (!isYoyuBriefingPending(status)) {
+            briefingStartedAt.value = null;
+        }
+    },
+    { immediate: true },
+);
 
 const chatSuggestions = [
     '今日を焦らず乗り切る段取りを立てて',
@@ -371,11 +403,26 @@ defineOptions({
                                 size="sm"
                                 class="gap-1 rounded-full border border-os-yoyu/30 bg-os-yoyu-soft font-bold text-os-yoyu hover:bg-os-yoyu-soft"
                                 variant="outline"
+                                :disabled="briefingPending"
                             >
-                                <RefreshCw :size="13" />
+                                <RefreshCw
+                                    :size="13"
+                                    :class="briefingPending ? 'animate-spin' : ''"
+                                />
                                 更新
                             </Button>
                         </Form>
+                    </div>
+                    <div
+                        v-if="briefingPending || briefingStatus === 'failed'"
+                        class="mb-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-bold"
+                        :class="
+                            briefingStatus === 'failed'
+                                ? 'bg-[#F8E9E4] text-[#C05A48]'
+                                : 'bg-os-yoyu-soft text-os-yoyu'
+                        "
+                    >
+                        {{ briefingStatusLabel }}
                     </div>
                     <pre
                         class="text-[13.5px] leading-[1.95] whitespace-pre-wrap text-os-ink"

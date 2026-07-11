@@ -3,6 +3,8 @@
 namespace Tests\Feature\Yoyu;
 
 use App\Domain\Kioku\Jobs\EnrichMemoryJob;
+use App\Domain\Yoyu\Jobs\GenerateYoyuBriefingJob;
+use App\Domain\Yoyu\Models\YoyuBriefing;
 use App\Domain\Yoyu\Models\YoyuTask;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -81,5 +83,43 @@ class YoyuHomeTest extends TestCase
         $this->actingAs($user)
             ->patch(route('yoyu.tasks.update', $task), ['status' => 'done'])
             ->assertNotFound();
+    }
+
+    public function test_regenerate_briefing_dispatches_job_and_sets_generating_status(): void
+    {
+        Bus::fake([GenerateYoyuBriefingJob::class]);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('yoyu.briefing.regenerate'))
+            ->assertRedirect(route('yoyu.home', ['tab' => 'today']));
+
+        $this->assertDatabaseHas('yoyu_briefings', [
+            'user_id' => $user->id,
+            'status' => 'generating',
+        ]);
+
+        // Queued (not afterResponse/dispatchSync) so AI runs on a worker.
+        Bus::assertDispatched(GenerateYoyuBriefingJob::class);
+        Bus::assertNotDispatchedSync(GenerateYoyuBriefingJob::class);
+    }
+
+    public function test_yoyu_home_shares_briefing_status(): void
+    {
+        $user = User::factory()->create();
+        YoyuBriefing::query()->create([
+            'user_id' => $user->id,
+            'date' => today()->toDateString(),
+            'body' => 'テストブリーフィング',
+            'status' => 'ready',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('yoyu.home'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('briefing', 'テストブリーフィング')
+                ->where('briefingStatus', 'ready')
+            );
     }
 }

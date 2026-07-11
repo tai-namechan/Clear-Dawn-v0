@@ -13,13 +13,18 @@ use Illuminate\Support\Carbon;
  * @property int $user_id
  * @property Carbon $date
  * @property string $body
+ * @property string $status
  */
-#[Fillable(['user_id', 'date', 'body'])]
+#[Fillable(['user_id', 'date', 'body', 'status'])]
 class YoyuBriefing extends Model
 {
     use BelongsToUser, HasUlids;
 
     protected $table = 'yoyu_briefings';
+
+    protected $attributes = [
+        'status' => 'ready',
+    ];
 
     /**
      * @return array<string, string>

@@ -7,12 +7,12 @@ use App\Domain\Kioku\Models\Memory;
 use App\Domain\Kioku\Services\RecallService;
 use App\Domain\Shared\AI\AiGateway;
 use App\Domain\Shared\AI\PromptTemplate;
+use App\Domain\Yoyu\Jobs\GenerateYoyuBriefingJob;
 use App\Domain\Yoyu\Models\YoyuBriefing;
 use App\Domain\Yoyu\Models\YoyuFocusItem;
 use App\Domain\Yoyu\Models\YoyuTask;
 use App\Domain\Yoyu\Support\MockCalendar;
 use App\Http\Controllers\Controller;
-use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -61,6 +61,7 @@ class HomeController extends Controller
             'tasks' => $tasks,
             'focusItems' => $focusItems,
             'briefing' => $briefing?->body,
+            'briefingStatus' => $briefing?->status,
             'calendar' => MockCalendar::todayEvents(),
             'clearDawnHand' => MockCalendar::clearDawnHand(),
             'recallPreview' => $recallLines,
@@ -177,44 +178,29 @@ class HomeController extends Controller
         return redirect()->route('yoyu.home', ['tab' => 'mind']);
     }
 
-    public function regenerateBriefing(Request $request, AiGateway $ai, RecallService $recall): RedirectResponse
+    public function regenerateBriefing(Request $request): RedirectResponse
     {
         $user = $request->user();
-        $recallLines = $recall->for((int) $user->id, '朝ブリーフィング 今日の予定', 5);
-        $calendar = MockCalendar::todayEvents();
-        $hand = MockCalendar::clearDawnHand();
 
-        $context = "予定:\n".collect($calendar)->map(function (array $e): string {
-            $start = Carbon::parse($e['start'])->format('H:i');
+        $existing = YoyuBriefing::query()
+            ->where('user_id', $user->id)
+            ->whereDate('date', today())
+            ->first();
 
-            return "- {$e['title']} {$start}";
-        })->implode("\n")."\n"
-            ."Clear Dawnの一手: {$hand['action']}\n"
-            ."過去の経験:\n".implode("\n", $recallLines);
-
-        try {
-            $result = $ai->complete(
-                userId: (int) $user->id,
-                feature: 'yoyu.briefing',
-                prompt: PromptTemplate::make(
-                    'yoyu.briefing.v1',
-                    'あなたは優しい秘書ヨユウです。急かさない口調で朝ブリーフィングを作ります。',
-                    "形式:\n■ 今日の全体像\n■ 最も注意する時刻\n■ 夢に向かう一手\n■ 過去のパターンに基づく注意\n■ 手放していいこと\n220文字以内。\n\n{$context}",
-                ),
-                tier: 'cheap',
-                maxTokens: 600,
-            );
-            $body = trim($result['text']);
-        } catch (Throwable) {
-            $body = "■ 今日は予定があります\n■ 出発時刻に注意しましょう\n■ {$hand['action']}\n■ 過去の詰まりパターンに注意\n■ 不要な予定は手放して大丈夫です";
-        }
-
-        YoyuBriefing::query()->updateOrCreate(
+        $briefing = YoyuBriefing::query()->updateOrCreate(
             ['user_id' => $user->id, 'date' => today()->toDateString()],
-            ['body' => $body],
+            [
+                'body' => $existing?->body !== null && $existing->body !== ''
+                    ? $existing->body
+                    : '朝ブリーフィングを生成しています…',
+                'status' => 'generating',
+            ],
         );
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => '朝ブリーフィングを更新しました。']);
+        // Queue worker (not afterResponse/dispatchSync) so the web request stays free.
+        GenerateYoyuBriefingJob::dispatch($briefing->id);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => '朝ブリーフィングの生成を開始しました。']);
 
         return redirect()->route('yoyu.home', ['tab' => 'today']);
     }
