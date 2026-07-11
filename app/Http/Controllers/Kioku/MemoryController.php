@@ -79,9 +79,7 @@ class MemoryController extends Controller
             'status' => 'captured',
         ]);
 
-        EnrichMemoryJob::dispatch($memory->id)->afterResponse();
-
-        $memory->update(['status' => 'enriching']);
+        EnrichMemoryJob::dispatch($memory->id);
 
         Inertia::flash('toast', [
             'type' => 'success',
@@ -89,6 +87,40 @@ class MemoryController extends Controller
         ]);
 
         return redirect()->route('kioku.home');
+    }
+
+    public function reenrich(Request $request, Memory $memory): RedirectResponse
+    {
+        abort_unless((int) $memory->user_id === (int) $request->user()->id, 404);
+
+        // Conditional update so an in-flight enrichment (captured/enriching)
+        // cannot be reset mid-run. Clearing memory_type is required: the job
+        // treats memory_type !== null as "classify done" and would skip it.
+        $reset = Memory::query()
+            ->whereKey($memory->id)
+            ->whereIn('status', ['ready', 'failed'])
+            ->update([
+                'memory_type' => null,
+                'summary' => null,
+                'structured_data' => null,
+                'tags' => null,
+                'status' => 'captured',
+            ]);
+
+        if ($reset === 1) {
+            EnrichMemoryJob::dispatch($memory->id);
+            Inertia::flash('toast', [
+                'type' => 'success',
+                'message' => 'AIがもう一度整理しています。',
+            ]);
+        } else {
+            Inertia::flash('toast', [
+                'type' => 'info',
+                'message' => 'この記憶は現在整理中です。',
+            ]);
+        }
+
+        return redirect()->route('kioku.memories.show', $memory);
     }
 
     public function show(

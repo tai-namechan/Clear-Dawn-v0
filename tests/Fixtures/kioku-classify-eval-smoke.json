@@ -1,0 +1,11 @@
+{
+    "description": "kioku:eval-classify コマンド自体のスモークテスト用（HTTPはテスト側でfakeする）",
+    "cases": [
+        {
+            "name": "smoke",
+            "raw_content": "テスト用のメモ",
+            "expected_types": ["thought"],
+            "expect_japanese": true
+        }
+    ]
+}
