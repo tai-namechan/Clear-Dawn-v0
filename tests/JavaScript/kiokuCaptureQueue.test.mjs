@@ -292,4 +292,39 @@ describe('capture queue engine', () => {
         assert.deepEqual(sent, ['id-1']);
         assert.equal(engine.getItems().length, 0);
     });
+
+    it('discards only rejected items including voice blobs', async () => {
+        const storage = createFakeStorage();
+        const voiceBlob = new Blob(['audio'], { type: 'audio/webm' });
+        const rejectedVoice = buildCaptureQueueItem({
+            clientCaptureId: 'voice-rejected',
+            sourceType: 'voice',
+            audioBlob: voiceBlob,
+            audioMimeType: 'audio/webm',
+            durationMs: 5_000,
+            capturedAt: '2026-07-12T23:00:00.000Z',
+        });
+        rejectedVoice.rejected = true;
+        rejectedVoice.lastError = 'http_422';
+
+        const pending = manualItem('still-pending');
+
+        const engine = createCaptureQueueEngine({
+            storage,
+            sendCapture: async () => ({ memoryId: 'm1', created: true }),
+        });
+
+        await engine.init();
+        await engine.enqueue(pending);
+        await engine.enqueue(rejectedVoice);
+
+        assert.equal(await engine.discard('voice-rejected'), true);
+        assert.equal(await engine.discard('missing'), false);
+        assert.equal(await engine.discard('still-pending'), false);
+
+        assert.equal(engine.getItems().length, 1);
+        assert.equal(engine.getItems()[0].clientCaptureId, 'still-pending');
+        assert.equal(storage.map.has('voice-rejected'), false);
+        assert.equal(storage.map.has('still-pending'), true);
+    });
 });

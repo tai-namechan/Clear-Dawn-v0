@@ -4,10 +4,11 @@ import { Loader2 } from '@lucide/vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import SourceBadge from '@/components/kioku/SourceBadge.vue';
 import TypeChip from '@/components/kioku/TypeChip.vue';
+import { kiokuEnrichmentLabel } from '@/composables/useKiokuEnrichmentPoll';
 import {
-    isKiokuMemoryPending,
-    kiokuEnrichmentLabel,
-} from '@/composables/useKiokuEnrichmentPoll';
+    isKiokuMemoryCardEnriching,
+    isKiokuMemoryCardNavigable,
+} from '@/lib/kiokuMemoryCard.mjs';
 import { formatAgo, memoryTypeMeta } from '@/lib/kiokuMeta';
 import { show } from '@/routes/kioku/memories';
 import type { KiokuMemory } from '@/types/kioku';
@@ -19,7 +20,13 @@ const props = defineProps<{
 const nowMs = ref(Date.now());
 let timer: ReturnType<typeof setInterval> | undefined;
 
-const pending = computed(() => isKiokuMemoryPending(props.memory.status));
+/** Enrichment chrome only — does not gate navigation (voice stays openable). */
+const enriching = computed(() =>
+    isKiokuMemoryCardEnriching(props.memory.status),
+);
+
+/** Voice keeps a durable audio original, so Detail stays reachable. */
+const navigable = computed(() => isKiokuMemoryCardNavigable(props.memory));
 
 /** Voice memories have no raw_content; fall back to transcript, then a label. */
 const excerpt = computed(() => {
@@ -46,7 +53,7 @@ function clearTimer(): void {
 function ensureTimer(): void {
     clearTimer();
 
-    if (pending.value) {
+    if (enriching.value) {
         timer = setInterval(() => {
             nowMs.value = Date.now();
         }, 1000);
@@ -61,20 +68,20 @@ onUnmounted(() => {
     clearTimer();
 });
 
-watch(pending, () => {
+watch(enriching, () => {
     ensureTimer();
 });
 </script>
 
 <template>
     <component
-        :is="pending ? 'div' : Link"
-        :href="pending ? undefined : show(memory.id)"
+        :is="navigable ? Link : 'div'"
+        :href="navigable ? show(memory.id) : undefined"
         class="group relative block rounded-2xl border border-os-line bg-os-kioku-paper p-4 shadow-[0_1px_3px_rgba(43,41,36,0.05)] transition-[border-color]"
         :class="
-            pending
-                ? 'cursor-default'
-                : 'cursor-pointer hover:border-os-kioku/40'
+            navigable
+                ? 'cursor-pointer hover:border-os-kioku/40'
+                : 'cursor-default'
         "
     >
         <div
@@ -87,7 +94,7 @@ watch(pending, () => {
         <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
             <div class="flex flex-wrap items-center gap-2">
                 <span
-                    v-if="pending"
+                    v-if="enriching"
                     class="inline-flex items-center gap-1.5 rounded-full bg-os-kioku-soft px-2.5 py-1 text-[11.5px] font-bold text-os-kioku"
                 >
                     <Loader2 :size="11" class="animate-spin" />
@@ -115,7 +122,7 @@ watch(pending, () => {
             {{ memory.title }}
         </div>
         <p class="mt-1 text-[13px] leading-relaxed text-os-sub">
-            <template v-if="pending || memory.status === 'failed'">
+            <template v-if="enriching || memory.status === 'failed'">
                 {{ excerpt }}
             </template>
             <template v-else>

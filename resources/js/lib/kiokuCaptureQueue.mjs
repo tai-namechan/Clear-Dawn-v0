@@ -236,5 +236,31 @@ export function createCaptureQueueEngine(options) {
         getItems: () => items.map((item) => ({ ...item })),
         isFlushing: () => flushing,
         isInitialized: () => initialized,
+
+        /**
+         * Explicit user discard for a terminal rejection (422/413). Never
+         * auto-called — pending/retryable items must stay until ACK or a
+         * separate discard of a rejected item.
+         *
+         * @param {string} clientCaptureId
+         * @returns {Promise<boolean>} true when an item was removed
+         */
+        async discard(clientCaptureId) {
+            const target = items.find(
+                (item) => item.clientCaptureId === clientCaptureId,
+            );
+
+            if (target === undefined || !target.rejected) {
+                return false;
+            }
+
+            await options.storage.remove(clientCaptureId);
+            items = items.filter(
+                (existing) => existing.clientCaptureId !== clientCaptureId,
+            );
+            emitChange();
+
+            return true;
+        },
     };
 }

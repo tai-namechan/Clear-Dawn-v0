@@ -291,7 +291,7 @@ index: (user_id, eaten_on)。unique なし（1 日複数エントリ可）。物
 | client_capture_id★ | uuid nullable | 端末生成。**(user_id, client_capture_id) unique** で再送を冪等化 |
 | referenced_count | int | |
 
-不変条件: raw_content は作成後変更不可（Model updating ガード。修復時のみ明示解除）。
+不変条件: raw_content は作成後変更不可（Model updating ガード。修復時は `$memory->permitRawContentRepair()`）。
 
 ### memory_assets（新規）
 
@@ -304,10 +304,16 @@ index: (user_id, eaten_on)。unique なし（1 日複数エントリ可）。物
 | path | string | 非公開オブジェクトキー |
 | mime_type | string | サーバー側検証済みの実形式 |
 | byte_size | bigint | 上限 20MB（config） |
-| duration_ms | int nullable | 上限 3 分（config） |
+| duration_ms | int nullable | クライアント申告の録音長。上限 3 分（config）。実音声解析は未実施 |
 | checksum | string nullable | sha256 |
 
-再生は所有者認可付き stream（`GET /kioku/memories/{memory}/audio`）経由のみ。Memory 削除時に storage 実体も削除する。
+再生は所有者認可付き stream（`GET /kioku/memories/{memory}/audio`）経由のみ。HTTP Range/206 は未対応（先頭再生が MVP）。
+
+storage cleanup:
+
+- Eloquent で Memory を削除 → Asset 経由で storage 実体も削除
+- アカウント削除（Profile）→ `CleanupUserKiokuAudioService` が User 削除前に disk/path と `kioku-audio/{userId}/` を掃除。失敗時は削除中断。その後 FK cascade で DB 行削除
+- DB cascade のみでは storage は残る（通常フローでは使わない）
 
 ### kioku_capture_events（新規・計測）
 
@@ -315,7 +321,7 @@ index: (user_id, eaten_on)。unique なし（1 日複数エントリ可）。物
 |---|---|---|
 | id | ULID | PK |
 | user_id | bigint unsigned | FK(users) |
-| event | string | capture_started / local_saved / server_synced / sync_failed |
+| event | string | capture_started / local_saved / local_save_failed / server_synced / sync_failed |
 | source_type | string | manual / voice |
 | duration_ms | int nullable | capture 開始→端末保存 |
 | retry_count | int nullable | 同期リトライ回数 |

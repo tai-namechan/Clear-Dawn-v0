@@ -142,7 +142,7 @@ class VoiceCaptureTest extends TestCase
             ->assertJsonValidationErrors(['audio']);
     }
 
-    public function test_duration_over_three_minutes_is_rejected(): void
+    public function test_declared_duration_ms_over_three_minutes_is_rejected(): void
     {
         $user = User::factory()->create();
 
@@ -154,6 +154,38 @@ class VoiceCaptureTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['duration_ms']);
+    }
+
+    public function test_voice_memory_detail_is_reachable_while_transcription_pending(): void
+    {
+        config(['kioku.transcription.provider' => 'none']);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->postJson(route('kioku.captures.voice'), [
+                'client_capture_id' => (string) Str::uuid(),
+                'audio' => $this->fakeWavFile(),
+                'duration_ms' => 8000,
+            ])
+            ->assertCreated();
+
+        $memory = Memory::query()->withoutUserScope()->where('user_id', $user->id)->sole();
+        $this->assertSame('captured', $memory->status);
+        $this->assertSame('pending', $memory->transcription_status);
+
+        $this->actingAs($user)
+            ->get(route('kioku.memories.show', $memory))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Kioku/Detail')
+                ->where('memory.id', $memory->id)
+                ->where('memory.source_type', 'voice')
+                ->where('memory.transcription_status', 'pending')
+                ->where('transcriptionEnabled', false));
+
+        $this->actingAs($user)
+            ->get(route('kioku.memories.audio', $memory))
+            ->assertOk();
     }
 
     public function test_owner_can_stream_audio(): void

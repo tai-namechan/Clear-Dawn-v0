@@ -47,6 +47,7 @@ declare module '@/lib/kiokuCaptureQueue.mjs' {
             failed: number;
             skipped: boolean;
         }>;
+        discard: (clientCaptureId: string) => Promise<boolean>;
         getItems: () => CaptureQueueItem[];
         isFlushing: () => boolean;
         isInitialized: () => boolean;

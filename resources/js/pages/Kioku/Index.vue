@@ -62,6 +62,7 @@ const {
     markCaptureStarted,
     submitText,
     enqueueItem,
+    discardRejected,
     onSynced,
 } = useKiokuCaptureQueue();
 
@@ -93,6 +94,18 @@ function manualReload(): void {
 }
 
 onSynced(manualReload);
+
+async function discardRejectedCapture(clientCaptureId: string): Promise<void> {
+    const confirmed = window.confirm(
+        'このキャプチャはサーバーに送れない形式です。端末から破棄しますか？原文・音声は復元できません。',
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    await discardRejected(clientCaptureId);
+}
 
 function onDraftFocus(): void {
     if (captureStartedAtMs === null && draft.value === '') {
@@ -475,6 +488,14 @@ defineOptions({
                                 : item.rawContent
                         }}
                     </p>
+                    <button
+                        v-if="item.rejected"
+                        type="button"
+                        class="mt-2 text-[11.5px] font-bold text-[#C05A48] hover:underline"
+                        @click="discardRejectedCapture(item.clientCaptureId)"
+                    >
+                        端末から破棄
+                    </button>
                 </div>
 
                 <div

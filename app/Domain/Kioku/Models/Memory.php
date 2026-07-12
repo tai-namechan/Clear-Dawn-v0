@@ -58,9 +58,20 @@ class Memory extends Model
 
     /**
      * Explicit escape hatch for admin/data-repair paths only
-     * (docs/product/kioku-quick-capture.md §5). Never set in normal flows.
+     * (docs/product/kioku-quick-capture.md §5). Prefer permitRawContentRepair()
+     * over assigning this flag directly.
      */
     public bool $allowRawContentMutation = false;
+
+    /**
+     * Opt in to a one-off raw_content repair update. Never used in normal flows.
+     */
+    public function permitRawContentRepair(): static
+    {
+        $this->allowRawContentMutation = true;
+
+        return $this;
+    }
 
     /**
      * @var array<string, mixed>

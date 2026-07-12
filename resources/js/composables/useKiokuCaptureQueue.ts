@@ -151,6 +151,8 @@ export type UseKiokuCaptureQueueReturn = {
         captureStartedAtMs: number | null,
     ) => Promise<SubmitTextResult>;
     flush: () => Promise<void>;
+    /** Drop a terminal-rejected item from IndexedDB after explicit user confirm. */
+    discardRejected: (clientCaptureId: string) => Promise<boolean>;
     onSynced: (listener: () => void) => void;
 };
 
@@ -234,6 +236,18 @@ export function useKiokuCaptureQueue(): UseKiokuCaptureQueueReturn {
         await initAndFlush().catch(() => undefined);
     }
 
+    async function discardRejected(clientCaptureId: string): Promise<boolean> {
+        const activeEngine = ensureEngine();
+
+        if (activeEngine === null) {
+            return false;
+        }
+
+        await ensureInitialized(activeEngine);
+
+        return activeEngine.discard(clientCaptureId);
+    }
+
     function handleOnline(): void {
         void flush();
     }
@@ -258,6 +272,7 @@ export function useKiokuCaptureQueue(): UseKiokuCaptureQueueReturn {
         submitText,
         enqueueItem,
         flush,
+        discardRejected,
         onSynced: (listener) => {
             localListeners.push(listener);
             syncListeners.add(listener);

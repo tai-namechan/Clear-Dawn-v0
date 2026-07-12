@@ -9,11 +9,13 @@ import {
     Sparkles,
     Sun,
 } from '@lucide/vue';
+import { computed } from 'vue';
 import { toast } from 'vue-sonner';
 import SourceBadge from '@/components/kioku/SourceBadge.vue';
 import TypeChip from '@/components/kioku/TypeChip.vue';
 import { Button } from '@/components/ui/button';
 import { formatAgo } from '@/lib/kiokuMeta';
+import { kiokuTranscriptDisplayMode } from '@/lib/kiokuTranscriptDisplay.mjs';
 import { home } from '@/routes/kioku';
 import {
     audio,
@@ -30,6 +32,14 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+const transcriptMode = computed(() =>
+    kiokuTranscriptDisplayMode({
+        transcriptionEnabled: props.transcriptionEnabled,
+        transcriptionStatus: props.memory.transcription_status,
+        transcriptText: props.memory.transcript_text,
+    }),
+);
 
 function requestReenrich(): void {
     router.post(reenrich.url(props.memory.id), {}, { preserveScroll: true });
@@ -225,18 +235,24 @@ defineOptions({
                         文字起こし（自動生成・原音声は変更されません）
                     </div>
                     <p
-                        v-if="memory.transcript_text"
+                        v-if="transcriptMode === 'text'"
                         class="text-[12.5px] leading-relaxed break-all whitespace-pre-wrap text-os-sub"
                     >
                         {{ memory.transcript_text }}
                     </p>
                     <p
-                        v-else-if="!transcriptionEnabled"
+                        v-else-if="transcriptMode === 'empty_ready'"
+                        class="text-[12.5px] leading-relaxed text-os-sub"
+                    >
+                        音声を文字として認識できませんでした。原音声は残っています。
+                    </p>
+                    <p
+                        v-else-if="transcriptMode === 'not_configured'"
                         class="text-[12.5px] leading-relaxed text-os-sub"
                     >
                         文字起こしは未設定です。原音声はこの端末を離れず保存されています。
                     </p>
-                    <div v-else-if="memory.transcription_status === 'failed'">
+                    <div v-else-if="transcriptMode === 'failed'">
                         <p
                             class="mb-2 text-[12.5px] leading-relaxed text-[#C05A48]"
                         >
@@ -252,7 +268,10 @@ defineOptions({
                             文字起こしを再実行
                         </Button>
                     </div>
-                    <p v-else class="text-[12.5px] leading-relaxed text-os-sub">
+                    <p
+                        v-else
+                        class="text-[12.5px] leading-relaxed text-os-sub"
+                    >
                         文字起こし中です…
                     </p>
                 </div>

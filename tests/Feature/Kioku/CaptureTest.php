@@ -205,7 +205,7 @@ class CaptureTest extends TestCase
             'raw_content' => '壊れた原文',
         ]);
 
-        $memory->allowRawContentMutation = true;
+        $memory->permitRawContentRepair();
         $memory->update(['raw_content' => '修復済み原文']);
 
         $this->assertSame('修復済み原文', $memory->fresh()->raw_content);

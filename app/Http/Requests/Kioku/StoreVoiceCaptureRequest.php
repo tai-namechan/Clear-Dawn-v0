@@ -65,7 +65,7 @@ class StoreVoiceCaptureRequest extends FormRequest
         return [
             'audio.max' => '音声ファイルが上限サイズを超えています。',
             'audio.mimetypes' => 'この音声形式には対応していません。',
-            'duration_ms.max' => '録音時間が上限（3分）を超えています。',
+            'duration_ms.max' => '送信された録音時間が上限（3分）を超えています。',
         ];
     }
 }
