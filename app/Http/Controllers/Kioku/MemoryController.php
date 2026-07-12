@@ -1,0 +1,158 @@
+<?php
+
+namespace App\Http\Controllers\Kioku;
+
+use App\Domain\Kioku\Jobs\EnrichMemoryJob;
+use App\Domain\Kioku\Models\Memory;
+use App\Domain\Kioku\Services\KiokuSearchService;
+use App\Domain\Kioku\Services\RelatedMemoryService;
+use App\Domain\Kioku\Types\MemoryTypeRegistry;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Kioku\MemoryStatusRequest;
+use App\Http\Requests\Kioku\StoreMemoryRequest;
+use App\Http\Resources\Kioku\MemoryResource;
+use App\Http\Resources\Kioku\MemoryStatusResource;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class MemoryController extends Controller
+{
+    public function index(Request $request, KiokuSearchService $search, MemoryTypeRegistry $registry): Response
+    {
+        $user = $request->user();
+        $query = $request->string('q')->toString() ?: null;
+        $types = array_values(array_filter((array) $request->input('types', [])));
+
+        $memories = $search->search(
+            userId: (int) $user->id,
+            query: $query,
+            filters: [
+                'types' => $types,
+            ],
+            limit: 100,
+        );
+
+        $owned = Memory::query()
+            ->where('user_id', $user->id)
+            ->get(['memory_type', 'source_type']);
+
+        $typeCounts = $owned
+            ->filter(fn (Memory $m) => filled($m->memory_type))
+            ->countBy('memory_type')
+            ->all();
+
+        $sourceCounts = $owned->countBy('source_type')->all();
+
+        return Inertia::render('Kioku/Index', [
+            'memories' => MemoryResource::collection($memories)->resolve(),
+            'filters' => [
+                'q' => $query,
+                'types' => $types,
+            ],
+            'memoryTypes' => collect($registry->all())
+                ->map(fn ($type) => ['key' => $type->key(), 'label' => $type->label()])
+                ->values()
+                ->all(),
+            'typeCounts' => $typeCounts,
+            'sourceCounts' => $sourceCounts,
+            'totalCount' => $owned->count(),
+        ]);
+    }
+
+    public function status(MemoryStatusRequest $request): JsonResponse
+    {
+        /** @var list<string> $ids */
+        $ids = array_values($request->validated('ids'));
+
+        $found = Memory::query()
+            ->where('user_id', $request->user()->id)
+            ->whereIn('id', $ids)
+            ->get(['id', 'status']);
+
+        return response()->json(
+            (new MemoryStatusResource($found, $ids))->resolve(),
+        );
+    }
+
+    public function store(StoreMemoryRequest $request): RedirectResponse
+    {
+        $user = $request->user();
+        $content = trim((string) $request->validated('raw_content'));
+        $sourceType = $request->validated('source_type') ?? 'manual';
+        if ($sourceType === 'manual' && filter_var($content, FILTER_VALIDATE_URL)) {
+            $sourceType = 'url';
+        }
+
+        $memory = Memory::query()->create([
+            'user_id' => $user->id,
+            'source_type' => $sourceType,
+            'memory_type' => null,
+            'title' => '整理中…',
+            'raw_content' => $content,
+            'captured_at' => $request->validated('captured_at') ?? now(),
+            'sensitive' => (bool) ($request->validated('sensitive') ?? false),
+            'status' => 'captured',
+        ]);
+
+        EnrichMemoryJob::dispatch($memory->id);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => '記憶を保存しました。AIが整理中です。',
+        ]);
+
+        return redirect()->route('kioku.home');
+    }
+
+    public function reenrich(Request $request, Memory $memory): RedirectResponse
+    {
+        abort_unless((int) $memory->user_id === (int) $request->user()->id, 404);
+
+        // Conditional update so an in-flight enrichment (captured/enriching)
+        // cannot be reset mid-run. Clearing memory_type is required: the job
+        // treats memory_type !== null as "classify done" and would skip it.
+        $reset = Memory::query()
+            ->whereKey($memory->id)
+            ->whereIn('status', ['ready', 'failed'])
+            ->update([
+                'memory_type' => null,
+                'summary' => null,
+                'structured_data' => null,
+                'tags' => null,
+                'status' => 'captured',
+            ]);
+
+        if ($reset === 1) {
+            EnrichMemoryJob::dispatch($memory->id);
+            Inertia::flash('toast', [
+                'type' => 'success',
+                'message' => 'AIがもう一度整理しています。',
+            ]);
+        } else {
+            Inertia::flash('toast', [
+                'type' => 'info',
+                'message' => 'この記憶は現在整理中です。',
+            ]);
+        }
+
+        return redirect()->route('kioku.memories.show', $memory);
+    }
+
+    public function show(
+        Request $request,
+        Memory $memory,
+        RelatedMemoryService $relatedMemoryService,
+    ): Response {
+        abort_unless((int) $memory->user_id === (int) $request->user()->id, 404);
+
+        $related = $relatedMemoryService->forMemory($memory);
+
+        return Inertia::render('Kioku/Detail', [
+            'memory' => (new MemoryResource($memory))->resolve(),
+            'related' => MemoryResource::collection($related)->resolve(),
+        ]);
+    }
+}

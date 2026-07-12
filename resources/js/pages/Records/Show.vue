@@ -2,7 +2,7 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ArrowLeft, Trash2 } from '@lucide/vue';
 import type { EChartsCoreOption } from 'echarts/core';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import BaseChart from '@/components/charts/BaseChart.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
@@ -11,10 +11,15 @@ import { Input } from '@/components/ui/input';
 import { apiFetch } from '@/lib/apiFetch';
 import type { ChartPoint, Metric, MetricRecord } from '@/types/routine';
 
+type Period = 'week' | 'month' | '3months' | 'year' | null;
+type Granularity = 'day' | 'week';
+
 interface Props {
     metric: Metric;
     from: string;
     to: string;
+    period: Period;
+    granularity: Granularity;
     records: MetricRecord[];
     chartPoints: ChartPoint[];
 }
@@ -23,6 +28,25 @@ const props = defineProps<Props>();
 
 const filterFrom = ref(props.from);
 const filterTo = ref(props.to);
+const selectedPeriod = ref<Period>(props.period);
+const selectedGranularity = ref<Granularity>(props.granularity);
+
+watch(
+    () => [props.from, props.to, props.period, props.granularity] as const,
+    ([from, to, period, granularity]) => {
+        filterFrom.value = from;
+        filterTo.value = to;
+        selectedPeriod.value = period;
+        selectedGranularity.value = granularity;
+    },
+);
+
+const periodOptions: { value: Exclude<Period, null>; label: string }[] = [
+    { value: 'week', label: '週' },
+    { value: 'month', label: '月' },
+    { value: '3months', label: '3ヶ月' },
+    { value: 'year', label: '年' },
+];
 
 const chartOption = computed<EChartsCoreOption>(() => ({
     grid: { left: 48, right: 24, top: 24, bottom: 32 },
@@ -71,12 +95,45 @@ const chartOption = computed<EChartsCoreOption>(() => ({
     ],
 }));
 
+function navigate(query: Record<string, string>): void {
+    router.get(`/records/${props.metric.key}`, query, {
+        preserveState: true,
+        preserveScroll: true,
+    });
+}
+
 function applyDateFilter(): void {
-    router.get(
-        `/records/${props.metric.key}`,
-        { from: filterFrom.value, to: filterTo.value },
-        { preserveState: true, preserveScroll: true },
-    );
+    selectedPeriod.value = null;
+    navigate({
+        from: filterFrom.value,
+        to: filterTo.value,
+        granularity: selectedGranularity.value,
+    });
+}
+
+function applyPeriod(period: Exclude<Period, null>): void {
+    selectedPeriod.value = period;
+    navigate({
+        period,
+        to: filterTo.value,
+        granularity: selectedGranularity.value,
+    });
+}
+
+function applyGranularity(granularity: Granularity): void {
+    selectedGranularity.value = granularity;
+    const query: Record<string, string> = {
+        granularity,
+        to: filterTo.value,
+    };
+
+    if (selectedPeriod.value) {
+        query.period = selectedPeriod.value;
+    } else {
+        query.from = filterFrom.value;
+    }
+
+    navigate(query);
 }
 
 async function deleteRecord(record: MetricRecord): Promise<void> {
@@ -95,9 +152,7 @@ async function deleteRecord(record: MetricRecord): Promise<void> {
 <template>
     <Head :title="metric.label" />
 
-    <div
-        class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6"
-    >
+    <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4">
             <PageSectionCard>
                 <div class="flex flex-col gap-4">
@@ -118,44 +173,96 @@ async function deleteRecord(record: MetricRecord): Promise<void> {
             </PageSectionCard>
 
             <PageSectionCard aria-label="期間フィルター" padding="sm">
-                <div class="flex flex-wrap items-end gap-3">
-                    <div class="flex flex-col gap-1">
-                        <label
-                            for="from-date"
-                            class="font-sans text-xs text-cd-ink-muted"
+                <div class="flex flex-col gap-3">
+                    <div class="flex flex-wrap gap-2">
+                        <Button
+                            v-for="option in periodOptions"
+                            :key="option.value"
+                            type="button"
+                            size="sm"
+                            :variant="
+                                selectedPeriod === option.value
+                                    ? 'default'
+                                    : 'outline'
+                            "
+                            @click="applyPeriod(option.value)"
                         >
-                            開始日
-                        </label>
-                        <Input
-                            id="from-date"
-                            v-model="filterFrom"
-                            type="date"
-                            class="w-40"
-                        />
+                            {{ option.label }}
+                        </Button>
                     </div>
-                    <div class="flex flex-col gap-1">
-                        <label
-                            for="to-date"
-                            class="font-sans text-xs text-cd-ink-muted"
+
+                    <div class="flex flex-wrap gap-2">
+                        <Button
+                            type="button"
+                            size="sm"
+                            :variant="
+                                selectedGranularity === 'day'
+                                    ? 'default'
+                                    : 'outline'
+                            "
+                            @click="applyGranularity('day')"
                         >
-                            終了日
-                        </label>
-                        <Input
-                            id="to-date"
-                            v-model="filterTo"
-                            type="date"
-                            class="w-40"
-                        />
+                            日次
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            :variant="
+                                selectedGranularity === 'week'
+                                    ? 'default'
+                                    : 'outline'
+                            "
+                            @click="applyGranularity('week')"
+                        >
+                            週次平均
+                        </Button>
                     </div>
-                    <Button type="button" size="sm" @click="applyDateFilter">
-                        適用
-                    </Button>
+
+                    <div class="flex flex-wrap items-end gap-3">
+                        <div class="flex flex-col gap-1">
+                            <label
+                                for="from-date"
+                                class="font-sans text-xs text-cd-ink-muted"
+                            >
+                                開始日
+                            </label>
+                            <Input
+                                id="from-date"
+                                v-model="filterFrom"
+                                type="date"
+                                class="w-40"
+                            />
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label
+                                for="to-date"
+                                class="font-sans text-xs text-cd-ink-muted"
+                            >
+                                終了日
+                            </label>
+                            <Input
+                                id="to-date"
+                                v-model="filterTo"
+                                type="date"
+                                class="w-40"
+                            />
+                        </div>
+                        <Button
+                            type="button"
+                            size="sm"
+                            @click="applyDateFilter"
+                        >
+                            適用
+                        </Button>
+                    </div>
                 </div>
             </PageSectionCard>
 
             <PageSectionCard aria-label="推移グラフ">
                 <h2 class="mb-4 font-sans text-base font-semibold text-cd-ink">
-                    推移
+                    推移（{{
+                        selectedGranularity === 'week' ? '週次平均' : '日次'
+                    }}）
                 </h2>
                 <BaseChart
                     v-if="chartPoints.length > 0"

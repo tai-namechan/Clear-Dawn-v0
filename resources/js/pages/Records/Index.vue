@@ -12,7 +12,8 @@ import {
     Scale,
     UtensilsCrossed,
 } from '@lucide/vue';
-import { computed, type Component } from 'vue';
+import { computed } from 'vue';
+import type { Component } from 'vue';
 import DateNavigator from '@/components/DateNavigator.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
@@ -54,10 +55,7 @@ const metricIcons: Record<string, Component> = {
     pitch_speed_max: Gauge,
 };
 
-function metricValue(
-    list: DailyMetricEntry[],
-    key: string,
-): number | null {
+function metricValue(list: DailyMetricEntry[], key: string): number | null {
     const entry = list.find((item) => item.metric.key === key);
 
     if (!entry?.record?.value) {
@@ -87,7 +85,11 @@ function formatMetric(key: string, value: number | null): string {
     return String(Math.round(value));
 }
 
-function deltaLabel(key: string, today: number | null, prev: number | null): string | null {
+function deltaLabel(
+    key: string,
+    today: number | null,
+    prev: number | null,
+): string | null {
     if (today === null || prev === null) {
         return null;
     }
@@ -114,7 +116,9 @@ const summaryMetrics = computed(() =>
     ['weight', 'sleep_minutes', 'pain_level', 'pitch_speed_max'].map((key) => {
         const today = metricValue(props.metrics, key);
         const prev = metricValue(props.previousMetrics, key);
-        const meta = props.metrics.find((item) => item.metric.key === key)?.metric;
+        const meta = props.metrics.find(
+            (item) => item.metric.key === key,
+        )?.metric;
 
         return {
             key,
@@ -149,8 +153,7 @@ const pfcDonutStyle = computed(() => {
 
     if (p + f + c <= 0) {
         return {
-            background:
-                'conic-gradient(var(--cd-line) 0deg 360deg)',
+            background: 'conic-gradient(var(--cd-line) 0deg 360deg)',
         };
     }
 
@@ -200,8 +203,12 @@ const conditionHighlights = computed(() =>
     <Head title="パフォーマンス管理" />
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
-        <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 md:gap-5">
-            <div class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
+        <div
+            class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 md:gap-5"
+        >
+            <div
+                class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]"
+            >
                 <PageSectionCard>
                     <PageTitleOrnament
                         title="パフォーマンス管理"
@@ -210,7 +217,10 @@ const conditionHighlights = computed(() =>
                     />
                 </PageSectionCard>
 
-                <PageSectionCard padding="sm" class="flex items-center justify-center">
+                <PageSectionCard
+                    padding="sm"
+                    class="flex items-center justify-center"
+                >
                     <DateNavigator
                         :date="date"
                         route-url="/records"
@@ -290,19 +300,29 @@ const conditionHighlights = computed(() =>
                                     class="absolute inset-[22%] rounded-full bg-cd-surface"
                                 />
                             </div>
-                            <div
-                                class="flex flex-col gap-1 font-sans text-xs"
-                            >
-                                <span class="inline-flex items-center gap-1.5 text-cd-pfc-p">
-                                    <span class="size-2 rounded-sm bg-cd-pfc-p" />
+                            <div class="flex flex-col gap-1 font-sans text-xs">
+                                <span
+                                    class="inline-flex items-center gap-1.5 text-cd-pfc-p"
+                                >
+                                    <span
+                                        class="size-2 rounded-sm bg-cd-pfc-p"
+                                    />
                                     P {{ pfcEnergy.p }}%
                                 </span>
-                                <span class="inline-flex items-center gap-1.5 text-cd-pfc-f">
-                                    <span class="size-2 rounded-sm bg-cd-pfc-f" />
+                                <span
+                                    class="inline-flex items-center gap-1.5 text-cd-pfc-f"
+                                >
+                                    <span
+                                        class="size-2 rounded-sm bg-cd-pfc-f"
+                                    />
                                     F {{ pfcEnergy.f }}%
                                 </span>
-                                <span class="inline-flex items-center gap-1.5 text-cd-pfc-c">
-                                    <span class="size-2 rounded-sm bg-cd-pfc-c" />
+                                <span
+                                    class="inline-flex items-center gap-1.5 text-cd-pfc-c"
+                                >
+                                    <span
+                                        class="size-2 rounded-sm bg-cd-pfc-c"
+                                    />
                                     C {{ pfcEnergy.c }}%
                                 </span>
                             </div>
@@ -374,7 +394,9 @@ const conditionHighlights = computed(() =>
                             </div>
                         </div>
 
-                        <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+                        <div
+                            class="flex flex-col gap-4 sm:flex-row sm:items-center"
+                        >
                             <div class="min-w-0 flex-1">
                                 <p class="font-sans text-sm text-cd-ink-muted">
                                     今日の摂取カロリー
@@ -430,19 +452,29 @@ const conditionHighlights = computed(() =>
                                         class="absolute inset-[24%] rounded-full bg-cd-surface"
                                     />
                                 </div>
-                                <div
-                                    class="space-y-1 font-sans text-xs"
-                                >
-                                    <p class="inline-flex items-center gap-1.5 text-cd-pfc-p">
-                                        <span class="size-2 rounded-sm bg-cd-pfc-p" />
+                                <div class="space-y-1 font-sans text-xs">
+                                    <p
+                                        class="inline-flex items-center gap-1.5 text-cd-pfc-p"
+                                    >
+                                        <span
+                                            class="size-2 rounded-sm bg-cd-pfc-p"
+                                        />
                                         P {{ pfcEnergy.p }}%
                                     </p>
-                                    <p class="inline-flex items-center gap-1.5 text-cd-pfc-f">
-                                        <span class="size-2 rounded-sm bg-cd-pfc-f" />
+                                    <p
+                                        class="inline-flex items-center gap-1.5 text-cd-pfc-f"
+                                    >
+                                        <span
+                                            class="size-2 rounded-sm bg-cd-pfc-f"
+                                        />
                                         F {{ pfcEnergy.f }}%
                                     </p>
-                                    <p class="inline-flex items-center gap-1.5 text-cd-pfc-c">
-                                        <span class="size-2 rounded-sm bg-cd-pfc-c" />
+                                    <p
+                                        class="inline-flex items-center gap-1.5 text-cd-pfc-c"
+                                    >
+                                        <span
+                                            class="size-2 rounded-sm bg-cd-pfc-c"
+                                        />
                                         C {{ pfcEnergy.c }}%
                                     </p>
                                 </div>
@@ -555,12 +587,38 @@ const conditionHighlights = computed(() =>
                         </ul>
 
                         <div
-                            class="flex items-center gap-2 rounded-xl border border-dashed border-cd-line px-3 py-3 text-cd-ink-muted"
+                            class="flex flex-col gap-2 rounded-xl border border-dashed border-cd-line px-3 py-3 text-cd-ink-muted"
                         >
-                            <Moon :size="16" :stroke-width="1.6" />
-                            <p class="font-sans text-xs">
-                                7日間の推移グラフはコンディション画面で確認できます。
-                            </p>
+                            <div class="flex items-center gap-2">
+                                <Moon :size="16" :stroke-width="1.6" />
+                                <p class="font-sans text-xs">
+                                    7日間の推移はコンディション、詳細推移・週次平均・筋力チャートは各画面で確認できます。
+                                </p>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <Button
+                                    as-child
+                                    variant="outline"
+                                    size="sm"
+                                    class="font-sans"
+                                >
+                                    <Link href="/records/weight?period=3months">
+                                        体重の推移
+                                    </Link>
+                                </Button>
+                                <Button
+                                    as-child
+                                    variant="outline"
+                                    size="sm"
+                                    class="font-sans"
+                                >
+                                    <Link
+                                        href="/records/strength?period=3months"
+                                    >
+                                        筋力チャート
+                                    </Link>
+                                </Button>
+                            </div>
                         </div>
 
                         <Button as-child class="font-sans tracking-[0.06em]">

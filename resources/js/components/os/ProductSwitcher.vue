@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { router, usePage } from '@inertiajs/vue3';
-import { Check, ChevronDown, Compass, Database, Sun } from '@lucide/vue';
+import { Check, ChevronDown, Compass, Library, Sun } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import {
     Dialog,
@@ -31,27 +31,44 @@ const accentByKey: Record<ProductKey, string> = {
     kioku: 'text-os-kioku',
 };
 
-const ringByKey: Record<ProductKey, string> = {
-    clear_dawn: 'ring-cd-dawn-deep/30',
-    yoyu: 'ring-os-yoyu/30',
-    kioku: 'ring-os-kioku/30',
-};
-
 const iconByKey = {
     clear_dawn: Compass,
     yoyu: Sun,
-    kioku: Database,
+    kioku: Library,
 } as const;
 
-const previewHintByKey: Record<ProductKey, string> = {
-    clear_dawn: 'マトリクスで人生の方針を整理',
-    yoyu: '今日の予定・余裕・秘書',
-    kioku: '記憶の保存・検索・想起',
+const hoverByKey: Record<ProductKey, string> = {
+    clear_dawn:
+        'hover:ring-2 hover:ring-cd-dawn-deep/45 hover:bg-cd-dawn-deep/8',
+    yoyu: 'hover:ring-2 hover:ring-os-yoyu/45 hover:bg-os-yoyu/10',
+    kioku: 'hover:ring-2 hover:ring-os-kioku/45 hover:bg-os-kioku/10',
+};
+
+const washByKey: Record<ProductKey, string> = {
+    clear_dawn: 'bg-cd-dawn-deep/12',
+    yoyu: 'bg-os-yoyu/14',
+    kioku: 'bg-os-kioku/14',
+};
+
+const previewByKey: Record<ProductKey, { src: string; alt: string }> = {
+    clear_dawn: {
+        src: '/images/products/clear-dawn.jpg',
+        alt: 'Clear Dawn プレビュー — マトリクスで人生の方針を整理',
+    },
+    yoyu: {
+        src: '/images/products/yoyu.jpg',
+        alt: 'ヨユウ プレビュー — 焦らず、前へ回すAI秘書',
+    },
+    kioku: {
+        src: '/images/products/kioku.jpg',
+        alt: 'キオク プレビュー — 記憶の保存・検索・想起',
+    },
 };
 
 function selectProduct(product: ProductDefinition): void {
     if (product.key === currentProductKey.value) {
         open.value = false;
+
         return;
     }
 
@@ -90,20 +107,18 @@ function selectProduct(product: ProductDefinition): void {
 
         <Dialog :open="open" @update:open="open = $event">
             <DialogContent
-                class="max-h-[min(90vh,40rem)] gap-0 overflow-y-auto border-cd-line bg-cd-surface p-0 sm:max-w-3xl"
+                class="max-h-[min(95vh,58rem)] gap-0 overflow-y-auto border-cd-line bg-cd-surface p-0 sm:max-w-5xl"
                 data-test="product-switcher-modal"
             >
-                <DialogHeader class="border-b border-cd-line px-6 py-5 text-left">
-                    <DialogTitle class="text-lg font-semibold text-cd-ink">
-                        プロダクト切り替え
-                    </DialogTitle>
-                    <DialogDescription class="text-sm text-cd-ink-muted">
+                <DialogHeader class="sr-only">
+                    <DialogTitle>プロダクト切り替え</DialogTitle>
+                    <DialogDescription>
                         目的に合わせてプロダクトを切り替えられます
                     </DialogDescription>
                 </DialogHeader>
 
                 <div
-                    class="grid gap-4 p-5 sm:grid-cols-3 sm:gap-3 sm:p-6"
+                    class="grid items-start gap-4 p-4 sm:grid-cols-3 sm:gap-5 sm:p-6"
                     role="list"
                 >
                     <button
@@ -111,57 +126,39 @@ function selectProduct(product: ProductDefinition): void {
                         :key="product.key"
                         type="button"
                         role="listitem"
-                        class="flex flex-col rounded-xl border border-cd-line bg-background p-4 text-left shadow-sm transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                        :class="
-                            product.key === currentProductKey
-                                ? `ring-2 ${ringByKey[product.key]}`
-                                : ''
-                        "
+                        class="group relative overflow-hidden rounded-xl bg-muted/20 text-left transition-[box-shadow,background-color,transform] duration-200 hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        :class="hoverByKey[product.key]"
                         :data-test="`product-card-${product.key}`"
+                        :aria-current="
+                            product.key === currentProductKey
+                                ? 'true'
+                                : undefined
+                        "
                         @click="selectProduct(product)"
                     >
-                        <div class="mb-3 flex items-start justify-between gap-2">
-                            <div class="flex min-w-0 items-center gap-2">
-                                <span
-                                    class="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-muted"
-                                    :class="accentByKey[product.key]"
-                                >
-                                    <component
-                                        :is="iconByKey[product.key]"
-                                        :size="16"
-                                        :stroke-width="2"
-                                        aria-hidden="true"
-                                    />
-                                </span>
-                                <div class="min-w-0">
-                                    <div
-                                        class="truncate text-sm font-semibold text-cd-ink"
-                                    >
-                                        {{ product.name }}
-                                    </div>
-                                    <div
-                                        class="truncate text-xs text-cd-ink-muted"
-                                    >
-                                        {{ product.tagline }}
-                                    </div>
-                                </div>
-                            </div>
-                            <span
-                                v-if="product.key === currentProductKey"
-                                class="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-cd-ink"
-                                data-test="product-current-badge"
-                            >
-                                <Check :size="12" aria-hidden="true" />
-                                利用中
-                            </span>
-                        </div>
-
-                        <div
-                            class="flex min-h-24 flex-1 items-center justify-center rounded-lg border border-dashed border-cd-line bg-muted/40 px-3 py-4 text-center text-xs leading-relaxed text-cd-ink-muted"
+                        <span class="sr-only">
+                            {{ product.name }} — {{ product.tagline }}
+                        </span>
+                        <img
+                            :src="previewByKey[product.key].src"
+                            :alt="previewByKey[product.key].alt"
+                            class="h-auto w-full object-contain transition-[filter] duration-200 group-hover:brightness-[1.03]"
+                            loading="eager"
+                            decoding="async"
+                        />
+                        <span
+                            class="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                            :class="washByKey[product.key]"
                             aria-hidden="true"
+                        />
+                        <span
+                            v-if="product.key === currentProductKey"
+                            class="absolute top-2 right-2 z-10 inline-flex items-center gap-1 rounded-full bg-cd-ink/85 px-2.5 py-1 text-[10px] font-semibold text-cd-surface shadow-sm backdrop-blur-sm"
+                            data-test="product-current-badge"
                         >
-                            {{ previewHintByKey[product.key] }}
-                        </div>
+                            <Check :size="12" aria-hidden="true" />
+                            利用中
+                        </span>
                     </button>
                 </div>
             </DialogContent>

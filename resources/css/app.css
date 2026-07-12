@@ -119,6 +119,15 @@
 
     --color-os-yoyu: var(--os-yoyu);
     --color-os-kioku: var(--os-kioku);
+    --color-os-yoyu-bg: var(--os-yoyu-bg);
+    --color-os-kioku-bg: var(--os-kioku-bg);
+    --color-os-yoyu-soft: var(--os-yoyu-soft);
+    --color-os-kioku-soft: var(--os-kioku-soft);
+    --color-os-kioku-paper: var(--os-kioku-paper);
+    --color-os-ink: var(--os-ink);
+    --color-os-sub: var(--os-sub);
+    --color-os-faint: var(--os-faint);
+    --color-os-line: var(--os-line);
 }
 
 /*
@@ -233,7 +242,18 @@
 
     /* Seed K product accents (ProductSwitcher / OsShell) */
     --os-yoyu: #129488;
-    --os-kioku: #6f5fc9;
+    /* Seed K product accents (ProductSwitcher / OsShell) */
+    --os-yoyu: #129488;
+    --os-kioku: #3e5688; /* 藍インク */
+    --os-yoyu-bg: #f5f6f2;
+    --os-kioku-bg: #f5f2ea; /* 生成り(和紙) */
+    --os-yoyu-soft: #e4f4f2;
+    --os-kioku-soft: #e9edf5; /* 藍の薄い地 */
+    --os-kioku-paper: #fdfbf6; /* 紙面 */
+    --os-ink: #2b2924; /* 墨 */
+    --os-sub: #6e6a5e;
+    --os-faint: #a39e8f;
+    --os-line: #e5e0d2;
 
     /* Interactive surface tints — readability first, quiet lavender feedback */
     --cd-cell: hsl(45 33% 99%); /* near-white ivory cell base (#FCFBF9) */
@@ -559,6 +579,34 @@
  */
 .group\/sidebar-wrapper:has(.cd-sidebar) {
     --sidebar-width: 10.5rem !important;
+}
+
+/*
+ * Yoyu / Kioku sidebar width — same 168px shell as Clear Dawn.
+ * Background art is swapped via public/images/products/sidebars/{yoyu,kioku}-sidebar.jpg
+ */
+.group\/sidebar-wrapper:has(.os-sidebar) {
+    --sidebar-width: 10.5rem !important;
+}
+
+.os-sidebar [data-sidebar='sidebar'] {
+    overflow: hidden;
+    background-color: var(--os-yoyu-bg, #f6f5f9);
+}
+
+.os-sidebar-kioku [data-sidebar='sidebar'] {
+    background-color: var(--os-kioku-bg, #f5f2ea);
+}
+
+/* Collapsed (icon) mode: solid product theme color, no background art. */
+.group[data-collapsible='icon'] .os-sidebar-yoyu [data-sidebar='sidebar'] {
+    background-color: var(--os-yoyu);
+    color: hsl(0 0% 100%);
+}
+
+.group[data-collapsible='icon'] .os-sidebar-kioku [data-sidebar='sidebar'] {
+    background-color: var(--os-kioku);
+    color: hsl(0 0% 100%);
 }
 
 /*

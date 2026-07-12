@@ -97,6 +97,86 @@ class MetricChartTest extends TestCase
         $this->assertSame('70.00', $chart->first()['value']);
     }
 
+    public function test_metric_chart_weekly_averages_group_by_week_start(): void
+    {
+        $user = User::factory()->create();
+        $metric = Metric::query()->where('key', 'weight')->firstOrFail();
+
+        // Monday–Sunday week containing 2026-07-06 (Mon) .. 2026-07-12 (Sun)
+        MetricRecord::factory()->create([
+            'user_id' => $user->id,
+            'metric_id' => $metric->id,
+            'recorded_on' => '2026-07-06',
+            'value' => 70,
+        ]);
+        MetricRecord::factory()->create([
+            'user_id' => $user->id,
+            'metric_id' => $metric->id,
+            'recorded_on' => '2026-07-08',
+            'value' => 72,
+        ]);
+        MetricRecord::factory()->create([
+            'user_id' => $user->id,
+            'metric_id' => $metric->id,
+            'recorded_on' => '2026-07-13',
+            'value' => 80,
+        ]);
+
+        $weekly = app(GetMetricChartQuery::class)->handle(
+            $user,
+            $metric,
+            Carbon::parse('2026-07-01'),
+            Carbon::parse('2026-07-31'),
+            GetMetricChartQuery::GRANULARITY_WEEK,
+        );
+
+        $daily = app(GetMetricChartQuery::class)->handle(
+            $user,
+            $metric,
+            Carbon::parse('2026-07-01'),
+            Carbon::parse('2026-07-31'),
+            GetMetricChartQuery::GRANULARITY_DAY,
+        );
+
+        $this->assertCount(3, $daily);
+        $this->assertCount(2, $weekly);
+        $this->assertSame('2026-07-06', $weekly[0]['date']);
+        $this->assertSame('71.00', $weekly[0]['value']);
+        $this->assertSame('2026-07-13', $weekly[1]['date']);
+        $this->assertSame('80.00', $weekly[1]['value']);
+    }
+
+    public function test_metric_chart_weekly_excludes_other_users(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $metric = Metric::query()->where('key', 'weight')->firstOrFail();
+
+        MetricRecord::factory()->create([
+            'user_id' => $user->id,
+            'metric_id' => $metric->id,
+            'recorded_on' => '2026-07-07',
+            'value' => 70,
+        ]);
+        MetricRecord::factory()->create([
+            'user_id' => $other->id,
+            'metric_id' => $metric->id,
+            'recorded_on' => '2026-07-07',
+            'value' => 99,
+        ]);
+
+        $weekly = app(GetMetricChartQuery::class)->handle(
+            $user,
+            $metric,
+            Carbon::parse('2026-07-01'),
+            Carbon::parse('2026-07-31'),
+            GetMetricChartQuery::GRANULARITY_WEEK,
+        );
+
+        $this->assertCount(1, $weekly);
+        $this->assertSame('70.00', $weekly->first()['value']);
+    }
+
     public function test_strength_chart_excludes_aborted_sessions(): void
     {
         $user = User::factory()->create();

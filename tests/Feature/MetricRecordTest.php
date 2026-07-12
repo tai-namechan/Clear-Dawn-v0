@@ -2,12 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Enums\RoutineItemCategory;
 use App\Models\Metric;
 use App\Models\MetricRecord;
+use App\Models\RoutineBlockLog;
+use App\Models\RoutineItem;
+use App\Models\RoutinePlan;
+use App\Models\RoutinePlanStep;
+use App\Models\RoutineSession;
 use App\Models\User;
 use Database\Seeders\MatrixRowSeeder;
 use Database\Seeders\MetricSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class MetricRecordTest extends TestCase
@@ -253,5 +260,114 @@ class MetricRecordTest extends TestCase
                 ->has('metrics', 6)
                 ->where('metrics.0.metric.label', '体重')
             );
+    }
+
+    public function test_show_page_returns_weekly_chart_points_for_period_preset(): void
+    {
+        $user = User::factory()->create();
+        $metric = Metric::query()->where('key', 'weight')->firstOrFail();
+
+        MetricRecord::factory()->create([
+            'user_id' => $user->id,
+            'metric_id' => $metric->id,
+            'recorded_on' => '2026-07-06',
+            'value' => 70,
+        ]);
+        MetricRecord::factory()->create([
+            'user_id' => $user->id,
+            'metric_id' => $metric->id,
+            'recorded_on' => '2026-07-08',
+            'value' => 72,
+        ]);
+        MetricRecord::factory()->create([
+            'user_id' => $user->id,
+            'metric_id' => $metric->id,
+            'recorded_on' => '2026-07-13',
+            'value' => 80,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('records.show', [
+                'metric' => 'weight',
+                'period' => 'month',
+                'to' => '2026-07-31',
+                'granularity' => 'week',
+            ]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Records/Show')
+                ->where('granularity', 'week')
+                ->where('period', 'month')
+                ->where('from', '2026-06-30')
+                ->where('to', '2026-07-31')
+                ->has('chartPoints', 2)
+                ->where('chartPoints.0.date', '2026-07-06')
+                ->where('chartPoints.0.value', '71.00')
+            );
+    }
+
+    public function test_strength_page_returns_chart_points_scoped_to_user(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $mine = RoutineItem::factory()->create([
+            'user_id' => $user->id,
+            'category' => RoutineItemCategory::Strength,
+            'name' => 'ベンチプレス',
+        ]);
+        $theirs = RoutineItem::factory()->create([
+            'user_id' => $other->id,
+            'category' => RoutineItemCategory::Strength,
+            'name' => '他ユーザー種目',
+        ]);
+
+        $this->createCompletedStrengthSessionForHttp($user, $mine, '2026-07-10', 80);
+        $this->createCompletedStrengthSessionForHttp($other, $theirs, '2026-07-10', 120);
+
+        $this->actingAs($user)
+            ->get(route('records.strength', [
+                'period' => 'month',
+                'to' => '2026-07-31',
+            ]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Records/Strength')
+                ->where('period', 'month')
+                ->has('chartPoints', 1)
+                ->where('chartPoints.0.item_name', 'ベンチプレス')
+                ->where('chartPoints.0.max_load_value', '80.00')
+            );
+    }
+
+    private function createCompletedStrengthSessionForHttp(
+        User $user,
+        RoutineItem $routineItem,
+        string $date,
+        float $loadValue,
+    ): void {
+        Carbon::setTestNow($date.' 10:00:00');
+
+        $plan = RoutinePlan::factory()->ready()->create(['user_id' => $user->id]);
+        RoutinePlanStep::factory()->forPlan($plan)->create(['routine_item_id' => $routineItem->id]);
+
+        $this->actingAs($user)->postJson(route('routine-sessions.start', $plan))->assertOk();
+
+        $session = RoutineSession::query()->where('user_id', $user->id)->latest('started_at')->firstOrFail();
+        $sessionStep = $session->steps()->firstOrFail();
+
+        RoutineBlockLog::query()->where('routine_session_step_id', $sessionStep->id)->delete();
+        RoutineBlockLog::factory()->create([
+            'routine_session_step_id' => $sessionStep->id,
+            'block_number' => 1,
+            'load_value' => $loadValue,
+            'load_unit' => 'kg',
+            'amount_value' => 5,
+            'amount_unit' => 'reps',
+        ]);
+
+        $this->actingAs($user)->postJson(route('routine-sessions.complete', $session))->assertOk();
+
+        Carbon::setTestNow();
     }
 }
