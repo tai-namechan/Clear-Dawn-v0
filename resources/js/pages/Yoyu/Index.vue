@@ -48,12 +48,12 @@ import {
     store as storeFocus,
     update as updateFocus,
 } from '@/routes/yoyu/focus';
+import { upsert as upsertPlace } from '@/routes/yoyu/places';
 import {
     destroy as destroyTask,
     store as storeTask,
     update as updateTask,
 } from '@/routes/yoyu/tasks';
-import { upsert as upsertPlace } from '@/routes/yoyu/places';
 
 type Task = {
     id: string;
