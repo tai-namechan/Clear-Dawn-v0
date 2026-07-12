@@ -11,6 +11,7 @@ final readonly class BriefingContext
     /**
      * @param  Collection<int, YoyuTask>  $tasks
      * @param  list<string>  $recallLines
+     * @param  array{prep_minutes: int, buffer_minutes: int}  $travelLead
      */
     public function __construct(
         public string $briefingDate,
@@ -21,6 +22,7 @@ final readonly class BriefingContext
         public array $recallLines,
         public GapAnalysis $gaps,
         public MarginAnalysis $margin,
+        public array $travelLead,
     ) {}
 
     /**
@@ -42,6 +44,7 @@ final readonly class BriefingContext
             'hand' => $this->hand?->toClientArray(),
             'margin' => $this->margin->toArray(),
             'gaps' => $this->gaps->toArray($this->timezone),
+            'travel_lead' => $this->travelLead,
             'task_count' => $this->tasks->count(),
             'recall_count' => count($this->recallLines),
         ];

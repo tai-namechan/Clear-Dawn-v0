@@ -24,6 +24,7 @@ final class BriefingContextBuilder
         private MarginAnalyzer $marginAnalyzer,
         private RecallService $recall,
         private UserTimezoneResolver $timezones,
+        private YoyuPreferenceService $preferences,
     ) {}
 
     public function build(
@@ -52,6 +53,7 @@ final class BriefingContextBuilder
         );
 
         $hand = $this->handService->forUser($user);
+        $travelLead = $this->preferences->travelLeadFor($user);
 
         $tasks = YoyuTask::query()
             ->withoutUserScope()
@@ -75,7 +77,13 @@ final class BriefingContextBuilder
             countReference: false,
         );
 
-        $gaps = $this->gapAnalyzer->analyze($day->toDateString(), $tz, $resolvedEvents);
+        $gaps = $this->gapAnalyzer->analyze(
+            $day->toDateString(),
+            $tz,
+            $resolvedEvents,
+            $travelLead['prep_minutes'],
+            $travelLead['buffer_minutes'],
+        );
         $margin = $this->marginAnalyzer->analyze($gaps->totalBusyMinutes, $taskEstimateSum);
 
         return new BriefingContext(
@@ -87,6 +95,7 @@ final class BriefingContextBuilder
             recallLines: $recallLines,
             gaps: $gaps,
             margin: $margin,
+            travelLead: $travelLead,
         );
     }
 }

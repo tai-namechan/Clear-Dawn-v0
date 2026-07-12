@@ -18,6 +18,7 @@ class PlaceController extends Controller
             (int) $request->user()->id,
             $data['name'],
             (int) $data['travel_minutes'],
+            isset($data['external_id']) ? (string) $data['external_id'] : null,
         );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => '移動時間を登録しました。']);

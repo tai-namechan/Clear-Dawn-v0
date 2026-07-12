@@ -31,13 +31,16 @@ export function fmtTime(iso: string): string {
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-export function departInfo(event: CalEvent, nowMs: number) {
+export function departInfo(
+    event: CalEvent,
+    nowMs: number,
+    prepMin: number = PREP_MIN,
+    bufferMin: number = BUFFER_MIN,
+) {
     const start = new Date(event.start).getTime();
     const travelMin = event.travel_min;
     const resolved = travelMin !== null;
-    const lead = resolved
-        ? (travelMin + PREP_MIN + BUFFER_MIN) * 60000
-        : 0;
+    const lead = resolved ? (travelMin + prepMin + bufferMin) * 60000 : 0;
     const depart = start - lead;
     const min = Math.round((depart - nowMs) / 60000);
 
@@ -53,6 +56,8 @@ export function yoyuCalc(
     calendar: CalEvent[],
     doneEventIds: string[],
     tasks: YoyuTaskLike[],
+    prepMin: number = PREP_MIN,
+    bufferMin: number = BUFFER_MIN,
 ): { level: number; status: TubStatus; busy: number; free: number } {
     const dayEnd = new Date();
     dayEnd.setHours(22, 0, 0, 0);
@@ -71,7 +76,7 @@ export function yoyuCalc(
         busy += (end - Math.max(start, nowMs)) / 60000;
 
         if (start > nowMs && event.travel_min !== null) {
-            busy += event.travel_min + PREP_MIN + BUFFER_MIN;
+            busy += event.travel_min + prepMin + bufferMin;
         }
     }
 

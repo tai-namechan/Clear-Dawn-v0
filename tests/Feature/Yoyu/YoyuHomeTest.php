@@ -33,6 +33,7 @@ class YoyuHomeTest extends TestCase
                 ->where('currentProduct', 'yoyu')
                 ->has('calendar')
                 ->has('analysis')
+                ->has('travelLead')
                 ->where('clearDawnHand', null)
             );
     }

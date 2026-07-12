@@ -16,8 +16,16 @@ final class GapAnalyzer
     /**
      * @param  list<CalendarEventData>  $events  travel_min already resolved (null = no lead)
      */
-    public function analyze(string $localDate, string $timezone, array $events): GapAnalysis
-    {
+    public function analyze(
+        string $localDate,
+        string $timezone,
+        array $events,
+        int $prepMinutes = YoyuTravelConstants::PREP_MINUTES,
+        int $bufferMinutes = YoyuTravelConstants::BUFFER_MINUTES,
+    ): GapAnalysis {
+        $prepMinutes = max(0, $prepMinutes);
+        $bufferMinutes = max(0, $bufferMinutes);
+
         $dayStart = CarbonImmutable::parse($localDate.' 00:00:00', $timezone);
         $workStart = $dayStart->setTime(YoyuTravelConstants::WORKING_START_HOUR, 0);
         $workEnd = $dayStart->setTime(YoyuTravelConstants::WORKING_END_HOUR, 0);
@@ -67,9 +75,7 @@ final class GapAnalyzer
             }
 
             if ($event->travelMin !== null) {
-                $lead = $event->travelMin
-                    + YoyuTravelConstants::PREP_MINUTES
-                    + YoyuTravelConstants::BUFFER_MINUTES;
+                $lead = $event->travelMin + $prepMinutes + $bufferMinutes;
                 $start = $start->subMinutes($lead);
             }
 

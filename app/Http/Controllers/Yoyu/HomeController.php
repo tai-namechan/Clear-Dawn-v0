@@ -90,6 +90,7 @@ class HomeController extends Controller
             ],
             'clearDawnHand' => $context->hand?->toClientArray(),
             'analysis' => $context->analysisArray(),
+            'travelLead' => $context->travelLead,
             'recallPreview' => $context->recallLines,
             'tab' => $request->string('tab')->toString() ?: 'today',
             'chatReply' => $request->session()->pull('chat_reply'),

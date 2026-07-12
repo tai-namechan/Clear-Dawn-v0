@@ -2,6 +2,7 @@
 
 namespace App\Domain\Yoyu\Services;
 
+use App\Domain\Yoyu\Models\YoyuCalendarEvent;
 use App\Domain\Yoyu\Models\YoyuPlace;
 use App\Domain\Yoyu\Support\PlaceNameNormalizer;
 
@@ -51,9 +52,15 @@ class YoyuPlaceTravelService
 
     /**
      * Upsert by normalized name match within the user scope.
+     * When $externalId is given and the cached event has empty location,
+     * fill location so travel resolves on the next Today load.
      */
-    public function upsert(int $userId, string $name, int $travelMinutes): YoyuPlace
-    {
+    public function upsert(
+        int $userId,
+        string $name,
+        int $travelMinutes,
+        ?string $externalId = null,
+    ): YoyuPlace {
         $trimmed = trim($name);
         $key = PlaceNameNormalizer::normalize($trimmed);
 
@@ -65,14 +72,27 @@ class YoyuPlaceTravelService
 
         if ($existing !== null) {
             $existing->update(['travel_minutes' => $travelMinutes]);
-
-            return $existing->refresh();
+            $place = $existing->refresh();
+        } else {
+            $place = YoyuPlace::query()->create([
+                'user_id' => $userId,
+                'name' => $trimmed,
+                'travel_minutes' => $travelMinutes,
+            ]);
         }
 
-        return YoyuPlace::query()->create([
-            'user_id' => $userId,
-            'name' => $trimmed,
-            'travel_minutes' => $travelMinutes,
-        ]);
+        if ($externalId !== null && $externalId !== '') {
+            YoyuCalendarEvent::query()
+                ->withoutUserScope()
+                ->where('user_id', $userId)
+                ->where('external_id', $externalId)
+                ->where(function ($query): void {
+                    $query->whereNull('location')->orWhere('location', '');
+                })
+                ->limit(1)
+                ->update(['location' => $trimmed]);
+        }
+
+        return $place;
     }
 }
