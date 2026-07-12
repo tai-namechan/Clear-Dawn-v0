@@ -32,7 +32,8 @@ class YoyuHomeTest extends TestCase
                 ->component('Yoyu/Index')
                 ->where('currentProduct', 'yoyu')
                 ->has('calendar')
-                ->has('clearDawnHand')
+                ->has('analysis')
+                ->where('clearDawnHand', null)
             );
     }
 

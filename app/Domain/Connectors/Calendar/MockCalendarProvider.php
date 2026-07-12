@@ -19,6 +19,8 @@ final class MockCalendarProvider implements CalendarProvider
         CarbonImmutable $to,
         string $timezone,
     ): CalendarSnapshot {
+        // Calendar never owns travel time — leave travelMin null so TravelTimeResolver
+        // (or tests that seed yoyu_places) decide. Fixture travel_min is ignored here.
         $events = array_map(
             fn (array $event): CalendarEventData => new CalendarEventData(
                 externalId: $event['id'],
@@ -30,7 +32,7 @@ final class MockCalendarProvider implements CalendarProvider
                 endsOn: null,
                 timezone: $timezone,
                 location: $event['place'],
-                travelMin: $event['travel_min'],
+                travelMin: null,
                 color: $event['color'],
             ),
             MockCalendar::todayEvents(),

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Yoyu;
 
 use App\Domain\Connectors\Calendar\CalendarEventData;
-use App\Domain\Connectors\Calendar\CalendarProviderResolver;
 use App\Domain\Connectors\Calendar\CalendarSyncCoordinator;
 use App\Domain\Kioku\Jobs\EnrichMemoryJob;
 use App\Domain\Kioku\Models\Memory;
@@ -11,12 +10,13 @@ use App\Domain\Kioku\Services\RecallService;
 use App\Domain\Shared\AI\AiGateway;
 use App\Domain\Shared\AI\PromptTemplate;
 use App\Domain\Shared\AI\QuotaExceededException;
+use App\Domain\Yoyu\Data\ClearDawnHand;
 use App\Domain\Yoyu\Jobs\GenerateYoyuBriefingJob;
 use App\Domain\Yoyu\Models\YoyuBriefing;
 use App\Domain\Yoyu\Models\YoyuFocusItem;
 use App\Domain\Yoyu\Models\YoyuTask;
-use App\Domain\Yoyu\Services\YoyuPlaceTravelService;
-use App\Domain\Yoyu\Support\MockCalendar;
+use App\Domain\Yoyu\Services\BriefingContextBuilder;
+use App\Domain\Yoyu\Services\ClearDawnHandService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Yoyu\UpdateYoyuTaskRequest;
 use Carbon\CarbonImmutable;
@@ -31,20 +31,16 @@ class HomeController extends Controller
 {
     public function index(
         Request $request,
-        RecallService $recall,
-        CalendarProviderResolver $calendars,
+        BriefingContextBuilder $contextBuilder,
         CalendarSyncCoordinator $syncCoordinator,
-        YoyuPlaceTravelService $placeTravel,
     ): Response {
         $user = $request->user();
 
         // DB staleness check + queue dispatch only; never synchronous Google HTTP.
         $syncCoordinator->syncIfStale($user);
 
-        $timezone = (string) config('app.timezone', 'UTC');
-        $todayStart = CarbonImmutable::now($timezone)->startOfDay();
-        $snapshot = $calendars->for($user)->snapshotFor($user, $todayStart, $todayStart->addDay(), $timezone);
-        $travelByPlace = $placeTravel->travelMinutesByNormalizedName((int) $user->id);
+        $context = $contextBuilder->build($user, CarbonImmutable::now());
+        $timezone = $context->timezone;
 
         $tasks = YoyuTask::query()
             ->where('user_id', $user->id)
@@ -66,16 +62,14 @@ class HomeController extends Controller
             ->map(fn (YoyuFocusItem $item) => [
                 'id' => $item->id,
                 'status' => $item->status,
-                'text' => $item->memory?->raw_content ?? '',
+                'text' => $item->memory !== null ? (string) $item->memory->raw_content : '',
                 'memory_id' => $item->memory_id,
             ]);
 
         $briefing = YoyuBriefing::query()
             ->where('user_id', $user->id)
-            ->whereDate('date', today())
+            ->whereDate('date', $context->briefingDate)
             ->first();
-
-        $recallLines = $recall->for((int) $user->id, '今日の予定 余裕 タスク', 5, countReference: false);
 
         return Inertia::render('Yoyu/Index', [
             'tasks' => $tasks,
@@ -83,24 +77,20 @@ class HomeController extends Controller
             'briefing' => $briefing?->body,
             'briefingStatus' => $briefing?->status,
             'calendar' => array_map(
-                function (CalendarEventData $event) use ($timezone, $placeTravel, $travelByPlace): array {
-                    $row = $event->toClientArray($timezone);
-                    $row['travel_min'] = $placeTravel->resolveMinutes($row['place'], $travelByPlace);
-
-                    return $row;
-                },
-                $snapshot->timedEvents(),
+                fn (CalendarEventData $event): array => $event->toClientArray($timezone),
+                $context->calendar->timedEvents(),
             ),
             'calendarConnection' => [
-                'status' => $snapshot->connectionStatus->value,
-                'synced_at' => $snapshot->syncedAt?->toIso8601String(),
-                'is_stale' => $snapshot->isStale,
-                'warning_code' => $snapshot->warningCode,
-                'account_email' => $snapshot->accountEmail,
-                'all_day_titles' => $snapshot->allDayTitles(),
+                'status' => $context->calendar->connectionStatus->value,
+                'synced_at' => $context->calendar->syncedAt?->toIso8601String(),
+                'is_stale' => $context->calendar->isStale,
+                'warning_code' => $context->calendar->warningCode,
+                'account_email' => $context->calendar->accountEmail,
+                'all_day_titles' => $context->calendar->allDayTitles(),
             ],
-            'clearDawnHand' => MockCalendar::clearDawnHand(),
-            'recallPreview' => $recallLines,
+            'clearDawnHand' => $context->hand?->toClientArray(),
+            'analysis' => $context->analysisArray(),
+            'recallPreview' => $context->recallLines,
             'tab' => $request->string('tab')->toString() ?: 'today',
             'chatReply' => $request->session()->pull('chat_reply'),
             'chatErrorCode' => $request->session()->pull('chat_error_code'),
@@ -189,9 +179,10 @@ class HomeController extends Controller
         ]);
 
         if (($data['convert_to_task'] ?? false) === true) {
+            $memory = $focus->memory;
             $task = YoyuTask::query()->create([
                 'user_id' => $request->user()->id,
-                'title' => mb_substr($focus->memory?->raw_content ?? 'タスク', 0, 40),
+                'title' => mb_substr($memory !== null ? $memory->raw_content : 'タスク', 0, 40),
                 'status' => 'planned',
                 'estimate_minutes' => 30,
             ]);
@@ -239,8 +230,12 @@ class HomeController extends Controller
         return redirect()->route('yoyu.home', ['tab' => 'today']);
     }
 
-    public function chat(Request $request, AiGateway $ai, RecallService $recall): RedirectResponse
-    {
+    public function chat(
+        Request $request,
+        AiGateway $ai,
+        RecallService $recall,
+        ClearDawnHandService $handService,
+    ): RedirectResponse {
         $data = $request->validate([
             'message' => ['required', 'string', 'max:4000'],
             'history' => ['nullable', 'array', 'max:30'],
@@ -251,16 +246,26 @@ class HomeController extends Controller
         $user = $request->user();
         $recallLines = $recall->for((int) $user->id, $data['message'], 5);
         $tasks = YoyuTask::query()->where('user_id', $user->id)->whereNotIn('status', ['done', 'cancelled'])->get();
-        $hand = MockCalendar::clearDawnHand();
+        $hand = $handService->forUser($user);
+        $handLabel = $hand instanceof ClearDawnHand
+            ? $hand->title
+            : '（未設定）';
 
         $live = "タスク:\n".$tasks->map(fn ($t) => "- [{$t->status}] {$t->title}")->implode("\n")
-            ."\nClear Dawnの一手: {$hand['action']}\n過去:\n".implode("\n", $recallLines);
+            ."\nClear Dawnの一手: {$handLabel}\n過去:\n".implode("\n", $recallLines);
 
         $history = array_slice($data['history'] ?? [], -30);
         $messages = [
-            ...collect($history)->map(fn ($m) => ['role' => $m['role'], 'content' => $m['content']])->all(),
-            ['role' => 'user', 'content' => $data['message']],
+            ['role' => 'user', 'content' => 'コンテキストを理解したら「準備OK」とだけ返してください。'],
+            ['role' => 'assistant', 'content' => '準備OK'],
         ];
+        foreach ($history as $entry) {
+            $messages[] = [
+                'role' => (string) $entry['role'],
+                'content' => (string) $entry['content'],
+            ];
+        }
+        $messages[] = ['role' => 'user', 'content' => $data['message']];
 
         try {
             $result = $ai->complete(
@@ -273,11 +278,7 @@ class HomeController extends Controller
                 ),
                 tier: 'strong',
                 maxTokens: 1100,
-                messages: [
-                    ['role' => 'user', 'content' => 'コンテキストを理解したら「準備OK」とだけ返してください。'],
-                    ['role' => 'assistant', 'content' => '準備OK'],
-                    ...$messages,
-                ],
+                messages: $messages,
             );
             $reply = trim($result['text']);
             $errorCode = null;

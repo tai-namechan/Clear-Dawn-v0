@@ -4,6 +4,7 @@ export type CalEvent = {
     start: string;
     end: string;
     place: string;
+    /** null = unresolved; 0 = registered with no travel */
     travel_min: number | null;
     color: string;
 };
@@ -32,17 +33,18 @@ export function fmtTime(iso: string): string {
 
 export function departInfo(event: CalEvent, nowMs: number) {
     const start = new Date(event.start).getTime();
-    const lead =
-        (event.travel_min != null && event.travel_min > 0
-            ? event.travel_min + PREP_MIN + BUFFER_MIN
-            : 0) * 60000;
+    const travelMin = event.travel_min;
+    const resolved = travelMin !== null;
+    const lead = resolved
+        ? (travelMin + PREP_MIN + BUFFER_MIN) * 60000
+        : 0;
     const depart = start - lead;
     const min = Math.round((depart - nowMs) / 60000);
 
     return {
         depart,
         min,
-        travel: event.travel_min != null && event.travel_min > 0,
+        travel: resolved,
     };
 }
 
@@ -68,7 +70,7 @@ export function yoyuCalc(
 
         busy += (end - Math.max(start, nowMs)) / 60000;
 
-        if (start > nowMs && event.travel_min != null && event.travel_min > 0) {
+        if (start > nowMs && event.travel_min !== null) {
             busy += event.travel_min + PREP_MIN + BUFFER_MIN;
         }
     }
