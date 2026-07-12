@@ -27,21 +27,20 @@ import YoyuTub from '@/components/yoyu/YoyuTub.vue';
 import {
     isYoyuBriefingPending,
     useYoyuBriefingPoll,
-    yoyuBriefingLabel
-    
+    yoyuBriefingLabel,
 } from '@/composables/useYoyuBriefingPoll';
-import type {YoyuBriefingStatus} from '@/composables/useYoyuBriefingPoll';
+import type { YoyuBriefingStatus } from '@/composables/useYoyuBriefingPoll';
 import { isYoyuChatQuotaExceeded } from '@/lib/aiUsageMessages';
+import { joinGapsWithSuggestions } from '@/lib/yoyuBriefingGaps.mjs';
 import {
     BUFFER_MIN,
     departInfo,
     fmtTime,
     PREP_MIN,
     TUB_LABEL,
-    yoyuCalc
-    
+    yoyuCalc,
 } from '@/lib/yoyuCalc';
-import type {CalEvent} from '@/lib/yoyuCalc';
+import type { CalEvent } from '@/lib/yoyuCalc';
 import { chat, settings } from '@/routes/yoyu';
 import { regenerate } from '@/routes/yoyu/briefing';
 import {
@@ -182,7 +181,9 @@ interface Props {
 const props = defineProps<Props>();
 
 const prepMin = computed(() => props.travelLead?.prep_minutes ?? PREP_MIN);
-const bufferMin = computed(() => props.travelLead?.buffer_minutes ?? BUFFER_MIN);
+const bufferMin = computed(
+    () => props.travelLead?.buffer_minutes ?? BUFFER_MIN,
+);
 
 const isStructuredV2 = computed(
     () => props.structuredBriefing?.schema_version === 2,
@@ -191,33 +192,28 @@ const isStructuredV2 = computed(
 const meter = computed(() => {
     const fromStructured = props.structuredBriefing?.analysis;
     const fromLive = props.analysis?.margin;
+
     return {
         score: fromStructured?.margin_score ?? fromLive?.margin_score ?? null,
         label: fromStructured?.margin_label ?? fromLive?.margin_label ?? null,
         busy: fromStructured?.busy_minutes ?? fromLive?.busy_minutes ?? null,
         task: fromStructured?.task_minutes ?? fromLive?.task_minutes ?? null,
         working:
-            fromStructured?.working_minutes ?? fromLive?.working_minutes ?? null,
+            fromStructured?.working_minutes ??
+            fromLive?.working_minutes ??
+            null,
     };
 });
 
 const structuredGaps = computed(() => {
-    const suggestions =
-        props.structuredBriefing?.generation?.gap_suggestions ?? [];
-    if (suggestions.length > 0) {
-        return suggestions;
-    }
-    const gaps =
+    const analysisGaps =
         props.structuredBriefing?.analysis?.gaps ??
         props.analysis?.gaps?.gaps ??
         [];
-    return gaps.map((gap) => ({
-        gap_key: gap.key,
-        suggestion: '',
-        start: gap.start,
-        end: gap.end,
-        minutes: gap.minutes,
-    }));
+    const suggestions =
+        props.structuredBriefing?.generation?.gap_suggestions ?? [];
+
+    return joinGapsWithSuggestions(analysisGaps, suggestions);
 });
 
 const generationStatus = computed(
@@ -229,15 +225,22 @@ const calendarWarningLabel = computed(() => {
         props.calendarConnection?.warning_code ??
         props.structuredBriefing?.calendar?.warning_code ??
         null;
-    if (props.calendarConnection?.status === 'disconnected' || code === 'disconnected') {
+
+    if (
+        props.calendarConnection?.status === 'disconnected' ||
+        code === 'disconnected'
+    ) {
         return 'カレンダー未接続です。予定は表示されません。';
     }
+
     if (code === 'sync_pending') {
         return 'カレンダー同期中です。しばらくすると予定が反映されます。';
     }
+
     if (code === 'stale' || props.calendarConnection?.is_stale) {
         return 'カレンダー情報が古い可能性があります。';
     }
+
     return null;
 });
 
@@ -580,6 +583,8 @@ defineOptions({
                     :calendar="calendar"
                     :done-event-ids="doneEventIds"
                     :tasks="tasks"
+                    :prep-minutes="prepMin"
+                    :buffer-minutes="bufferMin"
                 />
 
                 <div
@@ -776,7 +781,7 @@ defineOptions({
                                 class="flex flex-wrap items-baseline justify-between gap-2"
                             >
                                 <div class="text-xs font-bold text-os-yoyu">
-                                    余裕メーター
+                                    今日全体の余裕メーター
                                 </div>
                                 <div class="text-sm font-bold text-os-ink">
                                     {{ meter.label }}（{{ meter.score }}）
@@ -789,11 +794,21 @@ defineOptions({
                                 <span>タスク {{ meter.task ?? 0 }}分</span>
                                 <span>稼働 {{ meter.working ?? 0 }}分</span>
                             </div>
+                            <p class="mt-1 text-[11px] text-os-sub">
+                                07:00–23:00
+                                の1日全体をサーバーが決定的に集計した値です（左の「いまからの湯加減」とは別指標）。
+                            </p>
                         </div>
 
-                        <div class="space-y-3 text-[13.5px] leading-relaxed text-os-ink">
-                            <section v-if="structuredBriefing.generation.overview">
-                                <div class="mb-1 text-xs font-bold text-os-yoyu">
+                        <div
+                            class="space-y-3 text-[13.5px] leading-relaxed text-os-ink"
+                        >
+                            <section
+                                v-if="structuredBriefing.generation.overview"
+                            >
+                                <div
+                                    class="mb-1 text-xs font-bold text-os-yoyu"
+                                >
                                     今日の全体像
                                 </div>
                                 <p class="whitespace-pre-wrap">
@@ -807,7 +822,9 @@ defineOptions({
                                         ?.reason
                                 "
                             >
-                                <div class="mb-1 text-xs font-bold text-os-yoyu">
+                                <div
+                                    class="mb-1 text-xs font-bold text-os-yoyu"
+                                >
                                     注意する予定
                                 </div>
                                 <p
@@ -840,7 +857,9 @@ defineOptions({
                                     structuredBriefing.generation.hand_note
                                 "
                             >
-                                <div class="mb-1 text-xs font-bold text-os-yoyu">
+                                <div
+                                    class="mb-1 text-xs font-bold text-os-yoyu"
+                                >
                                     夢に向かう一手
                                 </div>
                                 <p
@@ -867,7 +886,9 @@ defineOptions({
                             </section>
 
                             <section v-if="structuredGaps.length">
-                                <div class="mb-1 text-xs font-bold text-os-yoyu">
+                                <div
+                                    class="mb-1 text-xs font-bold text-os-yoyu"
+                                >
                                     空き時間と提案
                                 </div>
                                 <ul class="space-y-1.5">
@@ -902,7 +923,9 @@ defineOptions({
                             <section
                                 v-if="structuredBriefing.generation.let_go"
                             >
-                                <div class="mb-1 text-xs font-bold text-os-yoyu">
+                                <div
+                                    class="mb-1 text-xs font-bold text-os-yoyu"
+                                >
                                     手放していいこと
                                 </div>
                                 <p class="whitespace-pre-wrap">
@@ -916,7 +939,9 @@ defineOptions({
                                         ?.text
                                 "
                             >
-                                <div class="mb-1 text-xs font-bold text-os-yoyu">
+                                <div
+                                    class="mb-1 text-xs font-bold text-os-yoyu"
+                                >
                                     過去のパターン
                                 </div>
                                 <p class="whitespace-pre-wrap">
@@ -956,7 +981,7 @@ defineOptions({
                         v-if="tubStatus === 'over'"
                         class="mt-2.5 rounded-[10px] bg-[#FBE8E7] px-3 py-2 text-[12.5px] text-[#D9534F]"
                     >
-                        通知: 余裕メーターが「{{
+                        通知: いまからの湯加減が「{{
                             TUB_LABEL.over
                         }}」です。何か1つ手放す提案を秘書に相談できます。
                     </div>
@@ -1019,7 +1044,9 @@ defineOptions({
                                 >
                             </div>
                             <div
-                                v-if="!isDone(event) && event.travel_min !== null"
+                                v-if="
+                                    !isDone(event) && event.travel_min !== null
+                                "
                                 class="mt-1 flex flex-wrap items-center gap-1 text-xs text-os-sub"
                             >
                                 <Car
@@ -1061,7 +1088,10 @@ defineOptions({
                                 v-else-if="!isDone(event)"
                                 class="mt-1 text-xs text-os-sub"
                             >
-                                <MapPin :size="12" class="mr-1 inline" />場所なし
+                                <MapPin
+                                    :size="12"
+                                    class="mr-1 inline"
+                                />場所なし
                             </div>
                             <Form
                                 v-if="!isDone(event) && event.place"
@@ -1114,7 +1144,9 @@ defineOptions({
                                     name="external_id"
                                     :value="event.id"
                                 />
-                                <span class="text-[#DF9A2E]">移動時間未登録</span>
+                                <span class="text-[#DF9A2E]"
+                                    >移動時間未登録</span
+                                >
                                 <input
                                     type="text"
                                     name="name"

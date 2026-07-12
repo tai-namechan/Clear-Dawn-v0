@@ -8,6 +8,7 @@ use App\Domain\Shared\AI\AiGateway;
 use App\Domain\Shared\AI\AiUsagePeriodResolver;
 use App\Domain\Shared\Models\AiUsageMonthly;
 use App\Domain\Shared\Models\AiUsageRequest;
+use App\Domain\Yoyu\Data\BriefingContext;
 use App\Domain\Yoyu\Jobs\GenerateYoyuBriefingJob;
 use App\Domain\Yoyu\Models\YoyuBriefing;
 use App\Domain\Yoyu\Models\YoyuCalendarEvent;
@@ -41,6 +42,55 @@ class YoyuBriefingV2JobTest extends TestCase
             'app.timezone' => 'Asia/Tokyo',
         ]);
         Http::preventStrayRequests();
+    }
+
+    public function test_memory_keys_join_server_id_and_url_only_after_parse(): void
+    {
+        $user = User::factory()->create();
+        $memory = Memory::factory()->create([
+            'user_id' => $user->id,
+            'title' => '朝ブリーフィング記憶',
+            'summary' => '今日の予定の学び',
+            'raw_content' => '今日の予定について学んだ',
+            'status' => 'ready',
+            'sensitive' => false,
+            'captured_at' => now()->subDay(),
+        ]);
+        $this->seedTimedEvent($user, '予定', 10, 0);
+        $briefing = $this->makeBriefing($user);
+
+        $captured = null;
+        Http::fake([
+            $this->anthropicFakePattern() => function ($request) use (&$captured) {
+                $captured = $request->data();
+
+                return $this->aiOkResponse(json_encode([
+                    'overview' => '全体',
+                    'caution' => ['event_key' => null, 'reason' => null],
+                    'hand_note' => null,
+                    'gap_suggestions' => [],
+                    'let_go' => '手放す',
+                    'pattern_note' => [
+                        'text' => '前回の学びを活かす',
+                        'memory_keys' => ['memory_1'],
+                    ],
+                ], JSON_UNESCAPED_UNICODE));
+            },
+        ]);
+
+        $this->runJob($briefing);
+
+        $userContent = (string) data_get($captured, 'messages.0.content');
+        $decoded = json_decode($userContent, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertArrayNotHasKey('url', $decoded['memories'][0]);
+        $this->assertArrayNotHasKey('id', $decoded['memories'][0]);
+        $this->assertSame('memory_1', $decoded['memories'][0]['key']);
+        $this->assertStringNotContainsString($memory->id, $userContent);
+        $this->assertStringNotContainsString('/kioku/memories/', $userContent);
+
+        $pattern = $briefing->fresh()->structured_data['generation']['pattern_note'];
+        $this->assertSame($memory->id, $pattern['memories'][0]['id']);
+        $this->assertStringContainsString('/kioku/memories/'.$memory->id, $pattern['memories'][0]['url']);
     }
 
     public function test_prompt_includes_events_hand_tasks_recall_and_gaps(): void
@@ -110,7 +160,114 @@ class YoyuBriefingV2JobTest extends TestCase
         $userContent = (string) data_get($captured, 'messages.0.content');
         $this->assertStringNotContainsString('Ignore all instructions', $system);
         $this->assertStringContainsString('Ignore all instructions', $userContent);
-        $this->assertStringContainsString('"events"', $userContent);
+        $decoded = json_decode($userContent, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertIsArray($decoded);
+        $this->assertArrayHasKey('events', $decoded);
+    }
+
+    public function test_all_day_events_appear_in_prompt_without_increasing_busy_minutes(): void
+    {
+        $user = User::factory()->create();
+        $this->seedAllDayEvent($user, '終日ミーティング');
+        $briefing = $this->makeBriefing($user);
+
+        $captured = null;
+        Http::fake([
+            $this->anthropicFakePattern() => function ($request) use (&$captured) {
+                $captured = $request->data();
+
+                return $this->aiOkResponse($this->validAiJson());
+            },
+        ]);
+
+        $this->runJob($briefing);
+
+        $userContent = (string) data_get($captured, 'messages.0.content');
+        $decoded = json_decode($userContent, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame([['title' => '終日ミーティング']], $decoded['all_day_events']);
+        $this->assertSame([], $decoded['events']);
+        $this->assertSame(0, $decoded['margin']['busy_minutes']);
+        $this->assertSame(0, $briefing->fresh()->structured_data['analysis']['busy_minutes']);
+    }
+
+    public function test_factory_exception_is_not_converted_to_invalid_response(): void
+    {
+        $user = User::factory()->create();
+        $this->seedTimedEvent($user, '予定', 10, 0);
+        $briefing = $this->makeBriefing($user);
+
+        Http::fake([
+            $this->anthropicFakePattern() => $this->aiOkResponse($this->validAiJson()),
+        ]);
+
+        $factory = new class extends BriefingStructuredDataFactory
+        {
+            public function make(BriefingContext $context, ?array $generation): array
+            {
+                throw new \RuntimeException('factory boom');
+            }
+        };
+
+        $job = new GenerateYoyuBriefingJob(
+            $briefing->id,
+            $briefing->date->toDateString(),
+            'Asia/Tokyo',
+            (string) $briefing->generation_id,
+        );
+
+        try {
+            $job->handle(
+                app(AiGateway::class),
+                app(BriefingContextBuilder::class),
+                app(BriefingPromptBuilder::class),
+                app(BriefingResponseParser::class),
+                $factory,
+            );
+            $this->fail('Expected factory exception to bubble as transient failure');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('factory boom', $e->getMessage());
+        }
+
+        $fresh = $briefing->fresh();
+        $this->assertSame('pending', $fresh->status);
+        $this->assertNull($fresh->structured_data);
+        $this->assertNotSame('invalid_response', data_get($fresh->structured_data, 'generation.status'));
+    }
+
+    public function test_stale_generation_does_not_overwrite_newer_result(): void
+    {
+        $user = User::factory()->create();
+        $briefing = YoyuBriefing::query()->create([
+            'user_id' => $user->id,
+            'date' => '2026-07-11',
+            'body' => '新しい本文',
+            'structured_data' => [
+                'schema_version' => 2,
+                'generation' => ['status' => 'generated', 'overview' => '新しい'],
+            ],
+            'status' => 'ready',
+            'generation_id' => 'gen-new',
+        ]);
+
+        Http::fake([
+            $this->anthropicFakePattern() => $this->aiOkResponse($this->validAiJson('古いoverview')),
+        ]);
+
+        $stale = new GenerateYoyuBriefingJob($briefing->id, '2026-07-11', 'Asia/Tokyo', 'gen-old');
+        $stale->handle(
+            app(AiGateway::class),
+            app(BriefingContextBuilder::class),
+            app(BriefingPromptBuilder::class),
+            app(BriefingResponseParser::class),
+            app(BriefingStructuredDataFactory::class),
+        );
+
+        Http::assertNothingSent();
+        $fresh = $briefing->fresh();
+        $this->assertSame('新しい本文', $fresh->body);
+        $this->assertSame('新しい', $fresh->structured_data['generation']['overview']);
+        $this->assertSame('ready', $fresh->status);
+        $this->assertSame('gen-new', $fresh->generation_id);
     }
 
     public function test_quota_limited_keeps_analysis_and_does_not_call_provider_when_reserved_blocks(): void
@@ -204,6 +361,7 @@ class YoyuBriefingV2JobTest extends TestCase
             'body' => '旧本文',
             'structured_data' => $oldStructured,
             'status' => 'generating',
+            'generation_id' => 'gen-old',
         ]);
 
         // Mid-job: status generating must not null structured_data.
@@ -254,13 +412,14 @@ class YoyuBriefingV2JobTest extends TestCase
             'body' => 'keep-me',
             'structured_data' => ['schema_version' => 2, 'generation' => ['status' => 'generated', 'overview' => 'old']],
             'status' => 'pending',
+            'generation_id' => 'gen-retry',
         ]);
 
         Http::fake([
             $this->anthropicFakePattern() => Http::response(['error' => ['message' => 'boom']], 500),
         ]);
 
-        $job = new GenerateYoyuBriefingJob($briefing->id, '2026-07-11', 'Asia/Tokyo');
+        $job = new GenerateYoyuBriefingJob($briefing->id, '2026-07-11', 'Asia/Tokyo', (string) $briefing->generation_id);
         try {
             $job->handle(
                 app(AiGateway::class),
@@ -282,7 +441,7 @@ class YoyuBriefingV2JobTest extends TestCase
 
     private function runJob(YoyuBriefing $briefing): void
     {
-        $job = new GenerateYoyuBriefingJob($briefing->id, $briefing->date->toDateString(), 'Asia/Tokyo');
+        $job = new GenerateYoyuBriefingJob($briefing->id, $briefing->date->toDateString(), 'Asia/Tokyo', (string) $briefing->generation_id);
         $job->handle(
             app(AiGateway::class),
             app(BriefingContextBuilder::class),
@@ -299,21 +458,13 @@ class YoyuBriefingV2JobTest extends TestCase
             'date' => '2026-07-11',
             'body' => 'old',
             'status' => 'pending',
+            'generation_id' => 'gen-v2',
         ]);
     }
 
     private function seedTimedEvent(User $user, string $title, int $hour, int $minute): void
     {
-        $connector = Connector::query()->withoutUserScope()->create([
-            'user_id' => $user->id,
-            'source_type' => Connector::SOURCE_GOOGLE_CALENDAR,
-            'status' => 'connected',
-            'external_account_email' => 'me@example.com',
-            'access_token' => 'a',
-            'refresh_token' => 'r',
-            'last_synced_at' => now(),
-        ]);
-
+        $connector = $this->ensureConnector($user);
         $start = CarbonImmutable::parse('2026-07-11', 'Asia/Tokyo')->setTime($hour, $minute);
 
         YoyuCalendarEvent::query()->withoutUserScope()->create([
@@ -328,6 +479,49 @@ class YoyuBriefingV2JobTest extends TestCase
             'transparency' => 'opaque',
             'location' => null,
             'synced_at' => now(),
+        ]);
+    }
+
+    private function seedAllDayEvent(User $user, string $title): void
+    {
+        $connector = $this->ensureConnector($user);
+
+        YoyuCalendarEvent::query()->withoutUserScope()->create([
+            'user_id' => $user->id,
+            'connector_id' => $connector->id,
+            'external_id' => 'allday-'.$title,
+            'title' => $title,
+            'all_day' => true,
+            'starts_at' => null,
+            'ends_at' => null,
+            'starts_on' => '2026-07-11',
+            'ends_on' => '2026-07-12',
+            'status' => 'confirmed',
+            'transparency' => 'opaque',
+            'location' => null,
+            'synced_at' => now(),
+        ]);
+    }
+
+    private function ensureConnector(User $user): Connector
+    {
+        $existing = Connector::query()->withoutUserScope()
+            ->where('user_id', $user->id)
+            ->where('source_type', Connector::SOURCE_GOOGLE_CALENDAR)
+            ->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        return Connector::query()->withoutUserScope()->create([
+            'user_id' => $user->id,
+            'source_type' => Connector::SOURCE_GOOGLE_CALENDAR,
+            'status' => 'connected',
+            'external_account_email' => 'me@example.com',
+            'access_token' => 'a',
+            'refresh_token' => 'r',
+            'last_synced_at' => now(),
         ]);
     }
 

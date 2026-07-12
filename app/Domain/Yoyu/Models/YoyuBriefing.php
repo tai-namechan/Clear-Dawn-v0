@@ -15,8 +15,9 @@ use Illuminate\Support\Carbon;
  * @property string $body
  * @property array<string, mixed>|null $structured_data
  * @property string $status
+ * @property string|null $generation_id
  */
-#[Fillable(['user_id', 'date', 'body', 'structured_data', 'status'])]
+#[Fillable(['user_id', 'date', 'body', 'structured_data', 'status', 'generation_id'])]
 class YoyuBriefing extends Model
 {
     use BelongsToUser, HasUlids;

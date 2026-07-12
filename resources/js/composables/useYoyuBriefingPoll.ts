@@ -1,16 +1,12 @@
 import { router } from '@inertiajs/vue3';
-import { computed, toValue  } from 'vue';
-import type {MaybeRefOrGetter} from 'vue';
+import { computed, toValue } from 'vue';
+import type { MaybeRefOrGetter } from 'vue';
 import { useAsyncPoll } from '@/composables/useAsyncPoll';
 
 const PENDING_STATUSES = new Set(['pending', 'generating']);
 
 export type YoyuBriefingStatus =
-    | 'pending'
-    | 'generating'
-    | 'ready'
-    | 'failed'
-    | null;
+    'pending' | 'generating' | 'ready' | 'failed' | null;
 
 export function isYoyuBriefingPending(status: YoyuBriefingStatus): boolean {
     return status !== null && PENDING_STATUSES.has(status);
@@ -33,8 +29,7 @@ export function yoyuBriefingLabel(
         return '○ 保存しました';
     }
 
-    const elapsed =
-        startedAtMs !== null ? Math.max(0, nowMs - startedAtMs) : 0;
+    const elapsed = startedAtMs !== null ? Math.max(0, nowMs - startedAtMs) : 0;
 
     if (elapsed < 4000) {
         return '🧠 AIが内容を分析しています…';

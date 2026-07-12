@@ -3,11 +3,15 @@
 namespace App\Domain\Yoyu\Services;
 
 use App\Domain\Yoyu\Data\BriefingMemoryRef;
-use RuntimeException;
+use App\Domain\Yoyu\Exceptions\InvalidBriefingResponseException;
 
 /**
  * Strict server-side parser for yoyu.briefing.v2 AI output.
  * Never trusts AI titles/times/IDs — joins allowlist keys to server data.
+ *
+ * Accepted raw forms only:
+ * - entire response is a JSON object
+ * - entire response is a single ``` / ```json fenced JSON object
  */
 final class BriefingResponseParser
 {
@@ -66,24 +70,27 @@ final class BriefingResponseParser
     {
         $trimmed = trim($raw);
         if ($trimmed === '') {
-            throw new RuntimeException('Briefing AI response is empty.');
+            throw new InvalidBriefingResponseException('Briefing AI response is empty.');
         }
 
-        // Existing Kioku convention: strip a single fenced / surrounding object extract.
-        if (preg_match('/^```(?:json)?\s*(.*?)\s*```$/is', $trimmed, $fence) === 1) {
+        // Only a single full-response code fence is allowed (no prose outside).
+        if (preg_match('/^```(?:json)?\s*\n?(.*?)\n?\s*```$/is', $trimmed, $fence) === 1) {
             $trimmed = trim($fence[1]);
-        } elseif (preg_match('/\{.*\}/s', $trimmed, $matches) === 1) {
-            $trimmed = $matches[0];
+        }
+
+        // Reject any leftover fence markers or non-object wrappers (no {...} extraction).
+        if ($trimmed === '' || ! str_starts_with($trimmed, '{') || ! str_ends_with($trimmed, '}')) {
+            throw new InvalidBriefingResponseException('Briefing AI response must be a JSON object (or a single JSON code fence).');
         }
 
         try {
             $decoded = json_decode($trimmed, true, 512, JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
-            throw new RuntimeException('Briefing AI response is not valid JSON.', 0, $e);
+            throw new InvalidBriefingResponseException('Briefing AI response is not valid JSON.', 0, $e);
         }
 
         if (! is_array($decoded) || array_is_list($decoded)) {
-            throw new RuntimeException('Briefing AI response must be a JSON object.');
+            throw new InvalidBriefingResponseException('Briefing AI response must be a JSON object.');
         }
 
         return $decoded;
@@ -97,7 +104,7 @@ final class BriefingResponseParser
     {
         $unknown = array_diff(array_keys($decoded), $allowed);
         if ($unknown !== []) {
-            throw new RuntimeException('Briefing AI response contains unknown keys.');
+            throw new InvalidBriefingResponseException('Briefing AI response contains unknown keys.');
         }
     }
 
@@ -112,7 +119,7 @@ final class BriefingResponseParser
         }
 
         if (! is_array($caution) || array_is_list($caution)) {
-            throw new RuntimeException('caution must be an object or null.');
+            throw new InvalidBriefingResponseException('caution must be an object or null.');
         }
 
         $this->assertOnlyKnownKeys($caution, ['event_key', 'reason']);
@@ -121,7 +128,7 @@ final class BriefingResponseParser
         $reason = $caution['reason'] ?? null;
 
         if ($eventKey !== null && ! is_string($eventKey)) {
-            throw new RuntimeException('caution.event_key must be string or null.');
+            throw new InvalidBriefingResponseException('caution.event_key must be string or null.');
         }
 
         if ($eventKey === '' || ($eventKey !== null && ! array_key_exists($eventKey, $events))) {
@@ -173,13 +180,13 @@ final class BriefingResponseParser
         }
 
         if (! is_array($suggestions) || ! array_is_list($suggestions)) {
-            throw new RuntimeException('gap_suggestions must be an array.');
+            throw new InvalidBriefingResponseException('gap_suggestions must be an array.');
         }
 
         $byGap = [];
         foreach ($suggestions as $row) {
             if (! is_array($row) || array_is_list($row)) {
-                throw new RuntimeException('gap_suggestions items must be objects.');
+                throw new InvalidBriefingResponseException('gap_suggestions items must be objects.');
             }
             $this->assertOnlyKnownKeys($row, ['gap_key', 'suggestion']);
 
@@ -194,7 +201,6 @@ final class BriefingResponseParser
                 BriefingPromptBuilder::GAP_SUGGESTION_MAX,
             );
 
-            // Duplicate gap → keep first only.
             if (array_key_exists($gapKey, $byGap)) {
                 continue;
             }
@@ -226,7 +232,7 @@ final class BriefingResponseParser
         }
 
         if (! is_array($patternNote) || array_is_list($patternNote)) {
-            throw new RuntimeException('pattern_note must be an object or null.');
+            throw new InvalidBriefingResponseException('pattern_note must be an object or null.');
         }
 
         $this->assertOnlyKnownKeys($patternNote, ['text', 'memory_keys']);
@@ -239,7 +245,7 @@ final class BriefingResponseParser
 
         $keysRaw = $patternNote['memory_keys'] ?? null;
         if (! is_array($keysRaw) || ! array_is_list($keysRaw)) {
-            throw new RuntimeException('pattern_note.memory_keys must be an array.');
+            throw new InvalidBriefingResponseException('pattern_note.memory_keys must be an array.');
         }
 
         $resolved = [];
@@ -275,20 +281,20 @@ final class BriefingResponseParser
     private function requirePlainString(mixed $value, string $field, int $max, bool $allowEmpty = false): string
     {
         if (! is_string($value)) {
-            throw new RuntimeException("{$field} must be a string.");
+            throw new InvalidBriefingResponseException("{$field} must be a string.");
         }
 
         $text = trim($value);
         if (! $allowEmpty && $text === '') {
-            throw new RuntimeException("{$field} must not be empty.");
+            throw new InvalidBriefingResponseException("{$field} must not be empty.");
         }
 
         if (mb_strlen($text) > $max) {
-            throw new RuntimeException("{$field} exceeds max length {$max}.");
+            throw new InvalidBriefingResponseException("{$field} exceeds max length {$max}.");
         }
 
         if ($this->containsHtml($text)) {
-            throw new RuntimeException("{$field} must not contain HTML.");
+            throw new InvalidBriefingResponseException("{$field} must not contain HTML.");
         }
 
         return $text;

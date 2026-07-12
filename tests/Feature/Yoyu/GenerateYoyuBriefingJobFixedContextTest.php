@@ -52,7 +52,8 @@ class GenerateYoyuBriefingJobFixedContextTest extends TestCase
         Bus::assertDispatched(GenerateYoyuBriefingJob::class, function (GenerateYoyuBriefingJob $job) use ($expectedDate): bool {
             return $job->briefingDate === $expectedDate
                 && $job->timezone === 'Asia/Tokyo'
-                && $job->briefingId !== '';
+                && $job->briefingId !== ''
+                && $job->generationId !== '';
         });
     }
 
@@ -66,6 +67,7 @@ class GenerateYoyuBriefingJobFixedContextTest extends TestCase
             'date' => '2026-07-11',
             'body' => 'old',
             'status' => 'pending',
+            'generation_id' => 'gen-fixed',
         ]);
 
         $captured = null;
@@ -87,7 +89,7 @@ class GenerateYoyuBriefingJobFixedContextTest extends TestCase
             },
         ]);
 
-        $job = new GenerateYoyuBriefingJob($briefing->id, '2026-07-11', 'America/New_York');
+        $job = new GenerateYoyuBriefingJob($briefing->id, '2026-07-11', 'America/New_York', (string) $briefing->generation_id);
         $job->handle(
             app(AiGateway::class),
             app(BriefingContextBuilder::class),
@@ -123,6 +125,7 @@ class GenerateYoyuBriefingJobFixedContextTest extends TestCase
             'date' => '2026-07-11',
             'body' => 'old',
             'status' => 'pending',
+            'generation_id' => 'gen-fixed',
         ]);
 
         $captured = null;
@@ -146,7 +149,7 @@ class GenerateYoyuBriefingJobFixedContextTest extends TestCase
 
         CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-12 00:10:00', 'UTC'));
 
-        $job = new GenerateYoyuBriefingJob($briefing->id, '2026-07-11', 'UTC');
+        $job = new GenerateYoyuBriefingJob($briefing->id, '2026-07-11', 'UTC', (string) $briefing->generation_id);
         $job->handle(
             app(AiGateway::class),
             app(BriefingContextBuilder::class),
@@ -176,6 +179,7 @@ class GenerateYoyuBriefingJobFixedContextTest extends TestCase
             'date' => '2026-07-11',
             'body' => 'old',
             'status' => 'pending',
+            'generation_id' => 'gen-fixed',
         ]);
 
         $captured = null;
@@ -199,7 +203,7 @@ class GenerateYoyuBriefingJobFixedContextTest extends TestCase
 
         Config::set('app.timezone', 'UTC');
 
-        $job = new GenerateYoyuBriefingJob($briefing->id, '2026-07-11', 'Asia/Tokyo');
+        $job = new GenerateYoyuBriefingJob($briefing->id, '2026-07-11', 'Asia/Tokyo', (string) $briefing->generation_id);
         $job->handle(
             app(AiGateway::class),
             app(BriefingContextBuilder::class),
@@ -223,9 +227,10 @@ class GenerateYoyuBriefingJobFixedContextTest extends TestCase
             'date' => '2026-07-11',
             'body' => 'keep-me',
             'status' => 'pending',
+            'generation_id' => 'gen-mismatch',
         ]);
 
-        $job = new GenerateYoyuBriefingJob($briefing->id, '2026-07-12', 'UTC');
+        $job = new GenerateYoyuBriefingJob($briefing->id, '2026-07-12', 'UTC', 'gen-mismatch');
         $job->handle(
             app(AiGateway::class),
             app(BriefingContextBuilder::class),
@@ -245,13 +250,14 @@ class GenerateYoyuBriefingJobFixedContextTest extends TestCase
     {
         Queue::fake();
 
-        $job = new GenerateYoyuBriefingJob('brief-1', '2026-07-11', 'Asia/Tokyo');
+        $job = new GenerateYoyuBriefingJob('brief-1', '2026-07-11', 'Asia/Tokyo', 'gen-1');
         dispatch($job);
 
         Queue::assertPushed(GenerateYoyuBriefingJob::class, function (GenerateYoyuBriefingJob $pushed): bool {
             return $pushed->briefingId === 'brief-1'
                 && $pushed->briefingDate === '2026-07-11'
-                && $pushed->timezone === 'Asia/Tokyo';
+                && $pushed->timezone === 'Asia/Tokyo'
+                && $pushed->generationId === 'gen-1';
         });
     }
 

@@ -209,9 +209,19 @@ class HomeController extends Controller
         Request $request,
         EnsureTodayBriefingService $ensureTodayBriefing,
     ): RedirectResponse {
-        $ensureTodayBriefing->regenerate($request->user());
+        $result = $ensureTodayBriefing->regenerate($request->user());
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => '朝ブリーフィングの生成を開始しました。']);
+        if ($result['already_running']) {
+            Inertia::flash('toast', [
+                'type' => 'info',
+                'message' => '朝ブリーフィングはすでに生成中です。',
+            ]);
+        } elseif ($result['dispatched']) {
+            Inertia::flash('toast', [
+                'type' => 'success',
+                'message' => '朝ブリーフィングの生成を開始しました。',
+            ]);
+        }
 
         return redirect()->route('yoyu.home', ['tab' => 'today']);
     }

@@ -3,11 +3,11 @@
 namespace Tests\Unit\Yoyu;
 
 use App\Domain\Yoyu\Data\BriefingMemoryRef;
+use App\Domain\Yoyu\Exceptions\InvalidBriefingResponseException;
 use App\Domain\Yoyu\Services\BriefingPromptBuilder;
 use App\Domain\Yoyu\Services\BriefingResponseParser;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use RuntimeException;
 
 class BriefingResponseParserTest extends TestCase
 {
@@ -52,7 +52,7 @@ class BriefingResponseParserTest extends TestCase
         ];
     }
 
-    public function test_parses_valid_json_and_joins_server_authoritative_fields(): void
+    public function test_parses_pure_json_object(): void
     {
         $raw = json_encode([
             'overview' => '今日は穏やかです。',
@@ -79,7 +79,7 @@ class BriefingResponseParserTest extends TestCase
         $this->assertSame('/kioku/memories/01MEM1', $parsed['pattern_note']['memories'][0]['url']);
     }
 
-    public function test_strips_code_fence(): void
+    public function test_parses_single_full_response_code_fence(): void
     {
         $raw = "```json\n".json_encode([
             'overview' => 'OK',
@@ -94,21 +94,81 @@ class BriefingResponseParserTest extends TestCase
         $this->assertSame('OK', $parsed['overview']);
     }
 
+    public function test_rejects_prose_before_json_object(): void
+    {
+        $json = json_encode([
+            'overview' => '全体',
+            'caution' => ['event_key' => null, 'reason' => null],
+            'hand_note' => null,
+            'gap_suggestions' => [],
+            'let_go' => '手放す',
+            'pattern_note' => null,
+        ], JSON_UNESCAPED_UNICODE);
+
+        $this->expectException(InvalidBriefingResponseException::class);
+        $this->parser->parse("こちらです。\n{$json}", $this->allowlist);
+    }
+
+    public function test_rejects_prose_after_json_object(): void
+    {
+        $json = json_encode([
+            'overview' => '全体',
+            'caution' => ['event_key' => null, 'reason' => null],
+            'hand_note' => null,
+            'gap_suggestions' => [],
+            'let_go' => '手放す',
+            'pattern_note' => null,
+        ], JSON_UNESCAPED_UNICODE);
+
+        $this->expectException(InvalidBriefingResponseException::class);
+        $this->parser->parse("{$json}\n以上です。", $this->allowlist);
+    }
+
+    public function test_rejects_multiple_json_objects(): void
+    {
+        $one = json_encode([
+            'overview' => '全体',
+            'caution' => ['event_key' => null, 'reason' => null],
+            'hand_note' => null,
+            'gap_suggestions' => [],
+            'let_go' => '手放す',
+            'pattern_note' => null,
+        ], JSON_UNESCAPED_UNICODE);
+
+        $this->expectException(InvalidBriefingResponseException::class);
+        $this->parser->parse($one.$one, $this->allowlist);
+    }
+
+    public function test_rejects_code_fence_with_surrounding_prose(): void
+    {
+        $inner = json_encode([
+            'overview' => 'OK',
+            'caution' => ['event_key' => null, 'reason' => null],
+            'hand_note' => null,
+            'gap_suggestions' => [],
+            'let_go' => '手放す',
+            'pattern_note' => null,
+        ], JSON_UNESCAPED_UNICODE);
+
+        $this->expectException(InvalidBriefingResponseException::class);
+        $this->parser->parse("結果:\n```json\n{$inner}\n```\n", $this->allowlist);
+    }
+
     public function test_rejects_invalid_json(): void
     {
-        $this->expectException(RuntimeException::class);
+        $this->expectException(InvalidBriefingResponseException::class);
         $this->parser->parse('{not-json', $this->allowlist);
     }
 
     public function test_rejects_non_object_json(): void
     {
-        $this->expectException(RuntimeException::class);
+        $this->expectException(InvalidBriefingResponseException::class);
         $this->parser->parse('["overview"]', $this->allowlist);
     }
 
     public function test_rejects_unknown_top_level_key(): void
     {
-        $this->expectException(RuntimeException::class);
+        $this->expectException(InvalidBriefingResponseException::class);
         $this->parser->parse(json_encode([
             'overview' => 'a',
             'caution' => ['event_key' => null, 'reason' => null],
@@ -122,7 +182,7 @@ class BriefingResponseParserTest extends TestCase
 
     public function test_rejects_html_in_overview(): void
     {
-        $this->expectException(RuntimeException::class);
+        $this->expectException(InvalidBriefingResponseException::class);
         $this->parser->parse(json_encode([
             'overview' => '<b>危険</b>',
             'caution' => ['event_key' => null, 'reason' => null],
@@ -135,7 +195,7 @@ class BriefingResponseParserTest extends TestCase
 
     public function test_rejects_overlong_overview(): void
     {
-        $this->expectException(RuntimeException::class);
+        $this->expectException(InvalidBriefingResponseException::class);
         $this->parser->parse(json_encode([
             'overview' => str_repeat('あ', BriefingPromptBuilder::OVERVIEW_MAX + 1),
             'caution' => ['event_key' => null, 'reason' => null],
@@ -217,8 +277,7 @@ class BriefingResponseParserTest extends TestCase
 
     public function test_ai_cannot_override_event_title_via_extra_fields(): void
     {
-        // Unknown keys inside caution are rejected (strict), proving we do not cast AI fields through.
-        $this->expectException(RuntimeException::class);
+        $this->expectException(InvalidBriefingResponseException::class);
         $this->parser->parse(json_encode([
             'overview' => '全体',
             'caution' => [
@@ -251,7 +310,7 @@ class BriefingResponseParserTest extends TestCase
     #[DataProvider('missingRequiredProvider')]
     public function test_rejects_missing_required_fields(array $payload): void
     {
-        $this->expectException(RuntimeException::class);
+        $this->expectException(InvalidBriefingResponseException::class);
         $this->parser->parse(json_encode($payload, JSON_UNESCAPED_UNICODE), $this->allowlist);
     }
 

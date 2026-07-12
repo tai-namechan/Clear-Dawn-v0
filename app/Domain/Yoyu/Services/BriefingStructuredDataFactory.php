@@ -9,7 +9,7 @@ use App\Domain\Yoyu\Data\GapSlot;
 /**
  * Builds schema_version=2 structured_data payloads from deterministic context + generation.
  */
-final class BriefingStructuredDataFactory
+class BriefingStructuredDataFactory
 {
     public const SCHEMA_VERSION = 2;
 
