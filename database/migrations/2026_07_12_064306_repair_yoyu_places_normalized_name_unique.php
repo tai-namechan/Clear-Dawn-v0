@@ -7,18 +7,21 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Store normalized place keys explicitly and unique on (user_id, normalized_name).
- * Display `name` remains the first-seen label; identity is the normalized key.
+ * Repair path for DBs that already ran the old PR-D1 unique on (user_id, name)
+ * before that migration was rewritten to use normalized_name.
  *
- * This migration lives only on the PR-D1 branch (not yet on develop), so it is
- * rewritten in place instead of permanently shipping the incorrect (user_id, name)
- * unique. Environments that already applied the old version are repaired by
- * 2026_07_12_064306_repair_yoyu_places_normalized_name_unique.
+ * Fresh installs that run the rewritten 2026_07_11_220001 are a no-op here.
  */
 return new class extends Migration
 {
     public function up(): void
     {
+        if ($this->hasIndex('yoyu_places', 'yoyu_places_user_id_name_unique')) {
+            Schema::table('yoyu_places', function (Blueprint $table) {
+                $table->dropUnique('yoyu_places_user_id_name_unique');
+            });
+        }
+
         if (! Schema::hasColumn('yoyu_places', 'normalized_name')) {
             Schema::table('yoyu_places', function (Blueprint $table) {
                 $table->string('normalized_name', 255)->nullable()->after('name');
@@ -27,9 +30,11 @@ return new class extends Migration
 
         $this->backfillAndDedupe();
 
-        Schema::table('yoyu_places', function (Blueprint $table) {
-            $table->string('normalized_name', 255)->nullable(false)->change();
-        });
+        if (Schema::hasColumn('yoyu_places', 'normalized_name')) {
+            Schema::table('yoyu_places', function (Blueprint $table) {
+                $table->string('normalized_name', 255)->nullable(false)->change();
+            });
+        }
 
         if (! $this->hasIndex('yoyu_places', 'yoyu_places_user_id_normalized_name_unique')) {
             Schema::table('yoyu_places', function (Blueprint $table) {
@@ -40,21 +45,25 @@ return new class extends Migration
 
     public function down(): void
     {
-        if ($this->hasIndex('yoyu_places', 'yoyu_places_user_id_normalized_name_unique')) {
-            Schema::table('yoyu_places', function (Blueprint $table) {
-                $table->dropUnique('yoyu_places_user_id_normalized_name_unique');
-            });
+        // Do not reintroduce the incorrect (user_id, name) unique.
+        // Rolling back leaves normalized_name + correct unique in place from 220001,
+        // or drops only this repair's additions when 220001 never added them.
+        if (
+            Schema::hasColumn('yoyu_places', 'normalized_name')
+            && ! $this->hasIndex('yoyu_places', 'yoyu_places_user_id_normalized_name_unique')
+        ) {
+            return;
         }
 
-        if (Schema::hasColumn('yoyu_places', 'normalized_name')) {
-            Schema::table('yoyu_places', function (Blueprint $table) {
-                $table->dropColumn('normalized_name');
-            });
-        }
+        // Safe no-op for reverse when the rewritten 220001 owns the column/index.
     }
 
     private function backfillAndDedupe(): void
     {
+        if (! Schema::hasColumn('yoyu_places', 'normalized_name')) {
+            return;
+        }
+
         $rows = DB::table('yoyu_places')
             ->orderBy('user_id')
             ->orderByDesc('updated_at')

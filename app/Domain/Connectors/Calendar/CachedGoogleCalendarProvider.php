@@ -117,7 +117,7 @@ final class CachedGoogleCalendarProvider implements CalendarProvider
                 timezone: $event->event_timezone,
                 status: $event->status,
                 transparency: $event->transparency,
-                location: $event->location,
+                location: $event->effectiveLocation(),
             ))
             ->all());
     }

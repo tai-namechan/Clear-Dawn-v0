@@ -12,6 +12,9 @@ use Illuminate\Support\Carbon;
  * Cached external calendar event. Timed events use starts_at/ends_at (UTC);
  * all-day events use starts_on/ends_on (local dates, end exclusive).
  *
+ * `location` is provider-owned (Google sync). `location_override` is app-owned
+ * manual label used only when Google location is empty.
+ *
  * @property string $id
  * @property int $user_id
  * @property string $connector_id
@@ -28,6 +31,7 @@ use Illuminate\Support\Carbon;
  * @property string $transparency
  * @property string $status
  * @property string|null $location
+ * @property string|null $location_override
  * @property Carbon $synced_at
  */
 #[Fillable([
@@ -46,11 +50,28 @@ use Illuminate\Support\Carbon;
     'transparency',
     'status',
     'location',
+    'location_override',
     'synced_at',
 ])]
 class YoyuCalendarEvent extends Model
 {
     use BelongsToUser, HasUlids;
+
+    /**
+     * Effective place label for travel resolution / Today UI.
+     * Google location wins when present; otherwise app override.
+     */
+    public function effectiveLocation(): ?string
+    {
+        $google = trim((string) $this->location);
+        if ($google !== '') {
+            return $this->location;
+        }
+
+        $override = trim((string) $this->location_override);
+
+        return $override !== '' ? $this->location_override : null;
+    }
 
     /**
      * @return array<string, string>

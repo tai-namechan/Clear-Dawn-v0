@@ -17,6 +17,7 @@ use App\Domain\Yoyu\Models\YoyuFocusItem;
 use App\Domain\Yoyu\Models\YoyuTask;
 use App\Domain\Yoyu\Services\BriefingContextBuilder;
 use App\Domain\Yoyu\Services\ClearDawnHandService;
+use App\Domain\Yoyu\Support\UserTimezoneResolver;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Yoyu\UpdateYoyuTaskRequest;
 use Carbon\CarbonImmutable;
@@ -204,17 +205,19 @@ class HomeController extends Controller
         return redirect()->route('yoyu.home', ['tab' => 'mind']);
     }
 
-    public function regenerateBriefing(Request $request): RedirectResponse
+    public function regenerateBriefing(Request $request, UserTimezoneResolver $timezones): RedirectResponse
     {
         $user = $request->user();
+        $timezone = $timezones->for($user);
+        $briefingDate = CarbonImmutable::now($timezone)->toDateString();
 
         $existing = YoyuBriefing::query()
             ->where('user_id', $user->id)
-            ->whereDate('date', today())
+            ->whereDate('date', $briefingDate)
             ->first();
 
         $briefing = YoyuBriefing::query()->updateOrCreate(
-            ['user_id' => $user->id, 'date' => today()->toDateString()],
+            ['user_id' => $user->id, 'date' => $briefingDate],
             [
                 'body' => $existing?->body !== null && $existing->body !== ''
                     ? $existing->body
@@ -224,7 +227,8 @@ class HomeController extends Controller
         );
 
         // Queue worker (not afterResponse/dispatchSync) so the web request stays free.
-        GenerateYoyuBriefingJob::dispatch($briefing->id);
+        // Date/timezone are fixed at dispatch so queue wait / config drift cannot retarget the day.
+        GenerateYoyuBriefingJob::dispatch($briefing->id, $briefingDate, $timezone);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => '朝ブリーフィングの生成を開始しました。']);
 

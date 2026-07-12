@@ -9,7 +9,6 @@ use App\Domain\Yoyu\Data\ClearDawnHand;
 use App\Domain\Yoyu\Models\YoyuBriefing;
 use App\Domain\Yoyu\Services\BriefingContextBuilder;
 use App\Models\User;
-use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -33,7 +32,16 @@ class GenerateYoyuBriefingJob implements ShouldQueue
      */
     public array $backoff = [5, 5, 10, 10, 10, 10, 15];
 
-    public function __construct(public string $briefingId) {}
+    /**
+     * @param  string  $briefingId  Target briefing row
+     * @param  string  $briefingDate  Y-m-d fixed at dispatch (user-local day)
+     * @param  string  $timezone  IANA timezone fixed at dispatch
+     */
+    public function __construct(
+        public string $briefingId,
+        public string $briefingDate,
+        public string $timezone,
+    ) {}
 
     public function handle(AiGateway $ai, BriefingContextBuilder $contexts): void
     {
@@ -47,10 +55,21 @@ class GenerateYoyuBriefingJob implements ShouldQueue
             return;
         }
 
+        $rowDate = $briefing->date->toDateString();
+        if ($rowDate !== $this->briefingDate) {
+            Log::warning('GenerateYoyuBriefingJob date mismatch; refusing to rewrite', [
+                'briefing_id' => $this->briefingId,
+                'row_date' => $rowDate,
+                'payload_date' => $this->briefingDate,
+                'timezone' => $this->timezone,
+            ]);
+
+            return;
+        }
+
         $briefing->update(['status' => 'generating']);
 
-        $date = CarbonImmutable::parse($briefing->date->toDateString());
-        $context = $contexts->build($user, $date);
+        $context = $contexts->build($user, $this->briefingDate, $this->timezone);
 
         // Connected but never synced: wait briefly for SyncCalendarJob (no Google HTTP here).
         if (
@@ -124,6 +143,8 @@ class GenerateYoyuBriefingJob implements ShouldQueue
         } catch (Throwable $e) {
             Log::warning('GenerateYoyuBriefingJob failed', [
                 'briefing_id' => $this->briefingId,
+                'briefing_date' => $this->briefingDate,
+                'timezone' => $this->timezone,
                 'message' => $e->getMessage(),
             ]);
 

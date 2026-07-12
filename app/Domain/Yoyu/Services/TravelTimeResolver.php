@@ -3,7 +3,6 @@
 namespace App\Domain\Yoyu\Services;
 
 use App\Domain\Connectors\Calendar\CalendarEventData;
-use App\Domain\Yoyu\Support\PlaceNameNormalizer;
 use App\Models\User;
 
 /**
