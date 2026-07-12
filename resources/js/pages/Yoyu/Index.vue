@@ -35,6 +35,8 @@ import { joinGapsWithSuggestions } from '@/lib/yoyuBriefingGaps.mjs';
 import {
     BUFFER_MIN,
     departInfo,
+    eventBufferMin,
+    eventPrepMin,
     fmtTime,
     PREP_MIN,
     TUB_LABEL,
@@ -43,6 +45,7 @@ import {
 import type { CalEvent } from '@/lib/yoyuCalc';
 import { chat, settings } from '@/routes/yoyu';
 import { regenerate } from '@/routes/yoyu/briefing';
+import { travelLead as eventTravelLead } from '@/routes/yoyu/events';
 import {
     store as storeFocus,
     update as updateFocus,
@@ -646,9 +649,9 @@ defineOptions({
                                 }}分
                             </span>
                             <span class="inline-flex items-center gap-1">
-                                <Clock :size="13" />支度{{ prepMin }}分＋余白{{
-                                    bufferMin
-                                }}分
+                                <Clock :size="13" />支度{{
+                                    hero.d.prepMin
+                                }}分＋余白{{ hero.d.bufferMin }}分
                             </span>
                         </div>
                     </div>
@@ -1072,8 +1075,10 @@ defineOptions({
                                 </span>
                                 <span
                                     >（移動{{ event.travel_min }}分＋支度{{
-                                        prepMin
-                                    }}分＋余白{{ bufferMin }}分）</span
+                                        eventPrepMin(event, prepMin)
+                                    }}分＋余白{{
+                                        eventBufferMin(event, bufferMin)
+                                    }}分）</span
                                 >
                             </div>
                             <div
@@ -1175,10 +1180,75 @@ defineOptions({
                                     登録
                                 </Button>
                             </Form>
+                            <Form
+                                v-if="!isDone(event) && event.travel_min !== null"
+                                v-bind="eventTravelLead.form()"
+                                class="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-os-sub"
+                                #default="{ processing }"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="external_id"
+                                    :value="event.id"
+                                />
+                                <span
+                                    >支度・余白{{
+                                        event.prep_minutes_override != null ||
+                                        event.buffer_minutes_override != null
+                                            ? '（この予定）'
+                                            : '（既定）'
+                                    }}</span
+                                >
+                                <input
+                                    type="number"
+                                    name="prep_minutes"
+                                    min="0"
+                                    max="120"
+                                    :value="eventPrepMin(event, prepMin)"
+                                    class="w-14 rounded-lg border border-os-line bg-os-yoyu-bg px-2 py-1 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/30"
+                                    required
+                                />
+                                <span>／</span>
+                                <input
+                                    type="number"
+                                    name="buffer_minutes"
+                                    min="0"
+                                    max="60"
+                                    :value="eventBufferMin(event, bufferMin)"
+                                    class="w-14 rounded-lg border border-os-line bg-os-yoyu-bg px-2 py-1 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/30"
+                                    required
+                                />
+                                <span>分</span>
+                                <Button
+                                    type="submit"
+                                    size="sm"
+                                    class="h-7 rounded-full border border-os-yoyu/30 bg-os-yoyu-soft px-2.5 text-[11px] font-bold text-os-yoyu hover:bg-os-yoyu-soft"
+                                    variant="outline"
+                                    :disabled="processing"
+                                >
+                                    保存
+                                </Button>
+                                <Button
+                                    v-if="
+                                        event.prep_minutes_override != null ||
+                                        event.buffer_minutes_override != null
+                                    "
+                                    type="submit"
+                                    name="clear"
+                                    value="1"
+                                    size="sm"
+                                    class="h-7 rounded-full border border-os-line px-2.5 text-[11px] text-os-sub"
+                                    variant="outline"
+                                    :disabled="processing"
+                                >
+                                    既定に戻す
+                                </Button>
+                            </Form>
                         </div>
                     </div>
                     <p class="mt-3 text-[11.5px] leading-relaxed text-os-sub">
-                        移動時間は場所ごとに手動登録。MVPでは Maps API 不使用。
+                        移動時間は場所ごと、支度・余白は予定ごとに設定できます（未設定は設定画面の既定値）。Maps
+                        API は未使用です。
                     </p>
                 </div>
             </section>

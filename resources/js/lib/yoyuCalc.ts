@@ -7,6 +7,9 @@ export type CalEvent = {
     /** null = unresolved; 0 = registered with no travel */
     travel_min: number | null;
     color: string;
+    /** null = use user default travelLead */
+    prep_minutes_override?: number | null;
+    buffer_minutes_override?: number | null;
 };
 
 export type YoyuTaskLike = {
@@ -31,15 +34,31 @@ export function fmtTime(iso: string): string {
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
+export function eventPrepMin(
+    event: CalEvent,
+    defaultPrep: number = PREP_MIN,
+): number {
+    return event.prep_minutes_override ?? defaultPrep;
+}
+
+export function eventBufferMin(
+    event: CalEvent,
+    defaultBuffer: number = BUFFER_MIN,
+): number {
+    return event.buffer_minutes_override ?? defaultBuffer;
+}
+
 export function departInfo(
     event: CalEvent,
     nowMs: number,
-    prepMin: number = PREP_MIN,
-    bufferMin: number = BUFFER_MIN,
+    defaultPrep: number = PREP_MIN,
+    defaultBuffer: number = BUFFER_MIN,
 ) {
     const start = new Date(event.start).getTime();
     const travelMin = event.travel_min;
     const resolved = travelMin !== null;
+    const prepMin = eventPrepMin(event, defaultPrep);
+    const bufferMin = eventBufferMin(event, defaultBuffer);
     const lead = resolved ? (travelMin + prepMin + bufferMin) * 60000 : 0;
     const depart = start - lead;
     const min = Math.round((depart - nowMs) / 60000);
@@ -48,6 +67,8 @@ export function departInfo(
         depart,
         min,
         travel: resolved,
+        prepMin,
+        bufferMin,
     };
 }
 
@@ -56,8 +77,8 @@ export function yoyuCalc(
     calendar: CalEvent[],
     doneEventIds: string[],
     tasks: YoyuTaskLike[],
-    prepMin: number = PREP_MIN,
-    bufferMin: number = BUFFER_MIN,
+    defaultPrep: number = PREP_MIN,
+    defaultBuffer: number = BUFFER_MIN,
 ): { level: number; status: TubStatus; busy: number; free: number } {
     const dayEnd = new Date();
     dayEnd.setHours(22, 0, 0, 0);
@@ -76,7 +97,10 @@ export function yoyuCalc(
         busy += (end - Math.max(start, nowMs)) / 60000;
 
         if (start > nowMs && event.travel_min !== null) {
-            busy += event.travel_min + prepMin + bufferMin;
+            busy +=
+                event.travel_min +
+                eventPrepMin(event, defaultPrep) +
+                eventBufferMin(event, defaultBuffer);
         }
     }
 

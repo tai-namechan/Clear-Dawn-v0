@@ -75,7 +75,9 @@ final class GapAnalyzer
             }
 
             if ($event->travelMin !== null) {
-                $lead = $event->travelMin + $prepMinutes + $bufferMinutes;
+                $prep = $event->effectivePrepMinutes($prepMinutes);
+                $buffer = $event->effectiveBufferMinutes($bufferMinutes);
+                $lead = $event->travelMin + $prep + $buffer;
                 $start = $start->subMinutes($lead);
             }
 

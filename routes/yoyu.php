@@ -11,6 +11,8 @@ Route::middleware(['auth', 'verified'])->prefix('yoyu')->name('yoyu.')->group(fu
     Route::patch('/tasks/{task}', [HomeController::class, 'updateTask'])->name('tasks.update');
     Route::delete('/tasks/{task}', [HomeController::class, 'destroyTask'])->name('tasks.destroy');
     Route::post('/places', [PlaceController::class, 'upsert'])->name('places.upsert');
+    Route::patch('/events/travel-lead', [PlaceController::class, 'updateEventTravelLead'])
+        ->name('events.travel-lead');
     Route::post('/focus', [HomeController::class, 'storeFocus'])->name('focus.store');
     Route::patch('/focus/{focus}', [HomeController::class, 'updateFocus'])->name('focus.update');
     Route::post('/briefing', [HomeController::class, 'regenerateBriefing'])->name('briefing.regenerate');

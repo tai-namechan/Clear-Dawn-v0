@@ -12,8 +12,8 @@ use Illuminate\Support\Carbon;
  * Cached external calendar event. Timed events use starts_at/ends_at (UTC);
  * all-day events use starts_on/ends_on (local dates, end exclusive).
  *
- * `location` is provider-owned (Google sync). `location_override` is app-owned
- * manual label used only when Google location is empty.
+ * Provider-owned: `location` (Google sync).
+ * App-owned: `location_override`, `prep_minutes_override`, `buffer_minutes_override`.
  *
  * @property string $id
  * @property int $user_id
@@ -32,6 +32,8 @@ use Illuminate\Support\Carbon;
  * @property string $status
  * @property string|null $location
  * @property string|null $location_override
+ * @property int|null $prep_minutes_override
+ * @property int|null $buffer_minutes_override
  * @property Carbon $synced_at
  */
 #[Fillable([
@@ -51,6 +53,8 @@ use Illuminate\Support\Carbon;
     'status',
     'location',
     'location_override',
+    'prep_minutes_override',
+    'buffer_minutes_override',
     'synced_at',
 ])]
 class YoyuCalendarEvent extends Model
@@ -83,6 +87,8 @@ class YoyuCalendarEvent extends Model
             'ends_at' => 'datetime',
             'all_day' => 'boolean',
             'synced_at' => 'datetime',
+            'prep_minutes_override' => 'integer',
+            'buffer_minutes_override' => 'integer',
         ];
     }
 }

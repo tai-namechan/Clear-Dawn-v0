@@ -118,6 +118,8 @@ final class CachedGoogleCalendarProvider implements CalendarProvider
                 status: $event->status,
                 transparency: $event->transparency,
                 location: $event->effectiveLocation(),
+                prepMinutesOverride: $event->prep_minutes_override,
+                bufferMinutesOverride: $event->buffer_minutes_override,
             ))
             ->all());
     }
