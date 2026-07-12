@@ -265,6 +265,63 @@ index: (user_id, eaten_on)。unique なし（1 日複数エントリ可）。物
 | fat_g | decimal(8,2) | |
 | carb_g | decimal(8,2) | |
 
+## キオク（実装済み + クイックキャプチャ差分）
+
+仕様は [kioku-quick-capture.md](../product/kioku-quick-capture.md) を参照。
+
+### memories（実装済み。★がクイックキャプチャで追加）
+
+| カラム | 型 | 備考 |
+|---|---|---|
+| id | ULID | PK |
+| user_id | bigint unsigned | FK(users) |
+| source_type | string | manual / url / voice★ / yoyu / clear_dawn ほか。text へ rename しない |
+| memory_type | string nullable | AI 分類結果 |
+| title | string | AI 生成。保存直後は「整理中…」 |
+| raw_content | text **nullable★** | manual/url の canonical raw。**voice では null**（原音声が canonical raw） |
+| transcript_text★ | text nullable | 音声からの派生テキスト。再生成可能 |
+| summary | text nullable | AI 要約 |
+| structured_data | json nullable | AI 構造化結果 |
+| tags | json nullable | |
+| captured_at | timestamp | 入力完了時刻 |
+| importance | tinyint | default 3 |
+| sensitive | bool | Recall／表出除外のみ。enrich では外部 AI へ送信される（現行仕様維持） |
+| status | string | captured / enriching / ready / failed / archived（全 source_type 共通の総合ライフサイクル） |
+| transcription_status★ | string nullable | voice のみ: pending / processing / ready / failed。manual/url は null |
+| client_capture_id★ | uuid nullable | 端末生成。**(user_id, client_capture_id) unique** で再送を冪等化 |
+| referenced_count | int | |
+
+不変条件: raw_content は作成後変更不可（Model updating ガード。修復時のみ明示解除）。
+
+### memory_assets（新規）
+
+| カラム | 型 | 備考 |
+|---|---|---|
+| id | ULID | PK |
+| memory_id | ULID | FK(memories) cascade |
+| kind | string | `audio_original`（voice の canonical raw） |
+| disk | string | `KIOKU_AUDIO_DISK`（非公開 disk。公開 URL は保存しない） |
+| path | string | 非公開オブジェクトキー |
+| mime_type | string | サーバー側検証済みの実形式 |
+| byte_size | bigint | 上限 20MB（config） |
+| duration_ms | int nullable | 上限 3 分（config） |
+| checksum | string nullable | sha256 |
+
+再生は所有者認可付き stream（`GET /kioku/memories/{memory}/audio`）経由のみ。Memory 削除時に storage 実体も削除する。
+
+### kioku_capture_events（新規・計測）
+
+| カラム | 型 | 備考 |
+|---|---|---|
+| id | ULID | PK |
+| user_id | bigint unsigned | FK(users) |
+| event | string | capture_started / local_saved / server_synced / sync_failed |
+| source_type | string | manual / voice |
+| duration_ms | int nullable | capture 開始→端末保存 |
+| retry_count | int nullable | 同期リトライ回数 |
+
+**raw 本文・transcript・音声内容は保存しない。**
+
 ## Phase 3〜4（ドラフト）
 
 ### finance_categories

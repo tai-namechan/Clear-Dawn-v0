@@ -53,4 +53,19 @@ class MemoryFactory extends Factory
             'status' => 'failed',
         ]);
     }
+
+    public function voice(): static
+    {
+        return $this->state(fn () => [
+            'source_type' => 'voice',
+            'memory_type' => null,
+            'raw_content' => null,
+            'summary' => null,
+            'structured_data' => null,
+            'tags' => null,
+            'status' => 'captured',
+            'transcription_status' => 'pending',
+            'title' => '整理中…',
+        ]);
+    }
 }

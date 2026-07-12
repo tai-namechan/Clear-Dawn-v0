@@ -21,6 +21,17 @@ let timer: ReturnType<typeof setInterval> | undefined;
 
 const pending = computed(() => isKiokuMemoryPending(props.memory.status));
 
+/** Voice memories have no raw_content; fall back to transcript, then a label. */
+const excerpt = computed(() => {
+    const text = props.memory.raw_content ?? props.memory.transcript_text;
+
+    if (text !== null && text !== '') {
+        return text.slice(0, 80);
+    }
+
+    return props.memory.source_type === 'voice' ? '音声メモ' : '';
+});
+
 const enrichmentLabel = computed(() =>
     kiokuEnrichmentLabel(props.memory, nowMs.value),
 );
@@ -105,10 +116,10 @@ watch(pending, () => {
         </div>
         <p class="mt-1 text-[13px] leading-relaxed text-os-sub">
             <template v-if="pending || memory.status === 'failed'">
-                {{ memory.raw_content.slice(0, 80) }}
+                {{ excerpt }}
             </template>
             <template v-else>
-                {{ memory.summary || memory.raw_content.slice(0, 80) }}
+                {{ memory.summary || excerpt }}
             </template>
         </p>
 

@@ -4,7 +4,7 @@ namespace App\Http\Requests\Kioku;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreMemoryRequest extends FormRequest
+class StoreManualCaptureRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -17,11 +17,10 @@ class StoreMemoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'client_capture_id' => ['nullable', 'uuid'],
+            'client_capture_id' => ['required', 'uuid'],
             'raw_content' => ['required', 'string', 'max:20000'],
-            'source_type' => ['nullable', 'string', 'in:manual,url'],
-            'sensitive' => ['nullable', 'boolean'],
             'captured_at' => ['nullable', 'date'],
+            'sensitive' => ['nullable', 'boolean'],
         ];
     }
 }

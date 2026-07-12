@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Domain\Kioku\Transcription\FakeTranscriptionGateway;
+use App\Domain\Kioku\Transcription\NullTranscriptionGateway;
+use App\Domain\Kioku\Transcription\TranscriptionGateway;
 use App\Models\MatrixCellItem;
 use App\Models\RoutineSession;
 use Carbon\CarbonImmutable;
@@ -18,7 +21,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Real speech-to-text providers plug in here once one is adopted
+        // (docs/product/kioku-quick-capture.md §12). 'none' must never fake
+        // a success — jobs guard on the provider before transcribing.
+        $this->app->bind(TranscriptionGateway::class, function (): TranscriptionGateway {
+            return match (config('kioku.transcription.provider', 'none')) {
+                'fake' => new FakeTranscriptionGateway,
+                default => new NullTranscriptionGateway,
+            };
+        });
     }
 
     /**
