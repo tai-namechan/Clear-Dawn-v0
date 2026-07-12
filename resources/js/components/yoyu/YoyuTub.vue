@@ -1,23 +1,26 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import {
-    formatMinutes,
-    TUB_LABEL,
-    yoyuCalc,
-    type CalEvent,
-    type TubStatus,
-    type YoyuTaskLike,
-} from '@/lib/yoyuCalc';
+import { formatMinutes, TUB_LABEL, yoyuCalc } from '@/lib/yoyuCalc';
+import type { CalEvent, TubStatus, YoyuTaskLike } from '@/lib/yoyuCalc';
 
 const props = defineProps<{
     nowMs: number;
     calendar: CalEvent[];
     doneEventIds: string[];
     tasks: YoyuTaskLike[];
+    prepMinutes: number;
+    bufferMinutes: number;
 }>();
 
 const calc = computed(() =>
-    yoyuCalc(props.nowMs, props.calendar, props.doneEventIds, props.tasks),
+    yoyuCalc(
+        props.nowMs,
+        props.calendar,
+        props.doneEventIds,
+        props.tasks,
+        props.prepMinutes,
+        props.bufferMinutes,
+    ),
 );
 
 const mood = computed(() => {
@@ -76,7 +79,7 @@ function wavePath(offset: number): string {
                 class="font-serif text-lg font-bold tracking-wide"
                 :style="{ color: mood.color }"
             >
-                {{ TUB_LABEL[calc.status] }}
+                いまからの湯加減 · {{ TUB_LABEL[calc.status] }}
             </span>
             <span class="text-xs text-os-sub">{{ mood.msg }}</span>
         </div>
@@ -85,7 +88,7 @@ function wavePath(offset: number): string {
             viewBox="0 0 320 196"
             class="mx-auto mt-0.5 block w-full max-w-[330px]"
             role="img"
-            :aria-label="`余裕メーター: ${TUB_LABEL[calc.status]}`"
+            :aria-label="`いまからの湯加減: ${TUB_LABEL[calc.status]}`"
         >
             <defs>
                 <clipPath id="tubClip">

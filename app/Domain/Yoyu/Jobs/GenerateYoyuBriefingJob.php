@@ -4,17 +4,23 @@ namespace App\Domain\Yoyu\Jobs;
 
 use App\Domain\Connectors\Calendar\CalendarConnectionStatus;
 use App\Domain\Shared\AI\AiGateway;
-use App\Domain\Shared\AI\PromptTemplate;
-use App\Domain\Yoyu\Data\ClearDawnHand;
+use App\Domain\Shared\AI\QuotaExceededException;
+use App\Domain\Yoyu\Data\BriefingContext;
+use App\Domain\Yoyu\Exceptions\InvalidBriefingResponseException;
 use App\Domain\Yoyu\Models\YoyuBriefing;
 use App\Domain\Yoyu\Services\BriefingContextBuilder;
+use App\Domain\Yoyu\Services\BriefingPromptBuilder;
+use App\Domain\Yoyu\Services\BriefingResponseParser;
+use App\Domain\Yoyu\Services\BriefingStructuredDataFactory;
 use App\Models\User;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-class GenerateYoyuBriefingJob implements ShouldQueue
+class GenerateYoyuBriefingJob implements ShouldBeUnique, ShouldQueue
 {
     use Queueable;
 
@@ -33,20 +39,49 @@ class GenerateYoyuBriefingJob implements ShouldQueue
     public array $backoff = [5, 5, 10, 10, 10, 10, 15];
 
     /**
+     * Cover queue wait + all retries + Worker stop/resume in Phase 1.
+     * (~8 × 90s timeout + backoff + idle) — 2h TTL; generation_id still guards stale writes.
+     */
+    public int $uniqueFor = 7200;
+
+    /**
      * @param  string  $briefingId  Target briefing row
      * @param  string  $briefingDate  Y-m-d fixed at dispatch (user-local day)
      * @param  string  $timezone  IANA timezone fixed at dispatch
+     * @param  string  $generationId  Generation token fixed at dispatch (stale-write guard)
      */
     public function __construct(
         public string $briefingId,
         public string $briefingDate,
         public string $timezone,
+        public string $generationId,
     ) {}
 
-    public function handle(AiGateway $ai, BriefingContextBuilder $contexts): void
+    public function uniqueId(): string
     {
+        // Per-generation uniqueness: a finishing job's unique lock must not
+        // silently drop a newly dispatched regenerate for the same briefing.
+        return $this->briefingId.':'.$this->generationId;
+    }
+
+    public function handle(
+        AiGateway $ai,
+        BriefingContextBuilder $contexts,
+        BriefingPromptBuilder $prompts,
+        BriefingResponseParser $parser,
+        BriefingStructuredDataFactory $factory,
+    ): void {
         $briefing = YoyuBriefing::query()->withoutUserScope()->find($this->briefingId);
         if ($briefing === null) {
+            return;
+        }
+
+        if ((string) $briefing->generation_id !== $this->generationId) {
+            Log::info('GenerateYoyuBriefingJob stale generation; skipping', [
+                'briefing_id' => $this->briefingId,
+                'job_generation_id' => $this->generationId,
+            ]);
+
             return;
         }
 
@@ -67,94 +102,99 @@ class GenerateYoyuBriefingJob implements ShouldQueue
             return;
         }
 
-        $briefing->update(['status' => 'generating']);
+        // Mark generating without clearing body / structured_data (same generation only).
+        $this->touchGenerating($briefing);
 
         $context = $contexts->build($user, $this->briefingDate, $this->timezone);
 
-        // Connected but never synced: wait briefly for SyncCalendarJob (no Google HTTP here).
         if (
             $context->calendar->connectionStatus === CalendarConnectionStatus::Syncing
             || $context->calendar->warningCode === 'sync_pending'
         ) {
             if ($context->calendar->syncedAt === null && $context->calendar->events === []) {
                 if ($this->attempts() < 7) {
-                    $briefing->update(['status' => 'pending']);
+                    $this->updateIfCurrentGeneration(['status' => 'pending']);
                     $this->release($this->backoff[$this->attempts() - 1] ?? 10);
 
                     return;
                 }
-                // Fall through: empty schedule + sync_pending warning, still generate deterministic context text.
             }
         }
 
-        $hand = $context->hand;
-        $handLabel = $hand instanceof ClearDawnHand
-            ? $hand->title
-            : '（未設定）';
-        $calendarLines = collect($context->calendar->timedEvents())->map(function ($e) use ($context): string {
-            $start = $e->startsAt?->timezone($context->timezone)->format('H:i') ?? '?';
+        $built = $prompts->build($context);
 
-            return "- {$e->title} {$start}";
-        })->implode("\n");
+        $apiKey = config('ai.anthropic.api_key');
+        if (! is_string($apiKey) || $apiKey === '') {
+            $structured = $factory->make($context, $this->emptyGeneration('invalid_response'));
+            $this->persistSuccess(
+                $briefing,
+                $this->preferExistingBody($briefing, $factory->bodyFromStructured($structured)),
+                $structured,
+            );
 
-        if ($calendarLines === '') {
-            $calendarLines = '- （予定なし）';
-        }
-
-        $gapLines = collect($context->gaps->suggestibleGaps)
-            ->map(fn ($gap): string => "- {$gap->key}: ".$gap->start->timezone($context->timezone)->format('H:i')
-                .'-'.$gap->end->timezone($context->timezone)->format('H:i')
-                ." ({$gap->minutes}分)")
-            ->implode("\n");
-
-        $taskLines = $context->tasks
-            ->map(fn ($t): string => "- {$t->title}（{$t->estimate_minutes}分）")
-            ->implode("\n");
-
-        $contextText = "予定:\n{$calendarLines}\n"
-            ."空き時間:\n".($gapLines !== '' ? $gapLines : '- （30分以上の空きなし）')."\n"
-            ."余裕メーター: {$context->margin->marginLabel}（{$context->margin->marginScore}）\n"
-            ."Clear Dawnの一手: {$handLabel}\n"
-            ."未完了タスク:\n".($taskLines !== '' ? $taskLines : '- （なし）')."\n"
-            ."過去の経験:\n".implode("\n", $context->recallLines);
-
-        if ($context->calendar->warningCode !== null) {
-            $contextText .= "\nカレンダー警告: {$context->calendar->warningCode}";
+            return;
         }
 
         try {
             $result = $ai->complete(
                 userId: (int) $briefing->user_id,
                 feature: 'yoyu.briefing',
-                prompt: PromptTemplate::make(
-                    'yoyu.briefing.v1',
-                    'あなたは優しい秘書ヨユウです。急かさない口調で朝ブリーフィングを作ります。',
-                    "形式:\n■ 今日の全体像\n■ 最も注意する時刻\n■ 夢に向かう一手\n■ 過去のパターンに基づく注意\n■ 手放していいこと\n220文字以内。\n\n{$contextText}",
-                ),
+                prompt: $built['prompt'],
                 tier: 'cheap',
-                maxTokens: 600,
+                maxTokens: 900,
+                messages: [
+                    ['role' => 'user', 'content' => $built['prompt']->variableSuffix],
+                ],
             );
-            $body = trim($result['text']);
 
-            $briefing->update([
-                'body' => $body !== '' ? $body : $briefing->body,
-                'status' => 'ready',
-            ]);
+            try {
+                $parsed = $parser->parse($result['text'], $built['allowlist']);
+            } catch (InvalidBriefingResponseException) {
+                // Provider usage already settled inside AiGateway — never release here.
+                // Do not log raw AI text.
+                Log::warning('GenerateYoyuBriefingJob invalid AI response', [
+                    'briefing_id' => $this->briefingId,
+                    'briefing_date' => $this->briefingDate,
+                    'timezone' => $this->timezone,
+                    'error_code' => 'invalid_response',
+                ]);
+
+                $structured = $factory->make($context, $this->emptyGeneration('invalid_response'));
+                $this->persistSuccess(
+                    $briefing,
+                    $this->preferExistingBody($briefing, $factory->bodyFromStructured($structured)),
+                    $structured,
+                );
+
+                return;
+            }
+
+            $generation = array_merge(['status' => 'generated'], $parsed);
+            $structured = $factory->make($context, $generation);
+            $body = $factory->bodyFromStructured($structured);
+            $this->persistSuccess($briefing, $body, $structured);
+        } catch (QuotaExceededException) {
+            $structured = $factory->make($context, $this->emptyGeneration('quota_limited'));
+            $this->persistSuccess(
+                $briefing,
+                $this->preferExistingBody($briefing, $factory->bodyFromStructured($structured)),
+                $structured,
+            );
         } catch (Throwable $e) {
             Log::warning('GenerateYoyuBriefingJob failed', [
                 'briefing_id' => $this->briefingId,
                 'briefing_date' => $this->briefingDate,
                 'timezone' => $this->timezone,
-                'message' => $e->getMessage(),
+                'error_code' => 'transient_failure',
             ]);
 
             if ($this->attempts() >= $this->tries) {
-                $briefing->update(['status' => 'failed']);
+                $this->persistRetryExhaustion($briefing, $factory, $context);
 
                 return;
             }
 
-            $briefing->update(['status' => 'pending']);
+            $this->updateIfCurrentGeneration(['status' => 'pending']);
 
             throw $e;
         }
@@ -165,7 +205,100 @@ class GenerateYoyuBriefingJob implements ShouldQueue
         YoyuBriefing::query()
             ->withoutUserScope()
             ->whereKey($this->briefingId)
+            ->where('generation_id', $this->generationId)
             ->whereIn('status', ['pending', 'generating'])
             ->update(['status' => 'failed']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $structured
+     */
+    private function persistSuccess(YoyuBriefing $briefing, string $body, array $structured): void
+    {
+        DB::transaction(function () use ($body, $structured): void {
+            $updated = $this->updateIfCurrentGeneration([
+                'body' => $body,
+                'structured_data' => $structured,
+                'status' => 'ready',
+            ]);
+
+            if ($updated === 0) {
+                Log::info('GenerateYoyuBriefingJob skipped stale write', [
+                    'briefing_id' => $this->briefingId,
+                    'job_generation_id' => $this->generationId,
+                ]);
+            }
+        });
+    }
+
+    private function persistRetryExhaustion(
+        YoyuBriefing $briefing,
+        BriefingStructuredDataFactory $factory,
+        BriefingContext $context,
+    ): void {
+        $briefing->refresh();
+        if ((string) $briefing->generation_id !== $this->generationId) {
+            return;
+        }
+
+        $hasPrior = is_array($briefing->structured_data)
+            && (($briefing->structured_data['schema_version'] ?? null) === BriefingStructuredDataFactory::SCHEMA_VERSION);
+
+        if ($hasPrior) {
+            $this->updateIfCurrentGeneration(['status' => 'failed']);
+
+            return;
+        }
+
+        $structured = $factory->make($context, $this->emptyGeneration('invalid_response'));
+        $this->updateIfCurrentGeneration([
+            'body' => $this->preferExistingBody($briefing, $factory->bodyFromStructured($structured)),
+            'structured_data' => $structured,
+            'status' => 'failed',
+        ]);
+    }
+
+    private function touchGenerating(YoyuBriefing $briefing): void
+    {
+        $this->updateIfCurrentGeneration(['status' => 'generating']);
+        $briefing->refresh();
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function updateIfCurrentGeneration(array $attributes): int
+    {
+        return YoyuBriefing::query()
+            ->withoutUserScope()
+            ->whereKey($this->briefingId)
+            ->where('generation_id', $this->generationId)
+            ->update($attributes);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function emptyGeneration(string $status): array
+    {
+        return [
+            'status' => $status,
+            'overview' => null,
+            'caution' => null,
+            'hand_note' => null,
+            'gap_suggestions' => [],
+            'let_go' => null,
+            'pattern_note' => null,
+        ];
+    }
+
+    private function preferExistingBody(YoyuBriefing $briefing, string $fallback): string
+    {
+        $existing = trim((string) $briefing->body);
+        if ($existing !== '' && ! str_contains($existing, '生成しています')) {
+            return $existing;
+        }
+
+        return $fallback;
     }
 }

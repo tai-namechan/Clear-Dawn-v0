@@ -19,6 +19,25 @@ final class RecallService
      */
     public function for(int $userId, string $contextText, int $k = 5, bool $countReference = true): array
     {
+        /** @var list<string> $lines */
+        $lines = array_values($this->memories($userId, $contextText, $k, $countReference)
+            ->map(function (Memory $memory): string {
+                $when = $memory->captured_at->diffForHumans();
+                $type = $memory->memory_type ?? 'memory';
+                $text = $memory->summary ?: mb_substr($memory->raw_content, 0, 200);
+
+                return "[{$when}/{$type}] {$text}";
+            })
+            ->all());
+
+        return $lines;
+    }
+
+    /**
+     * @return Collection<int, Memory>
+     */
+    public function memories(int $userId, string $contextText, int $k = 5, bool $countReference = true): Collection
+    {
         /** @var Collection<int, Memory> $memories */
         $memories = $this->search->search($userId, $contextText, [], max($k * 3, 15))
             ->filter(fn (Memory $memory) => ! $memory->sensitive && $memory->status === 'ready')
@@ -31,14 +50,6 @@ final class RecallService
             }
         }
 
-        return $memories
-            ->map(function (Memory $memory): string {
-                $when = $memory->captured_at?->diffForHumans() ?? '';
-                $type = $memory->memory_type ?? 'memory';
-                $text = $memory->summary ?: mb_substr($memory->raw_content, 0, 200);
-
-                return "[{$when}/{$type}] {$text}";
-            })
-            ->all();
+        return $memories;
     }
 }

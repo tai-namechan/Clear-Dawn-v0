@@ -10,6 +10,7 @@ final readonly class BriefingContext
 {
     /**
      * @param  Collection<int, YoyuTask>  $tasks
+     * @param  list<BriefingMemoryRef>  $memories
      * @param  list<string>  $recallLines
      * @param  array{prep_minutes: int, buffer_minutes: int}  $travelLead
      */
@@ -19,6 +20,7 @@ final readonly class BriefingContext
         public CalendarSnapshot $calendar,
         public ?ClearDawnHand $hand,
         public Collection $tasks,
+        public array $memories,
         public array $recallLines,
         public GapAnalysis $gaps,
         public MarginAnalysis $margin,
@@ -26,7 +28,7 @@ final readonly class BriefingContext
     ) {}
 
     /**
-     * Deterministic analysis payload (no AI text). Safe to persist later as structured_data.analysis.
+     * Deterministic analysis payload (no AI text). Safe to persist as structured_data core.
      *
      * @return array<string, mixed>
      */
@@ -46,7 +48,7 @@ final readonly class BriefingContext
             'gaps' => $this->gaps->toArray($this->timezone),
             'travel_lead' => $this->travelLead,
             'task_count' => $this->tasks->count(),
-            'recall_count' => count($this->recallLines),
+            'recall_count' => count($this->memories),
         ];
     }
 }

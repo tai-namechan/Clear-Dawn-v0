@@ -4,8 +4,10 @@ namespace App\Domain\Yoyu\Services;
 
 use App\Domain\Connectors\Calendar\CalendarProviderResolver;
 use App\Domain\Connectors\Calendar\CalendarSnapshot;
+use App\Domain\Kioku\Models\Memory;
 use App\Domain\Kioku\Services\RecallService;
 use App\Domain\Yoyu\Data\BriefingContext;
+use App\Domain\Yoyu\Data\BriefingMemoryRef;
 use App\Domain\Yoyu\Models\YoyuTask;
 use App\Domain\Yoyu\Support\UserTimezoneResolver;
 use App\Models\User;
@@ -70,12 +72,32 @@ final class BriefingContextBuilder
             ->whereNotIn('status', ['done', 'cancelled'])
             ->sum('estimate_minutes');
 
-        $recallLines = $this->recall->for(
+        $memoryModels = $this->recall->memories(
             (int) $user->id,
             '朝ブリーフィング 今日の予定',
             5,
             countReference: false,
         );
+
+        $memories = [];
+        $recallLines = [];
+        foreach ($memoryModels->values() as $index => $memory) {
+            /** @var Memory $memory */
+            $key = 'memory_'.($index + 1);
+            $excerpt = $memory->summary ?: mb_substr((string) $memory->raw_content, 0, 200);
+            $title = (string) ($memory->title ?: mb_substr((string) $memory->raw_content, 0, 40));
+            $ref = new BriefingMemoryRef(
+                key: $key,
+                id: (string) $memory->id,
+                title: $title,
+                excerpt: $excerpt,
+                url: route('kioku.memories.show', $memory),
+            );
+            $memories[] = $ref;
+            $when = $memory->captured_at->diffForHumans();
+            $type = $memory->memory_type ?? 'memory';
+            $recallLines[] = "[{$when}/{$type}] {$excerpt}";
+        }
 
         $gaps = $this->gapAnalyzer->analyze(
             $day->toDateString(),
@@ -92,6 +114,7 @@ final class BriefingContextBuilder
             calendar: $snapshot,
             hand: $hand,
             tasks: $tasks,
+            memories: $memories,
             recallLines: $recallLines,
             gaps: $gaps,
             margin: $margin,

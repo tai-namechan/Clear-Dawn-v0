@@ -13,9 +13,11 @@ use Illuminate\Support\Carbon;
  * @property int $user_id
  * @property Carbon $date
  * @property string $body
+ * @property array<string, mixed>|null $structured_data
  * @property string $status
+ * @property string|null $generation_id
  */
-#[Fillable(['user_id', 'date', 'body', 'status'])]
+#[Fillable(['user_id', 'date', 'body', 'structured_data', 'status', 'generation_id'])]
 class YoyuBriefing extends Model
 {
     use BelongsToUser, HasUlids;
@@ -33,6 +35,7 @@ class YoyuBriefing extends Model
     {
         return [
             'date' => 'date',
+            'structured_data' => 'array',
         ];
     }
 }

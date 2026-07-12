@@ -18,6 +18,12 @@ class YoyuHomeTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Bus::fake([GenerateYoyuBriefingJob::class]);
+    }
+
     public function test_guests_are_redirected_from_yoyu(): void
     {
         $this->get(route('yoyu.home'))->assertRedirect(route('login'));
@@ -36,6 +42,7 @@ class YoyuHomeTest extends TestCase
                 ->has('calendar')
                 ->has('analysis')
                 ->has('travelLead')
+                ->has('structuredBriefing')
                 ->where('clearDawnHand', null)
             );
     }
