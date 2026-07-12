@@ -129,6 +129,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('records', [MetricRecordController::class, 'index'])->name('records.index');
     Route::get('records/condition', [MetricRecordController::class, 'condition'])->name('records.condition');
+    Route::get('records/strength', [MetricRecordController::class, 'strength'])->name('records.strength');
     Route::put('records/daily', [MetricRecordController::class, 'upsertDaily'])->name('records.upsert-daily');
     Route::get('records/{metric}', [MetricRecordController::class, 'show'])->name('records.show');
     Route::delete('records/{metric}/{metricRecord}', [MetricRecordController::class, 'destroy'])->name('records.destroy');

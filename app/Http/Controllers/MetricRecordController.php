@@ -12,6 +12,7 @@ use App\Queries\GetDailyMealsQuery;
 use App\Queries\GetDailyMetricsQuery;
 use App\Queries\GetMetricChartQuery;
 use App\Queries\GetMetricHistoryQuery;
+use App\Queries\GetStrengthChartQuery;
 use App\Services\EnsureMetricsService;
 use App\Services\UpsertDailyMetricsService;
 use Illuminate\Http\JsonResponse;
@@ -113,18 +114,34 @@ class MetricRecordController extends Controller
 
     public function show(Request $request, Metric $metric, GetMetricHistoryQuery $historyQuery, GetMetricChartQuery $chartQuery): Response
     {
-        $from = Carbon::parse($request->input('from', now()->subMonths(3)->toDateString()));
-        $to = Carbon::parse($request->input('to', now()->toDateString()));
+        [$from, $to, $period] = $this->resolveChartRange($request);
+        $granularity = $this->resolveGranularity($request);
 
         $history = $historyQuery->handle($request->user(), $metric, $from, $to);
-        $chart = $chartQuery->handle($request->user(), $metric, $from, $to);
+        $chart = $chartQuery->handle($request->user(), $metric, $from, $to, $granularity);
 
         return Inertia::render('Records/Show', [
             'metric' => MetricResource::make($metric)->resolve(),
             'from' => $from->toDateString(),
             'to' => $to->toDateString(),
+            'period' => $period,
+            'granularity' => $granularity,
             'records' => MetricRecordResource::collection($history)->resolve(),
             'chartPoints' => $chart->values()->all(),
+        ]);
+    }
+
+    public function strength(Request $request, GetStrengthChartQuery $chartQuery): Response
+    {
+        [$from, $to, $period] = $this->resolveChartRange($request);
+
+        $chartPoints = $chartQuery->handle($request->user(), $from, $to);
+
+        return Inertia::render('Records/Strength', [
+            'from' => $from->toDateString(),
+            'to' => $to->toDateString(),
+            'period' => $period,
+            'chartPoints' => $chartPoints,
         ]);
     }
 
@@ -153,5 +170,45 @@ class MetricRecordController extends Controller
                 ? MetricRecordResource::make($item['record'])->resolve()
                 : null,
         ], $daily));
+    }
+
+    /**
+     * @return array{0: Carbon, 1: Carbon, 2: string|null}
+     */
+    private function resolveChartRange(Request $request): array
+    {
+        $to = Carbon::parse($request->input('to', now()->toDateString()))->startOfDay();
+        $period = $request->input('period');
+        $period = is_string($period) && in_array($period, ['week', 'month', '3months', 'year'], true)
+            ? $period
+            : null;
+
+        $from = match ($period) {
+            'week' => $to->copy()->subDays(6),
+            'month' => $to->copy()->subMonthNoOverflow(),
+            '3months' => $to->copy()->subMonthsNoOverflow(3),
+            'year' => $to->copy()->subYearNoOverflow(),
+            default => Carbon::parse($request->input('from', now()->subMonths(3)->toDateString()))->startOfDay(),
+        };
+
+        if ($from->greaterThan($to)) {
+            [$from, $to] = [$to->copy(), $from->copy()];
+        }
+
+        return [$from, $to, $period];
+    }
+
+    /**
+     * @return 'day'|'week'
+     */
+    private function resolveGranularity(Request $request): string
+    {
+        $granularity = $request->input('granularity', GetMetricChartQuery::GRANULARITY_DAY);
+
+        if ($granularity === GetMetricChartQuery::GRANULARITY_WEEK) {
+            return GetMetricChartQuery::GRANULARITY_WEEK;
+        }
+
+        return GetMetricChartQuery::GRANULARITY_DAY;
     }
 }
