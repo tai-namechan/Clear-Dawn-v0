@@ -7,7 +7,9 @@ use App\Domain\Connectors\Jobs\DisconnectGoogleCalendarJob;
 use App\Domain\Connectors\Jobs\SyncGoogleCalendarJob;
 use App\Domain\Kioku\Models\Connector;
 use App\Domain\Yoyu\Models\YoyuCalendarEvent;
+use App\Domain\Yoyu\Services\YoyuPreferenceService;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Yoyu\UpdateYoyuTravelLeadRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,14 +24,31 @@ class CalendarConnectionController extends Controller
 {
     private const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
 
-    public function settings(Request $request): Response
+    public function settings(Request $request, YoyuPreferenceService $preferences): Response
     {
         $connector = $this->connectorFor($request);
 
         return Inertia::render('Yoyu/Settings', [
             'calendarConnection' => $this->connectionProps($connector),
             'googleEnabled' => (bool) config('services.google.calendar_enabled'),
+            'travelLead' => $preferences->travelLeadFor($request->user()),
         ]);
+    }
+
+    public function updateTravelLead(
+        UpdateYoyuTravelLeadRequest $request,
+        YoyuPreferenceService $preferences,
+    ): RedirectResponse {
+        $data = $request->validated();
+        $preferences->upsertTravelLead(
+            $request->user(),
+            (int) $data['prep_minutes'],
+            (int) $data['buffer_minutes'],
+        );
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => '支度・余白時間を保存しました。']);
+
+        return redirect()->route('yoyu.settings');
     }
 
     public function connect(Request $request): RedirectResponse

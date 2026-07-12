@@ -21,6 +21,7 @@ class UpsertYoyuPlaceRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'travel_minutes' => ['required', 'integer', 'min:0', 'max:480'],
+            'external_id' => ['nullable', 'string', 'max:255'],
         ];
     }
 

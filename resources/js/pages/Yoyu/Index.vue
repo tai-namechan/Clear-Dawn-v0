@@ -78,6 +78,35 @@ type CalendarConnection = {
     all_day_titles: string[];
 };
 
+type ClearDawnHandProp = {
+    id?: string;
+    goal: string;
+    action: string;
+    estimate: number;
+    life_area?: string;
+};
+
+type AnalysisProp = {
+    briefing_date: string;
+    timezone: string;
+    margin: {
+        margin_score: number;
+        margin_label: string;
+        busy_minutes: number;
+        task_minutes: number;
+        working_minutes: number;
+    };
+    gaps: {
+        busy_minutes: number;
+        gaps: Array<{
+            key: string;
+            start: string;
+            end: string;
+            minutes: number;
+        }>;
+    };
+};
+
 interface Props {
     tasks: Task[];
     focusItems: FocusItem[];
@@ -85,7 +114,9 @@ interface Props {
     briefingStatus: YoyuBriefingStatus;
     calendar: CalEvent[];
     calendarConnection: CalendarConnection;
-    clearDawnHand: { goal: string; action: string; estimate: number };
+    clearDawnHand: ClearDawnHandProp | null;
+    analysis: AnalysisProp | null;
+    travelLead: { prep_minutes: number; buffer_minutes: number };
     recallPreview: string[];
     tab: string;
     chatReply: string | null;
@@ -94,6 +125,9 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+const prepMin = computed(() => props.travelLead?.prep_minutes ?? PREP_MIN);
+const bufferMin = computed(() => props.travelLead?.buffer_minutes ?? BUFFER_MIN);
 
 const ESTIMATE_OPTIONS = [15, 30, 45, 60, 90, 120, 180, 240] as const;
 
@@ -223,7 +257,7 @@ const hero = computed(() => {
         return null;
     }
 
-    const d = departInfo(event, nowMs.value);
+    const d = departInfo(event, nowMs.value, prepMin.value, bufferMin.value);
     const min = d.travel
         ? d.min
         : Math.round((new Date(event.start).getTime() - nowMs.value) / 60000);
@@ -272,8 +306,14 @@ const calendarEmptyMessage = computed(() => {
 
 const tubStatus = computed(
     () =>
-        yoyuCalc(nowMs.value, props.calendar, doneEventIds.value, props.tasks)
-            .status,
+        yoyuCalc(
+            nowMs.value,
+            props.calendar,
+            doneEventIds.value,
+            props.tasks,
+            prepMin.value,
+            bufferMin.value,
+        ).status,
 );
 
 function toggleEvent(id: string): void {
@@ -489,8 +529,8 @@ defineOptions({
                                 }}分
                             </span>
                             <span class="inline-flex items-center gap-1">
-                                <Clock :size="13" />支度{{ PREP_MIN }}分＋余白{{
-                                    BUFFER_MIN
+                                <Clock :size="13" />支度{{ prepMin }}分＋余白{{
+                                    bufferMin
                                 }}分
                             </span>
                         </div>
@@ -506,6 +546,7 @@ defineOptions({
                 </div>
 
                 <div
+                    v-if="clearDawnHand"
                     class="rounded-[18px] border border-[#4A7DC444] bg-white p-[18px] shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
                 >
                     <div
@@ -518,7 +559,7 @@ defineOptions({
                         {{ clearDawnHand.action }}
                     </div>
                     <div class="mt-1 mb-3 text-xs text-os-sub">
-                        目標: {{ clearDawnHand.goal }}（所要 約{{
+                        領域: {{ clearDawnHand.goal }}（所要 約{{
                             clearDawnHand.estimate
                         }}分）
                     </div>
@@ -544,6 +585,12 @@ defineOptions({
                             今日のタスクに入れる
                         </Button>
                     </Form>
+                </div>
+                <div
+                    v-else
+                    class="rounded-[18px] border border-dashed border-[#4A7DC444] bg-white p-[18px] text-center text-sm text-os-sub shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
+                >
+                    Clear Dawnの「今やるべきこと」に未完了の項目がありません。
                 </div>
             </section>
 
@@ -660,11 +707,7 @@ defineOptions({
                                 >
                             </div>
                             <div
-                                v-if="
-                                    !isDone(event) &&
-                                    event.travel_min != null &&
-                                    event.travel_min > 0
-                                "
+                                v-if="!isDone(event) && event.travel_min !== null"
                                 class="mt-1 flex flex-wrap items-center gap-1 text-xs text-os-sub"
                             >
                                 <Car
@@ -678,15 +721,20 @@ defineOptions({
                                     {{
                                         fmtTime(
                                             new Date(
-                                                departInfo(event, nowMs).depart,
+                                                departInfo(
+                                                    event,
+                                                    nowMs,
+                                                    prepMin,
+                                                    bufferMin,
+                                                ).depart,
                                             ).toISOString(),
                                         )
                                     }}に出発
                                 </span>
                                 <span
                                     >（移動{{ event.travel_min }}分＋支度{{
-                                        PREP_MIN
-                                    }}分＋余白{{ BUFFER_MIN }}分）</span
+                                        prepMin
+                                    }}分＋余白{{ bufferMin }}分）</span
                                 >
                             </div>
                             <div
@@ -696,19 +744,12 @@ defineOptions({
                                 <MapPin :size="12" class="mr-1 inline" />{{
                                     event.place
                                 }}
-                                <span
-                                    v-if="event.travel_min === 0"
-                                    class="ml-1"
-                                    >・移動なし（0分）</span
-                                >
                             </div>
                             <div
                                 v-else-if="!isDone(event)"
                                 class="mt-1 text-xs text-os-sub"
                             >
-                                <MapPin :size="12" class="mr-1 inline" />{{
-                                    event.place || '場所なし'
-                                }}
+                                <MapPin :size="12" class="mr-1 inline" />場所なし
                             </div>
                             <Form
                                 v-if="!isDone(event) && event.place"
@@ -748,6 +789,46 @@ defineOptions({
                                             ? '登録'
                                             : '更新'
                                     }}
+                                </Button>
+                            </Form>
+                            <Form
+                                v-else-if="!isDone(event) && !event.place"
+                                v-bind="upsertPlace.form()"
+                                class="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-os-sub"
+                                #default="{ processing }"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="external_id"
+                                    :value="event.id"
+                                />
+                                <span class="text-[#DF9A2E]">移動時間未登録</span>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    maxlength="255"
+                                    required
+                                    placeholder="場所名"
+                                    class="w-28 rounded-lg border border-os-line bg-os-yoyu-bg px-2 py-1 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/30"
+                                />
+                                <input
+                                    type="number"
+                                    name="travel_minutes"
+                                    min="0"
+                                    max="480"
+                                    value="20"
+                                    class="w-16 rounded-lg border border-os-line bg-os-yoyu-bg px-2 py-1 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/30"
+                                    required
+                                />
+                                <span>分</span>
+                                <Button
+                                    type="submit"
+                                    size="sm"
+                                    class="h-7 rounded-full border border-os-yoyu/30 bg-os-yoyu-soft px-2.5 text-[11px] font-bold text-os-yoyu hover:bg-os-yoyu-soft"
+                                    variant="outline"
+                                    :disabled="processing"
+                                >
+                                    登録
                                 </Button>
                             </Form>
                         </div>

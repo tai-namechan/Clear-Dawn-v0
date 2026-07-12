@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
-import { ArrowLeft, Calendar, RefreshCw, Unplug } from '@lucide/vue';
+import { Form, Head, Link, router } from '@inertiajs/vue3';
+import { ArrowLeft, Calendar, Clock, RefreshCw, Unplug } from '@lucide/vue';
 import { Button } from '@/components/ui/button';
 import { home } from '@/routes/yoyu';
 import { connect, disconnect, sync } from '@/routes/yoyu/calendar';
+import { travelLead as travelLeadRoute } from '@/routes/yoyu/settings';
 
 interface CalendarConnection {
     status: string;
@@ -12,9 +13,15 @@ interface CalendarConnection {
     last_error_code: string | null;
 }
 
+type TravelLead = {
+    prep_minutes: number;
+    buffer_minutes: number;
+};
+
 interface Props {
     calendarConnection: CalendarConnection | null;
     googleEnabled: boolean;
+    travelLead: TravelLead;
 }
 
 const props = defineProps<Props>();
@@ -24,7 +31,11 @@ function requestSync(): void {
 }
 
 function requestDisconnect(): void {
-    if (!confirm('Googleカレンダーの接続を解除しますか？キャッシュした予定も削除されます。')) {
+    if (
+        !confirm(
+            'Googleカレンダーの接続を解除しますか？キャッシュした予定も削除されます。',
+        )
+    ) {
         return;
     }
 
@@ -63,6 +74,58 @@ defineOptions({
             <ArrowLeft :size="14" />
             ヨユウへ戻る
         </Link>
+
+        <section
+            class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
+        >
+            <div
+                class="mb-3 flex items-center gap-2 text-sm font-bold text-os-ink"
+            >
+                <Clock :size="16" class="text-os-yoyu" />
+                出発の支度・余白（全予定共通）
+            </div>
+            <p class="mb-3 text-[13px] leading-relaxed text-os-sub">
+                移動時間が登録済みの予定は、「開始 −（移動＋支度＋余白）」を出発目安として使います。
+            </p>
+            <Form
+                v-bind="travelLeadRoute.form()"
+                class="flex flex-wrap items-end gap-3"
+                #default="{ processing }"
+            >
+                <label class="text-[12px] text-os-sub">
+                    支度（分）
+                    <input
+                        type="number"
+                        name="prep_minutes"
+                        min="0"
+                        max="120"
+                        :value="travelLead.prep_minutes"
+                        required
+                        class="mt-1 block w-20 rounded-lg border border-os-line bg-os-yoyu-bg px-2 py-1.5 text-[13px] text-os-ink outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/30"
+                    />
+                </label>
+                <label class="text-[12px] text-os-sub">
+                    余白（分）
+                    <input
+                        type="number"
+                        name="buffer_minutes"
+                        min="0"
+                        max="60"
+                        :value="travelLead.buffer_minutes"
+                        required
+                        class="mt-1 block w-20 rounded-lg border border-os-line bg-os-yoyu-bg px-2 py-1.5 text-[13px] text-os-ink outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/30"
+                    />
+                </label>
+                <Button
+                    type="submit"
+                    size="sm"
+                    class="rounded-full"
+                    :disabled="processing"
+                >
+                    保存
+                </Button>
+            </Form>
+        </section>
 
         <section
             class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"

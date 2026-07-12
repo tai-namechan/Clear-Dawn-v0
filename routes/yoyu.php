@@ -17,6 +17,8 @@ Route::middleware(['auth', 'verified'])->prefix('yoyu')->name('yoyu.')->group(fu
     Route::post('/chat', [HomeController::class, 'chat'])->name('chat');
 
     Route::get('/settings', [CalendarConnectionController::class, 'settings'])->name('settings');
+    Route::patch('/settings/travel-lead', [CalendarConnectionController::class, 'updateTravelLead'])
+        ->name('settings.travel-lead');
     Route::get('/settings/calendar/connect', [CalendarConnectionController::class, 'connect'])
         ->middleware('throttle:10,1')
         ->name('calendar.connect');

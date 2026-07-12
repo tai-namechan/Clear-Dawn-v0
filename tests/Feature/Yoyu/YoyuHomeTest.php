@@ -6,7 +6,9 @@ use App\Domain\Kioku\Jobs\EnrichMemoryJob;
 use App\Domain\Yoyu\Jobs\GenerateYoyuBriefingJob;
 use App\Domain\Yoyu\Models\YoyuBriefing;
 use App\Domain\Yoyu\Models\YoyuTask;
+use App\Domain\Yoyu\Support\UserTimezoneResolver;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -32,7 +34,9 @@ class YoyuHomeTest extends TestCase
                 ->component('Yoyu/Index')
                 ->where('currentProduct', 'yoyu')
                 ->has('calendar')
-                ->has('clearDawnHand')
+                ->has('analysis')
+                ->has('travelLead')
+                ->where('clearDawnHand', null)
             );
     }
 
@@ -100,7 +104,13 @@ class YoyuHomeTest extends TestCase
         ]);
 
         // Queued (not afterResponse/dispatchSync) so AI runs on a worker.
-        Bus::assertDispatched(GenerateYoyuBriefingJob::class);
+        Bus::assertDispatched(GenerateYoyuBriefingJob::class, function (GenerateYoyuBriefingJob $job) use ($user): bool {
+            $tz = app(UserTimezoneResolver::class)->for($user);
+
+            return $job->timezone === $tz
+                && $job->briefingDate === CarbonImmutable::now($tz)->toDateString()
+                && $job->briefingId !== '';
+        });
         Bus::assertNotDispatchedSync(GenerateYoyuBriefingJob::class);
     }
 
