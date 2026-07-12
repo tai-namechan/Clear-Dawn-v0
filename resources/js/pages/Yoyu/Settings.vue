@@ -82,10 +82,12 @@ defineOptions({
                 class="mb-3 flex items-center gap-2 text-sm font-bold text-os-ink"
             >
                 <Clock :size="16" class="text-os-yoyu" />
-                出発の支度・余白（全予定共通）
+                出発の支度・余白（既定値）
             </div>
             <p class="mb-3 text-[13px] leading-relaxed text-os-sub">
-                移動時間が登録済みの予定は、「開始 −（移動＋支度＋余白）」を出発目安として使います。
+                予定ごとに上書きしていない場合の既定値です。Today
+                の各予定行から個別に変更できます。移動時間が登録済みの予定は「開始
+                −（移動＋支度＋余白）」を出発目安に使います。
             </p>
             <Form
                 v-bind="travelLeadRoute.form()"

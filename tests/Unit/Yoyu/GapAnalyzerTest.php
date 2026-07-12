@@ -40,6 +40,9 @@ class GapAnalyzerTest extends TestCase
             transparency: $overrides['transparency'] ?? 'opaque',
             location: $overrides['location'] ?? null,
             travelMin: $overrides['travelMin'] ?? null,
+            color: null,
+            prepMinutesOverride: $overrides['prepMinutesOverride'] ?? null,
+            bufferMinutesOverride: $overrides['bufferMinutesOverride'] ?? null,
         );
     }
 
@@ -198,6 +201,30 @@ class GapAnalyzerTest extends TestCase
             $this->timed('e1', '10:00', '11:00', ['travelMin' => null]),
         ]);
         $this->assertSame(60, $without->totalBusyMinutes);
+    }
+
+    public function test_per_event_prep_buffer_override_changes_only_that_event(): void
+    {
+        $result = $this->analyzer->analyze(
+            $this->date,
+            $this->tz,
+            [
+                $this->timed('custom', '10:00', '11:00', [
+                    'travelMin' => 20,
+                    'prepMinutesOverride' => 30,
+                    'bufferMinutesOverride' => 10,
+                ]),
+                $this->timed('default', '14:00', '15:00', [
+                    'travelMin' => 20,
+                ]),
+            ],
+            prepMinutes: 10,
+            bufferMinutes: 5,
+        );
+
+        // custom: 20+30+10=60 lead → 09:00-11:00 = 120
+        // default: 20+10+5=35 lead → 13:25-15:00 = 95
+        $this->assertSame(215, $result->totalBusyMinutes);
     }
 
     public function test_travel_lead_clamped_to_work_start_and_merges_overlap(): void
