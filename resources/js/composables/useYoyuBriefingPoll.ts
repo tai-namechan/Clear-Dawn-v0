@@ -60,7 +60,7 @@ export function useYoyuBriefingPoll(
         tick: () =>
             new Promise<void>((resolve) => {
                 router.reload({
-                    only: ['briefing', 'briefingStatus'],
+                    only: ['briefing', 'briefingStatus', 'structuredBriefing'],
                     preserveUrl: true,
                     onFinish: () => resolve(),
                 });

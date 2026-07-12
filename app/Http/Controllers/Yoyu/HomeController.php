@@ -11,15 +11,14 @@ use App\Domain\Shared\AI\AiGateway;
 use App\Domain\Shared\AI\PromptTemplate;
 use App\Domain\Shared\AI\QuotaExceededException;
 use App\Domain\Yoyu\Data\ClearDawnHand;
-use App\Domain\Yoyu\Jobs\GenerateYoyuBriefingJob;
-use App\Domain\Yoyu\Models\YoyuBriefing;
 use App\Domain\Yoyu\Models\YoyuFocusItem;
 use App\Domain\Yoyu\Models\YoyuTask;
 use App\Domain\Yoyu\Services\BriefingContextBuilder;
 use App\Domain\Yoyu\Services\ClearDawnHandService;
-use App\Domain\Yoyu\Support\UserTimezoneResolver;
+use App\Domain\Yoyu\Services\EnsureTodayBriefingService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Yoyu\UpdateYoyuTaskRequest;
+use App\Http\Resources\Yoyu\YoyuBriefingResource;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -34,6 +33,7 @@ class HomeController extends Controller
         Request $request,
         BriefingContextBuilder $contextBuilder,
         CalendarSyncCoordinator $syncCoordinator,
+        EnsureTodayBriefingService $ensureTodayBriefing,
     ): Response {
         $user = $request->user();
 
@@ -42,6 +42,10 @@ class HomeController extends Controller
 
         $context = $contextBuilder->build($user, CarbonImmutable::now());
         $timezone = $context->timezone;
+
+        // First Today access for the local day: create row + dispatch once (after commit).
+        $ensured = $ensureTodayBriefing->ensure($user);
+        $briefingProps = (new YoyuBriefingResource($ensured['briefing']))->resolve();
 
         $tasks = YoyuTask::query()
             ->where('user_id', $user->id)
@@ -67,16 +71,12 @@ class HomeController extends Controller
                 'memory_id' => $item->memory_id,
             ]);
 
-        $briefing = YoyuBriefing::query()
-            ->where('user_id', $user->id)
-            ->whereDate('date', $context->briefingDate)
-            ->first();
-
         return Inertia::render('Yoyu/Index', [
             'tasks' => $tasks,
             'focusItems' => $focusItems,
-            'briefing' => $briefing?->body,
-            'briefingStatus' => $briefing?->status,
+            'briefing' => $briefingProps['body'],
+            'briefingStatus' => $briefingProps['status'],
+            'structuredBriefing' => $briefingProps['structured'],
             'calendar' => array_map(
                 fn (CalendarEventData $event): array => $event->toClientArray($timezone),
                 $context->calendar->timedEvents(),
@@ -205,30 +205,11 @@ class HomeController extends Controller
         return redirect()->route('yoyu.home', ['tab' => 'mind']);
     }
 
-    public function regenerateBriefing(Request $request, UserTimezoneResolver $timezones): RedirectResponse
-    {
-        $user = $request->user();
-        $timezone = $timezones->for($user);
-        $briefingDate = CarbonImmutable::now($timezone)->toDateString();
-
-        $existing = YoyuBriefing::query()
-            ->where('user_id', $user->id)
-            ->whereDate('date', $briefingDate)
-            ->first();
-
-        $briefing = YoyuBriefing::query()->updateOrCreate(
-            ['user_id' => $user->id, 'date' => $briefingDate],
-            [
-                'body' => $existing?->body !== null && $existing->body !== ''
-                    ? $existing->body
-                    : '朝ブリーフィングを生成しています…',
-                'status' => 'generating',
-            ],
-        );
-
-        // Queue worker (not afterResponse/dispatchSync) so the web request stays free.
-        // Date/timezone are fixed at dispatch so queue wait / config drift cannot retarget the day.
-        GenerateYoyuBriefingJob::dispatch($briefing->id, $briefingDate, $timezone);
+    public function regenerateBriefing(
+        Request $request,
+        EnsureTodayBriefingService $ensureTodayBriefing,
+    ): RedirectResponse {
+        $ensureTodayBriefing->regenerate($request->user());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => '朝ブリーフィングの生成を開始しました。']);
 

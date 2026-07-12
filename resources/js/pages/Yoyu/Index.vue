@@ -107,11 +107,66 @@ type AnalysisProp = {
     };
 };
 
+type StructuredBriefing = {
+    schema_version: number;
+    briefing_date: string;
+    timezone: string;
+    calendar: {
+        connection_status: string;
+        synced_at: string | null;
+        is_stale: boolean;
+        warning_code: string | null;
+    };
+    analysis: {
+        busy_minutes: number;
+        task_minutes: number;
+        working_minutes: number;
+        margin_score: number;
+        margin_label: string;
+        gaps: Array<{
+            key: string;
+            start: string;
+            end: string;
+            minutes: number;
+        }>;
+    };
+    hand: { id: string; title: string; life_area: string } | null;
+    generation: {
+        status: string;
+        overview: string | null;
+        caution: {
+            event_key: string | null;
+            reason: string | null;
+            event: { title: string; start: string; end: string } | null;
+        } | null;
+        hand_note: string | null;
+        gap_suggestions: Array<{
+            gap_key: string;
+            suggestion: string;
+            start: string;
+            end: string;
+            minutes: number;
+        }>;
+        let_go: string | null;
+        pattern_note: {
+            text: string;
+            memory_keys: string[];
+            memories: Array<{
+                key: string;
+                id: string;
+                title: string;
+                url: string;
+            }>;
+        } | null;
+    };
+};
+
 interface Props {
     tasks: Task[];
     focusItems: FocusItem[];
     briefing: string | null;
     briefingStatus: YoyuBriefingStatus;
+    structuredBriefing: StructuredBriefing | null;
     calendar: CalEvent[];
     calendarConnection: CalendarConnection;
     clearDawnHand: ClearDawnHandProp | null;
@@ -128,6 +183,63 @@ const props = defineProps<Props>();
 
 const prepMin = computed(() => props.travelLead?.prep_minutes ?? PREP_MIN);
 const bufferMin = computed(() => props.travelLead?.buffer_minutes ?? BUFFER_MIN);
+
+const isStructuredV2 = computed(
+    () => props.structuredBriefing?.schema_version === 2,
+);
+
+const meter = computed(() => {
+    const fromStructured = props.structuredBriefing?.analysis;
+    const fromLive = props.analysis?.margin;
+    return {
+        score: fromStructured?.margin_score ?? fromLive?.margin_score ?? null,
+        label: fromStructured?.margin_label ?? fromLive?.margin_label ?? null,
+        busy: fromStructured?.busy_minutes ?? fromLive?.busy_minutes ?? null,
+        task: fromStructured?.task_minutes ?? fromLive?.task_minutes ?? null,
+        working:
+            fromStructured?.working_minutes ?? fromLive?.working_minutes ?? null,
+    };
+});
+
+const structuredGaps = computed(() => {
+    const suggestions =
+        props.structuredBriefing?.generation?.gap_suggestions ?? [];
+    if (suggestions.length > 0) {
+        return suggestions;
+    }
+    const gaps =
+        props.structuredBriefing?.analysis?.gaps ??
+        props.analysis?.gaps?.gaps ??
+        [];
+    return gaps.map((gap) => ({
+        gap_key: gap.key,
+        suggestion: '',
+        start: gap.start,
+        end: gap.end,
+        minutes: gap.minutes,
+    }));
+});
+
+const generationStatus = computed(
+    () => props.structuredBriefing?.generation?.status ?? null,
+);
+
+const calendarWarningLabel = computed(() => {
+    const code =
+        props.calendarConnection?.warning_code ??
+        props.structuredBriefing?.calendar?.warning_code ??
+        null;
+    if (props.calendarConnection?.status === 'disconnected' || code === 'disconnected') {
+        return 'カレンダー未接続です。予定は表示されません。';
+    }
+    if (code === 'sync_pending') {
+        return 'カレンダー同期中です。しばらくすると予定が反映されます。';
+    }
+    if (code === 'stale' || props.calendarConnection?.is_stale) {
+        return 'カレンダー情報が古い可能性があります。';
+    }
+    return null;
+});
 
 const ESTIMATE_OPTIONS = [15, 30, 45, 60, 90, 120, 180, 240] as const;
 
@@ -634,7 +746,207 @@ defineOptions({
                     >
                         {{ briefingStatusLabel }}
                     </div>
+                    <div
+                        v-if="
+                            generationStatus === 'quota_limited' ||
+                            generationStatus === 'invalid_response'
+                        "
+                        class="mb-2 rounded-[10px] bg-[#FBF1DE] px-3 py-2 text-[12px] text-[#B07A1A]"
+                    >
+                        <template v-if="generationStatus === 'quota_limited'">
+                            今月のAI利用上限のため、文章生成をスキップしました。予定の分析は表示できます。
+                        </template>
+                        <template v-else>
+                            AI応答を検証できなかったため、文章は一部表示できません。予定の分析は表示できます。
+                        </template>
+                    </div>
+                    <div
+                        v-if="calendarWarningLabel"
+                        class="mb-2 rounded-[10px] bg-os-yoyu-soft px-3 py-2 text-[12px] text-os-yoyu"
+                    >
+                        {{ calendarWarningLabel }}
+                    </div>
+
+                    <template v-if="isStructuredV2 && structuredBriefing">
+                        <div
+                            v-if="meter.score !== null"
+                            class="mb-3 rounded-[12px] border border-os-line bg-[#F7FAF9] px-3 py-2.5"
+                        >
+                            <div
+                                class="flex flex-wrap items-baseline justify-between gap-2"
+                            >
+                                <div class="text-xs font-bold text-os-yoyu">
+                                    余裕メーター
+                                </div>
+                                <div class="text-sm font-bold text-os-ink">
+                                    {{ meter.label }}（{{ meter.score }}）
+                                </div>
+                            </div>
+                            <div
+                                class="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] text-os-sub"
+                            >
+                                <span>予定 {{ meter.busy ?? 0 }}分</span>
+                                <span>タスク {{ meter.task ?? 0 }}分</span>
+                                <span>稼働 {{ meter.working ?? 0 }}分</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 text-[13.5px] leading-relaxed text-os-ink">
+                            <section v-if="structuredBriefing.generation.overview">
+                                <div class="mb-1 text-xs font-bold text-os-yoyu">
+                                    今日の全体像
+                                </div>
+                                <p class="whitespace-pre-wrap">
+                                    {{ structuredBriefing.generation.overview }}
+                                </p>
+                            </section>
+
+                            <section
+                                v-if="
+                                    structuredBriefing.generation.caution
+                                        ?.reason
+                                "
+                            >
+                                <div class="mb-1 text-xs font-bold text-os-yoyu">
+                                    注意する予定
+                                </div>
+                                <p
+                                    v-if="
+                                        structuredBriefing.generation.caution
+                                            ?.event
+                                    "
+                                    class="mb-0.5 text-[12px] text-os-sub"
+                                >
+                                    {{
+                                        structuredBriefing.generation.caution
+                                            .event.start
+                                    }}
+                                    {{
+                                        structuredBriefing.generation.caution
+                                            .event.title
+                                    }}
+                                </p>
+                                <p class="whitespace-pre-wrap">
+                                    {{
+                                        structuredBriefing.generation.caution
+                                            ?.reason
+                                    }}
+                                </p>
+                            </section>
+
+                            <section
+                                v-if="
+                                    structuredBriefing.hand ||
+                                    structuredBriefing.generation.hand_note
+                                "
+                            >
+                                <div class="mb-1 text-xs font-bold text-os-yoyu">
+                                    夢に向かう一手
+                                </div>
+                                <p
+                                    v-if="structuredBriefing.hand"
+                                    class="mb-0.5 font-bold"
+                                >
+                                    {{ structuredBriefing.hand.title }}
+                                    <span class="font-normal text-os-sub">
+                                        （{{
+                                            structuredBriefing.hand.life_area
+                                        }}）
+                                    </span>
+                                </p>
+                                <p
+                                    v-if="
+                                        structuredBriefing.generation.hand_note
+                                    "
+                                    class="whitespace-pre-wrap"
+                                >
+                                    {{
+                                        structuredBriefing.generation.hand_note
+                                    }}
+                                </p>
+                            </section>
+
+                            <section v-if="structuredGaps.length">
+                                <div class="mb-1 text-xs font-bold text-os-yoyu">
+                                    空き時間と提案
+                                </div>
+                                <ul class="space-y-1.5">
+                                    <li
+                                        v-for="gap in structuredGaps"
+                                        :key="gap.gap_key"
+                                        class="rounded-[10px] border border-os-line px-2.5 py-2"
+                                    >
+                                        <div
+                                            class="text-[12px] font-bold text-os-sub"
+                                        >
+                                            {{ gap.start }}–{{ gap.end }}（{{
+                                                gap.minutes
+                                            }}分）
+                                        </div>
+                                        <p
+                                            v-if="gap.suggestion"
+                                            class="mt-0.5 whitespace-pre-wrap"
+                                        >
+                                            {{ gap.suggestion }}
+                                        </p>
+                                        <p
+                                            v-else
+                                            class="mt-0.5 text-[12px] text-os-sub"
+                                        >
+                                            提案はまだありません
+                                        </p>
+                                    </li>
+                                </ul>
+                            </section>
+
+                            <section
+                                v-if="structuredBriefing.generation.let_go"
+                            >
+                                <div class="mb-1 text-xs font-bold text-os-yoyu">
+                                    手放していいこと
+                                </div>
+                                <p class="whitespace-pre-wrap">
+                                    {{ structuredBriefing.generation.let_go }}
+                                </p>
+                            </section>
+
+                            <section
+                                v-if="
+                                    structuredBriefing.generation.pattern_note
+                                        ?.text
+                                "
+                            >
+                                <div class="mb-1 text-xs font-bold text-os-yoyu">
+                                    過去のパターン
+                                </div>
+                                <p class="whitespace-pre-wrap">
+                                    {{
+                                        structuredBriefing.generation
+                                            .pattern_note?.text
+                                    }}
+                                </p>
+                                <div
+                                    v-if="
+                                        structuredBriefing.generation
+                                            .pattern_note?.memories?.length
+                                    "
+                                    class="mt-1.5 flex flex-wrap gap-1.5"
+                                >
+                                    <a
+                                        v-for="memory in structuredBriefing
+                                            .generation.pattern_note?.memories"
+                                        :key="memory.id"
+                                        :href="memory.url"
+                                        class="inline-flex items-center rounded-full border border-os-kioku/30 bg-[#F0EDFA] px-2.5 py-1 text-[11px] font-bold text-os-kioku"
+                                    >
+                                        {{ memory.title }}
+                                    </a>
+                                </div>
+                            </section>
+                        </div>
+                    </template>
                     <pre
+                        v-else
                         class="text-[13.5px] leading-[1.95] whitespace-pre-wrap text-os-ink"
                         >{{
                             briefing ||
