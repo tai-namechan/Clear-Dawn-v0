@@ -24,7 +24,7 @@ interface Props {
     travelLead: TravelLead;
 }
 
-const props = defineProps<Props>();
+defineProps<Props>();
 
 function requestSync(): void {
     router.post(sync.url(), {}, { preserveScroll: true });
