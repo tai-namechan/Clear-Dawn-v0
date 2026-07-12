@@ -39,8 +39,10 @@ final readonly class CalendarEventData
     /**
      * Legacy Yoyu Today shape ({id,title,start,end,place,travel_min,color}).
      * Only meaningful for timed events.
+     * travel_min from the DTO is a provider hint only; HomeController overwrites
+     * it from yoyu_places (null when unresolved — do not treat as 0).
      *
-     * @return array{id: string, title: string, start: string, end: string, place: string, travel_min: int, color: string}
+     * @return array{id: string, title: string, start: string, end: string, place: string, travel_min: int|null, color: string}
      */
     public function toClientArray(string $timezone): array
     {
@@ -50,7 +52,7 @@ final readonly class CalendarEventData
             'start' => (string) $this->startsAt?->timezone($timezone)->toIso8601String(),
             'end' => (string) $this->endsAt?->timezone($timezone)->toIso8601String(),
             'place' => (string) ($this->location ?? ''),
-            'travel_min' => $this->travelMin,
+            'travel_min' => null,
             'color' => $this->color ?? '#4A7DC4',
         ];
     }

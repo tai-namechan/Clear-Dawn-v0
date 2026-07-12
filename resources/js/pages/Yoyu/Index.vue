@@ -48,6 +48,7 @@ import {
     store as storeFocus,
     update as updateFocus,
 } from '@/routes/yoyu/focus';
+import { upsert as upsertPlace } from '@/routes/yoyu/places';
 import {
     destroy as destroyTask,
     store as storeTask,
@@ -94,8 +95,11 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const ESTIMATE_OPTIONS = [15, 30, 45, 60, 90, 120, 180, 240] as const;
+
 const currentTab = ref(props.tab || 'today');
 const taskTitle = ref('');
+const taskEstimate = ref(30);
 const mindText = ref('');
 const chatInput = ref('');
 const chatHistory = ref<Array<{ role: string; content: string }>>([]);
@@ -307,6 +311,16 @@ function isDone(event: CalEvent): boolean {
         doneEventIds.value.includes(event.id) ||
         new Date(event.end).getTime() < nowMs.value
     );
+}
+
+function estimateOptionsFor(current: number): number[] {
+    if (
+        ESTIMATE_OPTIONS.includes(current as (typeof ESTIMATE_OPTIONS)[number])
+    ) {
+        return [...ESTIMATE_OPTIONS];
+    }
+
+    return [...ESTIMATE_OPTIONS, current].sort((a, b) => a - b);
 }
 
 defineOptions({
@@ -646,7 +660,11 @@ defineOptions({
                                 >
                             </div>
                             <div
-                                v-if="!isDone(event) && event.travel_min > 0"
+                                v-if="
+                                    !isDone(event) &&
+                                    event.travel_min != null &&
+                                    event.travel_min > 0
+                                "
                                 class="mt-1 flex flex-wrap items-center gap-1 text-xs text-os-sub"
                             >
                                 <Car
@@ -672,13 +690,66 @@ defineOptions({
                                 >
                             </div>
                             <div
-                                v-else-if="!isDone(event)"
+                                v-else-if="!isDone(event) && event.place"
                                 class="mt-1 text-xs text-os-sub"
                             >
                                 <MapPin :size="12" class="mr-1 inline" />{{
                                     event.place
                                 }}
+                                <span
+                                    v-if="event.travel_min === 0"
+                                    class="ml-1"
+                                    >・移動なし（0分）</span
+                                >
                             </div>
+                            <div
+                                v-else-if="!isDone(event)"
+                                class="mt-1 text-xs text-os-sub"
+                            >
+                                <MapPin :size="12" class="mr-1 inline" />{{
+                                    event.place || '場所なし'
+                                }}
+                            </div>
+                            <Form
+                                v-if="!isDone(event) && event.place"
+                                v-bind="upsertPlace.form()"
+                                class="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-os-sub"
+                                #default="{ processing }"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="name"
+                                    :value="event.place"
+                                />
+                                <span>{{
+                                    event.travel_min == null
+                                        ? '移動時間未登録'
+                                        : '移動時間'
+                                }}</span>
+                                <input
+                                    type="number"
+                                    name="travel_minutes"
+                                    min="0"
+                                    max="480"
+                                    :value="event.travel_min ?? 20"
+                                    class="w-16 rounded-lg border border-os-line bg-os-yoyu-bg px-2 py-1 text-[12px] outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/30"
+                                    required
+                                />
+                                <span>分</span>
+                                <Button
+                                    type="submit"
+                                    size="sm"
+                                    class="h-7 rounded-full border border-os-yoyu/30 bg-os-yoyu-soft px-2.5 text-[11px] font-bold text-os-yoyu hover:bg-os-yoyu-soft"
+                                    variant="outline"
+                                    :disabled="processing"
+                                >
+                                    {{
+                                        event.travel_min == null
+                                            ? '登録'
+                                            : '更新'
+                                    }}
+                                </Button>
+                            </Form>
                         </div>
                     </div>
                     <p class="mt-3 text-[11.5px] leading-relaxed text-os-sub">
@@ -712,6 +783,20 @@ defineOptions({
                         placeholder="今日〜近い未来の実行タスク（Enterで追加）"
                         class="min-w-0 flex-1 rounded-xl border border-os-line bg-os-yoyu-bg px-3.5 py-2.5 text-[13.5px] outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/30"
                     />
+                    <select
+                        v-model.number="taskEstimate"
+                        name="estimate_minutes"
+                        class="w-[88px] shrink-0 rounded-xl border border-os-line bg-os-yoyu-bg px-2 text-[12.5px] outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/30"
+                        aria-label="見積時間（分）"
+                    >
+                        <option
+                            v-for="minutes in ESTIMATE_OPTIONS"
+                            :key="minutes"
+                            :value="minutes"
+                        >
+                            {{ minutes }}分
+                        </option>
+                    </select>
                     <Button
                         type="submit"
                         size="icon"
@@ -724,7 +809,7 @@ defineOptions({
                 </div>
                 <p class="mt-2.5 text-[11.5px] leading-relaxed text-os-sub">
                     目標・ロードマップはClear
-                    Dawnで。ここに入るのは「実行」だけ。所要時間は既定30分（余裕メーターに算入）。
+                    Dawnで。ここに入るのは「実行」だけ。見積時間は余裕メーターに算入。
                 </p>
             </Form>
 
@@ -775,18 +860,48 @@ defineOptions({
                                 {{ task.title }}
                             </div>
                             <div
-                                class="mt-0.5 text-[10.5px]"
+                                class="mt-0.5 flex flex-wrap items-center gap-1.5 text-[10.5px]"
                                 :style="{
                                     color:
                                         statusLabel[task.status]?.color ||
                                         '#6B7683',
                                 }"
                             >
-                                {{
+                                <span>{{
                                     statusLabel[task.status]?.label ||
                                     task.status
-                                }}
-                                ・ {{ task.estimate_minutes }}分
+                                }}</span>
+                                <span>・</span>
+                                <Form
+                                    v-if="task.status !== 'done'"
+                                    v-bind="updateTask.form(task.id)"
+                                    class="inline-flex items-center"
+                                >
+                                    <select
+                                        name="estimate_minutes"
+                                        class="rounded-md border border-os-line bg-transparent px-1 py-0.5 text-[10.5px] outline-none"
+                                        :value="task.estimate_minutes"
+                                        aria-label="見積時間を変更"
+                                        @change="
+                                            (
+                                                $event.target as HTMLSelectElement
+                                            ).form?.requestSubmit()
+                                        "
+                                    >
+                                        <option
+                                            v-for="minutes in estimateOptionsFor(
+                                                task.estimate_minutes,
+                                            )"
+                                            :key="minutes"
+                                            :value="minutes"
+                                        >
+                                            {{ minutes }}分
+                                        </option>
+                                    </select>
+                                </Form>
+                                <span v-else
+                                    >{{ task.estimate_minutes }}分</span
+                                >
                             </div>
                         </div>
                         <Form

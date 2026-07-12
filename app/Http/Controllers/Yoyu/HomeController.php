@@ -15,8 +15,10 @@ use App\Domain\Yoyu\Jobs\GenerateYoyuBriefingJob;
 use App\Domain\Yoyu\Models\YoyuBriefing;
 use App\Domain\Yoyu\Models\YoyuFocusItem;
 use App\Domain\Yoyu\Models\YoyuTask;
+use App\Domain\Yoyu\Services\YoyuPlaceTravelService;
 use App\Domain\Yoyu\Support\MockCalendar;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Yoyu\UpdateYoyuTaskRequest;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,6 +34,7 @@ class HomeController extends Controller
         RecallService $recall,
         CalendarProviderResolver $calendars,
         CalendarSyncCoordinator $syncCoordinator,
+        YoyuPlaceTravelService $placeTravel,
     ): Response {
         $user = $request->user();
 
@@ -41,6 +44,7 @@ class HomeController extends Controller
         $timezone = (string) config('app.timezone', 'UTC');
         $todayStart = CarbonImmutable::now($timezone)->startOfDay();
         $snapshot = $calendars->for($user)->snapshotFor($user, $todayStart, $todayStart->addDay(), $timezone);
+        $travelByPlace = $placeTravel->travelMinutesByNormalizedName((int) $user->id);
 
         $tasks = YoyuTask::query()
             ->where('user_id', $user->id)
@@ -79,7 +83,12 @@ class HomeController extends Controller
             'briefing' => $briefing?->body,
             'briefingStatus' => $briefing?->status,
             'calendar' => array_map(
-                fn (CalendarEventData $event): array => $event->toClientArray($timezone),
+                function (CalendarEventData $event) use ($timezone, $placeTravel, $travelByPlace): array {
+                    $row = $event->toClientArray($timezone);
+                    $row['travel_min'] = $placeTravel->resolveMinutes($row['place'], $travelByPlace);
+
+                    return $row;
+                },
                 $snapshot->timedEvents(),
             ),
             'calendarConnection' => [
@@ -119,15 +128,12 @@ class HomeController extends Controller
         return redirect()->route('yoyu.home', ['tab' => 'tasks']);
     }
 
-    public function updateTask(Request $request, YoyuTask $task): RedirectResponse
+    public function updateTask(UpdateYoyuTaskRequest $request, YoyuTask $task): RedirectResponse
     {
         abort_unless((int) $task->user_id === (int) $request->user()->id, 404);
 
-        $data = $request->validate([
-            'status' => ['required', 'string', 'in:inbox,planned,doing,done,snoozed,cancelled'],
-        ]);
-
-        $task->update(['status' => $data['status']]);
+        $data = $request->validated();
+        $task->update(array_intersect_key($data, array_flip(['status', 'estimate_minutes'])));
 
         return redirect()->route('yoyu.home', ['tab' => 'tasks']);
     }
