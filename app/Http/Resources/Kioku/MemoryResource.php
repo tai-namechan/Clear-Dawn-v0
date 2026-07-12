@@ -24,11 +24,13 @@ class MemoryResource extends JsonResource
 
         return [
             'id' => $memory->id,
+            'client_capture_id' => $memory->client_capture_id,
             'source_type' => $memory->source_type,
             'memory_type' => $memory->memory_type,
             'memory_type_label' => $type?->label(),
             'title' => $memory->title,
             'raw_content' => $memory->raw_content,
+            'transcript_text' => $memory->transcript_text,
             'summary' => $memory->summary,
             'structured_data' => $memory->structured_data,
             'display_fields' => $type?->displayFields() ?? [],
@@ -37,6 +39,7 @@ class MemoryResource extends JsonResource
             'importance' => $memory->importance,
             'sensitive' => $memory->sensitive,
             'status' => $memory->status,
+            'transcription_status' => $memory->transcription_status,
             'referenced_count' => $memory->referenced_count,
         ];
     }

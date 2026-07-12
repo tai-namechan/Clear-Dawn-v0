@@ -1,10 +1,12 @@
 export type KiokuMemory = {
     id: string;
+    client_capture_id: string | null;
     source_type: string;
     memory_type: string | null;
     memory_type_label: string | null;
     title: string;
-    raw_content: string;
+    raw_content: string | null;
+    transcript_text: string | null;
     summary: string | null;
     structured_data: Record<string, unknown> | null;
     display_fields: Array<{ key: string; label: string; type: string }>;
@@ -13,6 +15,7 @@ export type KiokuMemory = {
     importance: number;
     sensitive: boolean;
     status: string;
+    transcription_status: string | null;
     referenced_count: number;
 };
 

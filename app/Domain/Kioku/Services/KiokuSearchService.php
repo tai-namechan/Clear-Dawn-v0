@@ -30,7 +30,8 @@ final class KiokuSearchService
                     $q->orWhere(function ($inner) use ($like): void {
                         $inner->where('title', 'like', $like)
                             ->orWhere('summary', 'like', $like)
-                            ->orWhere('raw_content', 'like', $like);
+                            ->orWhere('raw_content', 'like', $like)
+                            ->orWhere('transcript_text', 'like', $like);
                     });
                 }
             });
