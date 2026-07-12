@@ -11,8 +11,11 @@ const meta = computed(() => sourceTypeMeta(props.source));
 
 <template>
     <span
-        class="inline-flex items-center gap-1 text-[11px] text-os-sub"
-        :class="meta.muted ? 'opacity-50' : ''"
+        class="inline-flex items-center gap-1 text-[11px]"
+        :class="[
+            meta.titleClass ?? 'text-os-sub',
+            meta.muted ? 'opacity-50' : '',
+        ]"
     >
         <component :is="meta.icon" :size="11" />
         {{ meta.label }}

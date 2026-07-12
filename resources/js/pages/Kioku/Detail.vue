@@ -14,7 +14,8 @@ import { toast } from 'vue-sonner';
 import SourceBadge from '@/components/kioku/SourceBadge.vue';
 import TypeChip from '@/components/kioku/TypeChip.vue';
 import { Button } from '@/components/ui/button';
-import { formatAgo } from '@/lib/kiokuMeta';
+import { kiokuMemoryDisplayTitle } from '@/lib/kiokuMemoryCard.mjs';
+import { formatAgo, sourceTypeMeta } from '@/lib/kiokuMeta';
 import { kiokuTranscriptDisplayMode } from '@/lib/kiokuTranscriptDisplay.mjs';
 import { home } from '@/routes/kioku';
 import {
@@ -39,6 +40,12 @@ const transcriptMode = computed(() =>
         transcriptionStatus: props.memory.transcription_status,
         transcriptText: props.memory.transcript_text,
     }),
+);
+
+const displayTitle = computed(() => kiokuMemoryDisplayTitle(props.memory));
+
+const titleClass = computed(
+    () => sourceTypeMeta(props.memory.source_type).titleClass ?? 'text-os-ink',
 );
 
 function requestReenrich(): void {
@@ -70,7 +77,7 @@ defineOptions({
 
 <template>
     <div class="mx-auto max-w-[640px] space-y-4">
-        <Head :title="memory.title" />
+        <Head :title="displayTitle" />
 
         <Link
             :href="home()"
@@ -98,8 +105,8 @@ defineOptions({
                     </span>
                 </div>
 
-                <h1 class="text-lg font-bold text-os-ink">
-                    {{ memory.title }}
+                <h1 class="text-lg font-bold" :class="titleClass">
+                    {{ displayTitle }}
                 </h1>
 
                 <div class="flex flex-wrap items-center gap-2">
@@ -307,9 +314,14 @@ defineOptions({
                             :type="item.memory_type"
                             small
                         />
-                        <span class="flex-1 text-[12.5px] text-os-ink">{{
-                            item.title
-                        }}</span>
+                        <span
+                            class="flex-1 text-[12.5px] font-medium"
+                            :class="
+                                sourceTypeMeta(item.source_type).titleClass ??
+                                'text-os-ink'
+                            "
+                            >{{ kiokuMemoryDisplayTitle(item) }}</span
+                        >
                         <ChevronRight :size="14" class="text-os-faint" />
                     </Link>
                 </div>
