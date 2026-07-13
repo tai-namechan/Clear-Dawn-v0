@@ -38,12 +38,12 @@ const todayIso = [
 
 <template>
     <header
-        class="flex min-h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/70 px-4 py-3 transition-[width,height] ease-linear md:px-6 md:py-4"
+        class="flex min-h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/70 px-4 py-3 transition-[width,height] ease-linear landscape-compact:min-h-12 landscape-compact:py-2 md:px-6 md:py-4 landscape-compact:md:py-2"
     >
         <div class="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
             <SidebarTrigger class="-ml-1 shrink-0" />
             <h1
-                class="truncate font-serif text-[2rem] leading-none font-normal tracking-[0.16em] text-cd-dawn-deep md:text-[2.5rem]"
+                class="truncate font-serif text-[2rem] leading-none font-normal tracking-[0.16em] text-cd-dawn-deep landscape-compact:text-[1.5rem] landscape-compact:tracking-[0.12em] md:text-[2.5rem] landscape-compact:md:text-[1.65rem]"
             >
                 Clear Dawn
             </h1>
@@ -56,21 +56,21 @@ const todayIso = [
         <div class="flex shrink-0 items-center gap-2 md:gap-3">
             <div
                 v-if="onDashboard"
-                class="cd-frost hidden items-center gap-3 rounded-full border border-cd-line px-4 py-2 shadow-sm sm:flex md:gap-4 md:px-5"
+                class="cd-frost hidden items-center gap-3 rounded-full border border-cd-line px-4 py-2 shadow-sm sm:flex landscape-compact:gap-2 landscape-compact:px-3 landscape-compact:py-1 md:gap-4 md:px-5"
             >
                 <time
                     :datetime="todayIso"
-                    class="cursor-default font-serif text-base tracking-[0.12em] text-cd-ink lining-nums select-none"
+                    class="cursor-default font-serif text-base tracking-[0.12em] text-cd-ink lining-nums select-none landscape-compact:text-sm"
                 >
                     {{ today }}
                 </time>
 
-                <div aria-hidden="true" class="cd-header-divider h-5" />
+                <div aria-hidden="true" class="cd-header-divider h-5 landscape-compact:h-4" />
 
                 <Link
                     :href="lifeAreasIndex()"
                     aria-label="領域管理"
-                    class="group inline-flex items-center gap-1.5 font-serif text-base tracking-[0.12em] text-cd-ink transition-colors hover:text-cd-dawn-deep"
+                    class="group inline-flex items-center gap-1.5 font-serif text-base tracking-[0.12em] text-cd-ink transition-colors hover:text-cd-dawn-deep landscape-compact:text-sm"
                 >
                     <SlidersHorizontal
                         :size="16"
