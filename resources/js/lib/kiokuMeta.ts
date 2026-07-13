@@ -1,4 +1,3 @@
-import type { Component } from 'vue';
 import {
     BookOpen,
     Bot,
@@ -10,11 +9,13 @@ import {
     Lightbulb,
     Link2,
     MessageSquare,
+    Mic,
     PenLine,
     Scale,
     Sun,
     Hash,
 } from '@lucide/vue';
+import type { Component } from 'vue';
 
 export type MemoryTypeKey =
     | 'error_log'
@@ -28,12 +29,7 @@ export type MemoryTypeKey =
     | 'conversation';
 
 export type SourceTypeKey =
-    | 'manual'
-    | 'url'
-    | 'yoyu'
-    | 'clear_dawn'
-    | 'ai_chat'
-    | 'slack';
+    'manual' | 'voice' | 'url' | 'yoyu' | 'clear_dawn' | 'ai_chat' | 'slack';
 
 /** 書庫トーン: 和紙×墨×藍インク×朱 */
 export const MEMORY_TYPES: Record<
@@ -42,10 +38,20 @@ export const MEMORY_TYPES: Record<
 > = {
     error_log: { label: 'エラー', color: '#C05A48', bg: '#F8E9E4', icon: Bug },
     decision: { label: '判断', color: '#B8862B', bg: '#F7EEDA', icon: Scale },
-    learning: { label: '学び', color: '#46628F', bg: '#E9EEF5', icon: BookOpen },
+    learning: {
+        label: '学び',
+        color: '#46628F',
+        bg: '#E9EEF5',
+        icon: BookOpen,
+    },
     thought: { label: '思考', color: '#4E8578', bg: '#E6F0EC', icon: Brain },
     emotion: { label: '感情', color: '#B56576', bg: '#F6E8EB', icon: Heart },
-    idea: { label: 'アイデア', color: '#C68A3A', bg: '#F8EFDD', icon: Lightbulb },
+    idea: {
+        label: 'アイデア',
+        color: '#C68A3A',
+        bg: '#F8EFDD',
+        icon: Lightbulb,
+    },
     reference: { label: '資料', color: '#7A7668', bg: '#EDEAE0', icon: Link2 },
     event: {
         label: '出来事',
@@ -66,6 +72,7 @@ export const SOURCE_TYPES: Record<
     { label: string; icon: Component; muted?: boolean }
 > = {
     manual: { label: '手動', icon: PenLine },
+    voice: { label: '音声', icon: Mic },
     url: { label: 'URL', icon: Link2 },
     yoyu: { label: 'ヨユウ', icon: Sun },
     clear_dawn: { label: 'Clear Dawn', icon: Compass },

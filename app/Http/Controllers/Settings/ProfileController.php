@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Domain\Kioku\Services\CleanupUserKiokuAudioService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
@@ -46,10 +47,18 @@ class ProfileController extends Controller
 
     /**
      * Delete the user's profile.
+     *
+     * Kioku audio originals are removed from private storage first (while
+     * MemoryAsset rows still exist). FK cascade would otherwise drop the
+     * rows without firing Eloquent deleted events, leaving orphan files.
      */
-    public function destroy(ProfileDeleteRequest $request): RedirectResponse
-    {
+    public function destroy(
+        ProfileDeleteRequest $request,
+        CleanupUserKiokuAudioService $cleanupKiokuAudio,
+    ): RedirectResponse {
         $user = $request->user();
+
+        $cleanupKiokuAudio->deleteForUser($user);
 
         Auth::logout();
 
