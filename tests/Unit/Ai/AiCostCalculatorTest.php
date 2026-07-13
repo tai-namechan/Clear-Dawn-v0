@@ -71,7 +71,7 @@ class AiCostCalculatorTest extends TestCase
             $calculator->ratesFor('claude-haiku-4-5-20251001'),
         );
         $this->assertSame(
-            ['input' => '2', 'output' => '10'],
+            ['input' => '3', 'output' => '15'],
             $calculator->ratesFor('claude-sonnet-5'),
         );
         $this->assertSame(
@@ -103,8 +103,8 @@ class AiCostCalculatorTest extends TestCase
         $this->assertSame('3.000000', $default->toString());
         $this->assertTrue($default->greaterThan($haiku));
 
-        // 1M output tokens at Sonnet 5 intro ($10/MTok) => $10.000000
+        // 1M output tokens at Sonnet 5 standard ($15/MTok) => $15.000000
         $sonnet = $calculator->actualCost('claude-sonnet-5', 0, 1_000_000);
-        $this->assertSame('10.000000', $sonnet->toString());
+        $this->assertSame('15.000000', $sonnet->toString());
     }
 }

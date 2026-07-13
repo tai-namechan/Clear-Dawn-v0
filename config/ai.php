@@ -20,8 +20,10 @@ return [
         // Alias IDs (without date suffix) are included so AI_MODEL_* env values resolve correctly.
         'claude-haiku-4-5' => ['input' => 1.0, 'output' => 5.0],
         'claude-haiku-4-5-20251001' => ['input' => 1.0, 'output' => 5.0],
-        // Sonnet 5 introductory rate through 2026-08-31; standard becomes 3.0/15.0 on 2026-09-01.
-        'claude-sonnet-5' => ['input' => 2.0, 'output' => 10.0],
+        // Sonnet 5: use standard $3/$15 (not the $2/$10 intro rate through 2026-08-31).
+        // Intro pricing would under-count Anthropic spend after 2026-09-01 if left as a fixed value.
+        // During the intro window this over-counts slightly, which is safer for per-user quota.
+        'claude-sonnet-5' => ['input' => 3.0, 'output' => 15.0],
         'claude-sonnet-4-6' => ['input' => 3.0, 'output' => 15.0],
         'default' => ['input' => 3.0, 'output' => 15.0],
     ],
