@@ -7,6 +7,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * iPad mini 横向き (~1024×768) など、サイドバー常時表示かつ縦が短い端末向け。
+ * マトリクス＋サイドバーが同一ビューポートに収まる密度に切り替える。
+ */
+@custom-variant landscape-compact (@media (orientation: landscape) and (max-height: 54rem));
+
 @theme inline {
     /*
      * App default: readable system / Noto Sans JP stack.
@@ -506,6 +512,12 @@
         width: 3px;
         border-radius: 0 2px 2px 0;
         background-color: var(--cd-matrix-accent);
+    }
+
+    @media (orientation: landscape) and (max-height: 54rem) {
+        .cd-matrix-row-current-label::before {
+            inset-block: 0.35rem;
+        }
     }
 
     /*
