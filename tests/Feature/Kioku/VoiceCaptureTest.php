@@ -236,6 +236,30 @@ class VoiceCaptureTest extends TestCase
             ->assertNotFound();
     }
 
+    /**
+     * Proves DB asset + missing storage object returns 404, not 500.
+     * Storage::response() would otherwise throw on size() for a gone path.
+     */
+    public function test_missing_audio_file_returns_404_not_500(): void
+    {
+        $user = User::factory()->create();
+        $memory = Memory::factory()->voice()->create(['user_id' => $user->id]);
+
+        MemoryAsset::query()->create([
+            'memory_id' => $memory->id,
+            'kind' => MemoryAsset::KIND_AUDIO_ORIGINAL,
+            'disk' => 'local',
+            'path' => 'kioku-audio/'.$user->id.'/gone.wav',
+            'mime_type' => 'audio/wav',
+            'byte_size' => 100,
+            'duration_ms' => 1000,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('kioku.memories.audio', $memory))
+            ->assertNotFound();
+    }
+
     public function test_deleting_memory_removes_asset_and_file(): void
     {
         $user = User::factory()->create();

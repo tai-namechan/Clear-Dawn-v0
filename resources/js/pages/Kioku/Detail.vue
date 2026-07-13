@@ -257,7 +257,7 @@ defineOptions({
                         v-else-if="transcriptMode === 'not_configured'"
                         class="text-[12.5px] leading-relaxed text-os-sub"
                     >
-                        文字起こしは未設定です。原音声はこの端末を離れず保存されています。
+                        文字起こしは未設定です。原音声はサーバーに保存されています。
                     </p>
                     <div v-else-if="transcriptMode === 'failed'">
                         <p

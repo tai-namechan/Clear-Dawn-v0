@@ -177,6 +177,10 @@ class MemoryController extends Controller
     /**
      * Streams the original audio from the private disk with owner
      * authorization. Audio never gets a public URL.
+     *
+     * Missing files must 404 (not 500): Storage::response() calls size()
+     * before streaming and throws UnableToRetrieveMetadata when the object
+     * is gone — common after ephemeral local disk loss on Laravel Cloud.
      */
     public function audio(Request $request, Memory $memory): StreamedResponse
     {
@@ -185,7 +189,10 @@ class MemoryController extends Controller
         $asset = $memory->audioAsset();
         abort_if($asset === null, 404);
 
-        return Storage::disk($asset->disk)->response($asset->path, null, [
+        $disk = Storage::disk($asset->disk);
+        abort_unless($disk->exists($asset->path), 404);
+
+        return $disk->response($asset->path, null, [
             'Content-Type' => $asset->mime_type,
             'Cache-Control' => 'private, max-age=0, no-store',
         ]);
