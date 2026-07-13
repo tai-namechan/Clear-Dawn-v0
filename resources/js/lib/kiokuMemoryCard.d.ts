@@ -4,5 +4,18 @@ declare module '@/lib/kiokuMemoryCard.mjs' {
         status: string;
     }): boolean;
 
-    export function isKiokuMemoryCardEnriching(status: string): boolean;
+    export function isKiokuMemoryCardEnriching(
+        memory: {
+            source_type: string;
+            status: string;
+            transcription_status?: string | null;
+        },
+        options?: { transcriptionEnabled?: boolean },
+    ): boolean;
+
+    export function kiokuMemoryDisplayTitle(memory: {
+        source_type: string;
+        title: string;
+        transcription_status?: string | null;
+    }): string;
 }

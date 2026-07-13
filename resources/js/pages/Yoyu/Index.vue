@@ -667,15 +667,15 @@ defineOptions({
 
                 <div
                     v-if="clearDawnHand"
-                    class="rounded-[18px] border border-[#4A7DC444] bg-white p-[18px] shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
+                    class="rounded-[18px] border border-cd-primary/25 bg-white p-[18px] shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
                 >
                     <div
-                        class="mb-3 flex items-center gap-1.5 text-xs font-bold tracking-wide text-[#4A7DC4]"
+                        class="mb-3 flex items-center gap-1.5 text-xs font-bold tracking-wide text-cd-primary"
                     >
                         <Compass :size="14" />
                         Clear Dawnからの、夢に向かう一手
                     </div>
-                    <div class="text-sm font-bold">
+                    <div class="text-sm font-bold text-cd-primary">
                         {{ clearDawnHand.action }}
                     </div>
                     <div class="mt-1 mb-3 text-xs text-os-sub">
@@ -708,7 +708,7 @@ defineOptions({
                 </div>
                 <div
                     v-else
-                    class="rounded-[18px] border border-dashed border-[#4A7DC444] bg-white p-[18px] text-center text-sm text-os-sub shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
+                    class="rounded-[18px] border border-dashed border-cd-primary/25 bg-white p-[18px] text-center text-sm text-os-sub shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
                 >
                     Clear Dawnの「今やるべきこと」に未完了の項目がありません。
                 </div>
@@ -861,13 +861,13 @@ defineOptions({
                                 "
                             >
                                 <div
-                                    class="mb-1 text-xs font-bold text-os-yoyu"
+                                    class="mb-1 text-xs font-bold text-cd-primary"
                                 >
                                     夢に向かう一手
                                 </div>
                                 <p
                                     v-if="structuredBriefing.hand"
-                                    class="mb-0.5 font-bold"
+                                    class="mb-0.5 font-bold text-cd-primary"
                                 >
                                     {{ structuredBriefing.hand.title }}
                                     <span class="font-normal text-os-sub">

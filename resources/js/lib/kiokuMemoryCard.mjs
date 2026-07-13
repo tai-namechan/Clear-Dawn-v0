@@ -23,11 +23,59 @@ export function isKiokuMemoryCardNavigable(memory) {
 }
 
 /**
- * Whether to show the enrichment/pending chrome (spinner, non-ready label).
- * Does not control clickability — see isKiokuMemoryCardNavigable.
+ * Whether to show the enrichment/pending chrome (spinner).
+ * Voice stays out of this chrome until a transcript is ready (or status is
+ * already enriching) so provider=none never looks permanently "整理中".
  *
- * @param {string} status
+ * @param {{
+ *   source_type: string,
+ *   status: string,
+ *   transcription_status?: string | null,
+ * }} memory
+ * @param {{ transcriptionEnabled?: boolean }} [options]
  */
-export function isKiokuMemoryCardEnriching(status) {
-    return isKiokuPendingStatus(status);
+export function isKiokuMemoryCardEnriching(
+    memory,
+    { transcriptionEnabled = true } = {},
+) {
+    if (memory.source_type === 'voice') {
+        if (memory.status === 'enriching') {
+            return true;
+        }
+
+        // Transcript ready, still waiting for EnrichMemoryJob.
+        if (
+            transcriptionEnabled &&
+            memory.transcription_status === 'ready' &&
+            isKiokuPendingStatus(memory.status)
+        ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    return isKiokuPendingStatus(memory.status);
+}
+
+/**
+ * Avoid showing the placeholder "整理中…" for voice that has not reached
+ * enrichment yet (provider=none pending, or transcription still running).
+ *
+ * @param {{
+ *   source_type: string,
+ *   title: string,
+ *   transcription_status?: string | null,
+ * }} memory
+ */
+export function kiokuMemoryDisplayTitle(memory) {
+    if (
+        memory.source_type === 'voice' &&
+        memory.title === '整理中…' &&
+        memory.transcription_status !== 'ready'
+    ) {
+        return '音声メモ';
+    }
+
+    return memory.title;
 }
