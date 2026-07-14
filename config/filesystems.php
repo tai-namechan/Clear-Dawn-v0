@@ -84,6 +84,21 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Local stub for Kioku voice originals. On Laravel Cloud the
+         * Object Storage disk named "kioku-audio" is injected via
+         * LARAVEL_CLOUD_DISK_CONFIG and overrides this entry.
+         * serve is false: playback goes through MemoryController::audio,
+         * not Laravel's local serve routes (avoids URI clash with local).
+         */
+        'kioku-audio' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private'),
+            'serve' => false,
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*

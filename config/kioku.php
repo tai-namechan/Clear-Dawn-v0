@@ -8,8 +8,9 @@ return [
     |--------------------------------------------------------------------------
     |
     | Audio originals are the canonical raw for voice memories and must live
-    | on a private disk (no public URLs). In production point KIOKU_AUDIO_DISK
-    | at durable private object storage — never at ephemeral local disk.
+    | on a private disk (no public URLs). In production set
+    | KIOKU_AUDIO_DISK=kioku-audio (Laravel Cloud Object Storage disk name).
+    | Never use ephemeral local disk as the production persistence target.
     |
     */
 
