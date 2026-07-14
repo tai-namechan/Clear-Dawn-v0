@@ -13,6 +13,17 @@
  */
 @custom-variant landscape-compact (@media (orientation: landscape) and (max-height: 54rem));
 
+/*
+ * iPhone など狭い縦向き。横スクロール時に行ラベル列を紙面として固定する補助。
+ */
+@media (max-width: 47.9375rem) {
+    .cd-matrix-row-current-label,
+    th.bg-cd-matrix-row-header,
+    th.bg-cd-matrix-column-header {
+        box-shadow: 4px 0 10px -6px hsl(237 32% 16% / 0.28);
+    }
+}
+
 @theme inline {
     /*
      * App default: readable system / Noto Sans JP stack.

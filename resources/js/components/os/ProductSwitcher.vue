@@ -82,9 +82,10 @@ function selectProduct(product: ProductDefinition): void {
         <button
             type="button"
             data-test="product-switcher-trigger"
-            class="inline-flex items-center gap-1.5 rounded-full border border-cd-line bg-cd-surface/80 px-3 py-1.5 text-sm font-medium text-cd-ink shadow-sm transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            class="inline-flex items-center gap-1.5 rounded-full border border-cd-line bg-cd-surface/80 px-3 py-1.5 text-sm font-medium text-cd-ink shadow-sm transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none max-md:gap-0 max-md:px-2.5 max-md:py-1.5"
             :aria-expanded="open"
             aria-haspopup="dialog"
+            :aria-label="`${currentProduct.name} に切り替え`"
             @click="open = true"
         >
             <component
@@ -95,12 +96,12 @@ function selectProduct(product: ProductDefinition): void {
                 :class="accentByKey[currentProduct.key]"
                 aria-hidden="true"
             />
-            <span class="max-w-[9rem] truncate tracking-[0.04em]">
+            <span class="max-w-[9rem] truncate tracking-[0.04em] max-md:sr-only">
                 {{ currentProduct.name }}
             </span>
             <ChevronDown
                 :size="14"
-                class="shrink-0 text-cd-ink-muted opacity-70"
+                class="shrink-0 text-cd-ink-muted opacity-70 max-md:hidden"
                 aria-hidden="true"
             />
         </button>

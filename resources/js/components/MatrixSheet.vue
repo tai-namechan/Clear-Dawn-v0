@@ -23,130 +23,142 @@ function toggleCompletion(item: MatrixCellItem): void {
 <template>
     <section
         aria-label="TOP Matrix"
-        class="cd-shadow-soft flex min-h-[30rem] w-full flex-1 flex-col overflow-hidden rounded-[1.25rem] border border-cd-matrix-line bg-cd-matrix-surface landscape-compact:min-h-0 landscape-compact:overflow-auto md:min-h-[34rem] landscape-compact:md:min-h-0"
+        class="cd-shadow-soft flex min-h-[30rem] w-full flex-1 flex-col overflow-hidden rounded-[1.25rem] border border-cd-matrix-line bg-cd-matrix-surface max-md:min-h-[22rem] max-md:overflow-visible landscape-compact:min-h-0 landscape-compact:overflow-auto md:min-h-[34rem] landscape-compact:md:min-h-0"
     >
-        <table class="h-full w-full table-fixed border-collapse">
-            <thead>
-                <tr
-                    class="h-[3.75rem] border-b border-cd-matrix-line landscape-compact:h-11"
-                >
-                    <th
-                        scope="col"
-                        class="w-40 bg-cd-matrix-column-header px-4 py-4 landscape-compact:w-28 landscape-compact:px-2 landscape-compact:py-2 md:w-56 landscape-compact:md:w-28"
-                    ></th>
-                    <th
-                        v-for="area in areas"
-                        :key="area.id"
-                        scope="col"
-                        class="border-l border-cd-matrix-line bg-cd-matrix-column-header px-3 py-4 text-center align-middle font-normal landscape-compact:px-1.5 landscape-compact:py-2"
+        <!-- Phone: horizontal scroll so 領域 columns stay tappable; row labels stick. -->
+        <div
+            class="min-h-0 flex-1 max-md:overflow-x-auto max-md:overscroll-x-contain"
+        >
+            <table
+                class="h-full w-full table-fixed border-collapse max-md:min-w-[40rem]"
+            >
+                <thead>
+                    <tr
+                        class="h-[3.75rem] border-b border-cd-matrix-line max-md:h-11 landscape-compact:h-11"
                     >
-                        <span
-                            class="font-serif text-base tracking-[0.14em] text-cd-matrix-header-foreground landscape-compact:text-sm landscape-compact:tracking-[0.1em] md:text-lg landscape-compact:md:text-sm"
+                        <th
+                            scope="col"
+                            class="w-40 bg-cd-matrix-column-header px-4 py-4 max-md:sticky max-md:left-0 max-md:z-20 max-md:w-[4.75rem] max-md:px-1.5 max-md:py-2 landscape-compact:w-28 landscape-compact:px-2 landscape-compact:py-2 md:w-56 landscape-compact:md:w-28"
+                        ></th>
+                        <th
+                            v-for="area in areas"
+                            :key="area.id"
+                            scope="col"
+                            class="border-l border-cd-matrix-line bg-cd-matrix-column-header px-3 py-4 text-center align-middle font-normal max-md:min-w-[7.5rem] max-md:px-1.5 max-md:py-2 landscape-compact:px-1.5 landscape-compact:py-2"
                         >
-                            {{ area.name }}
-                        </span>
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr
-                    v-for="(row, rowIndex) in rows"
-                    :key="row.key"
-                    class="h-1/3 border-b border-cd-matrix-line/60 last:border-b-0"
-                    :class="{ 'cd-matrix-row-current': row.key === 'current' }"
-                >
-                    <th
-                        scope="row"
-                        class="relative px-5 py-6 text-center align-middle font-normal landscape-compact:px-2 landscape-compact:py-2.5"
-                        :class="
-                            row.key === 'current'
-                                ? 'cd-matrix-row-current-label bg-cd-matrix-row-current'
-                                : 'bg-cd-matrix-row-header'
-                        "
+                            <span
+                                class="font-serif text-base tracking-[0.14em] text-cd-matrix-header-foreground max-md:text-sm max-md:tracking-[0.08em] landscape-compact:text-sm landscape-compact:tracking-[0.1em] md:text-lg landscape-compact:md:text-sm"
+                            >
+                                {{ area.name }}
+                            </span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr
+                        v-for="(row, rowIndex) in rows"
+                        :key="row.key"
+                        class="h-1/3 border-b border-cd-matrix-line/60 last:border-b-0"
+                        :class="{
+                            'cd-matrix-row-current': row.key === 'current',
+                        }"
                     >
-                        <span
-                            class="inline-flex items-center justify-center gap-2 font-matrix text-base leading-snug lining-nums landscape-compact:gap-1 landscape-compact:text-sm landscape-compact:leading-tight md:text-lg landscape-compact:md:text-sm"
-                        >
-                            <Sunrise
-                                v-if="row.key === 'current'"
-                                :size="18"
-                                :stroke-width="1.6"
-                                aria-hidden="true"
-                                class="shrink-0 text-cd-matrix-accent landscape-compact:size-3.5"
-                            />
-                            {{ row.label }}
-                        </span>
-                    </th>
-                    <td
-                        v-for="(cell, areaIndex) in row.cells"
-                        :key="areas[areaIndex].id"
-                        class="cd-matrix-cell group/cell relative cursor-pointer border-l border-cd-matrix-line px-5 py-6 align-middle landscape-compact:px-2.5 landscape-compact:py-2.5"
-                        @click="emit('edit', { rowIndex, areaIndex })"
-                    >
-                        <button
-                            type="button"
-                            class="pointer-events-none absolute top-2.5 right-2.5 rounded-md border border-cd-matrix-line/60 bg-cd-matrix-surface/90 p-1.5 text-cd-ink-muted opacity-0 shadow-xs transition-all duration-200 group-hover/cell:pointer-events-auto group-hover/cell:opacity-100 hover:border-cd-matrix-line hover:bg-white hover:text-cd-ink focus-visible:pointer-events-auto focus-visible:opacity-100 landscape-compact:top-1.5 landscape-compact:right-1.5 landscape-compact:p-1"
-                            :aria-label="`${areas[areaIndex].name} × ${row.label} を編集`"
-                            @click.stop="emit('edit', { rowIndex, areaIndex })"
-                        >
-                            <Pencil
-                                :size="15"
-                                :stroke-width="1.7"
-                                aria-hidden="true"
-                            />
-                        </button>
-
-                        <ul
-                            v-if="cell.items.length > 0"
-                            class="flex flex-col gap-4 landscape-compact:gap-2"
+                        <th
+                            scope="row"
+                            class="relative px-5 py-6 text-center align-middle font-normal max-md:sticky max-md:left-0 max-md:z-10 max-md:px-1.5 max-md:py-2.5 landscape-compact:px-2 landscape-compact:py-2.5"
                             :class="
-                                row.is_checkable
-                                    ? 'mx-auto w-fit items-start'
-                                    : 'items-center'
+                                row.key === 'current'
+                                    ? 'cd-matrix-row-current-label bg-cd-matrix-row-current'
+                                    : 'bg-cd-matrix-row-header'
                             "
                         >
-                            <li
-                                v-for="item in cell.items"
-                                :key="item.id"
-                                class="flex items-start gap-3 text-[17px] leading-relaxed lining-nums landscape-compact:gap-2 landscape-compact:text-sm landscape-compact:leading-snug md:text-lg landscape-compact:md:text-sm"
+                            <span
+                                class="inline-flex items-center justify-center gap-2 font-matrix text-base leading-snug lining-nums max-md:flex-col max-md:gap-1 max-md:text-[0.7rem] max-md:leading-tight landscape-compact:gap-1 landscape-compact:text-sm landscape-compact:leading-tight md:text-lg landscape-compact:md:text-sm"
                             >
-                                <button
-                                    v-if="row.is_checkable"
-                                    type="button"
-                                    role="checkbox"
-                                    :aria-checked="item.is_completed"
-                                    :aria-label="`${item.title} を${item.is_completed ? '再開' : '完了'}にする`"
-                                    class="mt-1.5 inline-flex size-4 shrink-0 items-center justify-center rounded-[3px] border transition-colors landscape-compact:mt-0.5 landscape-compact:size-3.5"
-                                    :class="
-                                        item.is_completed
-                                            ? 'border-cd-matrix-accent bg-cd-matrix-accent-soft text-cd-matrix-accent'
-                                            : 'border-cd-ink-muted/55 bg-transparent hover:border-cd-matrix-accent/70'
-                                    "
-                                    @click.stop="toggleCompletion(item)"
+                                <Sunrise
+                                    v-if="row.key === 'current'"
+                                    :size="18"
+                                    :stroke-width="1.6"
+                                    aria-hidden="true"
+                                    class="shrink-0 text-cd-matrix-accent max-md:size-3.5 landscape-compact:size-3.5"
+                                />
+                                {{ row.label }}
+                            </span>
+                        </th>
+                        <td
+                            v-for="(cell, areaIndex) in row.cells"
+                            :key="areas[areaIndex].id"
+                            class="cd-matrix-cell group/cell relative cursor-pointer border-l border-cd-matrix-line px-5 py-6 align-middle max-md:px-2 max-md:py-2.5 landscape-compact:px-2.5 landscape-compact:py-2.5"
+                            @click="emit('edit', { rowIndex, areaIndex })"
+                        >
+                            <button
+                                type="button"
+                                class="pointer-events-none absolute top-2.5 right-2.5 rounded-md border border-cd-matrix-line/60 bg-cd-matrix-surface/90 p-1.5 text-cd-ink-muted opacity-0 shadow-xs transition-all duration-200 group-hover/cell:pointer-events-auto group-hover/cell:opacity-100 hover:border-cd-matrix-line hover:bg-white hover:text-cd-ink focus-visible:pointer-events-auto focus-visible:opacity-100 max-md:top-1 max-md:right-1 max-md:pointer-events-auto max-md:p-1 max-md:opacity-90 landscape-compact:top-1.5 landscape-compact:right-1.5 landscape-compact:p-1"
+                                :aria-label="`${areas[areaIndex].name} × ${row.label} を編集`"
+                                @click.stop="
+                                    emit('edit', { rowIndex, areaIndex })
+                                "
+                            >
+                                <Pencil
+                                    :size="15"
+                                    :stroke-width="1.7"
+                                    aria-hidden="true"
+                                    class="max-md:size-3.5"
+                                />
+                            </button>
+
+                            <ul
+                                v-if="cell.items.length > 0"
+                                class="flex flex-col gap-4 max-md:gap-2 landscape-compact:gap-2"
+                                :class="
+                                    row.is_checkable
+                                        ? 'mx-auto w-fit items-start'
+                                        : 'items-center'
+                                "
+                            >
+                                <li
+                                    v-for="item in cell.items"
+                                    :key="item.id"
+                                    class="flex items-start gap-3 text-[17px] leading-relaxed lining-nums max-md:gap-1.5 max-md:text-sm max-md:leading-snug landscape-compact:gap-2 landscape-compact:text-sm landscape-compact:leading-snug md:text-lg landscape-compact:md:text-sm"
                                 >
-                                    <Check
-                                        v-if="item.is_completed"
-                                        :size="12"
-                                        :stroke-width="2.4"
-                                        aria-hidden="true"
-                                    />
-                                </button>
-                                <span
-                                    :class="[
-                                        row.is_checkable
-                                            ? 'text-left'
-                                            : 'text-center text-balance',
-                                        item.is_completed
-                                            ? 'font-matrix--done font-matrix line-through decoration-cd-ink-muted/60'
-                                            : 'font-matrix',
-                                    ]"
-                                    >{{ item.title }}</span
-                                >
-                            </li>
-                        </ul>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                                    <button
+                                        v-if="row.is_checkable"
+                                        type="button"
+                                        role="checkbox"
+                                        :aria-checked="item.is_completed"
+                                        :aria-label="`${item.title} を${item.is_completed ? '再開' : '完了'}にする`"
+                                        class="mt-1.5 inline-flex size-4 shrink-0 items-center justify-center rounded-[3px] border transition-colors max-md:mt-0.5 max-md:size-4 landscape-compact:mt-0.5 landscape-compact:size-3.5"
+                                        :class="
+                                            item.is_completed
+                                                ? 'border-cd-matrix-accent bg-cd-matrix-accent-soft text-cd-matrix-accent'
+                                                : 'border-cd-ink-muted/55 bg-transparent hover:border-cd-matrix-accent/70'
+                                        "
+                                        @click.stop="toggleCompletion(item)"
+                                    >
+                                        <Check
+                                            v-if="item.is_completed"
+                                            :size="12"
+                                            :stroke-width="2.4"
+                                            aria-hidden="true"
+                                        />
+                                    </button>
+                                    <span
+                                        :class="[
+                                            row.is_checkable
+                                                ? 'text-left'
+                                                : 'text-center text-balance',
+                                            item.is_completed
+                                                ? 'font-matrix--done font-matrix line-through decoration-cd-ink-muted/60'
+                                                : 'font-matrix',
+                                        ]"
+                                        >{{ item.title }}</span
+                                    >
+                                </li>
+                            </ul>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </section>
 </template>

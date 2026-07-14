@@ -53,11 +53,11 @@ function deleteItem(itemId: string): void {
 <template>
     <Dialog :open="open" @update:open="emit('update:open', $event)">
         <DialogContent
-            class="max-h-[85vh] overflow-y-auto bg-cd-surface sm:max-w-xl"
+            class="max-h-[85vh] overflow-y-auto bg-cd-surface max-md:max-h-[90dvh] max-md:w-[calc(100vw-1rem)] max-md:rounded-xl sm:max-w-xl"
         >
             <DialogHeader class="items-center gap-2 text-center sm:text-center">
                 <DialogTitle
-                    class="font-serif text-xl font-normal tracking-[0.16em] text-primary"
+                    class="font-serif text-xl font-normal tracking-[0.16em] text-primary max-md:text-lg max-md:tracking-[0.1em]"
                 >
                     {{ areaName }} / {{ rowLabel }}
                 </DialogTitle>

@@ -38,12 +38,12 @@ const todayIso = [
 
 <template>
     <header
-        class="flex min-h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/70 px-4 py-3 transition-[width,height] ease-linear landscape-compact:min-h-12 landscape-compact:py-2 md:px-6 md:py-4 landscape-compact:md:py-2"
+        class="flex min-h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/70 px-4 py-3 transition-[width,height] ease-linear max-md:min-h-12 max-md:gap-1.5 max-md:px-3 max-md:py-2 landscape-compact:min-h-12 landscape-compact:py-2 md:px-6 md:py-4 landscape-compact:md:py-2"
     >
-        <div class="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
+        <div class="flex min-w-0 flex-1 items-center gap-2 max-md:gap-1.5 md:gap-3">
             <SidebarTrigger class="-ml-1 shrink-0" />
             <h1
-                class="truncate font-serif text-[2rem] leading-none font-normal tracking-[0.16em] text-cd-dawn-deep landscape-compact:text-[1.5rem] landscape-compact:tracking-[0.12em] md:text-[2.5rem] landscape-compact:md:text-[1.65rem]"
+                class="truncate font-serif text-[2rem] leading-none font-normal tracking-[0.16em] text-cd-dawn-deep max-md:text-[1.25rem] max-md:tracking-[0.1em] landscape-compact:text-[1.5rem] landscape-compact:tracking-[0.12em] md:text-[2.5rem] landscape-compact:md:text-[1.65rem]"
             >
                 Clear Dawn
             </h1>
@@ -53,7 +53,19 @@ const todayIso = [
             </template>
         </div>
 
-        <div class="flex shrink-0 items-center gap-2 md:gap-3">
+        <div class="flex shrink-0 items-center gap-2 max-md:gap-1.5 md:gap-3">
+            <Link
+                v-if="onDashboard"
+                :href="lifeAreasIndex()"
+                aria-label="領域管理"
+                class="inline-flex size-9 items-center justify-center rounded-full border border-cd-line bg-cd-surface/80 text-cd-ink shadow-sm transition-colors hover:bg-muted/40 sm:hidden"
+            >
+                <SlidersHorizontal
+                    :size="16"
+                    :stroke-width="1.6"
+                    aria-hidden="true"
+                />
+            </Link>
             <div
                 v-if="onDashboard"
                 class="cd-frost hidden items-center gap-3 rounded-full border border-cd-line px-4 py-2 shadow-sm sm:flex landscape-compact:gap-2 landscape-compact:px-3 landscape-compact:py-1 md:gap-4 md:px-5"
