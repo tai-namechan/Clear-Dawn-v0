@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Kioku;
 
 use App\Domain\Kioku\Jobs\EnrichMemoryJob;
 use App\Domain\Kioku\Jobs\TranscribeMemoryAudioJob;
+use App\Domain\Kioku\Models\KiokuLetter;
 use App\Domain\Kioku\Models\Memory;
 use App\Domain\Kioku\Services\CaptureMemoryService;
 use App\Domain\Kioku\Services\KiokuSearchService;
@@ -64,7 +65,42 @@ class MemoryController extends Controller
             'sourceCounts' => $sourceCounts,
             'totalCount' => $owned->count(),
             'transcriptionEnabled' => config('kioku.transcription.provider', 'none') !== 'none',
+            'letters' => $this->letterSummaries((int) $user->id),
         ]);
+    }
+
+    /**
+     * Latest four concierge letters for the Home preview
+     * (docs/product/kioku-final-remaining-implementation.md §15.1).
+     * Letters that never got past generation are operator concerns, not
+     * Home content.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function letterSummaries(int $userId): array
+    {
+        return KiokuLetter::query()
+            ->where('user_id', $userId)
+            ->whereNotIn('status', [KiokuLetter::STATUS_GENERATING, KiokuLetter::STATUS_FAILED])
+            ->withCount([
+                'items as judged_count' => fn ($query) => $query->whereNotNull('verdict'),
+                'items as hit_count' => fn ($query) => $query->where('verdict', 'hit'),
+            ])
+            ->orderByDesc('week_start')
+            ->limit(4)
+            ->get()
+            ->map(fn (KiokuLetter $letter): array => [
+                'id' => $letter->id,
+                'week_start' => $letter->week_start->toDateString(),
+                'status' => $letter->status,
+                'character_variant' => $letter->character_variant,
+                'item_count' => $letter->item_count,
+                'judged_count' => (int) $letter->getAttribute('judged_count'),
+                'hit_count' => (int) $letter->getAttribute('hit_count'),
+                'opened' => $letter->opened_at !== null,
+            ])
+            ->values()
+            ->all();
     }
 
     public function status(MemoryStatusRequest $request): JsonResponse

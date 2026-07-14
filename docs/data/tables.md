@@ -290,6 +290,9 @@ index: (user_id, eaten_on)。unique なし（1 日複数エントリ可）。物
 | transcription_status★ | string nullable | voice のみ: pending / processing / ready / failed。manual/url は null |
 | client_capture_id★ | uuid nullable | 端末生成。**(user_id, client_capture_id) unique** で再送を冪等化 |
 | referenced_count | int | |
+| last_referenced_at☆ | timestamp nullable | 手紙の初回開封時に表示項目へ記録（[kioku-final-remaining-implementation.md](../product/kioku-final-remaining-implementation.md) §11.1） |
+
+★=クイックキャプチャ、☆=コンシェルジュ手紙で追加。source_type にはコンシェルジュ評価ログ用の `kioku_letter` が加わる（Letter 候補からは除外）。
 
 不変条件: raw_content は作成後変更不可（Model updating ガード。修復時は `$memory->permitRawContentRepair()`）。
 
@@ -327,6 +330,49 @@ storage cleanup:
 | retry_count | int nullable | 同期リトライ回数 |
 
 **raw 本文・transcript・音声内容は保存しない。**
+
+### kioku_letters（コンシェルジュ手紙）
+
+仕様は [kioku-final-remaining-implementation.md](../product/kioku-final-remaining-implementation.md) §11 を参照。
+
+| カラム | 型 | 備考 |
+|---|---|---|
+| id | ULID | PK |
+| user_id | bigint unsigned | FK(users) |
+| week_start | date | 対象週の月曜日。**(user_id, week_start) unique**（1 user・1 週 1 通） |
+| status | string | generating / published / empty / failed / opened / evaluating / evaluated / halted |
+| character_variant | string | shiori / nagi。作成後不変 |
+| intro | text nullable | AI 生成の導入（最大2文） |
+| context | text nullable | 手動で渡す今週の文脈 |
+| candidate_count | int | AI へ渡した候補数 |
+| item_count | tinyint | 0〜5 |
+| prompt_key | string | `kioku.concierge.letter.v1` |
+| model | string nullable | 実際に使ったモデル |
+| generation_meta | json nullable | AI usage request ID 等。raw 本文は入れない |
+| generated_at / published_at | timestamp nullable | 生成・公開日時 |
+| opened_at / completed_at | timestamp nullable | 初回開封・評価完了 |
+| evaluation_memory_id | ULID nullable | FK(memories) null on delete。評価 Memory |
+
+index: (user_id, status, published_at)
+
+### kioku_letter_items（手紙の項目）
+
+| カラム | 型 | 備考 |
+|---|---|---|
+| id | ULID | PK |
+| letter_id | ULID | FK(kioku_letters) cascade |
+| memory_id | ULID | FK(memories) cascade。元 Memory |
+| position | tinyint | 1〜5。**(letter_id, position) unique** |
+| title_snapshot | string | 生成時タイトル |
+| summary_snapshot | text nullable | 生成時要約 |
+| headline | string | 手紙見出し（最大60文字） |
+| why_now | string | なぜ今か（最大180文字） |
+| related_memory_ids | json nullable | 最大2件 |
+| verdict | string nullable | hit / soft_hit / miss / sensitive_leak |
+| verdict_note | text nullable | 任意500文字以内 |
+| verdict_at | timestamp nullable | 判定日時 |
+
+**(letter_id, memory_id) unique**。DB enum は使わず、定数＋validation で固定する。
 
 ## Phase 3〜4（ドラフト）
 

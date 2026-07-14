@@ -2,6 +2,7 @@
 import { Head, router } from '@inertiajs/vue3';
 import { Brain, CloudOff, Mic, Plus, Search, Send, X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import KiokuLetterPreview from '@/components/kioku/KiokuLetterPreview.vue';
 import MemoryCard from '@/components/kioku/MemoryCard.vue';
 import VoiceCaptureOverlay from '@/components/kioku/VoiceCaptureOverlay.vue';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { MEMORY_TYPES, SOURCE_TYPES } from '@/lib/kiokuMeta';
 import type { MemoryTypeKey, SourceTypeKey } from '@/lib/kiokuMeta';
 import { home } from '@/routes/kioku';
 import type { KiokuMemory, MemoryTypeOption } from '@/types/kioku';
+import type { KiokuLetterSummary } from '@/types/kiokuLetter';
 
 interface Props {
     memories: KiokuMemory[];
@@ -24,6 +26,7 @@ interface Props {
     sourceCounts: Record<string, number>;
     totalCount: number;
     transcriptionEnabled: boolean;
+    letters: KiokuLetterSummary[];
 }
 
 const props = defineProps<Props>();
@@ -462,6 +465,8 @@ defineOptions({
                         <X :size="14" />
                     </button>
                 </div>
+
+                <KiokuLetterPreview :letters="letters" />
 
                 <div
                     v-for="item in pendingLocalCaptures"

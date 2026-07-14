@@ -162,6 +162,10 @@
 
 ### 7.1 コンシェルジュ4週間実験（正式仕様）
 
+> 実装仕様の正: [kioku-final-remaining-implementation.md](../product/kioku-final-remaining-implementation.md) Phase B。
+> 本節の「手元で選ぶ／手紙を書く」手順は、同仕様の手動 command（`kioku:letters:generate`）＋週1手紙 UI（シオリ/ナギ）へ置き換わった。
+> 判定ラベル・成功条件・中止条件は本節のまま有効（cron・自動配信は引き続き範囲外）。
+
 状態: **正式検証（第一段）**  
 期間: **4週間**（開始は今週。カレンダー起算で連続4週）  
 頻度: **週1回・手紙1通**  
