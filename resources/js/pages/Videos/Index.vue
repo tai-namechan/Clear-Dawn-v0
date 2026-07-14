@@ -343,8 +343,10 @@ async function deleteVideo(video: Video): Promise<void> {
         :open="showPlaybackModal"
         @update:open="(v) => (showPlaybackModal = v)"
     >
-        <DialogContent class="bg-cd-surface sm:max-w-2xl">
-            <DialogHeader>
+        <DialogContent
+            class="bg-cd-surface max-h-[90dvh] overflow-y-auto p-4 sm:max-w-2xl sm:p-6"
+        >
+            <DialogHeader class="pr-8">
                 <DialogTitle
                     class="font-sans text-lg font-semibold text-cd-ink"
                 >
@@ -353,23 +355,28 @@ async function deleteVideo(video: Video): Promise<void> {
             </DialogHeader>
 
             <div
-                class="flex aspect-video items-center justify-center rounded-xl bg-cd-ink/5"
+                class="relative w-full min-w-0 overflow-hidden rounded-xl border border-cd-line/60 bg-black/5"
             >
-                <p
+                <div
                     v-if="playbackLoading"
-                    class="font-sans text-sm text-cd-ink-muted"
+                    class="flex aspect-video items-center justify-center font-sans text-sm text-cd-ink-muted"
                 >
                     読み込み中…
-                </p>
+                </div>
                 <video
                     v-else-if="playbackUrl"
                     :src="playbackUrl"
+                    class="aspect-video w-full bg-black object-contain"
                     controls
-                    class="max-h-full max-w-full rounded-xl"
+                    playsinline
+                    preload="metadata"
                 />
-                <p v-else class="font-sans text-sm text-cd-ink-muted">
+                <div
+                    v-else
+                    class="flex aspect-video items-center justify-center px-4 font-sans text-sm text-cd-ink-muted"
+                >
                     再生 URL を取得できませんでした。
-                </p>
+                </div>
             </div>
         </DialogContent>
     </Dialog>
