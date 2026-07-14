@@ -71,8 +71,8 @@ function openEditor(rowIndex: number): void {
                     class="shrink-0 rounded-full border px-3.5 py-1.5 font-serif text-sm tracking-[0.08em] transition-colors"
                     :class="
                         areaIndex === selectedAreaIndex
-                            ? 'border-cd-matrix-accent bg-cd-matrix-accent-soft text-cd-matrix-header-foreground'
-                            : 'border-cd-matrix-line bg-cd-matrix-surface text-cd-ink-muted'
+                            ? 'border-cd-matrix-line bg-cd-matrix-row-header text-cd-ink'
+                            : 'border-cd-matrix-column-header bg-cd-matrix-column-header text-cd-matrix-header-foreground'
                     "
                     @click="selectArea(areaIndex)"
                 >
@@ -91,8 +91,8 @@ function openEditor(rowIndex: number): void {
                         class="flex items-start justify-between gap-3 border-b border-cd-matrix-line/70 px-4 py-3"
                         :class="
                             row.key === 'current'
-                                ? 'cd-matrix-row-current-label bg-cd-matrix-row-current'
-                                : 'bg-cd-matrix-row-header'
+                                ? 'cd-matrix-row-current-label bg-cd-matrix-row-current text-cd-ink'
+                                : 'bg-cd-matrix-row-header text-cd-ink'
                         "
                     >
                         <div
