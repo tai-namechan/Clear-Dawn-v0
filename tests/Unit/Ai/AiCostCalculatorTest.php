@@ -57,4 +57,54 @@ class AiCostCalculatorTest extends TestCase
 
         $this->assertFalse($actual->greaterThan($estimated));
     }
+
+    public function test_rates_for_alias_model_ids_match_configured_pricing(): void
+    {
+        $calculator = app(AiCostCalculator::class);
+
+        $this->assertSame(
+            ['input' => '1', 'output' => '5'],
+            $calculator->ratesFor('claude-haiku-4-5'),
+        );
+        $this->assertSame(
+            ['input' => '1', 'output' => '5'],
+            $calculator->ratesFor('claude-haiku-4-5-20251001'),
+        );
+        $this->assertSame(
+            ['input' => '3', 'output' => '15'],
+            $calculator->ratesFor('claude-sonnet-5'),
+        );
+        $this->assertSame(
+            ['input' => '3', 'output' => '15'],
+            $calculator->ratesFor('claude-sonnet-4-6'),
+        );
+    }
+
+    public function test_unknown_model_falls_back_to_default_pricing(): void
+    {
+        $calculator = app(AiCostCalculator::class);
+
+        $this->assertSame(
+            ['input' => '3', 'output' => '15'],
+            $calculator->ratesFor('claude-unknown-model'),
+        );
+    }
+
+    public function test_actual_cost_for_alias_models_uses_model_specific_rates_not_default(): void
+    {
+        $calculator = app(AiCostCalculator::class);
+
+        // 1M input tokens at Haiku 4.5 ($1/MTok) => $1.000000
+        $haiku = $calculator->actualCost('claude-haiku-4-5', 1_000_000, 0);
+        $this->assertSame('1.000000', $haiku->toString());
+
+        // Without alias pricing this would incorrectly use default 3.0/15.0 => $3.
+        $default = $calculator->actualCost('claude-unknown-model', 1_000_000, 0);
+        $this->assertSame('3.000000', $default->toString());
+        $this->assertTrue($default->greaterThan($haiku));
+
+        // 1M output tokens at Sonnet 5 standard ($15/MTok) => $15.000000
+        $sonnet = $calculator->actualCost('claude-sonnet-5', 0, 1_000_000);
+        $this->assertSame('15.000000', $sonnet->toString());
+    }
 }
