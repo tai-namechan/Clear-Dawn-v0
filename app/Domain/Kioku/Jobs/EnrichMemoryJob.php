@@ -54,6 +54,14 @@ class EnrichMemoryJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
+        // Voice memories are enriched from the transcript (derived data).
+        // Without one there is nothing to analyze yet — transcription will
+        // dispatch this job again once the transcript is ready.
+        $content = $memory->enrichmentSourceText();
+        if ($content === null || trim($content) === '') {
+            return;
+        }
+
         if (! $this->claim($memory)) {
             return;
         }
@@ -61,7 +69,7 @@ class EnrichMemoryJob implements ShouldBeUnique, ShouldQueue
         // No DB transaction is held here: each update below is autocommit so
         // the external AI calls never run inside an open transaction.
         try {
-            $this->classify($ai, $registry, $classifier, $memory);
+            $this->classify($ai, $registry, $classifier, $memory, $content);
 
             $type = $registry->get((string) $memory->memory_type);
             $tier = in_array($memory->memory_type, ['error_log', 'decision'], true) ? 'strong' : 'cheap';
@@ -69,7 +77,7 @@ class EnrichMemoryJob implements ShouldBeUnique, ShouldQueue
             $extractPrompt = PromptTemplate::make(
                 'extract.'.$memory->memory_type.'.v1',
                 'You extract structured memory fields. Reply with JSON only.',
-                $type->extractionPrompt($memory->raw_content),
+                $type->extractionPrompt($content),
             );
 
             $extracted = $ai->complete(
@@ -158,16 +166,17 @@ class EnrichMemoryJob implements ShouldBeUnique, ShouldQueue
         MemoryTypeRegistry $registry,
         MemoryClassifier $classifier,
         Memory $memory,
+        string $content,
     ): void {
         if ($memory->memory_type !== null && in_array($memory->memory_type, $registry->keys(), true)) {
             return;
         }
 
-        $classification = $classifier->classify($ai, (int) $memory->user_id, $memory->raw_content);
+        $classification = $classifier->classify($ai, (int) $memory->user_id, $content);
 
         $memory->update([
             'memory_type' => $classification['memory_type'],
-            'title' => $classification['title'] ?? mb_substr($memory->raw_content, 0, 40),
+            'title' => $classification['title'] ?? mb_substr($content, 0, 40),
             'tags' => $classification['tags'],
             'importance' => $classification['importance'],
         ]);

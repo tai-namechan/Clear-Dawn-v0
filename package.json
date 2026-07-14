@@ -3,6 +3,7 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "assets:check": "node scripts/check-vite-asset-budget.mjs",
         "build": "vite build",
         "build:ssr": "vite build && vite build --ssr",
         "dev": "vite",

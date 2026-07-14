@@ -17,6 +17,7 @@ class StoreMemoryRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'client_capture_id' => ['nullable', 'uuid'],
             'raw_content' => ['required', 'string', 'max:20000'],
             'source_type' => ['nullable', 'string', 'in:manual,url'],
             'sensitive' => ['nullable', 'boolean'],

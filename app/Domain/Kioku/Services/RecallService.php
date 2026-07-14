@@ -24,7 +24,7 @@ final class RecallService
             ->map(function (Memory $memory): string {
                 $when = $memory->captured_at->diffForHumans();
                 $type = $memory->memory_type ?? 'memory';
-                $text = $memory->summary ?: mb_substr($memory->raw_content, 0, 200);
+                $text = $memory->summary ?: mb_substr((string) ($memory->raw_content ?? $memory->transcript_text), 0, 200);
 
                 return "[{$when}/{$type}] {$text}";
             })

@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { Form, Head, router } from '@inertiajs/vue3';
-import { Brain, Plus, Search, Send, X } from '@lucide/vue';
+import { Head, router } from '@inertiajs/vue3';
+import { Brain, CloudOff, Mic, Plus, Search, Send, X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import MemoryCard from '@/components/kioku/MemoryCard.vue';
+import VoiceCaptureOverlay from '@/components/kioku/VoiceCaptureOverlay.vue';
 import { Button } from '@/components/ui/button';
+import { useAudioRecorder } from '@/composables/useAudioRecorder';
+import type { RecordedAudio } from '@/composables/useAudioRecorder';
+import { useKiokuCaptureQueue } from '@/composables/useKiokuCaptureQueue';
 import { useKiokuStatusPoll } from '@/composables/useKiokuStatusPoll';
+import { KIOKU_MAX_RECORDING_MS } from '@/lib/kiokuAudioRecorder.mjs';
+import { buildCaptureQueueItem } from '@/lib/kiokuCaptureQueue.mjs';
 import { MEMORY_TYPES, SOURCE_TYPES } from '@/lib/kiokuMeta';
 import type { MemoryTypeKey, SourceTypeKey } from '@/lib/kiokuMeta';
 import { home } from '@/routes/kioku';
-import { store } from '@/routes/kioku/memories';
 import type { KiokuMemory, MemoryTypeOption } from '@/types/kioku';
 
 interface Props {
@@ -18,6 +23,7 @@ interface Props {
     typeCounts: Record<string, number>;
     sourceCounts: Record<string, number>;
     totalCount: number;
+    transcriptionEnabled: boolean;
 }
 
 const props = defineProps<Props>();
@@ -34,13 +40,174 @@ watch(
     },
 );
 
-const { timedOut, timeoutMessage } = useKiokuStatusPoll(() => props.memories);
+/**
+ * Voice memories waiting on an unconfigured transcription provider stay
+ * 'captured' indefinitely — polling them would only end in a false timeout.
+ */
+const pollableMemories = computed(() =>
+    props.memories.filter(
+        (memory) =>
+            props.transcriptionEnabled ||
+            memory.source_type !== 'voice' ||
+            memory.transcription_status !== 'pending',
+    ),
+);
+
+const { timedOut, timeoutMessage } = useKiokuStatusPoll(
+    () => pollableMemories.value,
+);
+
+const {
+    pendingCaptures,
+    markCaptureStarted,
+    submitText,
+    enqueueItem,
+    discardRejected,
+    onSynced,
+} = useKiokuCaptureQueue();
+
+const saving = ref(false);
+const captureError = ref<string | null>(null);
+let captureStartedAtMs: number | null = null;
+
+const serverCaptureIds = computed(
+    () =>
+        new Set(
+            props.memories
+                .map((memory) => memory.client_capture_id)
+                .filter((id): id is string => id !== null),
+        ),
+);
+
+/** Device-only items awaiting server sync (hidden once the server copy shows). */
+const pendingLocalCaptures = computed(() =>
+    pendingCaptures.value.filter(
+        (item) => !serverCaptureIds.value.has(item.clientCaptureId),
+    ),
+);
 
 function manualReload(): void {
     router.reload({
         only: ['memories', 'typeCounts', 'sourceCounts', 'totalCount'],
         preserveUrl: true,
     });
+}
+
+onSynced(manualReload);
+
+async function discardRejectedCapture(clientCaptureId: string): Promise<void> {
+    const confirmed = window.confirm(
+        'このキャプチャはサーバーに送れない形式です。端末から破棄しますか？原文・音声は復元できません。',
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    await discardRejected(clientCaptureId);
+}
+
+function onDraftFocus(): void {
+    if (captureStartedAtMs === null && draft.value === '') {
+        captureStartedAtMs = markCaptureStarted('manual');
+    }
+}
+
+const recorder = useAudioRecorder({
+    onAutoStop: (audio) => {
+        void saveRecording(audio);
+    },
+});
+const voiceError = ref<string | null>(null);
+let voiceCaptureStartedAtMs: number | null = null;
+
+const isRecording = computed(
+    () =>
+        recorder.state.value === 'recording' ||
+        recorder.state.value === 'stopping',
+);
+
+async function startRecording(): Promise<void> {
+    voiceError.value = null;
+
+    if (!recorder.isSupported) {
+        voiceError.value =
+            'この環境では録音に対応していません。テキストで残してください。';
+
+        return;
+    }
+
+    voiceCaptureStartedAtMs = markCaptureStarted('voice');
+    const started = await recorder.start();
+
+    if (!started) {
+        voiceError.value = recorder.permissionDenied.value
+            ? 'マイクが許可されていません。ブラウザ設定で許可するか、テキストで残してください。'
+            : '録音を開始できませんでした。テキストで残してください。';
+    }
+}
+
+async function stopRecording(): Promise<void> {
+    const audio = await recorder.stop();
+
+    if (audio !== null) {
+        await saveRecording(audio);
+    }
+}
+
+async function saveRecording(audio: RecordedAudio): Promise<void> {
+    const item = buildCaptureQueueItem({
+        clientCaptureId: crypto.randomUUID(),
+        sourceType: 'voice',
+        audioBlob: audio.blob,
+        audioMimeType: audio.mimeType,
+        durationMs: Math.max(1, Math.round(audio.durationMs)),
+        capturedAt: new Date().toISOString(),
+    });
+
+    const result = await enqueueItem(item, voiceCaptureStartedAtMs);
+    voiceCaptureStartedAtMs = null;
+
+    if (result.outcome === 'failed') {
+        voiceError.value = result.message;
+    } else if (result.outcome === 'sent_directly') {
+        manualReload();
+    }
+}
+
+function discardRecording(): void {
+    recorder.discard();
+    voiceCaptureStartedAtMs = null;
+}
+
+async function submitDraft(): Promise<void> {
+    const content = draft.value.trim();
+
+    if (!content || saving.value) {
+        return;
+    }
+
+    saving.value = true;
+    captureError.value = null;
+
+    try {
+        const result = await submitText(content, captureStartedAtMs);
+
+        if (result.outcome === 'failed') {
+            captureError.value = result.message;
+
+            return;
+        }
+
+        draft.value = '';
+        captureStartedAtMs = null;
+
+        if (result.outcome === 'sent_directly') {
+            manualReload();
+        }
+    } finally {
+        saving.value = false;
+    }
 }
 
 const visibleTypeKeys = computed(() =>
@@ -128,12 +295,35 @@ defineOptions({
                     >
                         <Plus :size="14" />
                         なんでも、まずここへ
+                        <button
+                            v-if="!isRecording"
+                            type="button"
+                            class="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-os-kioku/30 text-os-kioku transition-colors hover:bg-os-kioku-soft focus-visible:ring-2 focus-visible:ring-os-kioku/35"
+                            aria-label="音声で残す（録音開始）"
+                            @click="startRecording"
+                        >
+                            <Mic :size="15" />
+                        </button>
                     </div>
-                    <Form
-                        v-bind="store.form()"
+                    <VoiceCaptureOverlay
+                        v-if="isRecording"
+                        :elapsed-ms="recorder.elapsedMs.value"
+                        :max-duration-ms="KIOKU_MAX_RECORDING_MS"
+                        :stopping="recorder.state.value === 'stopping'"
+                        @stop="stopRecording"
+                        @discard="discardRecording"
+                    />
+                    <p
+                        v-if="voiceError"
+                        class="mb-2 text-xs leading-relaxed text-[#C05A48]"
+                        role="alert"
+                    >
+                        {{ voiceError }}
+                    </p>
+                    <form
+                        v-if="!isRecording"
                         class="space-y-2.5"
-                        #default="{ processing }"
-                        @success="draft = ''"
+                        @submit.prevent="submitDraft"
                     >
                         <textarea
                             v-model="draft"
@@ -142,32 +332,27 @@ defineOptions({
                             required
                             placeholder="エラーメッセージ、考えたこと、URL…&#10;貼るだけ。整理はAIが後からやります。&#10;（Ctrl/⌘+Enterで保存）"
                             class="w-full resize-y rounded-xl border border-os-line bg-os-kioku-bg px-3.5 py-3 text-[13.5px] leading-relaxed text-os-ink outline-none placeholder:text-[#B3AC99] focus-visible:ring-2 focus-visible:ring-os-kioku/35"
-                            @keydown.meta.enter.prevent="
-                                (
-                                    $event.target as HTMLTextAreaElement
-                                ).form?.requestSubmit()
-                            "
-                            @keydown.ctrl.enter.prevent="
-                                (
-                                    $event.target as HTMLTextAreaElement
-                                ).form?.requestSubmit()
-                            "
+                            @focus="onDraftFocus"
+                            @keydown.meta.enter.prevent="submitDraft"
+                            @keydown.ctrl.enter.prevent="submitDraft"
                         />
-                        <input
-                            type="hidden"
-                            name="source_type"
-                            value="manual"
-                        />
+                        <p
+                            v-if="captureError"
+                            class="text-xs leading-relaxed text-[#C05A48]"
+                            role="alert"
+                        >
+                            {{ captureError }}
+                        </p>
                         <Button
                             type="submit"
                             class="h-11 w-full gap-2 rounded-xl bg-os-kioku text-[13.5px] font-bold text-white shadow-[0_3px_10px_rgba(62,86,136,0.28)] hover:bg-os-kioku/90"
-                            :disabled="processing || !draft.trim()"
+                            :disabled="saving || !draft.trim()"
                             :class="draft.trim() ? 'opacity-100' : 'opacity-40'"
                         >
                             <Send :size="15" />
                             保存（AIが自動整理）
                         </Button>
-                    </Form>
+                    </form>
                 </section>
 
                 <section
@@ -279,7 +464,45 @@ defineOptions({
                 </div>
 
                 <div
-                    v-if="memories.length === 0"
+                    v-for="item in pendingLocalCaptures"
+                    :key="item.clientCaptureId"
+                    class="rounded-2xl border border-dashed border-os-kioku/40 bg-os-kioku-paper px-4 py-3 shadow-[0_1px_3px_rgba(43,41,36,0.05)]"
+                    role="status"
+                >
+                    <div
+                        class="mb-1 flex items-center gap-1.5 text-[11.5px] font-bold text-os-sub"
+                    >
+                        <CloudOff :size="13" />
+                        端末に保存済み・同期待ち
+                        <span v-if="item.rejected">（送信できない形式）</span>
+                        <span v-else-if="item.retryCount > 0"
+                            >（再試行 {{ item.retryCount }}回目待ち）</span
+                        >
+                    </div>
+                    <p
+                        class="line-clamp-2 text-[13px] leading-relaxed text-os-ink"
+                    >
+                        {{
+                            item.sourceType === 'voice'
+                                ? `音声メモ（${Math.round((item.durationMs ?? 0) / 1000)}秒）`
+                                : item.rawContent
+                        }}
+                    </p>
+                    <button
+                        v-if="item.rejected"
+                        type="button"
+                        class="mt-2 text-[11.5px] font-bold text-[#C05A48] hover:underline"
+                        @click="discardRejectedCapture(item.clientCaptureId)"
+                    >
+                        端末から破棄
+                    </button>
+                </div>
+
+                <div
+                    v-if="
+                        memories.length === 0 &&
+                        pendingLocalCaptures.length === 0
+                    "
                     class="rounded-2xl border border-os-line bg-os-kioku-paper p-9 text-center shadow-[0_1px_3px_rgba(43,41,36,0.05)]"
                 >
                     <Brain :size="26" class="mx-auto mb-2.5 text-os-faint" />
@@ -296,6 +519,7 @@ defineOptions({
                     v-for="memory in memories"
                     :key="memory.id"
                     :memory="memory"
+                    :transcription-enabled="transcriptionEnabled"
                 />
 
                 <p

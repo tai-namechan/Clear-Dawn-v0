@@ -9,24 +9,55 @@ import {
     Sparkles,
     Sun,
 } from '@lucide/vue';
+import { computed } from 'vue';
 import { toast } from 'vue-sonner';
 import SourceBadge from '@/components/kioku/SourceBadge.vue';
 import TypeChip from '@/components/kioku/TypeChip.vue';
 import { Button } from '@/components/ui/button';
-import { formatAgo } from '@/lib/kiokuMeta';
+import { kiokuMemoryDisplayTitle } from '@/lib/kiokuMemoryCard.mjs';
+import { formatAgo, sourceTypeMeta } from '@/lib/kiokuMeta';
+import { kiokuTranscriptDisplayMode } from '@/lib/kiokuTranscriptDisplay.mjs';
 import { home } from '@/routes/kioku';
-import { reenrich, show } from '@/routes/kioku/memories';
+import {
+    audio,
+    reenrich,
+    retryTranscription,
+    show,
+} from '@/routes/kioku/memories';
 import type { KiokuMemory } from '@/types/kioku';
 
 interface Props {
     memory: KiokuMemory;
     related: KiokuMemory[];
+    transcriptionEnabled: boolean;
 }
 
 const props = defineProps<Props>();
 
+const transcriptMode = computed(() =>
+    kiokuTranscriptDisplayMode({
+        transcriptionEnabled: props.transcriptionEnabled,
+        transcriptionStatus: props.memory.transcription_status,
+        transcriptText: props.memory.transcript_text,
+    }),
+);
+
+const displayTitle = computed(() => kiokuMemoryDisplayTitle(props.memory));
+
+const titleClass = computed(
+    () => sourceTypeMeta(props.memory.source_type).titleClass ?? 'text-os-ink',
+);
+
 function requestReenrich(): void {
     router.post(reenrich.url(props.memory.id), {}, { preserveScroll: true });
+}
+
+function requestRetryTranscription(): void {
+    router.post(
+        retryTranscription.url(props.memory.id),
+        {},
+        { preserveScroll: true },
+    );
 }
 
 function fieldValue(
@@ -46,7 +77,7 @@ defineOptions({
 
 <template>
     <div class="mx-auto max-w-[640px] space-y-4">
-        <Head :title="memory.title" />
+        <Head :title="displayTitle" />
 
         <Link
             :href="home()"
@@ -74,8 +105,8 @@ defineOptions({
                     </span>
                 </div>
 
-                <h1 class="text-lg font-bold text-os-ink">
-                    {{ memory.title }}
+                <h1 class="text-lg font-bold" :class="titleClass">
+                    {{ displayTitle }}
                 </h1>
 
                 <div class="flex flex-wrap items-center gap-2">
@@ -190,7 +221,69 @@ defineOptions({
                     </div>
                 </div>
 
-                <div>
+                <div v-if="memory.source_type === 'voice'">
+                    <div
+                        class="mb-1.5 text-[11px] font-bold tracking-wide text-os-sub"
+                    >
+                        原音声（この記憶の原本）
+                    </div>
+                    <audio
+                        controls
+                        preload="none"
+                        class="w-full"
+                        :src="audio.url(memory.id)"
+                    ></audio>
+                </div>
+
+                <div v-if="memory.source_type === 'voice'">
+                    <div
+                        class="mb-1.5 text-[11px] font-bold tracking-wide text-os-sub"
+                    >
+                        文字起こし（自動生成・原音声は変更されません）
+                    </div>
+                    <p
+                        v-if="transcriptMode === 'text'"
+                        class="text-[12.5px] leading-relaxed break-all whitespace-pre-wrap text-os-sub"
+                    >
+                        {{ memory.transcript_text }}
+                    </p>
+                    <p
+                        v-else-if="transcriptMode === 'empty_ready'"
+                        class="text-[12.5px] leading-relaxed text-os-sub"
+                    >
+                        音声を文字として認識できませんでした。原音声は残っています。
+                    </p>
+                    <p
+                        v-else-if="transcriptMode === 'not_configured'"
+                        class="text-[12.5px] leading-relaxed text-os-sub"
+                    >
+                        文字起こしは未設定です。原音声はこの端末を離れず保存されています。
+                    </p>
+                    <div v-else-if="transcriptMode === 'failed'">
+                        <p
+                            class="mb-2 text-[12.5px] leading-relaxed text-[#C05A48]"
+                        >
+                            文字起こしに失敗しました。原音声は残っています。
+                        </p>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="gap-1.5 rounded-full border-os-line text-xs text-os-sub hover:bg-os-kioku-soft"
+                            @click="requestRetryTranscription"
+                        >
+                            <RefreshCw :size="12" />
+                            文字起こしを再実行
+                        </Button>
+                    </div>
+                    <p
+                        v-else
+                        class="text-[12.5px] leading-relaxed text-os-sub"
+                    >
+                        文字起こし中です…
+                    </p>
+                </div>
+
+                <div v-if="memory.raw_content !== null">
                     <div
                         class="mb-1.5 text-[11px] font-bold tracking-wide text-os-sub"
                     >
@@ -221,9 +314,14 @@ defineOptions({
                             :type="item.memory_type"
                             small
                         />
-                        <span class="flex-1 text-[12.5px] text-os-ink">{{
-                            item.title
-                        }}</span>
+                        <span
+                            class="flex-1 text-[12.5px] font-medium"
+                            :class="
+                                sourceTypeMeta(item.source_type).titleClass ??
+                                'text-os-ink'
+                            "
+                            >{{ kiokuMemoryDisplayTitle(item) }}</span
+                        >
                         <ChevronRight :size="14" class="text-os-faint" />
                     </Link>
                 </div>
