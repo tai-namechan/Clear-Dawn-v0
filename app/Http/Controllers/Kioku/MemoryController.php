@@ -207,10 +207,18 @@ class MemoryController extends Controller
 
         $related = $relatedMemoryService->forMemory($memory);
 
+        // Client-declared length for the Detail player. MediaRecorder WebM
+        // often lacks container duration; native <audio> then grows "max"
+        // while playing. Do not query assets on the Index path (N+1).
+        $audioDurationMs = $memory->source_type === 'voice'
+            ? $memory->audioAsset()?->duration_ms
+            : null;
+
         return Inertia::render('Kioku/Detail', [
             'memory' => (new MemoryResource($memory))->resolve(),
             'related' => MemoryResource::collection($related)->resolve(),
             'transcriptionEnabled' => config('kioku.transcription.provider', 'none') !== 'none',
+            'audioDurationMs' => $audioDurationMs,
         ]);
     }
 }
