@@ -519,6 +519,7 @@ defineOptions({
                     v-for="memory in memories"
                     :key="memory.id"
                     :memory="memory"
+                    :transcription-enabled="transcriptionEnabled"
                 />
 
                 <p

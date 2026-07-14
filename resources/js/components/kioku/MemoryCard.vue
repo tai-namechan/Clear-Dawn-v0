@@ -8,13 +8,15 @@ import { kiokuEnrichmentLabel } from '@/composables/useKiokuEnrichmentPoll';
 import {
     isKiokuMemoryCardEnriching,
     isKiokuMemoryCardNavigable,
+    kiokuMemoryDisplayTitle,
 } from '@/lib/kiokuMemoryCard.mjs';
-import { formatAgo, memoryTypeMeta } from '@/lib/kiokuMeta';
+import { formatAgo, memoryTypeMeta, sourceTypeMeta } from '@/lib/kiokuMeta';
 import { show } from '@/routes/kioku/memories';
 import type { KiokuMemory } from '@/types/kioku';
 
 const props = defineProps<{
     memory: KiokuMemory;
+    transcriptionEnabled?: boolean;
 }>();
 
 const nowMs = ref(Date.now());
@@ -22,11 +24,19 @@ let timer: ReturnType<typeof setInterval> | undefined;
 
 /** Enrichment chrome only — does not gate navigation (voice stays openable). */
 const enriching = computed(() =>
-    isKiokuMemoryCardEnriching(props.memory.status),
+    isKiokuMemoryCardEnriching(props.memory, {
+        transcriptionEnabled: props.transcriptionEnabled ?? true,
+    }),
 );
 
 /** Voice keeps a durable audio original, so Detail stays reachable. */
 const navigable = computed(() => isKiokuMemoryCardNavigable(props.memory));
+
+const displayTitle = computed(() => kiokuMemoryDisplayTitle(props.memory));
+
+const titleClass = computed(
+    () => sourceTypeMeta(props.memory.source_type).titleClass ?? 'text-os-ink',
+);
 
 /** Voice memories have no raw_content; fall back to transcript, then a label. */
 const excerpt = computed(() => {
@@ -118,8 +128,8 @@ watch(enriching, () => {
             }}</span>
         </div>
 
-        <div class="text-[14.5px] font-bold text-os-ink">
-            {{ memory.title }}
+        <div class="text-[14.5px] font-bold" :class="titleClass">
+            {{ displayTitle }}
         </div>
         <p class="mt-1 text-[13px] leading-relaxed text-os-sub">
             <template v-if="enriching || memory.status === 'failed'">

@@ -69,15 +69,24 @@ export const MEMORY_TYPES: Record<
 
 export const SOURCE_TYPES: Record<
     SourceTypeKey,
-    { label: string; icon: Component; muted?: boolean }
+    { label: string; icon: Component; muted?: boolean; titleClass?: string }
 > = {
     manual: { label: '手動', icon: PenLine },
     voice: { label: '音声', icon: Mic },
     url: { label: 'URL', icon: Link2 },
-    yoyu: { label: 'ヨユウ', icon: Sun },
-    clear_dawn: { label: 'Clear Dawn', icon: Compass },
-    ai_chat: { label: 'AI相談', icon: Bot },
-    slack: { label: 'Slack(将来)', icon: Hash, muted: true },
+    yoyu: { label: 'ヨユウ', icon: Sun, titleClass: 'text-os-yoyu' },
+    clear_dawn: {
+        label: 'Clear Dawn',
+        icon: Compass,
+        titleClass: 'text-cd-primary',
+    },
+    ai_chat: { label: 'AI相談', icon: Bot, titleClass: 'text-cd-primary' },
+    slack: {
+        label: 'Slack(将来)',
+        icon: Hash,
+        muted: true,
+        titleClass: 'text-cd-primary',
+    },
 };
 
 export function memoryTypeMeta(key: string | null | undefined) {

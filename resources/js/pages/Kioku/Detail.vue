@@ -9,12 +9,13 @@ import {
     Sparkles,
     Sun,
 } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import SourceBadge from '@/components/kioku/SourceBadge.vue';
 import TypeChip from '@/components/kioku/TypeChip.vue';
 import { Button } from '@/components/ui/button';
-import { formatAgo } from '@/lib/kiokuMeta';
+import { kiokuMemoryDisplayTitle } from '@/lib/kiokuMemoryCard.mjs';
+import { formatAgo, sourceTypeMeta } from '@/lib/kiokuMeta';
 import { kiokuTranscriptDisplayMode } from '@/lib/kiokuTranscriptDisplay.mjs';
 import { home } from '@/routes/kioku';
 import {
@@ -33,6 +34,15 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const audioMissing = ref(false);
+
+watch(
+    () => props.memory.id,
+    () => {
+        audioMissing.value = false;
+    },
+);
+
 const transcriptMode = computed(() =>
     kiokuTranscriptDisplayMode({
         transcriptionEnabled: props.transcriptionEnabled,
@@ -40,6 +50,16 @@ const transcriptMode = computed(() =>
         transcriptText: props.memory.transcript_text,
     }),
 );
+
+const displayTitle = computed(() => kiokuMemoryDisplayTitle(props.memory));
+
+const titleClass = computed(
+    () => sourceTypeMeta(props.memory.source_type).titleClass ?? 'text-os-ink',
+);
+
+function onAudioError(): void {
+    audioMissing.value = true;
+}
 
 function requestReenrich(): void {
     router.post(reenrich.url(props.memory.id), {}, { preserveScroll: true });
@@ -70,7 +90,7 @@ defineOptions({
 
 <template>
     <div class="mx-auto max-w-[640px] space-y-4">
-        <Head :title="memory.title" />
+        <Head :title="displayTitle" />
 
         <Link
             :href="home()"
@@ -98,8 +118,8 @@ defineOptions({
                     </span>
                 </div>
 
-                <h1 class="text-lg font-bold text-os-ink">
-                    {{ memory.title }}
+                <h1 class="text-lg font-bold" :class="titleClass">
+                    {{ displayTitle }}
                 </h1>
 
                 <div class="flex flex-wrap items-center gap-2">
@@ -220,11 +240,21 @@ defineOptions({
                     >
                         原音声（この記憶の原本）
                     </div>
+                    <div v-if="audioMissing" class="space-y-1">
+                        <p class="text-[12.5px] leading-relaxed text-[#C05A48]">
+                            原音声ファイルが見つかりません。
+                        </p>
+                        <p class="text-[12.5px] leading-relaxed text-os-sub">
+                            この記録の音声は復旧できないため、必要であれば再録音してください。
+                        </p>
+                    </div>
                     <audio
+                        v-else
                         controls
-                        preload="none"
+                        preload="metadata"
                         class="w-full"
                         :src="audio.url(memory.id)"
+                        @error="onAudioError"
                     ></audio>
                 </div>
 
@@ -250,7 +280,7 @@ defineOptions({
                         v-else-if="transcriptMode === 'not_configured'"
                         class="text-[12.5px] leading-relaxed text-os-sub"
                     >
-                        文字起こしは未設定です。原音声はこの端末を離れず保存されています。
+                        文字起こしは未設定です。原音声はサーバーに保存されています。
                     </p>
                     <div v-else-if="transcriptMode === 'failed'">
                         <p
@@ -307,9 +337,14 @@ defineOptions({
                             :type="item.memory_type"
                             small
                         />
-                        <span class="flex-1 text-[12.5px] text-os-ink">{{
-                            item.title
-                        }}</span>
+                        <span
+                            class="flex-1 text-[12.5px] font-medium"
+                            :class="
+                                sourceTypeMeta(item.source_type).titleClass ??
+                                'text-os-ink'
+                            "
+                            >{{ kiokuMemoryDisplayTitle(item) }}</span
+                        >
                         <ChevronRight :size="14" class="text-os-faint" />
                     </Link>
                 </div>

@@ -119,7 +119,7 @@ Memory 作成ロジックは `CaptureMemoryService` に集約し、既存 store 
 - サーバーはクライアントが申告する `duration_ms` が上限以内かを検証する（**実音声ファイルからの duration 解析は行わない**。解析は backlog）
 - 最大ファイルサイズ: **20MB** 初期値（`config/kioku.php` で変更可能）。実時間制限の代替ガードとしても機能する
 - 形式: 固定しない。`MediaRecorder.isTypeSupported()` で選択（Safari は audio/mp4、Chrome は audio/webm 想定）
-- 保存 disk: `KIOKU_AUDIO_DISK`（既定 `local` = 非公開 private disk）。**本番は永続的な非公開 object storage を指定する。Laravel Cloud の一時ローカル領域を本番永続保存先にしない**
+- 保存 disk: `KIOKU_AUDIO_DISK`（既定 `local` = 非公開 private disk）。**本番は `KIOKU_AUDIO_DISK=kioku-audio`（Laravel Cloud に接続した Object Storage の disk 名）を指定する。一時ローカル領域を本番永続保存先にしない**
 - サーバー側で MIME・サイズ・申告 `duration_ms`・所有者を検証する
 - 権限拒否・MediaRecorder 非対応環境ではテキスト入力を案内する
 - reduced motion 設定では録音アニメーションを抑制する
