@@ -5,6 +5,8 @@ import {
     ChevronRight,
     Clock,
     Compass,
+    Pause,
+    Play,
     RefreshCw,
     Sparkles,
     Sun,
@@ -14,6 +16,10 @@ import { toast } from 'vue-sonner';
 import SourceBadge from '@/components/kioku/SourceBadge.vue';
 import TypeChip from '@/components/kioku/TypeChip.vue';
 import { Button } from '@/components/ui/button';
+import {
+    formatKiokuAudioClock,
+    kiokuAudioDurationSeconds,
+} from '@/lib/kiokuAudioDuration.mjs';
 import { kiokuMemoryDisplayTitle } from '@/lib/kiokuMemoryCard.mjs';
 import { formatAgo, sourceTypeMeta } from '@/lib/kiokuMeta';
 import { kiokuTranscriptDisplayMode } from '@/lib/kiokuTranscriptDisplay.mjs';
@@ -30,16 +36,46 @@ interface Props {
     memory: KiokuMemory;
     related: KiokuMemory[];
     transcriptionEnabled: boolean;
+    audioDurationMs?: number | null;
 }
 
 const props = defineProps<Props>();
 
 const audioMissing = ref(false);
+const audioEl = ref<HTMLAudioElement | null>(null);
+const playing = ref(false);
+const currentSeconds = ref(0);
+
+const declaredDurationSeconds = computed(() =>
+    kiokuAudioDurationSeconds(props.audioDurationMs),
+);
+
+const currentClock = computed(() => formatKiokuAudioClock(currentSeconds.value));
+
+const totalClock = computed(() => {
+    if (declaredDurationSeconds.value !== null) {
+        return formatKiokuAudioClock(declaredDurationSeconds.value);
+    }
+
+    return '--:--';
+});
+
+const progressRatio = computed(() => {
+    const total = declaredDurationSeconds.value;
+
+    if (total === null || total <= 0) {
+        return 0;
+    }
+
+    return Math.min(1, Math.max(0, currentSeconds.value / total));
+});
 
 watch(
     () => props.memory.id,
     () => {
         audioMissing.value = false;
+        playing.value = false;
+        currentSeconds.value = 0;
     },
 );
 
@@ -59,6 +95,43 @@ const titleClass = computed(
 
 function onAudioError(): void {
     audioMissing.value = true;
+    playing.value = false;
+}
+
+function onAudioTimeUpdate(): void {
+    currentSeconds.value = audioEl.value?.currentTime ?? 0;
+}
+
+function onAudioEnded(): void {
+    playing.value = false;
+    const total = declaredDurationSeconds.value;
+
+    if (total !== null) {
+        currentSeconds.value = total;
+    }
+}
+
+async function toggleAudioPlayback(): Promise<void> {
+    const el = audioEl.value;
+
+    if (el === null || audioMissing.value) {
+        return;
+    }
+
+    if (el.paused) {
+        try {
+            await el.play();
+            playing.value = true;
+        } catch {
+            audioMissing.value = true;
+            playing.value = false;
+        }
+
+        return;
+    }
+
+    el.pause();
+    playing.value = false;
 }
 
 function requestReenrich(): void {
@@ -248,14 +321,49 @@ defineOptions({
                             この記録の音声は復旧できないため、必要であれば再録音してください。
                         </p>
                     </div>
-                    <audio
+                    <div
                         v-else
-                        controls
-                        preload="metadata"
-                        class="w-full"
-                        :src="audio.url(memory.id)"
-                        @error="onAudioError"
-                    ></audio>
+                        class="flex items-center gap-3 rounded-full border border-os-line bg-os-kioku-soft/40 px-3 py-2"
+                    >
+                        <audio
+                            ref="audioEl"
+                            preload="metadata"
+                            class="hidden"
+                            :src="audio.url(memory.id)"
+                            @error="onAudioError"
+                            @timeupdate="onAudioTimeUpdate"
+                            @ended="onAudioEnded"
+                            @pause="playing = false"
+                            @play="playing = true"
+                        ></audio>
+                        <button
+                            type="button"
+                            class="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-os-kioku text-os-kioku-soft transition-opacity hover:opacity-90"
+                            :aria-label="playing ? '一時停止' : '再生'"
+                            @click="toggleAudioPlayback"
+                        >
+                            <Pause v-if="playing" :size="14" />
+                            <Play v-else :size="14" class="translate-x-px" />
+                        </button>
+                        <div class="min-w-0 flex-1 space-y-1">
+                            <div
+                                class="h-1 overflow-hidden rounded-full bg-os-line"
+                                aria-hidden="true"
+                            >
+                                <div
+                                    class="h-full rounded-full bg-os-kioku transition-[width] duration-100"
+                                    :style="{
+                                        width: `${progressRatio * 100}%`,
+                                    }"
+                                />
+                            </div>
+                            <div
+                                class="font-mono text-[11px] tracking-wide text-os-sub"
+                            >
+                                {{ currentClock }} / {{ totalClock }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div v-if="memory.source_type === 'voice'">

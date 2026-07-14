@@ -181,7 +181,8 @@ class VoiceCaptureTest extends TestCase
                 ->where('memory.id', $memory->id)
                 ->where('memory.source_type', 'voice')
                 ->where('memory.transcription_status', 'pending')
-                ->where('transcriptionEnabled', false));
+                ->where('transcriptionEnabled', false)
+                ->where('audioDurationMs', 8000));
 
         $this->actingAs($user)
             ->get(route('kioku.memories.audio', $memory))
