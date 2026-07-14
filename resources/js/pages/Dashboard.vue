@@ -3,6 +3,7 @@ import { Head } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import MatrixCellEditModal from '@/components/MatrixCellEditModal.vue';
 import MatrixSheet from '@/components/MatrixSheet.vue';
+import MatrixSheetMobile from '@/components/MatrixSheetMobile.vue';
 import type { LifeArea, MatrixRow } from '@/types/matrix';
 
 interface Props {
@@ -71,8 +72,19 @@ function openCellEditor(payload: { rowIndex: number; areaIndex: number }) {
         <div
             class="mx-auto flex w-full max-w-7xl min-h-0 flex-1 flex-col gap-6 landscape-compact:gap-3 md:gap-7"
         >
-            <MatrixSheet :areas="areas" :rows="rows" @edit="openCellEditor" />
+            <!-- Desktop / tablet: keep the classic matrix table -->
+            <div class="hidden min-h-0 flex-1 flex-col md:flex">
+                <MatrixSheet :areas="areas" :rows="rows" @edit="openCellEditor" />
+            </div>
 
+            <!-- Phone only (< md): stacked area tabs + row cards -->
+            <div class="md:hidden">
+                <MatrixSheetMobile
+                    :areas="areas"
+                    :rows="rows"
+                    @edit="openCellEditor"
+                />
+            </div>
             <MatrixCellEditModal
                 :open="editing !== null"
                 :cell="editingCell"

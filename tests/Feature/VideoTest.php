@@ -398,6 +398,66 @@ class VideoTest extends TestCase
             ->assertJsonValidationErrors('mime_type');
     }
 
+    public function test_upload_url_accepts_quicktime_mov_mime_type(): void
+    {
+        $user = User::factory()->create();
+
+        $storage = $this->mockStorageClient();
+        $storage->shouldReceive('temporaryUploadUrl')
+            ->once()
+            ->with(
+                Mockery::on(fn (string $key) => (bool) preg_match('/^videos\/'.$user->id.'\/[0-9A-Z]{26}\.mov$/', $key)),
+                15,
+                'video/quicktime',
+            )
+            ->andReturn([
+                'url' => 'https://example.test/upload',
+                'headers' => ['Content-Type' => 'video/quicktime'],
+                'expires_at' => now()->addMinutes(15)->toIso8601String(),
+            ]);
+
+        $this->actingAs($user)
+            ->postJson(route('videos.upload-url'), $this->uploadUrlPayload([
+                'mime_type' => 'video/quicktime',
+                'title' => 'ブルガリアンスクワット',
+            ]))
+            ->assertOk()
+            ->assertJsonPath('mode', 'single');
+
+        $this->assertDatabaseHas('videos', [
+            'user_id' => $user->id,
+            'title' => 'ブルガリアンスクワット',
+            'mime_type' => 'video/quicktime',
+        ]);
+    }
+
+    public function test_finalize_accepts_octet_stream_when_declared_mime_is_allowed(): void
+    {
+        $user = User::factory()->create();
+        $video = Video::factory()->pending()->create([
+            'user_id' => $user->id,
+            'mime_type' => 'video/quicktime',
+            'storage_key' => "videos/{$user->id}/01JTESTMOV0000000000000001.mov",
+        ]);
+
+        $storage = $this->mockStorageClient();
+        $storage->shouldReceive('exists')->once()->with($video->storage_key)->andReturnTrue();
+        $storage->shouldReceive('size')->once()->with($video->storage_key)->andReturn(2_000_000);
+        $storage->shouldReceive('mimeType')->once()->with($video->storage_key)->andReturn('application/octet-stream');
+        $storage->shouldReceive('delete')->never();
+
+        $this->actingAs($user)
+            ->postJson(route('videos.finalize', $video))
+            ->assertOk()
+            ->assertJsonPath('status', VideoStatus::Ready->value);
+
+        $this->assertDatabaseHas('videos', [
+            'id' => $video->id,
+            'status' => VideoStatus::Ready->value,
+            'size_bytes' => 2_000_000,
+        ]);
+    }
+
     public function test_delete_removes_pending_videos_physically_and_ready_videos_softly(): void
     {
         $user = User::factory()->create();

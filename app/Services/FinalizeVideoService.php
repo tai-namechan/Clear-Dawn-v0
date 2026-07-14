@@ -92,11 +92,20 @@ class FinalizeVideoService
 
         $mimeType = $this->storageClient->mimeType($video->storage_key);
 
-        if ($mimeType === null || ! VideoMimeType::isAllowed($mimeType)) {
-            return ['valid' => false, 'size' => $size];
+        if ($mimeType !== null && VideoMimeType::isAllowed($mimeType)) {
+            return ['valid' => true, 'size' => $size];
         }
 
-        return ['valid' => true, 'size' => $size];
+        // Object stores often report QuickTime/MOV as application/octet-stream.
+        // The mime was already whitelist-validated when the upload URL was issued.
+        if (
+            ($mimeType === null || $mimeType === 'application/octet-stream')
+            && VideoMimeType::isAllowed($video->mime_type)
+        ) {
+            return ['valid' => true, 'size' => $size];
+        }
+
+        return ['valid' => false, 'size' => $size];
     }
 
     private function rejectPendingVideo(Video $video): void

@@ -27,6 +27,7 @@ import {
     formatVideoDuration,
     videoStatusLabels,
 } from '@/lib/routineConstants';
+import { isMovVideoFile } from '@/lib/videoMimeType.mjs';
 import type { Video } from '@/types/routine';
 
 interface Props {
@@ -66,9 +67,7 @@ const videoList = computed(() => {
     return props.videos.data ?? [];
 });
 
-const isMovSelected = computed(
-    () => selectedFile.value?.type === 'video/quicktime',
-);
+const isMovSelected = computed(() => isMovVideoFile(selectedFile.value));
 
 const isUploading = computed(() =>
     ['preparing', 'uploading', 'finalizing'].includes(uploadState.value),
@@ -272,7 +271,7 @@ async function deleteVideo(video: Video): Promise<void> {
                     <span>{{ selectedFile?.name ?? 'ファイルを選択' }}</span>
                     <input
                         type="file"
-                        accept="video/mp4,video/webm,video/quicktime"
+                        accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
                         class="sr-only"
                         :disabled="isUploading"
                         @change="onFileChange"
