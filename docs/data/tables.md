@@ -300,7 +300,7 @@ index: (user_id, eaten_on)。unique なし（1 日複数エントリ可）。物
 | id | ULID | PK |
 | memory_id | ULID | FK(memories) cascade |
 | kind | string | `audio_original`（voice の canonical raw） |
-| disk | string | `KIOKU_AUDIO_DISK`（非公開 disk。公開 URL は保存しない） |
+| disk | string | `KIOKU_AUDIO_DISK`（非公開 disk。本番は `kioku-audio`。公開 URL は保存しない） |
 | path | string | 非公開オブジェクトキー |
 | mime_type | string | サーバー側検証済みの実形式 |
 | byte_size | bigint | 上限 20MB（config） |

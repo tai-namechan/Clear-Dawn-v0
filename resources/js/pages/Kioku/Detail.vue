@@ -9,7 +9,7 @@ import {
     Sparkles,
     Sun,
 } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
 import SourceBadge from '@/components/kioku/SourceBadge.vue';
 import TypeChip from '@/components/kioku/TypeChip.vue';
@@ -34,6 +34,15 @@ interface Props {
 
 const props = defineProps<Props>();
 
+const audioMissing = ref(false);
+
+watch(
+    () => props.memory.id,
+    () => {
+        audioMissing.value = false;
+    },
+);
+
 const transcriptMode = computed(() =>
     kiokuTranscriptDisplayMode({
         transcriptionEnabled: props.transcriptionEnabled,
@@ -47,6 +56,10 @@ const displayTitle = computed(() => kiokuMemoryDisplayTitle(props.memory));
 const titleClass = computed(
     () => sourceTypeMeta(props.memory.source_type).titleClass ?? 'text-os-ink',
 );
+
+function onAudioError(): void {
+    audioMissing.value = true;
+}
 
 function requestReenrich(): void {
     router.post(reenrich.url(props.memory.id), {}, { preserveScroll: true });
@@ -227,11 +240,21 @@ defineOptions({
                     >
                         原音声（この記憶の原本）
                     </div>
+                    <div v-if="audioMissing" class="space-y-1">
+                        <p class="text-[12.5px] leading-relaxed text-[#C05A48]">
+                            原音声ファイルが見つかりません。
+                        </p>
+                        <p class="text-[12.5px] leading-relaxed text-os-sub">
+                            この記録の音声は復旧できないため、必要であれば再録音してください。
+                        </p>
+                    </div>
                     <audio
+                        v-else
                         controls
-                        preload="none"
+                        preload="metadata"
                         class="w-full"
                         :src="audio.url(memory.id)"
+                        @error="onAudioError"
                     ></audio>
                 </div>
 
