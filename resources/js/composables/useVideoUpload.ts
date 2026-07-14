@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 import { ApiError, apiFetch } from '@/lib/apiFetch';
+import { resolveVideoMimeType } from '@/lib/videoMimeType.mjs';
 
 export type VideoUploadState =
     | 'idle'
@@ -190,7 +191,7 @@ export function useVideoUpload(options: UseVideoUploadOptions = {}) {
         try {
             uploadInfo = await requestUploadUrl({
                 title,
-                mime_type: file.type,
+                mime_type: resolveVideoMimeType(file),
                 size_bytes: file.size,
             });
             videoId.value = uploadInfo.video_id;
@@ -278,16 +279,32 @@ function resolveErrorMessage(error: unknown): string {
             errors?: Record<string, string[]>;
         };
 
-        if (body.errors?.upload?.[0]) {
-            return body.errors.upload[0];
+        const fieldError =
+            body.errors?.upload?.[0] ??
+            body.errors?.mime_type?.[0] ??
+            body.errors?.finalize?.[0] ??
+            body.errors?.title?.[0] ??
+            body.errors?.size_bytes?.[0];
+
+        if (fieldError) {
+            return fieldError;
         }
 
         if (body.message) {
             return body.message;
         }
+
+        return 'アップロードに失敗しました。';
     }
 
     if (error instanceof Error) {
+        // Safari often surfaces JSON parse failures with this English message.
+        if (
+            error.message === 'The string did not match the expected pattern.'
+        ) {
+            return 'アップロードに失敗しました。通信またはサーバー応答を確認してください。';
+        }
+
         return error.message;
     }
 
