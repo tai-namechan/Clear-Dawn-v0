@@ -19,3 +19,8 @@ Schedule::command('calendar:sync-stale')
     ->hourly()
     ->withoutOverlapping(10)
     ->onOneServer();
+
+Schedule::command('kioku:letters:pilot:dispatch-due')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->onOneServer();

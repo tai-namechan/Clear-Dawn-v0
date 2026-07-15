@@ -8,6 +8,7 @@ import {
     Heart,
     Lightbulb,
     Link2,
+    Mail,
     MessageSquare,
     Mic,
     PenLine,
@@ -29,7 +30,14 @@ export type MemoryTypeKey =
     | 'conversation';
 
 export type SourceTypeKey =
-    'manual' | 'voice' | 'url' | 'yoyu' | 'clear_dawn' | 'ai_chat' | 'slack';
+    | 'manual'
+    | 'voice'
+    | 'url'
+    | 'yoyu'
+    | 'clear_dawn'
+    | 'ai_chat'
+    | 'slack'
+    | 'kioku_letter';
 
 /** 書庫トーン: 和紙×墨×藍インク×朱 */
 export const MEMORY_TYPES: Record<
@@ -87,6 +95,7 @@ export const SOURCE_TYPES: Record<
         muted: true,
         titleClass: 'text-cd-primary',
     },
+    kioku_letter: { label: 'キオク便り', icon: Mail },
 };
 
 export function memoryTypeMeta(key: string | null | undefined) {

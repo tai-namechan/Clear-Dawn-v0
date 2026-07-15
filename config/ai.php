@@ -25,6 +25,15 @@ return [
         // During the intro window this over-counts slightly, which is safer for per-user quota.
         'claude-sonnet-5' => ['input' => 3.0, 'output' => 15.0],
         'claude-sonnet-4-6' => ['input' => 3.0, 'output' => 15.0],
+        // OpenAI transcription (kioku.transcription): audio input $1.25/1M,
+        // text output $5/1M (~$0.003 per audio minute). Applies to both the
+        // alias and the 2025-12-15 snapshot. Source:
+        // https://developers.openai.com/api/docs/models/gpt-4o-mini-transcribe
+        // (checked 2026-07-14). These rates settle actual_usd; the ledger
+        // reservation stays intentionally higher via the gateway's
+        // conservative token estimate.
+        'gpt-4o-mini-transcribe' => ['input' => 1.25, 'output' => 5.0],
+        'gpt-4o-mini-transcribe-2025-12-15' => ['input' => 1.25, 'output' => 5.0],
         'default' => ['input' => 3.0, 'output' => 15.0],
     ],
 

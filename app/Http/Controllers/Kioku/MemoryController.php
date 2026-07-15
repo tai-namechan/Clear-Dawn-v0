@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Kioku;
 
 use App\Domain\Kioku\Jobs\EnrichMemoryJob;
 use App\Domain\Kioku\Jobs\TranscribeMemoryAudioJob;
+use App\Domain\Kioku\KiokuLetterMode;
+use App\Domain\Kioku\Models\KiokuLetter;
 use App\Domain\Kioku\Models\Memory;
 use App\Domain\Kioku\Services\CaptureMemoryService;
 use App\Domain\Kioku\Services\KiokuSearchService;
@@ -64,7 +66,46 @@ class MemoryController extends Controller
             'sourceCounts' => $sourceCounts,
             'totalCount' => $owned->count(),
             'transcriptionEnabled' => config('kioku.transcription.provider', 'none') !== 'none',
+            'letters' => $this->letterSummaries((int) $user->id, KiokuLetterMode::Live),
+            'testLetters' => $this->letterSummaries((int) $user->id, KiokuLetterMode::Test, 8),
         ]);
+    }
+
+    /**
+     * Concierge letters for the Home preview. Live and test are never mixed
+     * (docs/product/kioku-concierge-daily-pilot.md).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function letterSummaries(int $userId, KiokuLetterMode $mode, int $limit = 4): array
+    {
+        return KiokuLetter::query()
+            ->where('user_id', $userId)
+            ->where('mode', $mode->value)
+            ->whereNotIn('status', [KiokuLetter::STATUS_GENERATING, KiokuLetter::STATUS_FAILED])
+            ->withCount([
+                'items as judged_count' => fn ($query) => $query->whereNotNull('verdict'),
+                'items as hit_count' => fn ($query) => $query->where('verdict', 'hit'),
+            ])
+            ->orderByDesc('delivery_date')
+            ->orderByDesc('published_at')
+            ->limit($limit)
+            ->get()
+            ->map(fn (KiokuLetter $letter): array => [
+                'id' => $letter->id,
+                'week_start' => $letter->week_start->toDateString(),
+                'delivery_date' => $letter->delivery_date->toDateString(),
+                'mode' => $letter->mode,
+                'cadence' => $letter->cadence,
+                'status' => $letter->status,
+                'character_variant' => $letter->character_variant,
+                'item_count' => $letter->item_count,
+                'judged_count' => (int) $letter->getAttribute('judged_count'),
+                'hit_count' => (int) $letter->getAttribute('hit_count'),
+                'opened' => $letter->opened_at !== null,
+            ])
+            ->values()
+            ->all();
     }
 
     public function status(MemoryStatusRequest $request): JsonResponse
