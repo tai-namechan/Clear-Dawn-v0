@@ -412,7 +412,10 @@ class KiokuLetterDailyPilotTest extends TestCase
         ])->save();
         $day14 = $pilot->deliverForSchedule($schedule->fresh());
         $this->assertNotNull($day14);
-        $this->assertSame(KiokuConciergeScheduleState::Completed->value, $schedule->fresh()->state);
+        $schedule->refresh();
+        $this->assertSame(KiokuConciergeScheduleState::Completed->value, $schedule->state);
+        $this->assertNull($schedule->next_delivery_at);
+        $this->assertSame('final pilot day delivered', $schedule->pause_reason);
 
         CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-29 21:00:00', 'Asia/Tokyo')->utc());
         $none = $pilot->deliverForSchedule($schedule->fresh());
@@ -899,6 +902,96 @@ class KiokuLetterDailyPilotTest extends TestCase
         $this->assertSame(KiokuConciergeScheduleState::Halted->value, $schedule->state);
         $this->assertNull($schedule->next_delivery_at);
         $this->assertTrue(app(KiokuLetterHaltGuard::class)->hasUnresolvedHalt((int) $user->id));
+
+        CarbonImmutable::setTestNow();
+    }
+
+    public function test_manual_resume_before_delivery_time_sets_today_utc_next(): void
+    {
+        $user = User::factory()->create();
+        $schedule = KiokuConciergeSchedule::factory()->active('2026-07-15', 14)->create([
+            'user_id' => $user->id,
+            'state' => KiokuConciergeScheduleState::Paused->value,
+            'pause_reason' => 'manual pause',
+            'next_delivery_at' => null,
+        ]);
+
+        // 10:00 JST → next is today 21:00 JST = 12:00 UTC.
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-16 10:00:00', 'Asia/Tokyo')->utc());
+
+        $this->artisan('kioku:letters:pilot:resume', [
+            'userId' => $user->id,
+            '--note' => '午前再開',
+        ])->assertSuccessful();
+
+        $schedule->refresh();
+        $this->assertSame(KiokuConciergeScheduleState::Active->value, $schedule->state);
+        $this->assertNotNull($schedule->next_delivery_at);
+        $this->assertSame(
+            '2026-07-16 12:00:00',
+            $schedule->next_delivery_at->clone()->utc()->format('Y-m-d H:i:s'),
+        );
+        $this->assertSame('resumed: 午前再開', $schedule->pause_reason);
+        $this->assertSame(0, $schedule->consecutive_unopened);
+
+        CarbonImmutable::setTestNow();
+    }
+
+    public function test_manual_resume_after_delivery_time_sets_tomorrow_utc_next(): void
+    {
+        $user = User::factory()->create();
+        $schedule = KiokuConciergeSchedule::factory()->active('2026-07-15', 14)->create([
+            'user_id' => $user->id,
+            'state' => KiokuConciergeScheduleState::Paused->value,
+            'pause_reason' => 'manual pause',
+            'next_delivery_at' => null,
+        ]);
+
+        // 22:00 JST → past 21:00 → tomorrow 21:00 JST = 2026-07-17 12:00 UTC.
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-16 22:00:00', 'Asia/Tokyo')->utc());
+
+        $resumed = app(KiokuConciergePilotService::class)->resume($user, '夜再開');
+
+        $this->assertSame(KiokuConciergeScheduleState::Active->value, $resumed->state);
+        $this->assertNotNull($resumed->next_delivery_at);
+        $this->assertSame(
+            '2026-07-17 12:00:00',
+            $resumed->next_delivery_at->clone()->utc()->format('Y-m-d H:i:s'),
+        );
+
+        CarbonImmutable::setTestNow();
+    }
+
+    public function test_final_day_existing_letter_recovery_completes_without_ai(): void
+    {
+        $user = User::factory()->create();
+        $existing = KiokuLetter::factory()->daily('2026-07-28', 14)->create([
+            'user_id' => $user->id,
+            'status' => KiokuLetter::STATUS_PUBLISHED,
+        ]);
+
+        $schedule = KiokuConciergeSchedule::factory()->active('2026-07-15', 14)->create([
+            'user_id' => $user->id,
+            'next_delivery_at' => CarbonImmutable::parse('2026-07-28 12:00:00', 'UTC'),
+        ]);
+
+        Http::fake();
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-28 21:00:00', 'Asia/Tokyo')->utc());
+
+        $returned = app(KiokuConciergePilotService::class)->deliverForSchedule($schedule);
+        $this->assertNotNull($returned);
+        $this->assertSame($existing->id, $returned->id);
+
+        $schedule->refresh();
+        $this->assertSame(KiokuConciergeScheduleState::Completed->value, $schedule->state);
+        $this->assertNull($schedule->next_delivery_at);
+        $this->assertSame('final pilot day delivered', $schedule->pause_reason);
+
+        Http::assertNothingSent();
+        $this->assertSame(
+            1,
+            KiokuLetter::query()->withoutUserScope()->where('user_id', $user->id)->where('cadence', 'daily')->count(),
+        );
 
         CarbonImmutable::setTestNow();
     }

@@ -141,6 +141,8 @@ final class KiokuConciergePilotService
      * Shared resume path for manual resume and halt resolve.
      * No past-day backfill: next slot is today (if before delivery time) or tomorrow.
      * Past pilot end / next slot beyond end → completed with next_delivery_at NULL.
+     * state / pause_reason / next_delivery_at / consecutive_unopened are written in one save
+     * so callers never observe active+NULL mid-update.
      */
     public function activateForNextDelivery(
         KiokuConciergeSchedule $schedule,
@@ -149,22 +151,29 @@ final class KiokuConciergePilotService
         if ($schedule->pilot_end_date !== null
             && CarbonImmutable::now($schedule->timezone)->toDateString() > $schedule->pilot_end_date->toDateString()
         ) {
-            $schedule->transitionTo(KiokuConciergeScheduleState::Completed, 'pilot ended');
-            $schedule->forceFill(['next_delivery_at' => null])->save();
+            $schedule->forceFill([
+                'state' => KiokuConciergeScheduleState::Completed->value,
+                'pause_reason' => 'pilot ended',
+                'next_delivery_at' => null,
+            ])->save();
 
             return $schedule->refresh();
         }
 
         $next = $this->computeNextDeliveryAt($schedule, CarbonImmutable::now('UTC'));
         if ($next === null) {
-            $schedule->transitionTo(KiokuConciergeScheduleState::Completed, 'pilot window ended');
-            $schedule->forceFill(['next_delivery_at' => null])->save();
+            $schedule->forceFill([
+                'state' => KiokuConciergeScheduleState::Completed->value,
+                'pause_reason' => 'pilot window ended',
+                'next_delivery_at' => null,
+            ])->save();
 
             return $schedule->refresh();
         }
 
-        $schedule->transitionTo(KiokuConciergeScheduleState::Active, $activeReason);
         $schedule->forceFill([
+            'state' => KiokuConciergeScheduleState::Active->value,
+            'pause_reason' => $activeReason,
             'next_delivery_at' => $next,
             'consecutive_unopened' => 0,
         ])->save();
@@ -282,15 +291,8 @@ final class KiokuConciergePilotService
                 ->lockForUpdate()
                 ->firstOrFail();
 
+            // Completes the schedule on the final pilot day (same path as existing-letter recovery).
             $this->advanceNextDelivery($locked, $localDate);
-
-            if ($locked->pilot_end_date !== null
-                && $localDate->toDateString() >= $locked->pilot_end_date->toDateString()
-                && $locked->stateEnum() === KiokuConciergeScheduleState::Active
-            ) {
-                $locked->transitionTo(KiokuConciergeScheduleState::Completed, 'final pilot day delivered');
-                $locked->forceFill(['next_delivery_at' => null])->save();
-            }
         });
 
         return $letter;
@@ -425,18 +427,30 @@ final class KiokuConciergePilotService
         });
     }
 
+    /**
+     * Advance after a day's slot is handled (new generate or existing letter).
+     * Final pilot day → completed + next NULL + reason in one write.
+     */
     private function advanceNextDelivery(KiokuConciergeSchedule $schedule, CarbonImmutable $localDate): void
     {
         if ($schedule->pilot_end_date !== null
             && $localDate->toDateString() >= $schedule->pilot_end_date->toDateString()
         ) {
-            $schedule->forceFill(['next_delivery_at' => null])->save();
+            $schedule->forceFill([
+                'state' => KiokuConciergeScheduleState::Completed->value,
+                'pause_reason' => 'final pilot day delivered',
+                'next_delivery_at' => null,
+            ])->save();
 
             return;
         }
 
         $schedule->forceFill([
-            'next_delivery_at' => $this->computeNextDeliveryAt($schedule, CarbonImmutable::now('UTC'), $localDate->addDay()),
+            'next_delivery_at' => $this->computeNextDeliveryAt(
+                $schedule,
+                CarbonImmutable::now('UTC'),
+                $localDate->addDay(),
+            ),
         ])->save();
     }
 
