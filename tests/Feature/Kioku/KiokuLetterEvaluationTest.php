@@ -160,13 +160,18 @@ class KiokuLetterEvaluationTest extends TestCase
     public function test_sensitive_leak_halts_the_letter(): void
     {
         ['user' => $user, 'letter' => $letter, 'items' => $items] = $this->publishedLetter();
+        $memory = $items[0]->memory()->withoutUserScope()->sole();
+        $this->assertFalse($memory->sensitive);
 
         $this->actingAs($user)->put(
             route('kioku.letters.items.verdict', [$letter, $items[0]]),
             ['verdict' => KiokuLetterItem::VERDICT_SENSITIVE_LEAK],
         );
 
-        $this->assertSame(KiokuLetter::STATUS_HALTED, $letter->fresh()->status);
+        $letter->refresh();
+        $this->assertSame(KiokuLetter::STATUS_HALTED, $letter->status);
+        $this->assertNotNull($letter->halted_at);
+        $this->assertTrue($memory->fresh()->sensitive);
     }
 
     public function test_complete_creates_exactly_one_evaluation_memory(): void
@@ -275,6 +280,9 @@ class KiokuLetterEvaluationTest extends TestCase
         $this->assertSame(KiokuLetter::STATUS_HALTED, $letter->status);
         $this->assertNotNull($letter->completed_at);
         $this->assertNotNull($letter->evaluation_memory_id);
+
+        $evaluation = Memory::query()->withoutUserScope()->findOrFail($letter->evaluation_memory_id);
+        $this->assertTrue($evaluation->sensitive);
     }
 
     public function test_evaluation_memory_never_becomes_a_candidate(): void

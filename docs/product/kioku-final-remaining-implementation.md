@@ -19,8 +19,11 @@
 |---|---|---|
 | A | 実際の音声→文字起こし→AI整理 | 既存`TranscriptionGateway`へOpenAI実providerを接続し、保存済み原音声から日本語transcriptを生成して既存enrichへ渡す |
 | B | コンシェルジュ手紙実験 | 週1通、最大5件、0件許容の手紙を手動生成し、シオリまたはナギを右側へ表示してHIT/MISSを評価・保存する |
+| C（追補） | 日次pilot + 安全停止 | 14日日次pilot → 終了後は週次。sensitive haltの実効停止、test/preview、failed retry。詳細は [kioku-concierge-daily-pilot.md](./kioku-concierge-daily-pilot.md) |
 
-QC-1〜QC-3で完成済みの保存・音声・Job基盤を作り直してはいけない。今回追加するのは、**実provider adapter**と、**能動想起を4週間だけ検証する薄いLetter機能**である。
+QC-1〜QC-3で完成済みの保存・音声・Job基盤を作り直してはいけない。今回追加するのは、**実provider adapter**と、**能動想起を検証する薄いLetter機能**である。
+
+> **cadence 更新（2026-07-14）**: 初期実験は「4週の週次」から **14日日次pilot（2026-07-15〜2026-07-28）→ 終了後は週次** へ変更した。日付はコードへ直書きせず、`kioku:letters:pilot:start` の引数として DB に記録する。「送る」はアプリ内表示のみ（メール/pushではない）。Phase B の候補選定・summary-only AI・厳格JSON検証は再利用する。
 
 ```mermaid
 flowchart TD
@@ -444,13 +447,15 @@ export const kiokuLetterCharacters = {
 
 ## 9. 手紙実験の目的
 
-> システム側から差し込まれる想起は、受動検索では得られない価値を生み、週1通・最大5件・0件許容なら、ノイズで信頼を失わずに運用できるか。
+> システム側から差し込まれる想起は、受動検索では得られない価値を生み、適切な頻度・件数・0件許容なら、ノイズで信頼を失わずに運用できるか。
 
-リアルタイム通知にはしない。週1通へまとめること自体が対ノイズ設計である。
+リアルタイム通知にはしない。頻度を抑えること自体が対ノイズ設計である。
 
-実験中は作らない:
+**初期実験 cadence（更新）**: 14日間の日次pilot（1日最大1通・最大2項目）の後、週次（最大5項目）へ戻す。詳細・コマンド・評価指標は [kioku-concierge-daily-pilot.md](./kioku-concierge-daily-pilot.md)。
 
-- cron / Scheduler
+Phase B MVP時点で作らない（Phase C で日次pilot用 scheduler のみ追加）:
+
+- 週次の自動 cron（pilot終了後も手動 `kioku:letters:generate` を維持）
 - Push / メール / LINE / Slack通知
 - 新しい通知センター
 - リアルタイム発火
@@ -499,9 +504,10 @@ php artisan kioku:letters:generate <USER_ID> --character=nagi
 
 ```text
 last_referenced_at nullable timestamp
+last_delivered_at nullable timestamp   # Phase C: live公開確定時。未読でも翌日再送を防ぐ
 ```
 
-既存`referenced_count`があれば再利用する。人間が手紙を初回開封した時だけ、表示項目の参照回数と最終参照時刻を更新する。
+既存`referenced_count`があれば再利用する。人間が手紙を初回開封した時だけ、表示項目の参照回数と最終参照時刻を更新する（test letterは更新しない）。`last_delivered_at` は live の published/empty 確定時に更新する。
 
 ### 11.2 `kioku_letters`
 
@@ -509,27 +515,38 @@ last_referenced_at nullable timestamp
 |---|---|
 | id | ULID PK |
 | user_id | 所有者 |
-| week_start | 対象週の月曜日 |
+| week_start | 対象週の月曜日（dailyでもdelivery_dateの週開始を保存。集計・後方互換） |
+| mode | live / test（Phase C） |
+| cadence | daily / weekly（Phase C） |
+| delivery_date | ユーザーtimezone上の配信対象日（Phase C） |
+| dedupe_key | live冪等キー。testは`test:{ulid}`（Phase C） |
+| pilot_day | nullable 1〜14（Phase C） |
 | status | generating / published / empty / failed / opened / evaluating / evaluated / halted |
 | character_variant | shiori / nagi。作成後不変 |
 | intro | 最大2文 |
 | context | 手動で渡す今週の文脈 |
 | candidate_count | AIへ渡した候補数 |
-| item_count | 0〜5 |
+| item_count | 0〜5（dailyは最大2） |
 | prompt_key | `kioku.concierge.letter.v1` |
 | model | 実モデル |
-| generation_meta | AI usage request ID等。raw本文を入れない |
+| generation_meta | AI usage request ID等。raw本文を入れない。failures履歴をappend可 |
+| retry_count | failed再試行回数（Phase C） |
 | generated_at / published_at | 生成・公開日時 |
 | opened_at / completed_at | 初回開封・評価完了 |
+| halted_at / halt_resolved_at / halt_resolution_note | sensitive halt（Phase C） |
+| test_expires_at | test letterの失効（Phase C） |
 | evaluation_memory_id | 作成した評価Memory |
 | timestamps | Laravel timestamps |
 
-制約:
+制約（Phase Cで置換）:
 
 ```text
-unique(user_id, week_start)
+unique(user_id, dedupe_key)   # 旧 unique(user_id, week_start) は撤去
 index(user_id, status, published_at)
+index(user_id, mode, cadence, delivery_date)
 ```
+
+詳細は [kioku-concierge-daily-pilot.md](./kioku-concierge-daily-pilot.md) と [tables.md](../data/tables.md)。
 
 ### 11.3 `kioku_letter_items`
 
@@ -793,29 +810,24 @@ tags: コンシェルジュ実験, 自動発火, 評価データ
 
 ## 17. 成功・中止条件
 
-4週プロトコル:
+**初期プロトコル（更新）**: 14日日次pilot → 終了後は週次。詳細指標は [kioku-concierge-daily-pilot.md](./kioku-concierge-daily-pilot.md)。
 
-- 固定曜日・固定時刻
-- 4週間
-- 24時間以内に各項目判定
-- キャラクター、prompt、曜日を途中変更しない
+日次pilot成功候補:
 
-成功候補:
-
-- 4通中3通以上を24時間以内に開く
-- HIT延べ4件以上
-- HIT率25%以上
+- generated日のうち十分な割合を24時間以内に開く
+- HIT率25%以上（母数0なら N/A。0%偽装禁止）
 - `(hit + soft_hit)`有用率50%以上
 - sensitive leak 0件
+- 連続未読で自動pauseされない／または再開後に回復
 - 手紙が原因で記録習慣をやめていない
 
-停止:
+停止（システム強制）:
 
-- sensitive leak 1件で生成停止
+- sensitive leak 1件で **Letter halt + 元Memory隔離 + schedule halt + 以降の生成拒否**（人間が `resolve-halt` するまで再開しない）
+- live daily が3通連続 unread（24時間未開封）で schedule `paused`（AI call停止）
 - 手紙を開くこと自体が億劫になった時点で失敗記録
-- 4週終了時HIT 1件以下なら自動化へ進まない
 
-cron化は成功判定後の別PRである。
+週次自動cronは今回追加しない。pilot終了後も PR #128 の手動週次 command を維持する。
 
 ---
 

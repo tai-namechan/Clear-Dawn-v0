@@ -7,13 +7,14 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 /**
- * Candidate selection for the weekly concierge letter
- * (docs/product/kioku-final-remaining-implementation.md §12).
+ * Candidate selection for the concierge letter
+ * (docs/product/kioku-final-remaining-implementation.md §12 +
+ * docs/product/kioku-concierge-daily-pilot.md).
  *
  * Sensitive memories, non-ready memories, previous letter evaluation logs
- * and recently surfaced memories are excluded here, at the DB query — the
- * AI never receives them. Only title/summary-level fields are sent; never
- * raw_content, transcripts, or audio.
+ * and recently surfaced/delivered memories are excluded here, at the DB
+ * query — the AI never receives them. Only title/summary-level fields are
+ * sent; never raw_content, transcripts, or audio.
  */
 final class KiokuLetterCandidateService
 {
@@ -54,6 +55,7 @@ final class KiokuLetterCandidateService
                 'importance' => $memory->importance,
                 'captured_at' => $memory->captured_at->toDateString(),
                 'last_referenced_at' => $memory->last_referenced_at?->toDateString(),
+                'last_delivered_at' => $memory->last_delivered_at?->toDateString(),
             ];
 
             if ($memory->memory_type === 'decision') {
@@ -111,6 +113,10 @@ final class KiokuLetterCandidateService
     }
 
     /**
+     * Eligible when both last_referenced_at (or captured_at) and
+     * last_delivered_at are outside the 14-day cooldown. Either being
+     * recent excludes the memory (unread yesterday must not reappear).
+     *
      * @return Builder<Memory>
      */
     private function eligibleQuery(int $userId): Builder
@@ -125,6 +131,10 @@ final class KiokuLetterCandidateService
             ->where('source_type', '!=', 'kioku_letter')
             ->whereNotNull('summary')
             ->where('summary', '!=', '')
-            ->whereRaw('COALESCE(last_referenced_at, captured_at) <= ?', [$cutoff]);
+            ->whereRaw('COALESCE(last_referenced_at, captured_at) <= ?', [$cutoff])
+            ->where(function (Builder $query) use ($cutoff): void {
+                $query->whereNull('last_delivered_at')
+                    ->orWhere('last_delivered_at', '<=', $cutoff);
+            });
     }
 }

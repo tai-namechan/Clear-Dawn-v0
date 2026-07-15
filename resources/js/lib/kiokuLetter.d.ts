@@ -39,6 +39,8 @@ declare module '@/lib/kiokuLetter.mjs' {
 
     export const KIOKU_LETTER_EMPTY_MESSAGE: string;
 
+    export const KIOKU_LETTER_EMPTY_MESSAGE_DAILY: string;
+
     export function kiokuLetterPreviewMode(letter: {
         status: string;
         opened: boolean;
@@ -50,7 +52,16 @@ declare module '@/lib/kiokuLetter.mjs' {
         item_count: number;
         judged_count: number;
         hit_count: number;
+        cadence?: string;
     }): string;
 
     export function kiokuLetterWeekLabel(weekStart: string): string;
+
+    export function kiokuLetterDailyLabel(deliveryDate: string): string;
+
+    export function kiokuLetterTitleLabel(letter: {
+        cadence?: string;
+        delivery_date?: string;
+        week_start: string;
+    }): string;
 }

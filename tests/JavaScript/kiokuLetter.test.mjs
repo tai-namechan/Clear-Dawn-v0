@@ -3,12 +3,15 @@ import { describe, it } from 'node:test';
 import {
     KIOKU_LETTER_CHARACTERS,
     KIOKU_LETTER_EMPTY_MESSAGE,
+    KIOKU_LETTER_EMPTY_MESSAGE_DAILY,
     KIOKU_LETTER_SENSITIVE_VERDICT,
     KIOKU_LETTER_VERDICTS,
     kiokuLetterCharacterCssVars,
     kiokuLetterCharacterMeta,
+    kiokuLetterDailyLabel,
     kiokuLetterPreviewLabel,
     kiokuLetterPreviewMode,
+    kiokuLetterTitleLabel,
     kiokuLetterWeekLabel,
 } from '../../resources/js/lib/kiokuLetter.mjs';
 
@@ -156,5 +159,46 @@ describe('kiokuLetterWeekLabel', () => {
 
     it('returns the input when unparsable', () => {
         assert.equal(kiokuLetterWeekLabel('unknown'), 'unknown');
+    });
+});
+
+describe('kiokuLetterDailyLabel / kiokuLetterTitleLabel', () => {
+    it('formats daily delivery dates', () => {
+        assert.equal(
+            kiokuLetterDailyLabel('2026-07-15'),
+            '2026/7/15のキオク便り',
+        );
+    });
+
+    it('switches title by cadence', () => {
+        assert.equal(
+            kiokuLetterTitleLabel({
+                cadence: 'daily',
+                delivery_date: '2026-07-15',
+                week_start: '2026-07-13',
+            }),
+            '2026/7/15のキオク便り',
+        );
+        assert.equal(
+            kiokuLetterTitleLabel({
+                cadence: 'weekly',
+                week_start: '2026-07-13',
+            }),
+            '7/13の週のキオク便り',
+        );
+    });
+
+    it('uses the daily empty copy for daily cadence', () => {
+        assert.equal(
+            kiokuLetterPreviewLabel({
+                status: 'empty',
+                opened: false,
+                item_count: 0,
+                judged_count: 0,
+                hit_count: 0,
+                cadence: 'daily',
+            }),
+            KIOKU_LETTER_EMPTY_MESSAGE_DAILY,
+        );
     });
 });

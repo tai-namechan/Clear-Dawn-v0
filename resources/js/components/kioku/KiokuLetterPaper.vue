@@ -6,7 +6,9 @@ import KiokuLetterVerdict from '@/components/kioku/KiokuLetterVerdict.vue';
 import { Button } from '@/components/ui/button';
 import {
     KIOKU_LETTER_EMPTY_MESSAGE,
+    KIOKU_LETTER_EMPTY_MESSAGE_DAILY,
     kiokuLetterCharacterMeta,
+    kiokuLetterTitleLabel,
 } from '@/lib/kiokuLetter.mjs';
 import { complete } from '@/routes/kioku/letters';
 import { show as showMemory } from '@/routes/kioku/memories';
@@ -14,6 +16,7 @@ import type { KiokuLetter } from '@/types/kiokuLetter';
 
 const props = defineProps<{
     letter: KiokuLetter;
+    preview?: boolean;
 }>();
 
 const completing = ref(false);
@@ -23,6 +26,7 @@ const character = computed(() =>
 );
 
 const isCompleted = computed(() => props.letter.completed_at !== null);
+const isPreview = computed(() => props.preview === true);
 
 const allJudged = computed(
     () =>
@@ -30,8 +34,24 @@ const allJudged = computed(
         props.letter.verdict_counts.judged === props.letter.items.length,
 );
 
+const emptyMessage = computed(() =>
+    props.letter.cadence === 'daily'
+        ? KIOKU_LETTER_EMPTY_MESSAGE_DAILY
+        : KIOKU_LETTER_EMPTY_MESSAGE,
+);
+
+const title = computed(() => kiokuLetterTitleLabel(props.letter));
+
 function requestComplete(): void {
-    if (completing.value || isCompleted.value || !allJudged.value) {
+    if (isPreview.value || completing.value || isCompleted.value) {
+        return;
+    }
+
+    const canCompleteEmpty =
+        props.letter.items.length === 0 &&
+        ['empty', 'published', 'opened'].includes(props.letter.status);
+
+    if (!allJudged.value && !canCompleteEmpty) {
         return;
     }
 
@@ -60,10 +80,15 @@ function requestComplete(): void {
                 class="flex items-center gap-1.5 text-[11.5px] font-bold tracking-wide text-(--letter-accent)"
             >
                 <Mail :size="13" />
-                今週のキオク便り
+                {{ title }}
             </div>
             <h1 class="text-lg font-bold text-os-ink">
-                {{ letter.week_start }} 〜 {{ letter.week_end }} の記憶から
+                <template v-if="letter.cadence === 'daily'">
+                    {{ letter.delivery_date ?? letter.week_start }} の記憶から
+                </template>
+                <template v-else>
+                    {{ letter.week_start }} 〜 {{ letter.week_end }} の記憶から
+                </template>
             </h1>
             <p
                 v-if="letter.intro"
@@ -74,13 +99,11 @@ function requestComplete(): void {
         </header>
 
         <div class="space-y-5 px-5 py-4 sm:px-6">
-            <!-- An empty letter is a correct result; failed/generating must
-                 never be presented as empty. -->
             <p
                 v-if="letter.status === 'failed'"
                 class="py-6 text-center text-[13.5px] leading-relaxed text-[#C05A48]"
             >
-                この手紙の生成に失敗しました。今週の手紙は作られていません。
+                この手紙の生成に失敗しました。この期間の手紙は作られていません。
             </p>
             <p
                 v-else-if="letter.status === 'generating'"
@@ -88,12 +111,23 @@ function requestComplete(): void {
             >
                 手紙を生成しています…
             </p>
-            <p
+            <div
                 v-else-if="letter.items.length === 0"
-                class="py-6 text-center text-[13.5px] leading-relaxed text-os-sub"
+                class="space-y-3 py-6 text-center"
             >
-                {{ KIOKU_LETTER_EMPTY_MESSAGE }}
-            </p>
+                <p class="text-[13.5px] leading-relaxed text-os-sub">
+                    {{ emptyMessage }}
+                </p>
+                <Button
+                    v-if="!isPreview && !isCompleted"
+                    type="button"
+                    class="h-10 rounded-xl bg-(--letter-accent) text-[13px] font-bold text-white hover:bg-(--letter-accent-deep)"
+                    :disabled="completing"
+                    @click="requestComplete"
+                >
+                    確認した
+                </Button>
+            </div>
 
             <article
                 v-for="item in letter.items"
@@ -119,12 +153,19 @@ function requestComplete(): void {
 
                 <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
                     <Link
+                        v-if="!isPreview"
                         :href="showMemory.url(item.memory_id)"
                         class="inline-flex items-center gap-1 text-[12.5px] font-bold text-(--letter-accent) underline-offset-2 hover:underline"
                     >
                         元の記憶を開く（{{ item.title }}）
                         <ArrowUpRight :size="12" />
                     </Link>
+                    <span
+                        v-else
+                        class="text-[12.5px] font-bold text-(--letter-accent)"
+                    >
+                        元の記憶を開く（{{ item.title }}）
+                    </span>
                     <Link
                         v-for="related in item.related"
                         :key="related.id"
@@ -138,7 +179,7 @@ function requestComplete(): void {
                 <KiokuLetterVerdict
                     :letter-id="letter.id"
                     :item="item"
-                    :disabled="isCompleted"
+                    :disabled="isCompleted || isPreview"
                 />
             </article>
 
@@ -168,7 +209,7 @@ function requestComplete(): void {
                     }}件を判定済み
                 </p>
                 <Button
-                    v-if="!isCompleted"
+                    v-if="!isCompleted && !isPreview"
                     type="button"
                     class="h-10 rounded-xl bg-(--letter-accent) text-[13px] font-bold text-white hover:bg-(--letter-accent-deep) disabled:opacity-40"
                     :disabled="!allJudged || completing"

@@ -49,16 +49,17 @@ return [
     | Concierge letter experiment
     |--------------------------------------------------------------------------
     |
-    | Weekly letter (docs/product/kioku-final-remaining-implementation.md
-    | Phase B). Generation is manual only (kioku:letters:generate) and
-    | disabled by default; no cron / push / notifications during the
-    | 4-week experiment.
+    | Letters (docs/product/kioku-final-remaining-implementation.md Phase B +
+    | docs/product/kioku-concierge-daily-pilot.md). Live daily pilot uses the
+    | scheduler dispatcher; weekly steady-state stays on the manual
+    | kioku:letters:generate command. Delivery is in-app only — no email/push.
     |
     */
 
     'concierge' => [
         'enabled' => (bool) env('KIOKU_CONCIERGE_ENABLED', false),
         'default_character' => env('KIOKU_CONCIERGE_DEFAULT_CHARACTER', 'shiori'),
+        'test_enabled' => (bool) env('KIOKU_CONCIERGE_TEST_ENABLED', false),
     ],
 
 ];

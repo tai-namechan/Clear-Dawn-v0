@@ -27,6 +27,10 @@ class KiokuLetterResource extends JsonResource
             'id' => $letter->id,
             'week_start' => $letter->week_start->toDateString(),
             'week_end' => $letter->week_start->addDays(6)->toDateString(),
+            'mode' => $letter->mode,
+            'cadence' => $letter->cadence,
+            'delivery_date' => $letter->delivery_date->toDateString(),
+            'pilot_day' => $letter->pilot_day,
             'status' => $letter->status,
             'character_variant' => $letter->character_variant,
             'intro' => $letter->intro,
@@ -34,6 +38,7 @@ class KiokuLetterResource extends JsonResource
             'published_at' => $letter->published_at?->toIso8601String(),
             'opened_at' => $letter->opened_at?->toIso8601String(),
             'completed_at' => $letter->completed_at?->toIso8601String(),
+            'halted_at' => $letter->halted_at?->toIso8601String(),
             'evaluation_memory_id' => $letter->evaluation_memory_id,
             'items' => $items->map(fn (KiokuLetterItem $item): array => [
                 'id' => $item->id,
@@ -65,8 +70,6 @@ class KiokuLetterResource extends JsonResource
     }
 
     /**
-     * One lookup for every related memory title in the letter, owner-scoped.
-     *
      * @return array<string, string>
      */
     private function relatedTitles(KiokuLetter $letter): array

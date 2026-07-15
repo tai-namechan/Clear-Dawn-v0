@@ -290,7 +290,8 @@ index: (user_id, eaten_on)。unique なし（1 日複数エントリ可）。物
 | transcription_status★ | string nullable | voice のみ: pending / processing / ready / failed。manual/url は null |
 | client_capture_id★ | uuid nullable | 端末生成。**(user_id, client_capture_id) unique** で再送を冪等化 |
 | referenced_count | int | |
-| last_referenced_at☆ | timestamp nullable | 手紙の初回開封時に表示項目へ記録（[kioku-final-remaining-implementation.md](../product/kioku-final-remaining-implementation.md) §11.1） |
+| last_referenced_at☆ | timestamp nullable | 手紙の初回開封時に表示項目へ記録（liveのみ。[kioku-final-remaining-implementation.md](../product/kioku-final-remaining-implementation.md) §11.1） |
+| last_delivered_at☆ | timestamp nullable | live手紙の published/empty 確定時。未読でも翌日再送を防ぐ（[kioku-concierge-daily-pilot.md](../product/kioku-concierge-daily-pilot.md)） |
 
 ★=クイックキャプチャ、☆=コンシェルジュ手紙で追加。source_type にはコンシェルジュ評価ログ用の `kioku_letter` が加わる（Letter 候補からは除外）。
 
@@ -333,27 +334,36 @@ storage cleanup:
 
 ### kioku_letters（コンシェルジュ手紙）
 
-仕様は [kioku-final-remaining-implementation.md](../product/kioku-final-remaining-implementation.md) §11 を参照。
+仕様は [kioku-final-remaining-implementation.md](../product/kioku-final-remaining-implementation.md) §11 と [kioku-concierge-daily-pilot.md](../product/kioku-concierge-daily-pilot.md) を参照。
 
 | カラム | 型 | 備考 |
 |---|---|---|
 | id | ULID | PK |
 | user_id | bigint unsigned | FK(users) |
-| week_start | date | 対象週の月曜日。**(user_id, week_start) unique**（1 user・1 週 1 通） |
+| week_start | date | 対象週の月曜日（dailyでも delivery_date の週開始を保存） |
+| mode | string | `live` / `test`。default `live` |
+| cadence | string | `daily` / `weekly`。default `weekly` |
+| delivery_date | date | ユーザーtimezone上の配信対象日 |
+| dedupe_key | string | live: `daily:YYYY-MM-DD` / `weekly:YYYY-MM-DD`。test: `test:{ulid}`。**(user_id, dedupe_key) unique** |
+| pilot_day | tinyint nullable | 1〜14（daily pilot） |
 | status | string | generating / published / empty / failed / opened / evaluating / evaluated / halted |
 | character_variant | string | shiori / nagi。作成後不変 |
 | intro | text nullable | AI 生成の導入（最大2文） |
 | context | text nullable | 手動で渡す今週の文脈 |
 | candidate_count | int | AI へ渡した候補数 |
-| item_count | tinyint | 0〜5 |
+| item_count | tinyint | 0〜5（daily は最大2） |
 | prompt_key | string | `kioku.concierge.letter.v1` |
 | model | string nullable | 実際に使ったモデル |
-| generation_meta | json nullable | AI usage request ID 等。raw 本文は入れない |
+| generation_meta | json nullable | AI usage request ID 等。failures 履歴を append。raw 本文は入れない |
+| retry_count | unsignedTinyInteger | failed 明示再試行回数。default 0 |
 | generated_at / published_at | timestamp nullable | 生成・公開日時 |
 | opened_at / completed_at | timestamp nullable | 初回開封・評価完了 |
-| evaluation_memory_id | ULID nullable | FK(memories) null on delete。評価 Memory |
+| halted_at / halt_resolved_at | timestamp nullable | sensitive halt |
+| halt_resolution_note | text nullable | resolve-halt の確認内容 |
+| test_expires_at | timestamp nullable | test letter の失効 |
+| evaluation_memory_id | ULID nullable | FK(memories) null on delete。評価 Memory（testは原則作らない） |
 
-index: (user_id, status, published_at)
+index: (user_id, status, published_at)、(user_id, mode, cadence, delivery_date)
 
 ### kioku_letter_items（手紙の項目）
 
@@ -362,7 +372,7 @@ index: (user_id, status, published_at)
 | id | ULID | PK |
 | letter_id | ULID | FK(kioku_letters) cascade |
 | memory_id | ULID | FK(memories) cascade。元 Memory |
-| position | tinyint | 1〜5。**(letter_id, position) unique** |
+| position | tinyint | 1〜5（dailyは1〜2）。**(letter_id, position) unique** |
 | title_snapshot | string | 生成時タイトル |
 | summary_snapshot | text nullable | 生成時要約 |
 | headline | string | 手紙見出し（最大60文字） |
@@ -373,6 +383,24 @@ index: (user_id, status, published_at)
 | verdict_at | timestamp nullable | 判定日時 |
 
 **(letter_id, memory_id) unique**。DB enum は使わず、定数＋validation で固定する。
+
+### kioku_concierge_schedules（日次pilot状態）
+
+仕様は [kioku-concierge-daily-pilot.md](../product/kioku-concierge-daily-pilot.md)。対象ユーザーを env へ直書きしない。
+
+| カラム | 型 | 備考 |
+|---|---|---|
+| id | ULID | PK |
+| user_id | bigint unsigned | FK(users)。**unique** |
+| state | string | inactive / active / paused / halted / completed |
+| pilot_start_date / pilot_end_date | date | 開始コマンド引数で記録 |
+| pilot_days | unsignedTinyInteger | default 14 |
+| timezone | string | default `Asia/Tokyo` |
+| daily_delivery_time | string | default `21:00`（H:i） |
+| next_delivery_at | timestamp nullable | timezone換算の次回due |
+| consecutive_unopened | unsignedTinyInteger | default 0 |
+| pause_reason | text nullable | |
+| timestamps | | |
 
 ## Phase 3〜4（ドラフト）
 

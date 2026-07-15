@@ -31,6 +31,7 @@ use LogicException;
  * @property string|null $transcription_status
  * @property int $referenced_count
  * @property Carbon|null $last_referenced_at
+ * @property Carbon|null $last_delivered_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -52,6 +53,7 @@ use LogicException;
     'transcription_status',
     'referenced_count',
     'last_referenced_at',
+    'last_delivered_at',
 ])]
 class Memory extends Model
 {
@@ -124,6 +126,7 @@ class Memory extends Model
             'sensitive' => 'boolean',
             'referenced_count' => 'integer',
             'last_referenced_at' => 'datetime',
+            'last_delivered_at' => 'datetime',
         ];
     }
 

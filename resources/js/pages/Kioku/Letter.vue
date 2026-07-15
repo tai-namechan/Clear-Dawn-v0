@@ -4,27 +4,41 @@ import { ArrowLeft } from '@lucide/vue';
 import { computed, onMounted } from 'vue';
 import KiokuLetterCharacter from '@/components/kioku/KiokuLetterCharacter.vue';
 import KiokuLetterPaper from '@/components/kioku/KiokuLetterPaper.vue';
-import { kiokuLetterCharacterCssVars } from '@/lib/kiokuLetter.mjs';
+import { kiokuLetterCharacterCssVars, kiokuLetterTitleLabel } from '@/lib/kiokuLetter.mjs';
 import { home } from '@/routes/kioku';
 import { open } from '@/routes/kioku/letters';
 import type { KiokuLetter } from '@/types/kiokuLetter';
 
 const props = defineProps<{
     letter: KiokuLetter;
+    preview?: boolean;
 }>();
+
+const isPreview = computed(() => props.preview === true);
 
 const cssVars = computed(() =>
     kiokuLetterCharacterCssVars(props.letter.character_variant),
 );
 
+const pageTitle = computed(() => kiokuLetterTitleLabel(props.letter));
+
 /**
- * First view records the open (idempotent server-side: a reload never
- * double-counts references).
+ * First view records the open (idempotent server-side). Preview never POSTs.
+ * Claim is based on opened_at, so evaluating/halted can still record the open.
  */
 onMounted(() => {
+    if (isPreview.value || props.letter.opened_at !== null) {
+        return;
+    }
+
     if (
-        props.letter.opened_at === null &&
-        ['published', 'empty'].includes(props.letter.status)
+        [
+            'published',
+            'empty',
+            'evaluating',
+            'halted',
+            'opened',
+        ].includes(props.letter.status)
     ) {
         router.post(open.url(props.letter.id), {}, { preserveScroll: true });
     }
@@ -33,7 +47,7 @@ onMounted(() => {
 defineOptions({
     layout: {
         title: 'キオク',
-        subtitle: '今週のキオク便り',
+        subtitle: 'キオク便り',
     },
 });
 </script>
@@ -44,7 +58,7 @@ defineOptions({
         :data-character="letter.character_variant"
         :style="cssVars"
     >
-        <Head title="今週のキオク便り" />
+        <Head :title="pageTitle" />
 
         <Link
             :href="home()"
@@ -55,20 +69,36 @@ defineOptions({
         </Link>
 
         <div
+            v-if="isPreview"
+            class="rounded-xl bg-[#F8E9E4] px-3.5 py-2.5 text-[13px] font-bold text-[#C05A48]"
+            role="status"
+        >
+            [プレビュー] 表示確認用です。AI・DB・判定保存は行われません。
+        </div>
+        <div
+            v-else-if="letter.mode === 'test'"
+            class="rounded-xl bg-os-kioku-soft px-3.5 py-2.5 text-[13px] font-bold text-os-kioku"
+            role="status"
+        >
+            [テスト便り] 実験指標・cooldownには影響しません。
+        </div>
+
+        <div
             class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,68fr)_minmax(0,32fr)] lg:items-start lg:gap-6"
         >
-            <!-- Mobile: small figure top-right, never overlapping the body.
-                 Desktop: right column ~32%. Same single image element. -->
             <div
                 class="order-1 flex justify-end lg:sticky lg:top-5 lg:order-2 lg:block"
             >
                 <div class="w-28 sm:w-36 lg:w-full lg:max-w-[280px]">
-                    <KiokuLetterCharacter :variant="letter.character_variant" />
+                    <KiokuLetterCharacter
+                        :variant="letter.character_variant"
+                        :force-fail="letter.force_image_fail === true"
+                    />
                 </div>
             </div>
 
             <div class="order-2 min-w-0 lg:order-1">
-                <KiokuLetterPaper :letter="letter" />
+                <KiokuLetterPaper :letter="letter" :preview="isPreview" />
             </div>
         </div>
     </div>

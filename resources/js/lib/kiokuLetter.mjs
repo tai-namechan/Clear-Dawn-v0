@@ -1,6 +1,7 @@
 /**
  * Concierge letter presentation logic
- * (docs/product/kioku-final-remaining-implementation.md §8, §15).
+ * (docs/product/kioku-final-remaining-implementation.md §8, §15 +
+ * docs/product/kioku-concierge-daily-pilot.md).
  *
  * Characters share candidates, AI body, item order and verdict UI; the only
  * differences are the image, the CSS theme colors, and the fixed signature
@@ -92,6 +93,9 @@ export const KIOKU_LETTER_SENSITIVE_VERDICT = {
 export const KIOKU_LETTER_EMPTY_MESSAGE =
     '今週は、無理に届ける記憶はありませんでした。';
 
+export const KIOKU_LETTER_EMPTY_MESSAGE_DAILY =
+    '今日は、無理に届ける記憶はありませんでした。';
+
 /**
  * Home preview mode for one letter summary.
  *
@@ -115,12 +119,14 @@ export function kiokuLetterPreviewMode(letter) {
 }
 
 /**
- * @param {{ status: string, opened: boolean, item_count: number, judged_count: number, hit_count: number }} letter
+ * @param {{ status: string, opened: boolean, item_count: number, judged_count: number, hit_count: number, cadence?: string }} letter
  */
 export function kiokuLetterPreviewLabel(letter) {
     switch (kiokuLetterPreviewMode(letter)) {
         case 'empty':
-            return KIOKU_LETTER_EMPTY_MESSAGE;
+            return letter.cadence === 'daily'
+                ? KIOKU_LETTER_EMPTY_MESSAGE_DAILY
+                : KIOKU_LETTER_EMPTY_MESSAGE;
         case 'unread':
             return '未読の便りが届いています';
         case 'done':
@@ -141,4 +147,28 @@ export function kiokuLetterWeekLabel(weekStart) {
     }
 
     return `${month}/${day}の週`;
+}
+
+/**
+ * @param {string} deliveryDate ISO date (YYYY-MM-DD)
+ */
+export function kiokuLetterDailyLabel(deliveryDate) {
+    const [year, month, day] = deliveryDate.split('-').map(Number);
+
+    if (!year || !month || !day) {
+        return deliveryDate;
+    }
+
+    return `${year}/${month}/${day}のキオク便り`;
+}
+
+/**
+ * @param {{ cadence?: string, delivery_date?: string, week_start: string }} letter
+ */
+export function kiokuLetterTitleLabel(letter) {
+    if (letter.cadence === 'daily' && letter.delivery_date) {
+        return kiokuLetterDailyLabel(letter.delivery_date);
+    }
+
+    return `${kiokuLetterWeekLabel(letter.week_start)}のキオク便り`;
 }

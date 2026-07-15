@@ -2,6 +2,10 @@ export type KiokuLetterCharacterVariant = 'shiori' | 'nagi';
 
 export type KiokuLetterVerdict = 'hit' | 'soft_hit' | 'miss' | 'sensitive_leak';
 
+export type KiokuLetterMode = 'live' | 'test';
+
+export type KiokuLetterCadence = 'daily' | 'weekly';
+
 export type KiokuLetterItem = {
     id: string;
     position: number;
@@ -20,6 +24,10 @@ export type KiokuLetter = {
     id: string;
     week_start: string;
     week_end: string;
+    mode?: KiokuLetterMode;
+    cadence?: KiokuLetterCadence;
+    delivery_date?: string;
+    pilot_day?: number | null;
     status: string;
     character_variant: KiokuLetterCharacterVariant;
     intro: string | null;
@@ -27,6 +35,7 @@ export type KiokuLetter = {
     published_at: string | null;
     opened_at: string | null;
     completed_at: string | null;
+    halted_at?: string | null;
     evaluation_memory_id: string | null;
     items: KiokuLetterItem[];
     verdict_counts: {
@@ -36,11 +45,15 @@ export type KiokuLetter = {
         miss: number;
         sensitive_leak: number;
     };
+    force_image_fail?: boolean;
 };
 
 export type KiokuLetterSummary = {
     id: string;
     week_start: string;
+    delivery_date?: string;
+    mode?: KiokuLetterMode;
+    cadence?: KiokuLetterCadence;
     status: string;
     character_variant: KiokuLetterCharacterVariant;
     item_count: number;

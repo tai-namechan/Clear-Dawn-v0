@@ -5,14 +5,15 @@ import type { KiokuLetterCharacterVariant } from '@/types/kiokuLetter';
 
 const props = defineProps<{
     variant: KiokuLetterCharacterVariant;
+    forceFail?: boolean;
 }>();
 
-const failed = ref(false);
+const failed = ref(props.forceFail === true);
 
 watch(
-    () => props.variant,
+    () => [props.variant, props.forceFail] as const,
     () => {
-        failed.value = false;
+        failed.value = props.forceFail === true;
     },
 );
 

@@ -27,6 +27,7 @@ interface Props {
     totalCount: number;
     transcriptionEnabled: boolean;
     letters: KiokuLetterSummary[];
+    testLetters?: KiokuLetterSummary[];
 }
 
 const props = defineProps<Props>();
@@ -466,7 +467,10 @@ defineOptions({
                     </button>
                 </div>
 
-                <KiokuLetterPreview :letters="letters" />
+                <KiokuLetterPreview
+                    :letters="letters"
+                    :test-letters="testLetters ?? []"
+                />
 
                 <div
                     v-for="item in pendingLocalCaptures"
