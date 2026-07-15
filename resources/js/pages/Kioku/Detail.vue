@@ -14,7 +14,10 @@ import { toast } from 'vue-sonner';
 import SourceBadge from '@/components/kioku/SourceBadge.vue';
 import TypeChip from '@/components/kioku/TypeChip.vue';
 import { Button } from '@/components/ui/button';
-import { kiokuMemoryDisplayTitle } from '@/lib/kiokuMemoryCard.mjs';
+import {
+    canKiokuMemoryReenrich,
+    kiokuMemoryDisplayTitle,
+} from '@/lib/kiokuMemoryCard.mjs';
 import { formatAgo, sourceTypeMeta } from '@/lib/kiokuMeta';
 import { kiokuTranscriptDisplayMode } from '@/lib/kiokuTranscriptDisplay.mjs';
 import { home } from '@/routes/kioku';
@@ -52,6 +55,8 @@ const transcriptMode = computed(() =>
 );
 
 const displayTitle = computed(() => kiokuMemoryDisplayTitle(props.memory));
+
+const canReenrich = computed(() => canKiokuMemoryReenrich(props.memory));
 
 const titleClass = computed(
     () => sourceTypeMeta(props.memory.source_type).titleClass ?? 'text-os-ink',
@@ -298,10 +303,7 @@ defineOptions({
                             文字起こしを再実行
                         </Button>
                     </div>
-                    <p
-                        v-else
-                        class="text-[12.5px] leading-relaxed text-os-sub"
-                    >
+                    <p v-else class="text-[12.5px] leading-relaxed text-os-sub">
                         文字起こし中です…
                     </p>
                 </div>
@@ -376,9 +378,7 @@ defineOptions({
                     Clear Dawnへ
                 </Button>
                 <Button
-                    v-if="
-                        memory.status === 'ready' || memory.status === 'failed'
-                    "
+                    v-if="canReenrich"
                     type="button"
                     class="gap-1.5 rounded-full border border-os-line text-os-sub hover:bg-os-kioku-soft"
                     variant="outline"

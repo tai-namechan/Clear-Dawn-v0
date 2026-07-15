@@ -79,3 +79,46 @@ export function kiokuMemoryDisplayTitle(memory) {
 
     return memory.title;
 }
+
+/**
+ * List/detail failure chrome: distinguish transcription failure from
+ * enrichment failure so voice MIME/provider errors are not labeled as AI整理.
+ *
+ * @param {{
+ *   source_type: string,
+ *   status: string,
+ *   transcription_status?: string | null,
+ * }} memory
+ */
+export function kiokuMemoryFailureLabel(memory) {
+    if (
+        memory.source_type === 'voice' &&
+        memory.transcription_status === 'failed'
+    ) {
+        return '文字起こしに失敗しました';
+    }
+
+    return 'AI整理に失敗しました';
+}
+
+/**
+ * "AIで再整理" needs a transcript (or non-voice raw content). Voice without
+ * transcription_status=ready has nothing EnrichMemoryJob can classify.
+ *
+ * @param {{
+ *   source_type: string,
+ *   status: string,
+ *   transcription_status?: string | null,
+ * }} memory
+ */
+export function canKiokuMemoryReenrich(memory) {
+    if (memory.status !== 'ready' && memory.status !== 'failed') {
+        return false;
+    }
+
+    if (memory.source_type === 'voice') {
+        return memory.transcription_status === 'ready';
+    }
+
+    return true;
+}

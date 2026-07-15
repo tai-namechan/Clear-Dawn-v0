@@ -11,13 +11,17 @@ use App\Domain\Kioku\Transcription\TranscriptionGateway;
 use App\Domain\Shared\Models\AiUsageLog;
 use App\Domain\Shared\Models\AiUsageRequest;
 use App\Enums\AiUsageRequestStatus;
+use App\Http\Requests\Kioku\StoreVoiceCaptureRequest;
 use App\Models\User;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use ReflectionClass;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -183,7 +187,15 @@ class OpenAiTranscriptionTest extends TestCase
     {
         $user = User::factory()->create();
 
-        foreach (['audio/mp4' => 'audio.m4a', 'audio/webm' => 'audio.webm'] as $mime => $filename) {
+        foreach ([
+            'audio/mp4' => 'audio.m4a',
+            'video/mp4' => 'audio.mp4',
+            'audio/webm' => 'audio.webm',
+            'video/webm' => 'audio.webm',
+            'audio/x-m4a' => 'audio.m4a',
+            'application/ogg' => 'audio.ogg',
+            'audio/vnd.wave' => 'audio.wav',
+        ] as $mime => $filename) {
             Http::fake([
                 $this->openAiFakePattern() => Http::response([
                     'text' => 'ok',
@@ -196,6 +208,66 @@ class OpenAiTranscriptionTest extends TestCase
 
             Http::assertSent(fn (Request $request): bool => $request->hasFile('file', null, $filename));
         }
+    }
+
+    /**
+     * video/mp4 is a container MIME: Safari/server finfo often labels
+     * audio-only captures this way. Prove we still multipart-upload as
+     * audio.mp4 (OpenAI-supported) instead of rejecting before HTTP.
+     */
+    public function test_video_mp4_mime_is_uploaded_as_audio_mp4_with_http_faked(): void
+    {
+        Http::fake([
+            $this->openAiFakePattern() => Http::response([
+                'text' => 'MP4コンテナの音声メモ',
+                'usage' => ['type' => 'tokens', 'input_tokens' => 40, 'output_tokens' => 12],
+            ]),
+        ]);
+        Bus::fake([EnrichMemoryJob::class]);
+        $user = User::factory()->create();
+        ['memory' => $memory, 'asset' => $asset] = $this->createVoiceMemoryWithAsset($user, 'video/mp4');
+
+        (new TranscribeMemoryAudioJob($memory->id))->handle(app(TranscriptionGateway::class));
+
+        $memory->refresh();
+        $this->assertSame('MP4コンテナの音声メモ', $memory->transcript_text);
+        $this->assertSame('ready', $memory->transcription_status);
+        Storage::disk('local')->assertExists($asset->path);
+        Bus::assertDispatchedTimes(EnrichMemoryJob::class, 1);
+
+        Http::assertSent(function (Request $request): bool {
+            return str_contains($request->url(), '/audio/transcriptions')
+                && $request->isMultipart()
+                && $request->hasFile('file', null, 'audio.mp4');
+        });
+    }
+
+    /**
+     * StoreVoiceCaptureRequest allow-list must not accept a MIME that
+     * OpenAiTranscriptionGateway will reject (except audio/aac, which is
+     * intentionally deferred pending real-data review).
+     */
+    public function test_store_allowed_mimes_are_covered_by_transcription_gateway(): void
+    {
+        $storeMimes = (new ReflectionClass(StoreVoiceCaptureRequest::class))
+            ->getConstant('ALLOWED_MIME_TYPES');
+        $this->assertIsArray($storeMimes);
+
+        $gatewayMap = (new ReflectionClass(OpenAiTranscriptionGateway::class))
+            ->getConstant('MIME_EXTENSIONS');
+        $this->assertIsArray($gatewayMap);
+
+        $knownDeferred = ['audio/aac'];
+        $required = array_values(array_diff($storeMimes, $knownDeferred));
+        sort($required);
+        $covered = array_keys($gatewayMap);
+        sort($covered);
+
+        $this->assertSame(
+            $required,
+            $covered,
+            'StoreVoiceCaptureRequest MIME allow-list and OpenAiTranscriptionGateway::MIME_EXTENSIONS drifted.',
+        );
     }
 
     public function test_unknown_mime_is_rejected_before_any_provider_call(): void
@@ -451,5 +523,69 @@ class OpenAiTranscriptionTest extends TestCase
         Http::assertNothingSent();
         $this->assertSame('failed', $memory->fresh()->transcription_status);
         Storage::disk('local')->assertExists($asset->path);
+    }
+
+    /**
+     * Minimal ISO BMFF (ftyp/isom) so PHP finfo reports video/mp4 — the
+     * same container MIME Safari/server often assign to audio-only captures.
+     * Testing\File maps ".mp4" → application/mp4 by extension, so the
+     * reported MIME is set explicitly to the finfo-detected type.
+     */
+    private function fakeVideoMp4File(string $name = 'voice.mp4'): UploadedFile
+    {
+        $bytes = hex2bin('000000206674797069736f6d0000020069736f6d69736f326d703431');
+        $this->assertNotFalse($bytes);
+        $this->assertSame('video/mp4', (new \finfo(FILEINFO_MIME_TYPE))->buffer($bytes));
+
+        return UploadedFile::fake()
+            ->createWithContent($name, $bytes)
+            ->mimeType('video/mp4');
+    }
+
+    /**
+     * End-to-end: store accepts video/mp4 → TranscribeMemoryAudioJob →
+     * OpenAI multipart audio.mp4 (HTTP faked). Proves the MIME contract
+     * mismatch cannot recur without breaking this path.
+     */
+    public function test_video_mp4_capture_integrates_through_transcription_job(): void
+    {
+        Http::fake([
+            $this->openAiFakePattern() => Http::response([
+                'text' => '保存から文字起こしまでの統合',
+                'usage' => ['type' => 'tokens', 'input_tokens' => 20, 'output_tokens' => 8],
+            ]),
+        ]);
+        Bus::fake([TranscribeMemoryAudioJob::class, EnrichMemoryJob::class]);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->postJson(route('kioku.captures.voice'), [
+                'client_capture_id' => (string) Str::uuid(),
+                'audio' => $this->fakeVideoMp4File(),
+                'duration_ms' => 7000,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('memory.transcription_status', 'pending');
+
+        Bus::assertDispatched(TranscribeMemoryAudioJob::class);
+
+        $memory = Memory::query()->withoutUserScope()->where('user_id', $user->id)->sole();
+        $asset = MemoryAsset::query()->where('memory_id', $memory->id)->sole();
+        $this->assertSame('video/mp4', $asset->mime_type);
+        Storage::disk('local')->assertExists($asset->path);
+
+        (new TranscribeMemoryAudioJob($memory->id))->handle(app(TranscriptionGateway::class));
+
+        $memory->refresh();
+        $this->assertSame('保存から文字起こしまでの統合', $memory->transcript_text);
+        $this->assertSame('ready', $memory->transcription_status);
+        $this->assertNull($memory->raw_content);
+        Storage::disk('local')->assertExists($asset->path);
+        Bus::assertDispatchedTimes(EnrichMemoryJob::class, 1);
+
+        Http::assertSent(function (Request $request): bool {
+            return str_contains($request->url(), '/audio/transcriptions')
+                && $request->hasFile('file', null, 'audio.mp4');
+        });
     }
 }

@@ -37,11 +37,21 @@ final class OpenAiTranscriptionGateway implements TranscriptionGateway
      */
     private const MIME_EXTENSIONS = [
         'audio/webm' => 'webm',
+        'video/webm' => 'webm',
+
         'audio/mp4' => 'm4a',
+        'video/mp4' => 'mp4',
+        'audio/x-m4a' => 'm4a',
+
         'audio/mpeg' => 'mp3',
+        'audio/mp3' => 'mp3',
+
         'audio/ogg' => 'ogg',
+        'application/ogg' => 'ogg',
+
         'audio/wav' => 'wav',
         'audio/x-wav' => 'wav',
+        'audio/vnd.wave' => 'wav',
     ];
 
     /**
