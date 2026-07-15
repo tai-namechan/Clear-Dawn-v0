@@ -146,7 +146,8 @@ process crash（ファイル保存後・DB commit 前）の孤児ファイル sw
 ## 12. 文字起こし provider
 
 - `TranscriptionGateway` interface で抽象化。`config/kioku.php` の `transcription.provider`（env `KIOKU_TRANSCRIPTION_PROVIDER`、既定 `none`）で切り替える
-- **実 provider は未決定**。`none` の場合は Job を dispatch せず、`transcription_status = pending` のまま「文字起こし未設定」を正確に表示する（成功を偽装しない）
+- **実 provider は `openai`（OpenAI Audio Transcriptions）を接続済み**。採用モデル・設定・エラー分類の正は [kioku-final-remaining-implementation.md](./kioku-final-remaining-implementation.md) Phase A を参照。コード上の既定は引き続き `none` で、環境変数を設定するまで実 provider は使われない
+- `none` の場合は Job を dispatch せず、`transcription_status = pending` のまま「文字起こし未設定」を正確に表示する（成功を偽装しない）
 - provider=none 中に作られた voice Memory は、原音声が保存済みでも Detail から開ける（MemoryCard は voice を常に遷移可能にする。enrich スピナーとクリック可能性は別概念）
 - 実 provider を有効化したあと、滞留している pending を流すには運用コマンドを実行する:
   - `php artisan kioku:transcriptions:dispatch-pending`
@@ -172,7 +173,7 @@ process crash（ファイル保存後・DB commit 前）の孤児ファイル sw
 - ライブ（ストリーミング）文字起こし
 - 波形表示・波形編集・無音カット
 - note / Qiita / X 記事生成
-- コンシェルジュ専用 UI・cron
+- コンシェルジュの cron・自動配信・通知（手動生成の週1手紙 UI は [kioku-final-remaining-implementation.md](./kioku-final-remaining-implementation.md) Phase B で実装済み）
 - Service Worker / Background Sync
 - OsShellLayout への全画面共通クイックキャプチャ
 - manual → text の rename
@@ -182,7 +183,6 @@ process crash（ファイル保存後・DB commit 前）の孤児ファイル sw
 - 汎用 HTTP Range / 206 Partial Content（本番 storage + iPhone Safari 実機確認後に判断）
 - process crash 後の孤児音声ファイル sweeper
 - 複数タブ間の capture queue flush 排他
-- 実 transcription provider 接続
 
 ## 15. 成功条件と中止条件
 

@@ -4,15 +4,18 @@ namespace App\Providers;
 
 use App\Domain\Kioku\Transcription\FakeTranscriptionGateway;
 use App\Domain\Kioku\Transcription\NullTranscriptionGateway;
+use App\Domain\Kioku\Transcription\OpenAiTranscriptionGateway;
 use App\Domain\Kioku\Transcription\TranscriptionGateway;
 use App\Models\MatrixCellItem;
 use App\Models\RoutineSession;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use RuntimeException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,13 +24,20 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Real speech-to-text providers plug in here once one is adopted
-        // (docs/product/kioku-quick-capture.md §12). 'none' must never fake
-        // a success — jobs guard on the provider before transcribing.
-        $this->app->bind(TranscriptionGateway::class, function (): TranscriptionGateway {
-            return match (config('kioku.transcription.provider', 'none')) {
+        // Speech-to-text providers (docs/product/kioku-quick-capture.md §12,
+        // kioku-final-remaining-implementation.md §3). 'none' must never fake
+        // a success — jobs guard on the provider before transcribing — and an
+        // unknown provider fails loudly instead of silently degrading.
+        $this->app->bind(TranscriptionGateway::class, function (Application $app): TranscriptionGateway {
+            $provider = (string) config('kioku.transcription.provider', 'none');
+
+            return match ($provider) {
+                'none' => new NullTranscriptionGateway,
                 'fake' => new FakeTranscriptionGateway,
-                default => new NullTranscriptionGateway,
+                'openai' => $app->make(OpenAiTranscriptionGateway::class),
+                default => throw new RuntimeException(
+                    "Unknown transcription provider [{$provider}] (KIOKU_TRANSCRIPTION_PROVIDER)."
+                ),
             };
         });
     }

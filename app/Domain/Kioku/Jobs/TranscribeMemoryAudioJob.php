@@ -3,6 +3,7 @@
 namespace App\Domain\Kioku\Jobs;
 
 use App\Domain\Kioku\Models\Memory;
+use App\Domain\Kioku\Transcription\TranscriptionFailedException;
 use App\Domain\Kioku\Transcription\TranscriptionGateway;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -84,6 +85,19 @@ class TranscribeMemoryAudioJob implements ShouldBeUnique, ShouldQueue
             if ($written === 1) {
                 EnrichMemoryJob::dispatch($memory->id);
             }
+        } catch (TranscriptionFailedException $e) {
+            // Permanent failure (configuration / unsupported input / provider
+            // rejection): retrying cannot succeed and would only re-bill, so
+            // surface the failure now. Audio original and raw stay intact.
+            Log::warning('TranscribeMemoryAudioJob failed permanently', [
+                'memory_id' => $this->memoryId,
+                'attempt' => $this->attempts(),
+                'message' => $e->getMessage(),
+            ]);
+
+            $this->markFailed();
+
+            return;
         } catch (Throwable $e) {
             Log::warning('TranscribeMemoryAudioJob failed', [
                 'memory_id' => $this->memoryId,

@@ -150,4 +150,20 @@ class DispatchPendingTranscriptionsCommandTest extends TestCase
 
         Bus::assertNotDispatched(TranscribeMemoryAudioJob::class);
     }
+
+    public function test_command_dispatches_backfill_with_openai_provider(): void
+    {
+        config(['kioku.transcription.provider' => 'openai']);
+        Bus::fake([TranscribeMemoryAudioJob::class]);
+        $user = User::factory()->create();
+        ['memory' => $pending] = $this->createPendingVoice($user);
+
+        $this->artisan('kioku:transcriptions:dispatch-pending')
+            ->assertSuccessful();
+
+        Bus::assertDispatched(
+            TranscribeMemoryAudioJob::class,
+            fn (TranscribeMemoryAudioJob $job) => $job->memoryId === $pending->id,
+        );
+    }
 }
