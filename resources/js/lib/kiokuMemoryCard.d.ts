@@ -18,4 +18,16 @@ declare module '@/lib/kiokuMemoryCard.mjs' {
         title: string;
         transcription_status?: string | null;
     }): string;
+
+    export function kiokuMemoryFailureLabel(memory: {
+        source_type: string;
+        status: string;
+        transcription_status?: string | null;
+    }): string;
+
+    export function canKiokuMemoryReenrich(memory: {
+        source_type: string;
+        status: string;
+        transcription_status?: string | null;
+    }): boolean;
 }

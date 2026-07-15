@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+    canKiokuMemoryReenrich,
     isKiokuMemoryCardEnriching,
     isKiokuMemoryCardNavigable,
     kiokuMemoryDisplayTitle,
+    kiokuMemoryFailureLabel,
 } from '../../resources/js/lib/kiokuMemoryCard.mjs';
 
 describe('isKiokuMemoryCardNavigable', () => {
@@ -218,6 +220,102 @@ describe('kiokuMemoryDisplayTitle', () => {
                 transcription_status: 'pending',
             }),
             '会議メモ',
+        );
+    });
+});
+
+describe('kiokuMemoryFailureLabel', () => {
+    it('labels voice transcription failure as 文字起こしに失敗', () => {
+        assert.equal(
+            kiokuMemoryFailureLabel({
+                source_type: 'voice',
+                status: 'failed',
+                transcription_status: 'failed',
+            }),
+            '文字起こしに失敗しました',
+        );
+    });
+
+    it('labels enrichment failure (transcript ready) as AI整理に失敗', () => {
+        assert.equal(
+            kiokuMemoryFailureLabel({
+                source_type: 'voice',
+                status: 'failed',
+                transcription_status: 'ready',
+            }),
+            'AI整理に失敗しました',
+        );
+        assert.equal(
+            kiokuMemoryFailureLabel({
+                source_type: 'manual',
+                status: 'failed',
+                transcription_status: null,
+            }),
+            'AI整理に失敗しました',
+        );
+    });
+});
+
+describe('canKiokuMemoryReenrich', () => {
+    it('hides reenrich for voice without a ready transcript', () => {
+        assert.equal(
+            canKiokuMemoryReenrich({
+                source_type: 'voice',
+                status: 'failed',
+                transcription_status: 'failed',
+            }),
+            false,
+        );
+        assert.equal(
+            canKiokuMemoryReenrich({
+                source_type: 'voice',
+                status: 'failed',
+                transcription_status: 'pending',
+            }),
+            false,
+        );
+    });
+
+    it('allows reenrich once voice transcript is ready (including empty)', () => {
+        assert.equal(
+            canKiokuMemoryReenrich({
+                source_type: 'voice',
+                status: 'failed',
+                transcription_status: 'ready',
+            }),
+            true,
+        );
+        assert.equal(
+            canKiokuMemoryReenrich({
+                source_type: 'voice',
+                status: 'ready',
+                transcription_status: 'ready',
+            }),
+            true,
+        );
+    });
+
+    it('preserves manual/url ready/failed reenrich gating', () => {
+        assert.equal(
+            canKiokuMemoryReenrich({
+                source_type: 'manual',
+                status: 'ready',
+            }),
+            true,
+        );
+        assert.equal(
+            canKiokuMemoryReenrich({
+                source_type: 'url',
+                status: 'failed',
+            }),
+            true,
+        );
+        assert.equal(
+            canKiokuMemoryReenrich({
+                source_type: 'manual',
+                status: 'enriching',
+            }),
+            false,
         );
     });
 });

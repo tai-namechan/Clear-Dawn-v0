@@ -9,6 +9,7 @@ import {
     isKiokuMemoryCardEnriching,
     isKiokuMemoryCardNavigable,
     kiokuMemoryDisplayTitle,
+    kiokuMemoryFailureLabel,
 } from '@/lib/kiokuMemoryCard.mjs';
 import { formatAgo, memoryTypeMeta, sourceTypeMeta } from '@/lib/kiokuMeta';
 import { show } from '@/routes/kioku/memories';
@@ -33,6 +34,8 @@ const enriching = computed(() =>
 const navigable = computed(() => isKiokuMemoryCardNavigable(props.memory));
 
 const displayTitle = computed(() => kiokuMemoryDisplayTitle(props.memory));
+
+const failureLabel = computed(() => kiokuMemoryFailureLabel(props.memory));
 
 const titleClass = computed(
     () => sourceTypeMeta(props.memory.source_type).titleClass ?? 'text-os-ink',
@@ -114,7 +117,7 @@ watch(enriching, () => {
                     v-else-if="memory.status === 'failed'"
                     class="rounded-full bg-[#F8E9E4] px-2.5 py-1 text-[11.5px] font-bold text-[#C05A48]"
                 >
-                    AI整理に失敗しました
+                    {{ failureLabel }}
                 </span>
                 <TypeChip
                     v-else-if="memory.memory_type"
