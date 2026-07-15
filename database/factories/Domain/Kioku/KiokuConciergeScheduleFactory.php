@@ -36,7 +36,7 @@ class KiokuConciergeScheduleFactory extends Factory
 
     public function active(string $start = '2026-07-15', int $days = 14): static
     {
-        $startDate = CarbonImmutable::parse($start)->startOfDay();
+        $startDate = CarbonImmutable::parse($start, 'Asia/Tokyo')->startOfDay();
         $endDate = $startDate->addDays($days - 1);
 
         return $this->state(fn () => [
@@ -44,7 +44,10 @@ class KiokuConciergeScheduleFactory extends Factory
             'pilot_start_date' => $startDate->toDateString(),
             'pilot_end_date' => $endDate->toDateString(),
             'pilot_days' => $days,
-            'next_delivery_at' => $startDate->setTime(21, 0),
+            'timezone' => 'Asia/Tokyo',
+            'daily_delivery_time' => '21:00',
+            // Store UTC: Asia/Tokyo 21:00 → same calendar day 12:00 UTC.
+            'next_delivery_at' => $startDate->setTime(21, 0)->utc(),
         ]);
     }
 }

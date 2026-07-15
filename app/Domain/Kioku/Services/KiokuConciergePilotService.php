@@ -50,24 +50,35 @@ final class KiokuConciergePilotService
 
         $this->haltGuard->assertGenerationAllowed((int) $user->id);
 
-        $startDate = $startDate->startOfDay();
+        // Interpret the calendar start date in the schedule timezone (not app TZ).
+        $startDate = CarbonImmutable::parse($startDate->toDateString(), $timezone)->startOfDay();
         $endDate = $startDate->addDays($days - 1);
-        [$hour, $minute] = array_map('intval', explode(':', $time));
-        $nextDelivery = $startDate->setTimezone($timezone)->setTime($hour, $minute);
+
+        $draft = new KiokuConciergeSchedule([
+            'user_id' => $user->id,
+            'state' => KiokuConciergeScheduleState::Active->value,
+            'pilot_start_date' => $startDate->toDateString(),
+            'pilot_end_date' => $endDate->toDateString(),
+            'pilot_days' => $days,
+            'timezone' => $timezone,
+            'daily_delivery_time' => $time,
+        ]);
+
+        // First slot = pilot start date @ daily_delivery_time in schedule TZ → UTC.
+        $nextDelivery = $this->computeNextDeliveryAt(
+            $draft,
+            CarbonImmutable::now('UTC'),
+            $startDate,
+        );
+
+        if ($nextDelivery === null) {
+            throw new KiokuLetterException('Pilot window has no deliverable slot.');
+        }
 
         if ($dryRun) {
-            $schedule = new KiokuConciergeSchedule([
-                'user_id' => $user->id,
-                'state' => KiokuConciergeScheduleState::Active->value,
-                'pilot_start_date' => $startDate->toDateString(),
-                'pilot_end_date' => $endDate->toDateString(),
-                'pilot_days' => $days,
-                'timezone' => $timezone,
-                'daily_delivery_time' => $time,
-                'next_delivery_at' => $nextDelivery,
-            ]);
+            $draft->next_delivery_at = $nextDelivery;
 
-            return ['schedule' => $schedule, 'letter' => null];
+            return ['schedule' => $draft, 'letter' => null];
         }
 
         $schedule = KiokuConciergeSchedule::query()->updateOrCreate(
@@ -87,7 +98,10 @@ final class KiokuConciergePilotService
 
         $letter = null;
         if ($sendNow) {
-            $letter = $this->deliverForSchedule($schedule, forceLocalDate: CarbonImmutable::now($timezone)->startOfDay());
+            $letter = $this->deliverForSchedule(
+                $schedule,
+                forceLocalDate: CarbonImmutable::now($timezone)->startOfDay(),
+            );
         }
 
         return ['schedule' => $schedule->refresh(), 'letter' => $letter];
@@ -117,20 +131,41 @@ final class KiokuConciergePilotService
             throw new KiokuLetterException('Unresolved sensitive_leak halt blocks resume. Run resolve-halt first.');
         }
 
+        return $this->activateForNextDelivery(
+            $schedule,
+            trim($note) !== '' ? 'resumed: '.trim($note) : null,
+        );
+    }
+
+    /**
+     * Shared resume path for manual resume and halt resolve.
+     * No past-day backfill: next slot is today (if before delivery time) or tomorrow.
+     * Past pilot end / next slot beyond end → completed with next_delivery_at NULL.
+     */
+    public function activateForNextDelivery(
+        KiokuConciergeSchedule $schedule,
+        ?string $activeReason = null,
+    ): KiokuConciergeSchedule {
         if ($schedule->pilot_end_date !== null
             && CarbonImmutable::now($schedule->timezone)->toDateString() > $schedule->pilot_end_date->toDateString()
         ) {
             $schedule->transitionTo(KiokuConciergeScheduleState::Completed, 'pilot ended');
+            $schedule->forceFill(['next_delivery_at' => null])->save();
 
             return $schedule->refresh();
         }
 
-        $schedule->transitionTo(
-            KiokuConciergeScheduleState::Active,
-            trim($note) !== '' ? 'resumed: '.trim($note) : null,
-        );
+        $next = $this->computeNextDeliveryAt($schedule, CarbonImmutable::now('UTC'));
+        if ($next === null) {
+            $schedule->transitionTo(KiokuConciergeScheduleState::Completed, 'pilot window ended');
+            $schedule->forceFill(['next_delivery_at' => null])->save();
+
+            return $schedule->refresh();
+        }
+
+        $schedule->transitionTo(KiokuConciergeScheduleState::Active, $activeReason);
         $schedule->forceFill([
-            'next_delivery_at' => $this->computeNextDeliveryAt($schedule, CarbonImmutable::now('UTC')),
+            'next_delivery_at' => $next,
             'consecutive_unopened' => 0,
         ])->save();
 
@@ -405,7 +440,12 @@ final class KiokuConciergePilotService
         ])->save();
     }
 
-    private function computeNextDeliveryAt(
+    /**
+     * Build the next delivery instant in schedule.timezone, store as UTC.
+     * When $fromLocalDate is set, that calendar day is used (start / advance).
+     * When null, uses "now" in schedule TZ: before delivery time → today, else tomorrow.
+     */
+    public function computeNextDeliveryAt(
         KiokuConciergeSchedule $schedule,
         CarbonImmutable $nowUtc,
         ?CarbonImmutable $fromLocalDate = null,
@@ -415,11 +455,16 @@ final class KiokuConciergePilotService
         }
 
         [$hour, $minute] = array_map('intval', explode(':', $schedule->daily_delivery_time));
-        $localNow = $nowUtc->timezone($schedule->timezone);
-        $candidateDay = ($fromLocalDate ?? $localNow)->startOfDay();
+        $tz = $schedule->timezone;
+        $localNow = $nowUtc->timezone($tz);
 
-        if ($fromLocalDate === null && $localNow->format('H:i') >= $schedule->daily_delivery_time) {
-            $candidateDay = $candidateDay->addDay();
+        if ($fromLocalDate !== null) {
+            $candidateDay = CarbonImmutable::parse($fromLocalDate->toDateString(), $tz)->startOfDay();
+        } else {
+            $candidateDay = $localNow->startOfDay();
+            if ($localNow->format('H:i') >= $schedule->daily_delivery_time) {
+                $candidateDay = $candidateDay->addDay();
+            }
         }
 
         if ($candidateDay->toDateString() > $schedule->pilot_end_date->toDateString()) {

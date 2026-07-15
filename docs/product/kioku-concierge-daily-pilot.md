@@ -73,6 +73,16 @@
 
 `state`: `inactive` → `active` → (`paused` | `halted`) → `completed`
 
+`next_delivery_at` 不変条件:
+
+- DB 保存値は常に UTC
+- pilot 期間内で `state=active` なら必ず非 NULL
+- `halted` / `paused` / `completed` なら NULL
+- 復帰時（`pilot:resume` / `resolve-halt`）は過去日を backfill せず、現地の「本日配信時刻前→本日 / 過ぎた→翌日」を `computeNextDeliveryAt()` で計算
+- 次回日時が `pilot_end_date` を超える場合は `completed` + `next_delivery_at=NULL`
+
+`pilot:start` も同じ UTC 変換経路を使い、固定オフセット（例: 9時間引き）は使わない。
+
 ---
 
 ## 4. sensitive halt（本当の停止）
@@ -95,7 +105,7 @@
 php artisan kioku:letters:resolve-halt {userId} {letterId} --note="確認内容"
 ```
 
-誤判定でも自動で `sensitive=false` に戻さない。
+解消後、未解決 halt が残っていなければ schedule を `pilot:resume` と同じ経路で再起動する（`state=active` + 次回 `next_delivery_at` UTC）。期限切れ pilot は `completed`。誤判定でも自動で `sensitive=false` に戻さない。
 
 ---
 

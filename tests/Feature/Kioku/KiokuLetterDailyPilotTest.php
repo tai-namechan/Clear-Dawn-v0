@@ -190,6 +190,7 @@ class KiokuLetterDailyPilotTest extends TestCase
 
         $schedule = KiokuConciergeSchedule::query()->withoutUserScope()->where('user_id', $user->id)->sole();
         $this->assertSame(KiokuConciergeScheduleState::Active->value, $schedule->state);
+        $this->assertNotNull($schedule->next_delivery_at);
 
         $this->fakeLetterResponse([]);
         $next = app(KiokuLetterGenerator::class)->generate(
@@ -603,5 +604,302 @@ class KiokuLetterDailyPilotTest extends TestCase
                 ->has('testLetters', 1)
                 ->where('testLetters.0.id', $test->id),
             );
+    }
+
+    public function test_start_stores_tokyo_2100_as_utc_and_due_path_fires_day_one(): void
+    {
+        $user = User::factory()->create();
+        $this->readyMemory($user);
+        $this->fakeLetterResponse([]);
+
+        // Before local delivery time on day 1.
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-15 10:00:00', 'Asia/Tokyo')->utc());
+
+        $this->artisan('kioku:letters:pilot:start', [
+            'userId' => $user->id,
+            '--start' => '2026-07-15',
+            '--days' => 14,
+            '--time' => '21:00',
+            '--timezone' => 'Asia/Tokyo',
+        ])->assertSuccessful();
+
+        $schedule = KiokuConciergeSchedule::query()->withoutUserScope()->where('user_id', $user->id)->sole();
+        $this->assertSame(KiokuConciergeScheduleState::Active->value, $schedule->state);
+        $this->assertNotNull($schedule->next_delivery_at);
+        // Asia/Tokyo 21:00 on 2026-07-15 → 12:00 UTC same calendar day.
+        $this->assertSame(
+            '2026-07-15 12:00:00',
+            $schedule->next_delivery_at->clone()->utc()->format('Y-m-d H:i:s'),
+        );
+
+        $pilot = app(KiokuConciergePilotService::class);
+
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-15 11:59:59', 'UTC'));
+        $this->assertCount(0, $pilot->dueSchedules(CarbonImmutable::now('UTC')));
+
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-15 12:00:00', 'UTC'));
+        $due = $pilot->dueSchedules(CarbonImmutable::now('UTC'));
+        $this->assertCount(1, $due);
+        $this->assertSame($schedule->id, $due->first()->id);
+
+        $letter = $pilot->deliverForSchedule($schedule->fresh());
+        $this->assertNotNull($letter);
+        $this->assertSame(1, $letter->pilot_day);
+        $this->assertSame('2026-07-15', $letter->delivery_date->toDateString());
+
+        CarbonImmutable::setTestNow();
+    }
+
+    public function test_start_timezone_america_los_angeles_converts_to_utc(): void
+    {
+        $user = User::factory()->create();
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-15 10:00:00', 'America/Los_Angeles')->utc());
+
+        $this->artisan('kioku:letters:pilot:start', [
+            'userId' => $user->id,
+            '--start' => '2026-07-15',
+            '--days' => 7,
+            '--time' => '21:00',
+            '--timezone' => 'America/Los_Angeles',
+        ])->assertSuccessful();
+
+        $schedule = KiokuConciergeSchedule::query()->withoutUserScope()->where('user_id', $user->id)->sole();
+        // 2026-07-15 21:00 America/Los_Angeles (PDT) → 2026-07-16 04:00 UTC.
+        $this->assertSame(
+            '2026-07-16 04:00:00',
+            $schedule->next_delivery_at->clone()->utc()->format('Y-m-d H:i:s'),
+        );
+
+        CarbonImmutable::setTestNow();
+    }
+
+    public function test_send_now_start_still_delivers_day_one_and_advances_next_utc(): void
+    {
+        $user = User::factory()->create();
+        $this->readyMemory($user);
+        $this->fakeLetterResponse([]);
+
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-15 10:00:00', 'Asia/Tokyo')->utc());
+
+        $result = app(KiokuConciergePilotService::class)->start(
+            $user,
+            CarbonImmutable::parse('2026-07-15'),
+            14,
+            '21:00',
+            'Asia/Tokyo',
+            sendNow: true,
+            dryRun: false,
+        );
+
+        $this->assertNotNull($result['letter']);
+        $this->assertSame(1, $result['letter']->pilot_day);
+        $this->assertSame('2026-07-15', $result['letter']->delivery_date->toDateString());
+
+        $schedule = $result['schedule'];
+        $this->assertSame(KiokuConciergeScheduleState::Active->value, $schedule->state);
+        // After day-1 send-now, next slot is day 2 21:00 JST = 2026-07-16 12:00 UTC.
+        $this->assertSame(
+            '2026-07-16 12:00:00',
+            $schedule->next_delivery_at->clone()->utc()->format('Y-m-d H:i:s'),
+        );
+
+        CarbonImmutable::setTestNow();
+    }
+
+    public function test_sensitive_leak_halt_resolve_restores_utc_next_and_due_dispatch(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $memory = $this->readyMemory($user);
+        $this->fakeLetterResponse([]);
+
+        // Day 1 morning: start pilot, then deliver day 1 via due path.
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-15 10:00:00', 'Asia/Tokyo')->utc());
+        $pilot = app(KiokuConciergePilotService::class);
+        $pilot->start(
+            $user,
+            CarbonImmutable::parse('2026-07-15'),
+            14,
+            '21:00',
+            'Asia/Tokyo',
+            sendNow: false,
+            dryRun: false,
+        );
+
+        $otherSchedule = KiokuConciergeSchedule::factory()->active()->create([
+            'user_id' => $other->id,
+            'next_delivery_at' => CarbonImmutable::parse('2026-07-15 12:00:00', 'UTC'),
+        ]);
+        $otherNext = $otherSchedule->next_delivery_at->clone()->utc()->format('Y-m-d H:i:s');
+
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-15 12:00:00', 'UTC'));
+        $letter = $pilot->deliverForSchedule(
+            KiokuConciergeSchedule::query()->withoutUserScope()->where('user_id', $user->id)->sole(),
+        );
+        $this->assertNotNull($letter);
+
+        // Attach a real item so applySensitiveHalt runs through the HTTP verdict path.
+        $item = KiokuLetterItem::factory()->create([
+            'letter_id' => $letter->id,
+            'memory_id' => $memory->id,
+            'position' => 1,
+        ]);
+        $letter->update(['item_count' => 1, 'status' => KiokuLetter::STATUS_PUBLISHED]);
+
+        $this->actingAs($user)->put(
+            route('kioku.letters.items.verdict', [$letter, $item]),
+            ['verdict' => KiokuLetterItem::VERDICT_SENSITIVE_LEAK],
+        );
+
+        $schedule = KiokuConciergeSchedule::query()->withoutUserScope()->where('user_id', $user->id)->sole();
+        $this->assertSame(KiokuConciergeScheduleState::Halted->value, $schedule->state);
+        $this->assertNull($schedule->next_delivery_at);
+        $this->assertTrue($memory->fresh()->sensitive);
+        $this->assertSame(KiokuLetter::STATUS_HALTED, $letter->fresh()->status);
+
+        // Other user's schedule is untouched.
+        $otherSchedule->refresh();
+        $this->assertSame(KiokuConciergeScheduleState::Active->value, $otherSchedule->state);
+        $this->assertSame($otherNext, $otherSchedule->next_delivery_at->clone()->utc()->format('Y-m-d H:i:s'));
+
+        // Resolve next morning (before 21:00 JST) → next slot is today 21:00 JST = 12:00 UTC.
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-16 10:00:00', 'Asia/Tokyo')->utc());
+        $this->artisan('kioku:letters:resolve-halt', [
+            'userId' => $user->id,
+            'letterId' => $letter->id,
+            '--note' => '隔離を維持して再開',
+        ])->assertSuccessful();
+
+        $schedule->refresh();
+        $this->assertSame(KiokuConciergeScheduleState::Active->value, $schedule->state);
+        $this->assertNotNull($schedule->next_delivery_at);
+        $this->assertSame(
+            '2026-07-16 12:00:00',
+            $schedule->next_delivery_at->clone()->utc()->format('Y-m-d H:i:s'),
+        );
+
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-16 11:59:59', 'UTC'));
+        $this->assertFalse(
+            $pilot->dueSchedules(CarbonImmutable::now('UTC'))->contains('id', $schedule->id),
+        );
+
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-16 12:00:00', 'UTC'));
+        $this->assertTrue(
+            $pilot->dueSchedules(CarbonImmutable::now('UTC'))->contains('id', $schedule->id),
+        );
+
+        // Idempotent resolve: second call keeps the same next_delivery_at.
+        $nextBefore = $schedule->next_delivery_at->clone()->utc()->format('Y-m-d H:i:s');
+        $this->artisan('kioku:letters:resolve-halt', [
+            'userId' => $user->id,
+            'letterId' => $letter->id,
+            '--note' => '再実行',
+        ])->assertSuccessful();
+        $this->assertSame(
+            $nextBefore,
+            $schedule->fresh()->next_delivery_at->clone()->utc()->format('Y-m-d H:i:s'),
+        );
+
+        CarbonImmutable::setTestNow();
+    }
+
+    public function test_resolve_halt_on_expired_pilot_completes_without_next(): void
+    {
+        $user = User::factory()->create();
+        $memory = $this->readyMemory($user);
+        $letter = KiokuLetter::factory()->create([
+            'user_id' => $user->id,
+            'item_count' => 1,
+            'status' => KiokuLetter::STATUS_HALTED,
+            'halted_at' => now(),
+        ]);
+        KiokuLetterItem::factory()->create([
+            'letter_id' => $letter->id,
+            'memory_id' => $memory->id,
+            'position' => 1,
+            'verdict' => KiokuLetterItem::VERDICT_SENSITIVE_LEAK,
+            'verdict_at' => now(),
+        ]);
+        $memory->update(['sensitive' => true]);
+
+        KiokuConciergeSchedule::factory()->active('2026-07-01', 3)->create([
+            'user_id' => $user->id,
+            'state' => KiokuConciergeScheduleState::Halted->value,
+            'pause_reason' => 'sensitive_leak',
+            'next_delivery_at' => null,
+        ]);
+
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-10 12:00:00', 'Asia/Tokyo')->utc());
+
+        $this->artisan('kioku:letters:resolve-halt', [
+            'userId' => $user->id,
+            'letterId' => $letter->id,
+            '--note' => '期限切れ後の解消',
+        ])->assertSuccessful();
+
+        $schedule = KiokuConciergeSchedule::query()->withoutUserScope()->where('user_id', $user->id)->sole();
+        $this->assertSame(KiokuConciergeScheduleState::Completed->value, $schedule->state);
+        $this->assertNull($schedule->next_delivery_at);
+
+        CarbonImmutable::setTestNow();
+    }
+
+    public function test_resolve_halt_does_not_resume_when_another_unresolved_halt_remains(): void
+    {
+        $user = User::factory()->create();
+        $memoryA = $this->readyMemory($user);
+        $memoryB = $this->readyMemory($user, ['title' => '別リーク']);
+
+        $letterA = KiokuLetter::factory()->daily('2026-07-15', 1)->create([
+            'user_id' => $user->id,
+            'item_count' => 1,
+            'status' => KiokuLetter::STATUS_HALTED,
+            'halted_at' => now(),
+        ]);
+        KiokuLetterItem::factory()->create([
+            'letter_id' => $letterA->id,
+            'memory_id' => $memoryA->id,
+            'position' => 1,
+            'verdict' => KiokuLetterItem::VERDICT_SENSITIVE_LEAK,
+            'verdict_at' => now(),
+        ]);
+        $memoryA->update(['sensitive' => true]);
+
+        $letterB = KiokuLetter::factory()->daily('2026-07-16', 2)->create([
+            'user_id' => $user->id,
+            'item_count' => 1,
+            'status' => KiokuLetter::STATUS_HALTED,
+            'halted_at' => now(),
+        ]);
+        KiokuLetterItem::factory()->create([
+            'letter_id' => $letterB->id,
+            'memory_id' => $memoryB->id,
+            'position' => 1,
+            'verdict' => KiokuLetterItem::VERDICT_SENSITIVE_LEAK,
+            'verdict_at' => now(),
+        ]);
+        $memoryB->update(['sensitive' => true]);
+
+        KiokuConciergeSchedule::factory()->active()->create([
+            'user_id' => $user->id,
+            'state' => KiokuConciergeScheduleState::Halted->value,
+            'pause_reason' => 'sensitive_leak',
+            'next_delivery_at' => null,
+        ]);
+
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-17 10:00:00', 'Asia/Tokyo')->utc());
+
+        $this->artisan('kioku:letters:resolve-halt', [
+            'userId' => $user->id,
+            'letterId' => $letterA->id,
+            '--note' => '片方だけ解消',
+        ])->assertSuccessful();
+
+        $schedule = KiokuConciergeSchedule::query()->withoutUserScope()->where('user_id', $user->id)->sole();
+        $this->assertSame(KiokuConciergeScheduleState::Halted->value, $schedule->state);
+        $this->assertNull($schedule->next_delivery_at);
+        $this->assertTrue(app(KiokuLetterHaltGuard::class)->hasUnresolvedHalt((int) $user->id));
+
+        CarbonImmutable::setTestNow();
     }
 }

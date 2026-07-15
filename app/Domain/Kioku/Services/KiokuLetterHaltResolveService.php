@@ -9,7 +9,6 @@ use App\Domain\Kioku\Models\KiokuLetter;
 use App\Domain\Kioku\Models\KiokuLetterItem;
 use App\Domain\Kioku\Models\Memory;
 use App\Models\User;
-use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -18,6 +17,11 @@ use Illuminate\Support\Facades\DB;
  */
 final class KiokuLetterHaltResolveService
 {
+    public function __construct(
+        private KiokuConciergePilotService $pilot,
+        private KiokuLetterHaltGuard $haltGuard,
+    ) {}
+
     public function resolve(User $user, KiokuLetter $letter, string $note): KiokuLetter
     {
         $note = trim($note);
@@ -94,21 +98,20 @@ final class KiokuLetterHaltResolveService
             return;
         }
 
-        if ($schedule->pilot_end_date !== null
-            && CarbonImmutable::now($schedule->timezone)->toDateString() > $schedule->pilot_end_date->toDateString()
-        ) {
-            $schedule->transitionTo(KiokuConciergeScheduleState::Completed, 'pilot ended before halt resolve');
-
+        // Another unresolved halt still blocks reactivation.
+        if ($this->haltGuard->hasUnresolvedHalt($userId)) {
             return;
         }
 
-        // Only resume when the sole pause reason was sensitive_leak.
+        // Only auto-activate when the sole pause reason was sensitive_leak.
         if ($schedule->pause_reason !== null && $schedule->pause_reason !== 'sensitive_leak') {
             $schedule->transitionTo(KiokuConciergeScheduleState::Paused, $schedule->pause_reason);
+            $schedule->forceFill(['next_delivery_at' => null])->save();
 
             return;
         }
 
-        $schedule->transitionTo(KiokuConciergeScheduleState::Active, null);
+        // Same next-slot calculation as pilot:resume (UTC, no past-day backfill).
+        $this->pilot->activateForNextDelivery($schedule, null);
     }
 }
