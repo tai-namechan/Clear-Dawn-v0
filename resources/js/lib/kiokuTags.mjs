@@ -10,6 +10,12 @@
 
 export const KIOKU_UNTAGGED_LABEL = '未分類';
 
+/** Mirrors App\Domain\Kioku\Services\KiokuTagNormalizer::MAX_TAGS */
+export const KIOKU_MAX_TAGS = 8;
+
+/** Mirrors App\Domain\Kioku\Services\KiokuTagNormalizer::MAX_TAG_CHARS */
+export const KIOKU_MAX_TAG_CHARS = 40;
+
 /**
  * @param {string[]} tags
  * @param {string} tag

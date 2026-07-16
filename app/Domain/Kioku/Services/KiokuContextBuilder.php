@@ -67,8 +67,22 @@ final class KiokuContextBuilder
             ->map(fn (Memory $memory): KiokuContextItem => $this->scoreMemory($memory, $terms, $tags, $linkedIds))
             ->filter(fn (KiokuContextItem $item): bool => $item->score > 0)
             ->sort(function (KiokuContextItem $a, KiokuContextItem $b): int {
-                return [$b->score, $b->memory->importance, $b->memory->captured_at?->getTimestamp() ?? 0, $a->memory->id]
-                    <=> [$a->score, $a->memory->importance, $a->memory->captured_at?->getTimestamp() ?? 0, $b->memory->id];
+                // Tie-break: score DESC → importance DESC → captured_at DESC → id ASC
+                if ($a->score !== $b->score) {
+                    return $b->score <=> $a->score;
+                }
+
+                if ($a->memory->importance !== $b->memory->importance) {
+                    return $b->memory->importance <=> $a->memory->importance;
+                }
+
+                $aCaptured = $a->memory->captured_at?->getTimestamp() ?? 0;
+                $bCaptured = $b->memory->captured_at?->getTimestamp() ?? 0;
+                if ($aCaptured !== $bCaptured) {
+                    return $bCaptured <=> $aCaptured;
+                }
+
+                return $a->memory->id <=> $b->memory->id;
             })
             ->values();
 
@@ -80,8 +94,10 @@ final class KiokuContextBuilder
             }
 
             $chars = $item->chars();
+            // Skip an oversized candidate and keep looking for a later one
+            // that still fits the remaining budget (do not drop it via break).
             if ($usedChars + $chars > $maxChars) {
-                break;
+                continue;
             }
 
             $usedChars += $chars;
@@ -114,11 +130,12 @@ final class KiokuContextBuilder
             ->when($seedMemoryIds !== [], fn (Builder $q) => $q->whereNotIn('id', $seedMemoryIds))
             ->where(function (Builder $q) use ($terms, $tags, $linkedIds): void {
                 foreach ($terms as $term) {
-                    $like = '%'.addcslashes($term, '%_\\').'%';
-                    $q->orWhere('title', 'like', $like)
-                        ->orWhere('summary', 'like', $like)
-                        ->orWhere('raw_content', 'like', $like)
-                        ->orWhere('transcript_text', 'like', $like);
+                    $like = $this->likeContains($term);
+                    // ESCAPE keeps %, _, \ literal on both MySQL and SQLite.
+                    $q->orWhereRaw('title like ? escape ?', [$like, '\\'])
+                        ->orWhereRaw('summary like ? escape ?', [$like, '\\'])
+                        ->orWhereRaw('raw_content like ? escape ?', [$like, '\\'])
+                        ->orWhereRaw('transcript_text like ? escape ?', [$like, '\\']);
                 }
 
                 foreach ($tags as $tag) {
@@ -200,6 +217,14 @@ final class KiokuContextBuilder
     }
 
     /**
+     * LIKE pattern for substring match with metacharacters escaped.
+     */
+    private function likeContains(string $term): string
+    {
+        return '%'.addcslashes($term, '%_\\').'%';
+    }
+
+    /**
      * Memories linked to the seed set through memory_links, both directions,
      * owner-checked at scoring time via the candidate query's user_id filter.
      *
@@ -225,8 +250,10 @@ final class KiokuContextBuilder
         }
 
         $links = MemoryLink::query()
-            ->whereIn('from_memory_id', $ownedSeedIds)
-            ->orWhereIn('to_memory_id', $ownedSeedIds)
+            ->where(function ($query) use ($ownedSeedIds): void {
+                $query->whereIn('from_memory_id', $ownedSeedIds)
+                    ->orWhereIn('to_memory_id', $ownedSeedIds);
+            })
             ->get(['from_memory_id', 'to_memory_id']);
 
         return $links

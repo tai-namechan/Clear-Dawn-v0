@@ -31,13 +31,23 @@ class MemoryController extends Controller
     public function index(Request $request, KiokuSearchService $search, MemoryTypeRegistry $registry): Response
     {
         $user = $request->user();
-        $query = $request->string('q')->toString() ?: null;
-        $types = array_values(array_filter((array) $request->input('types', [])));
+        $query = is_string($request->input('q'))
+            ? (trim((string) $request->input('q')) ?: null)
+            : null;
+        $types = array_values(array_filter(
+            (array) $request->input('types', []),
+            fn ($type) => is_string($type) && $type !== '',
+        ));
+        $rawTags = $request->input('tags', []);
+        if (is_string($rawTags)) {
+            $rawTags = [$rawTags];
+        }
         $tags = array_values(array_filter(
-            (array) $request->input('tags', []),
+            is_array($rawTags) ? $rawTags : [],
             fn ($tag) => is_string($tag) && $tag !== '',
         ));
-        $tagMode = $request->string('tag_mode')->toString() === 'or' ? 'or' : 'and';
+        $tagModeRaw = $request->input('tag_mode');
+        $tagMode = is_string($tagModeRaw) && $tagModeRaw === 'or' ? 'or' : 'and';
 
         $memories = $search->search(
             userId: (int) $user->id,

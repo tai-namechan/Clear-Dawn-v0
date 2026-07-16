@@ -1,5 +1,7 @@
 declare module '@/lib/kiokuTags.mjs' {
     export const KIOKU_UNTAGGED_LABEL: string;
+    export const KIOKU_MAX_TAGS: number;
+    export const KIOKU_MAX_TAG_CHARS: number;
 
     export function toggleTagFilter(tags: string[], tag: string): string[];
 
@@ -8,7 +10,12 @@ declare module '@/lib/kiokuTags.mjs' {
         types?: string[];
         tags?: string[];
         tagMode?: 'and' | 'or';
-    }): Record<string, unknown>;
+    }): {
+        q?: string;
+        types?: string[];
+        tags?: string[];
+        tag_mode?: 'or';
+    };
 
     export function normalizeTagMode(value: unknown): 'and' | 'or';
 

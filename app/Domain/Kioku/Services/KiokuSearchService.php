@@ -28,10 +28,11 @@ final class KiokuSearchService
                 foreach ($terms as $term) {
                     $like = '%'.addcslashes((string) $term, '%_\\').'%';
                     $q->orWhere(function ($inner) use ($like): void {
-                        $inner->where('title', 'like', $like)
-                            ->orWhere('summary', 'like', $like)
-                            ->orWhere('raw_content', 'like', $like)
-                            ->orWhere('transcript_text', 'like', $like);
+                        // ESCAPE keeps %, _, \ literal on both MySQL and SQLite.
+                        $inner->whereRaw('title like ? escape ?', [$like, '\\'])
+                            ->orWhereRaw('summary like ? escape ?', [$like, '\\'])
+                            ->orWhereRaw('raw_content like ? escape ?', [$like, '\\'])
+                            ->orWhereRaw('transcript_text like ? escape ?', [$like, '\\']);
                     });
                 }
             });
