@@ -287,17 +287,22 @@ defineOptions({
                             class="text-[12px] text-os-sub"
                             >タグなし（未分類として表示されます）</span
                         >
-                        <button
+                        <span
                             v-for="tag in draftTags"
                             :key="tag"
-                            type="button"
-                            class="inline-flex items-center gap-1 rounded-full border border-os-kioku/30 bg-os-kioku-soft px-2.5 py-1 text-[11.5px] font-medium text-os-kioku"
-                            :disabled="tagSaving"
-                            @click="removeDraftTag(tag)"
+                            class="inline-flex items-center gap-1 rounded-full border border-os-kioku/30 bg-os-kioku-soft py-1 pr-1 pl-2.5 text-[11.5px] font-medium text-os-kioku"
                         >
                             #{{ tag }}
-                            <X :size="11" />
-                        </button>
+                            <button
+                                type="button"
+                                class="inline-flex h-5 w-5 items-center justify-center rounded-full text-os-kioku transition-colors hover:bg-os-kioku/10 disabled:opacity-50"
+                                :aria-label="`${tag} を削除`"
+                                :disabled="tagSaving"
+                                @click="removeDraftTag(tag)"
+                            >
+                                <X :size="11" />
+                            </button>
+                        </span>
                     </div>
 
                     <div class="flex flex-wrap gap-2">
