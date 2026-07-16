@@ -47,6 +47,7 @@ export function buildKiokuHomeQuery(state) {
     }
 
     const tags = state.tags ?? [];
+
     if (tags.length > 0) {
         query.tags = tags;
 

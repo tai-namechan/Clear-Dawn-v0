@@ -61,7 +61,7 @@ final readonly class KiokuContextItem
             'tags' => $this->memory->tags ?? [],
             'score' => $this->score,
             'reasons' => $this->reasons,
-            'captured_at' => $this->memory->captured_at?->toDateString(),
+            'captured_at' => $this->memory->captured_at->toDateString(),
         ];
     }
 }

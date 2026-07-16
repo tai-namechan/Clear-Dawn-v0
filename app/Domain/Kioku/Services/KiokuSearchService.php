@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 final class KiokuSearchService
 {
     /**
-     * @param  array{types?: list<string>, sources?: list<string>, tags?: list<string>, tag_mode?: string, from?: string|null, to?: string|null, importance_min?: int|null}  $filters
+     * @param  array{types?: list<string>, sources?: list<string>, tags?: array<int, mixed>, tag_mode?: string, from?: string|null, to?: string|null, importance_min?: int|null}  $filters
      * @return Collection<int, Memory>
      */
     public function search(int $userId, ?string $query, array $filters = [], int $limit = 50): Collection

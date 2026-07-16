@@ -510,9 +510,7 @@ defineOptions({
                         role="group"
                         aria-label="タグの組み合わせ"
                     >
-                        <span class="text-[11px] text-os-sub"
-                            >組み合わせ</span
-                        >
+                        <span class="text-[11px] text-os-sub">組み合わせ</span>
                         <button
                             type="button"
                             class="rounded-full border px-3 py-1 text-[11.5px] transition-colors"
@@ -733,9 +731,7 @@ defineOptions({
                                 "
                             >
                                 {{
-                                    group.untagged
-                                        ? group.tag
-                                        : `#${group.tag}`
+                                    group.untagged ? group.tag : `#${group.tag}`
                                 }}
                             </h2>
                             <span class="font-mono text-[11px] text-os-sub"

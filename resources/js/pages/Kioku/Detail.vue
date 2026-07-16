@@ -21,10 +21,7 @@ import {
     kiokuMemoryDisplayTitle,
 } from '@/lib/kiokuMemoryCard.mjs';
 import { formatAgo, sourceTypeMeta } from '@/lib/kiokuMeta';
-import {
-    KIOKU_MAX_TAG_CHARS,
-    KIOKU_MAX_TAGS,
-} from '@/lib/kiokuTags.mjs';
+import { KIOKU_MAX_TAG_CHARS, KIOKU_MAX_TAGS } from '@/lib/kiokuTags.mjs';
 import { kiokuTranscriptDisplayMode } from '@/lib/kiokuTranscriptDisplay.mjs';
 import { home } from '@/routes/kioku';
 import {
@@ -89,6 +86,7 @@ const titleClass = computed(
 
 const tagsDirty = computed(() => {
     const current = props.memory.tags;
+
     if (current.length !== draftTags.value.length) {
         return true;
     }
@@ -98,6 +96,7 @@ const tagsDirty = computed(() => {
 
 const tagServerErrors = computed(() => {
     const errors = page.props.errors as Record<string, string> | undefined;
+
     if (!errors) {
         return [] as string[];
     }
@@ -136,6 +135,7 @@ function addTagFromDraft(): void {
     tagSaveSucceeded.value = false;
 
     const next = cleanupTagInput(tagDraft.value);
+
     if (next === '') {
         tagDraft.value = '';
 
@@ -157,6 +157,7 @@ function addTagFromDraft(): void {
     const exists = draftTags.value.some(
         (tag) => tag.toLocaleLowerCase() === next.toLocaleLowerCase(),
     );
+
     if (exists) {
         tagDraft.value = '';
 

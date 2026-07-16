@@ -76,8 +76,8 @@ final class KiokuContextBuilder
                     return $b->memory->importance <=> $a->memory->importance;
                 }
 
-                $aCaptured = $a->memory->captured_at?->getTimestamp() ?? 0;
-                $bCaptured = $b->memory->captured_at?->getTimestamp() ?? 0;
+                $aCaptured = $a->memory->captured_at->getTimestamp();
+                $bCaptured = $b->memory->captured_at->getTimestamp();
                 if ($aCaptured !== $bCaptured) {
                     return $bCaptured <=> $aCaptured;
                 }
@@ -164,7 +164,6 @@ final class KiokuContextBuilder
         $reasons = [];
 
         $memoryTags = collect($memory->tags ?? [])
-            ->filter(fn ($tag) => is_string($tag))
             ->map(fn (string $tag): string => mb_strtolower($tag));
 
         foreach ($tags as $tag) {
@@ -208,12 +207,18 @@ final class KiokuContextBuilder
      */
     private function terms(string $query): array
     {
-        return collect(preg_split('/[\s　]+/u', trim($query)) ?: [])
-            ->map(fn ($term): string => trim((string) $term))
-            ->filter(fn (string $term): bool => $term !== '')
-            ->unique()
-            ->values()
-            ->all();
+        $terms = [];
+
+        foreach (preg_split('/[\s　]+/u', trim($query)) ?: [] as $rawTerm) {
+            $term = trim((string) $rawTerm);
+            if ($term === '' || in_array($term, $terms, true)) {
+                continue;
+            }
+
+            $terms[] = $term;
+        }
+
+        return $terms;
     }
 
     /**
@@ -256,11 +261,17 @@ final class KiokuContextBuilder
             })
             ->get(['from_memory_id', 'to_memory_id']);
 
-        return $links
-            ->flatMap(fn (MemoryLink $link) => [$link->from_memory_id, $link->to_memory_id])
-            ->unique()
-            ->reject(fn (string $id): bool => in_array($id, $ownedSeedIds, true))
-            ->values()
-            ->all();
+        $ids = [];
+        foreach ($links as $link) {
+            foreach ([$link->from_memory_id, $link->to_memory_id] as $id) {
+                if (in_array($id, $ownedSeedIds, true) || in_array($id, $ids, true)) {
+                    continue;
+                }
+
+                $ids[] = $id;
+            }
+        }
+
+        return $ids;
     }
 }

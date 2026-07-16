@@ -19,9 +19,9 @@ declare module '@/lib/kiokuTags.mjs' {
 
     export function normalizeTagMode(value: unknown): 'and' | 'or';
 
-    export function groupMemoriesByTag<T extends { id: string; tags?: string[] | null }>(
-        memories: T[],
-    ): Array<{ tag: string; untagged: boolean; memories: T[] }>;
+    export function groupMemoriesByTag<
+        T extends { id: string; tags?: string[] | null },
+    >(memories: T[]): Array<{ tag: string; untagged: boolean; memories: T[] }>;
 
     export function visibleTagCounts(
         memories: Array<{ tags?: string[] | null }>,
