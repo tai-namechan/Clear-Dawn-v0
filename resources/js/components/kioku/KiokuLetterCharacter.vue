@@ -23,7 +23,8 @@ const character = computed(() => kiokuLetterCharacter(props.variant));
 
 const imageClass = computed(() =>
     props.embedded
-        ? 'h-auto w-full select-none [mask-image:linear-gradient(to_left,black_58%,transparent),linear-gradient(to_bottom,black_62%,transparent)] [mask-composite:intersect] [-webkit-mask-image:linear-gradient(to_left,black_58%,transparent),linear-gradient(to_bottom,black_62%,transparent)] [-webkit-mask-composite:source-in]'
+        ? // Soft left/bottom dissolve into the paper (no hard card edge).
+          'h-auto w-full select-none [mask-image:linear-gradient(to_left,black_68%,transparent_100%),linear-gradient(to_top,transparent_0%,black_14%,black_100%)] [mask-composite:intersect] [-webkit-mask-image:linear-gradient(to_left,black_68%,transparent_100%),linear-gradient(to_top,transparent_0%,black_14%,black_100%)] [-webkit-mask-composite:source-in]'
         : 'h-auto w-full select-none',
 );
 </script>
