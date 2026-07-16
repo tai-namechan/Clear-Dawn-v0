@@ -6,6 +6,8 @@ import type { KiokuLetterCharacterVariant } from '@/types/kiokuLetter';
 const props = defineProps<{
     variant: KiokuLetterCharacterVariant;
     forceFail?: boolean;
+    /** Stationery-integrated portrait: no caption, soft fade into the paper. */
+    embedded?: boolean;
 }>();
 
 const failed = ref(props.forceFail === true);
@@ -18,6 +20,12 @@ watch(
 );
 
 const character = computed(() => kiokuLetterCharacter(props.variant));
+
+const imageClass = computed(() =>
+    props.embedded
+        ? 'h-auto w-full select-none [mask-image:linear-gradient(to_left,black_58%,transparent),linear-gradient(to_bottom,black_62%,transparent)] [mask-composite:intersect] [-webkit-mask-image:linear-gradient(to_left,black_58%,transparent),linear-gradient(to_bottom,black_62%,transparent)] [-webkit-mask-composite:source-in]'
+        : 'h-auto w-full select-none',
+);
 </script>
 
 <template>
@@ -33,16 +41,18 @@ const character = computed(() => kiokuLetterCharacter(props.variant));
             decoding="async"
             :width="character.width"
             :height="character.height"
-            class="h-auto w-full select-none"
+            :class="imageClass"
             @error="failed = true"
         />
         <div
             v-else
             class="w-full rounded-2xl bg-(--letter-accent-soft)"
+            :class="embedded ? 'opacity-70' : ''"
             :style="{ aspectRatio: `${character.width} / ${character.height}` }"
             aria-hidden="true"
         ></div>
         <figcaption
+            v-if="!embedded"
             class="mt-1.5 text-center text-[11.5px] font-bold tracking-wide text-(--letter-accent)"
         >
             {{ character.name }}
