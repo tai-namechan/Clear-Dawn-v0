@@ -488,7 +488,7 @@ defineOptions({
                                 item.count
                             }}</span>
                         </button>
-                        <button
+                        <span
                             v-for="tag in selectedTags.filter(
                                 (selected) =>
                                     !tagCandidates.some(
@@ -496,13 +496,18 @@ defineOptions({
                                     ),
                             )"
                             :key="`selected-${tag}`"
-                            type="button"
-                            class="inline-flex items-center gap-1 rounded-full border border-os-kioku/40 bg-os-kioku-soft px-3 py-1.5 text-xs font-bold text-os-kioku"
-                            @click="toggleTag(tag)"
+                            class="inline-flex items-center gap-1 rounded-full border border-os-kioku/40 bg-os-kioku-soft py-1.5 pr-1.5 pl-3 text-xs font-bold text-os-kioku"
                         >
                             #{{ tag }}
-                            <X :size="11" />
-                        </button>
+                            <button
+                                type="button"
+                                class="inline-flex h-5 w-5 items-center justify-center rounded-full text-os-kioku transition-colors hover:bg-os-kioku/10"
+                                :aria-label="`${tag} の選択を解除`"
+                                @click="toggleTag(tag)"
+                            >
+                                <X :size="11" />
+                            </button>
+                        </span>
                     </div>
                     <div
                         v-if="selectedTags.length >= 2"
