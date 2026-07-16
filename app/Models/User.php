@@ -144,4 +144,36 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->hasMany(NutritionGoal::class);
     }
+
+    /**
+     * @return HasMany<Goal, $this>
+     */
+    public function goals(): HasMany
+    {
+        return $this->hasMany(Goal::class);
+    }
+
+    /**
+     * @return HasMany<Program, $this>
+     */
+    public function programs(): HasMany
+    {
+        return $this->hasMany(Program::class);
+    }
+
+    /**
+     * @return HasMany<PersonalProfileEntry, $this>
+     */
+    public function personalProfileEntries(): HasMany
+    {
+        return $this->hasMany(PersonalProfileEntry::class);
+    }
+
+    /**
+     * @return HasMany<UserModuleSetting, $this>
+     */
+    public function moduleSettings(): HasMany
+    {
+        return $this->hasMany(UserModuleSetting::class);
+    }
 }
