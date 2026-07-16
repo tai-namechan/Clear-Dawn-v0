@@ -18,7 +18,7 @@
 | Phase | 残課題 | 今回の完成状態 |
 |---|---|---|
 | A | 実際の音声→文字起こし→AI整理 | 既存`TranscriptionGateway`へOpenAI実providerを接続し、保存済み原音声から日本語transcriptを生成して既存enrichへ渡す |
-| B | コンシェルジュ手紙実験 | 週1通、最大5件、0件許容の手紙を手動生成し、シオリまたはナギを右側へ表示してHIT/MISSを評価・保存する |
+| B | コンシェルジュ手紙実験 | 週1通、最大5件、0件許容の手紙を手動生成し、シオリまたはナギを手紙カード内の右側へ表示してHIT/MISSを評価・保存する |
 | C（追補） | 日次pilot + 安全停止 | 14日日次pilot → 終了後は週次。sensitive haltの実効停止、test/preview、failed retry。詳細は [kioku-concierge-daily-pilot.md](./kioku-concierge-daily-pilot.md) |
 
 QC-1〜QC-3で完成済みの保存・音声・Job基盤を作り直してはいけない。今回追加するのは、**実provider adapter**と、**能動想起を検証する薄いLetter機能**である。
@@ -732,8 +732,9 @@ POST /kioku/letters/{letter}/complete
 ### 15.2 Detail
 
 - 手紙本文はHTML。画像へ文字を焼き込まない
-- Desktopは本文約68% / 右人物約32%
-- Mobileは人物を右上へ縮小し、本文へ重ねない
+- シオリ／ナギは**手紙カード（1枚の枠）の内側**に置く。カード外の独立カラムにしない
+- Desktopはカード内で本文約68% / 右人物約32%
+- Mobileはカード内で人物を本文下へ縮小し、本文へ重ねない
 - シオリ: 紫・琥珀 / `記憶の案内役 シオリ`
 - ナギ: 紺・セージ / `記憶の配達役 ナギ`
 - 画像は選択中の1点だけ`src`へ設定

@@ -2,9 +2,11 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ArrowLeft } from '@lucide/vue';
 import { computed, onMounted } from 'vue';
-import KiokuLetterCharacter from '@/components/kioku/KiokuLetterCharacter.vue';
 import KiokuLetterPaper from '@/components/kioku/KiokuLetterPaper.vue';
-import { kiokuLetterCharacterCssVars, kiokuLetterTitleLabel } from '@/lib/kiokuLetter.mjs';
+import {
+    kiokuLetterCharacterCssVars,
+    kiokuLetterTitleLabel,
+} from '@/lib/kiokuLetter.mjs';
 import { home } from '@/routes/kioku';
 import { open } from '@/routes/kioku/letters';
 import type { KiokuLetter } from '@/types/kiokuLetter';
@@ -32,13 +34,9 @@ onMounted(() => {
     }
 
     if (
-        [
-            'published',
-            'empty',
-            'evaluating',
-            'halted',
-            'opened',
-        ].includes(props.letter.status)
+        ['published', 'empty', 'evaluating', 'halted', 'opened'].includes(
+            props.letter.status,
+        )
     ) {
         router.post(open.url(props.letter.id), {}, { preserveScroll: true });
     }
@@ -83,23 +81,6 @@ defineOptions({
             [テスト便り] 実験指標・cooldownには影響しません。
         </div>
 
-        <div
-            class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,68fr)_minmax(0,32fr)] lg:items-start lg:gap-6"
-        >
-            <div
-                class="order-1 flex justify-end lg:sticky lg:top-5 lg:order-2 lg:block"
-            >
-                <div class="w-28 sm:w-36 lg:w-full lg:max-w-[280px]">
-                    <KiokuLetterCharacter
-                        :variant="letter.character_variant"
-                        :force-fail="letter.force_image_fail === true"
-                    />
-                </div>
-            </div>
-
-            <div class="order-2 min-w-0 lg:order-1">
-                <KiokuLetterPaper :letter="letter" :preview="isPreview" />
-            </div>
-        </div>
+        <KiokuLetterPaper :letter="letter" :preview="isPreview" />
     </div>
 </template>
