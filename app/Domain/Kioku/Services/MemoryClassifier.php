@@ -16,6 +16,7 @@ final class MemoryClassifier
 {
     public function __construct(
         private MemoryTypeRegistry $registry,
+        private KiokuTagNormalizer $tagNormalizer,
     ) {}
 
     /**
@@ -77,9 +78,11 @@ PROMPT,
             ? trim($decoded['title'])
             : null;
 
-        $tags = is_array($decoded['tags'] ?? null)
-            ? array_values(array_filter($decoded['tags'], fn ($tag) => is_string($tag) && $tag !== ''))
-            : [];
+        // AI tags share the exact normalization path with manual edits so
+        // element-exact tag search never sees two spellings of one tag.
+        $tags = $this->tagNormalizer->normalize(
+            is_array($decoded['tags'] ?? null) ? $decoded['tags'] : [],
+        );
 
         return [
             'memory_type' => $memoryType,

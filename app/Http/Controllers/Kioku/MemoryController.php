@@ -9,11 +9,13 @@ use App\Domain\Kioku\Models\KiokuLetter;
 use App\Domain\Kioku\Models\Memory;
 use App\Domain\Kioku\Services\CaptureMemoryService;
 use App\Domain\Kioku\Services\KiokuSearchService;
+use App\Domain\Kioku\Services\KiokuTagNormalizer;
 use App\Domain\Kioku\Services\RelatedMemoryService;
 use App\Domain\Kioku\Types\MemoryTypeRegistry;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Kioku\MemoryStatusRequest;
 use App\Http\Requests\Kioku\StoreMemoryRequest;
+use App\Http\Requests\Kioku\UpdateMemoryTagsRequest;
 use App\Http\Resources\Kioku\MemoryResource;
 use App\Http\Resources\Kioku\MemoryStatusResource;
 use Illuminate\Http\JsonResponse;
@@ -31,12 +33,19 @@ class MemoryController extends Controller
         $user = $request->user();
         $query = $request->string('q')->toString() ?: null;
         $types = array_values(array_filter((array) $request->input('types', [])));
+        $tags = array_values(array_filter(
+            (array) $request->input('tags', []),
+            fn ($tag) => is_string($tag) && $tag !== '',
+        ));
+        $tagMode = $request->string('tag_mode')->toString() === 'or' ? 'or' : 'and';
 
         $memories = $search->search(
             userId: (int) $user->id,
             query: $query,
             filters: [
                 'types' => $types,
+                'tags' => $tags,
+                'tag_mode' => $tagMode,
             ],
             limit: 100,
         );
@@ -57,6 +66,8 @@ class MemoryController extends Controller
             'filters' => [
                 'q' => $query,
                 'types' => $types,
+                'tags' => $tags,
+                'tag_mode' => $tagMode,
             ],
             'memoryTypes' => collect($registry->all())
                 ->map(fn ($type) => ['key' => $type->key(), 'label' => $type->label()])
@@ -172,6 +183,34 @@ class MemoryController extends Controller
                 'message' => 'この記憶は現在整理中です。',
             ]);
         }
+
+        return redirect()->route('kioku.memories.show', $memory);
+    }
+
+    /**
+     * Owner-only edit of the derived tag list (interpretation layer,
+     * docs/architecture/kioku-knowledge-retrieval.md §2). Facts stay
+     * untouched — raw_content, transcript_text and audio assets are never
+     * written here — and no AI re-enrichment is triggered. The cached
+     * related links are recomputed because their score uses tags.
+     */
+    public function updateTags(
+        UpdateMemoryTagsRequest $request,
+        Memory $memory,
+        KiokuTagNormalizer $normalizer,
+        RelatedMemoryService $relatedMemoryService,
+    ): RedirectResponse {
+        abort_unless((int) $memory->user_id === (int) $request->user()->id, 404);
+
+        $tags = $normalizer->normalize($request->validated('tags') ?? []);
+
+        $memory->update(['tags' => $tags === [] ? null : $tags]);
+        $relatedMemoryService->cacheRelated($memory);
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'タグを更新しました。',
+        ]);
 
         return redirect()->route('kioku.memories.show', $memory);
     }

@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 final class KiokuSearchService
 {
     /**
-     * @param  array{types?: list<string>, sources?: list<string>, tags?: list<string>, from?: string|null, to?: string|null, importance_min?: int|null}  $filters
+     * @param  array{types?: list<string>, sources?: list<string>, tags?: list<string>, tag_mode?: string, from?: string|null, to?: string|null, importance_min?: int|null}  $filters
      * @return Collection<int, Memory>
      */
     public function search(int $userId, ?string $query, array $filters = [], int $limit = 50): Collection
@@ -46,10 +46,26 @@ final class KiokuSearchService
         }
 
         if (! empty($filters['tags'])) {
-            foreach ($filters['tags'] as $tag) {
-                // Cross-db friendly (sqlite/MySQL). Prefer JSON_CONTAINS/GIN on Postgres later.
-                $escaped = addcslashes((string) $tag, '%_\\');
-                $builder->where('tags', 'like', '%"'.$escaped.'"%');
+            $tags = collect($filters['tags'])
+                ->filter(fn ($tag) => is_string($tag) && $tag !== '')
+                ->unique()
+                ->values();
+
+            // Element-exact JSON match (never a substring match): MySQL
+            // compiles to JSON_CONTAINS, SQLite to json_each — both engines
+            // used by this app are covered.
+            if ($tags->isNotEmpty()) {
+                if (($filters['tag_mode'] ?? 'and') === 'or') {
+                    $builder->where(function ($q) use ($tags): void {
+                        foreach ($tags as $tag) {
+                            $q->orWhereJsonContains('tags', $tag);
+                        }
+                    });
+                } else {
+                    foreach ($tags as $tag) {
+                        $builder->whereJsonContains('tags', $tag);
+                    }
+                }
             }
         }
 
