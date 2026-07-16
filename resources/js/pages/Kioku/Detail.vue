@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import {
     ArrowLeft,
     ChevronRight,
     Clock,
     Compass,
+    Plus,
     RefreshCw,
     Sparkles,
     Sun,
+    X,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { toast } from 'vue-sonner';
@@ -19,6 +21,7 @@ import {
     kiokuMemoryDisplayTitle,
 } from '@/lib/kiokuMemoryCard.mjs';
 import { formatAgo, sourceTypeMeta } from '@/lib/kiokuMeta';
+import { KIOKU_MAX_TAG_CHARS, KIOKU_MAX_TAGS } from '@/lib/kiokuTags.mjs';
 import { kiokuTranscriptDisplayMode } from '@/lib/kiokuTranscriptDisplay.mjs';
 import { home } from '@/routes/kioku';
 import {
@@ -27,7 +30,8 @@ import {
     retryTranscription,
     show,
 } from '@/routes/kioku/memories';
-import type { KiokuMemory } from '@/types/kioku';
+import { update as updateTags } from '@/routes/kioku/memories/tags';
+import type { KiokuMemory, UpdateMemoryTagsPayload } from '@/types/kioku';
 
 interface Props {
     memory: KiokuMemory;
@@ -36,13 +40,31 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const page = usePage();
 
 const audioMissing = ref(false);
+const draftTags = ref<string[]>([...props.memory.tags]);
+const tagDraft = ref('');
+const tagClientError = ref<string | null>(null);
+const tagSaving = ref(false);
+const tagSaveSucceeded = ref(false);
 
 watch(
     () => props.memory.id,
     () => {
         audioMissing.value = false;
+        resetTagDraft();
+    },
+);
+
+watch(
+    () => props.memory.tags,
+    (tags) => {
+        if (!tagSaving.value) {
+            draftTags.value = [...tags];
+            tagSaveSucceeded.value = false;
+            tagClientError.value = null;
+        }
     },
 );
 
@@ -62,6 +84,28 @@ const titleClass = computed(
     () => sourceTypeMeta(props.memory.source_type).titleClass ?? 'text-os-ink',
 );
 
+const tagsDirty = computed(() => {
+    const current = props.memory.tags;
+
+    if (current.length !== draftTags.value.length) {
+        return true;
+    }
+
+    return draftTags.value.some((tag, index) => tag !== current[index]);
+});
+
+const tagServerErrors = computed(() => {
+    const errors = page.props.errors as Record<string, string> | undefined;
+
+    if (!errors) {
+        return [] as string[];
+    }
+
+    return Object.entries(errors)
+        .filter(([key]) => key === 'tags' || key.startsWith('tags.'))
+        .map(([, message]) => message);
+});
+
 function onAudioError(): void {
     audioMissing.value = true;
 }
@@ -76,6 +120,88 @@ function requestRetryTranscription(): void {
         {},
         { preserveScroll: true },
     );
+}
+
+function cleanupTagInput(value: string): string {
+    return value
+        .replace(/^[\s\u3000]+|[\s\u3000]+$/gu, '')
+        .replace(/[\s\u3000]+/gu, ' ')
+        .replace(/^[#＃]+/u, '')
+        .replace(/^[\s\u3000]+|[\s\u3000]+$/gu, '');
+}
+
+function addTagFromDraft(): void {
+    tagClientError.value = null;
+    tagSaveSucceeded.value = false;
+
+    const next = cleanupTagInput(tagDraft.value);
+
+    if (next === '') {
+        tagDraft.value = '';
+
+        return;
+    }
+
+    if ([...next].length > KIOKU_MAX_TAG_CHARS) {
+        tagClientError.value = `タグは${KIOKU_MAX_TAG_CHARS}文字以内で入力してください。`;
+
+        return;
+    }
+
+    if (draftTags.value.length >= KIOKU_MAX_TAGS) {
+        tagClientError.value = `タグは最大${KIOKU_MAX_TAGS}件までです。`;
+
+        return;
+    }
+
+    const exists = draftTags.value.some(
+        (tag) => tag.toLocaleLowerCase() === next.toLocaleLowerCase(),
+    );
+
+    if (exists) {
+        tagDraft.value = '';
+
+        return;
+    }
+
+    draftTags.value = [...draftTags.value, next];
+    tagDraft.value = '';
+}
+
+function removeDraftTag(tag: string): void {
+    tagClientError.value = null;
+    tagSaveSucceeded.value = false;
+    draftTags.value = draftTags.value.filter((current) => current !== tag);
+}
+
+function resetTagDraft(): void {
+    draftTags.value = [...props.memory.tags];
+    tagDraft.value = '';
+    tagClientError.value = null;
+    tagSaveSucceeded.value = false;
+}
+
+function saveTags(): void {
+    if (tagSaving.value) {
+        return;
+    }
+
+    tagClientError.value = null;
+    tagSaveSucceeded.value = false;
+    tagSaving.value = true;
+
+    const payload: UpdateMemoryTagsPayload = { tags: draftTags.value };
+
+    router.put(updateTags.url(props.memory.id), payload, {
+        preserveScroll: true,
+        onSuccess: () => {
+            tagSaveSucceeded.value = true;
+            tagDraft.value = '';
+        },
+        onFinish: () => {
+            tagSaving.value = false;
+        },
+    });
 }
 
 function fieldValue(
@@ -134,17 +260,112 @@ defineOptions({
                             '★'.repeat(5 - memory.importance)
                         }}</span>
                     </span>
-                    <span
-                        v-for="tag in memory.tags"
-                        :key="tag"
-                        class="text-[11.5px] text-os-kioku"
-                    >
-                        #{{ tag }}
-                    </span>
                 </div>
             </div>
 
             <div class="space-y-4 px-5 py-4">
+                <section
+                    class="rounded-xl border border-os-line bg-os-kioku-bg px-3.5 py-3"
+                    aria-label="タグ編集"
+                >
+                    <div
+                        class="mb-2 flex flex-wrap items-center justify-between gap-2"
+                    >
+                        <div
+                            class="text-[11px] font-bold tracking-wide text-os-sub"
+                        >
+                            タグ（解釈層・原文/音声は変わりません）
+                        </div>
+                        <span class="font-mono text-[11px] text-os-sub"
+                            >{{ draftTags.length }}/{{ KIOKU_MAX_TAGS }}</span
+                        >
+                    </div>
+
+                    <div class="mb-2.5 flex flex-wrap gap-1.5">
+                        <span
+                            v-if="draftTags.length === 0"
+                            class="text-[12px] text-os-sub"
+                            >タグなし（未分類として表示されます）</span
+                        >
+                        <button
+                            v-for="tag in draftTags"
+                            :key="tag"
+                            type="button"
+                            class="inline-flex items-center gap-1 rounded-full border border-os-kioku/30 bg-os-kioku-soft px-2.5 py-1 text-[11.5px] font-medium text-os-kioku"
+                            :disabled="tagSaving"
+                            @click="removeDraftTag(tag)"
+                        >
+                            #{{ tag }}
+                            <X :size="11" />
+                        </button>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">
+                        <input
+                            v-model="tagDraft"
+                            type="text"
+                            maxlength="80"
+                            placeholder="タグを追加（Enter）"
+                            class="min-w-0 flex-1 rounded-xl border border-os-line bg-os-kioku-paper px-3 py-2 text-[13px] text-os-ink outline-none placeholder:text-[#B3AC99] focus-visible:ring-2 focus-visible:ring-os-kioku/35"
+                            :disabled="tagSaving"
+                            @keydown.enter.prevent="addTagFromDraft"
+                        />
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="h-10 gap-1 rounded-xl border-os-line text-xs text-os-sub"
+                            :disabled="tagSaving || !tagDraft.trim()"
+                            @click="addTagFromDraft"
+                        >
+                            <Plus :size="12" />
+                            追加
+                        </Button>
+                    </div>
+
+                    <p
+                        v-if="tagClientError"
+                        class="mt-2 text-[12px] text-[#C05A48]"
+                        role="alert"
+                    >
+                        {{ tagClientError }}
+                    </p>
+                    <p
+                        v-for="(message, index) in tagServerErrors"
+                        :key="`tag-error-${index}`"
+                        class="mt-2 text-[12px] text-[#C05A48]"
+                        role="alert"
+                    >
+                        {{ message }}
+                    </p>
+                    <p
+                        v-if="tagSaveSucceeded && !tagsDirty"
+                        class="mt-2 text-[12px] text-os-kioku"
+                        role="status"
+                    >
+                        タグを更新しました。
+                    </p>
+
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <Button
+                            type="button"
+                            class="h-9 rounded-xl bg-os-kioku text-xs font-bold text-white hover:bg-os-kioku/90"
+                            :disabled="tagSaving || !tagsDirty"
+                            @click="saveTags"
+                        >
+                            {{ tagSaving ? '保存中…' : 'タグを保存' }}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="h-9 rounded-xl border-os-line text-xs text-os-sub"
+                            :disabled="tagSaving || (!tagsDirty && !tagDraft)"
+                            @click="resetTagDraft"
+                        >
+                            キャンセル
+                        </Button>
+                    </div>
+                </section>
+
                 <div
                     v-if="memory.summary"
                     class="rounded-xl bg-os-kioku-soft px-3.5 py-3 text-[13.5px] leading-relaxed text-os-ink"

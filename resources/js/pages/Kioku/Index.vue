@@ -14,13 +14,27 @@ import { KIOKU_MAX_RECORDING_MS } from '@/lib/kiokuAudioRecorder.mjs';
 import { buildCaptureQueueItem } from '@/lib/kiokuCaptureQueue.mjs';
 import { MEMORY_TYPES, SOURCE_TYPES } from '@/lib/kiokuMeta';
 import type { MemoryTypeKey, SourceTypeKey } from '@/lib/kiokuMeta';
+import {
+    buildKiokuHomeQuery,
+    groupMemoriesByTag,
+    normalizeTagMode,
+    toggleTagFilter,
+    visibleTagCounts,
+} from '@/lib/kiokuTags.mjs';
 import { home } from '@/routes/kioku';
-import type { KiokuMemory, MemoryTypeOption } from '@/types/kioku';
+import type {
+    KiokuHomeFilters,
+    KiokuMemory,
+    KiokuTagMode,
+    MemoryTypeOption,
+} from '@/types/kioku';
 import type { KiokuLetterSummary } from '@/types/kiokuLetter';
+
+type HomeViewMode = 'timeline' | 'tags';
 
 interface Props {
     memories: KiokuMemory[];
-    filters: { q: string | null; types: string[] };
+    filters: KiokuHomeFilters;
     memoryTypes: MemoryTypeOption[];
     typeCounts: Record<string, number>;
     sourceCounts: Record<string, number>;
@@ -34,6 +48,9 @@ const props = defineProps<Props>();
 
 const q = ref(props.filters.q ?? '');
 const selectedTypes = ref<string[]>([...props.filters.types]);
+const selectedTags = ref<string[]>([...(props.filters.tags ?? [])]);
+const tagMode = ref<KiokuTagMode>(normalizeTagMode(props.filters.tag_mode));
+const viewMode = ref<HomeViewMode>('timeline');
 const draft = ref('');
 
 watch(
@@ -41,6 +58,8 @@ watch(
     (filters) => {
         q.value = filters.q ?? '';
         selectedTypes.value = [...filters.types];
+        selectedTags.value = [...(filters.tags ?? [])];
+        tagMode.value = normalizeTagMode(filters.tag_mode);
     },
 );
 
@@ -222,15 +241,26 @@ const visibleTypeKeys = computed(() =>
     ),
 );
 
+const tagCandidates = computed(() => visibleTagCounts(props.memories, 15));
+
+const tagGroups = computed(() => groupMemoriesByTag(props.memories));
+
+const hasActiveFilters = computed(
+    () =>
+        Boolean(q.value) ||
+        selectedTypes.value.length > 0 ||
+        selectedTags.value.length > 0,
+);
+
 function applyFilters(): void {
     router.get(
         home.url({
-            query: {
-                q: q.value || undefined,
-                types: selectedTypes.value.length
-                    ? selectedTypes.value
-                    : undefined,
-            },
+            query: buildKiokuHomeQuery({
+                q: q.value || null,
+                types: selectedTypes.value,
+                tags: selectedTags.value,
+                tagMode: tagMode.value,
+            }),
         }),
         {},
         { preserveState: true, replace: true },
@@ -249,6 +279,25 @@ function toggleType(key: string): void {
 
 function clearTypes(): void {
     selectedTypes.value = [];
+    applyFilters();
+}
+
+function toggleTag(tag: string): void {
+    selectedTags.value = toggleTagFilter(selectedTags.value, tag);
+
+    if (selectedTags.value.length < 2) {
+        tagMode.value = 'and';
+    }
+
+    applyFilters();
+}
+
+function setTagMode(mode: KiokuTagMode): void {
+    if (tagMode.value === mode) {
+        return;
+    }
+
+    tagMode.value = mode;
     applyFilters();
 }
 
@@ -413,6 +462,83 @@ defineOptions({
                 </section>
 
                 <section
+                    v-if="tagCandidates.length > 0 || selectedTags.length > 0"
+                    class="rounded-2xl border border-os-line bg-os-kioku-paper p-4 shadow-[0_1px_3px_rgba(43,41,36,0.05)]"
+                >
+                    <div
+                        class="mb-2.5 text-[11.5px] font-bold tracking-wide text-os-sub"
+                    >
+                        タグでしぼる
+                    </div>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button
+                            v-for="item in tagCandidates"
+                            :key="item.tag"
+                            type="button"
+                            class="inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs transition-colors"
+                            :class="
+                                selectedTags.includes(item.tag)
+                                    ? 'border-os-kioku/40 bg-os-kioku-soft font-bold text-os-kioku'
+                                    : 'border-os-line bg-[#F0ECE0] text-os-sub'
+                            "
+                            @click="toggleTag(item.tag)"
+                        >
+                            #{{ item.tag }}
+                            <span class="font-mono text-[10.5px] opacity-70">{{
+                                item.count
+                            }}</span>
+                        </button>
+                        <button
+                            v-for="tag in selectedTags.filter(
+                                (selected) =>
+                                    !tagCandidates.some(
+                                        (item) => item.tag === selected,
+                                    ),
+                            )"
+                            :key="`selected-${tag}`"
+                            type="button"
+                            class="inline-flex items-center gap-1 rounded-full border border-os-kioku/40 bg-os-kioku-soft px-3 py-1.5 text-xs font-bold text-os-kioku"
+                            @click="toggleTag(tag)"
+                        >
+                            #{{ tag }}
+                            <X :size="11" />
+                        </button>
+                    </div>
+                    <div
+                        v-if="selectedTags.length >= 2"
+                        class="mt-3 flex flex-wrap items-center gap-2"
+                        role="group"
+                        aria-label="タグの組み合わせ"
+                    >
+                        <span class="text-[11px] text-os-sub">組み合わせ</span>
+                        <button
+                            type="button"
+                            class="rounded-full border px-3 py-1 text-[11.5px] transition-colors"
+                            :class="
+                                tagMode === 'and'
+                                    ? 'border-os-kioku/40 bg-os-kioku-soft font-bold text-os-kioku'
+                                    : 'border-os-line bg-[#F0ECE0] text-os-sub'
+                            "
+                            @click="setTagMode('and')"
+                        >
+                            AND（すべて含む）
+                        </button>
+                        <button
+                            type="button"
+                            class="rounded-full border px-3 py-1 text-[11.5px] transition-colors"
+                            :class="
+                                tagMode === 'or'
+                                    ? 'border-os-kioku/40 bg-os-kioku-soft font-bold text-os-kioku'
+                                    : 'border-os-line bg-[#F0ECE0] text-os-sub'
+                            "
+                            @click="setTagMode('or')"
+                        >
+                            OR（いずれかを含む）
+                        </button>
+                    </div>
+                </section>
+
+                <section
                     class="rounded-2xl border border-os-line bg-os-kioku-paper p-4 shadow-[0_1px_3px_rgba(43,41,36,0.05)]"
                 >
                     <div
@@ -467,6 +593,52 @@ defineOptions({
                     </button>
                 </div>
 
+                <div
+                    class="flex flex-wrap items-center justify-between gap-2"
+                    role="group"
+                    aria-label="表示切替"
+                >
+                    <div class="flex flex-wrap gap-1.5">
+                        <button
+                            type="button"
+                            class="rounded-full border px-3 py-1.5 text-xs transition-colors"
+                            :class="
+                                viewMode === 'timeline'
+                                    ? 'border-os-kioku/40 bg-os-kioku-soft font-bold text-os-kioku'
+                                    : 'border-os-line bg-[#F0ECE0] text-os-sub'
+                            "
+                            @click="viewMode = 'timeline'"
+                        >
+                            時系列
+                        </button>
+                        <button
+                            type="button"
+                            class="rounded-full border px-3 py-1.5 text-xs transition-colors"
+                            :class="
+                                viewMode === 'tags'
+                                    ? 'border-os-kioku/40 bg-os-kioku-soft font-bold text-os-kioku'
+                                    : 'border-os-line bg-[#F0ECE0] text-os-sub'
+                            "
+                            @click="viewMode = 'tags'"
+                        >
+                            タグ
+                        </button>
+                    </div>
+                    <p
+                        v-if="selectedTags.length > 0"
+                        class="text-[11px] text-os-sub"
+                    >
+                        タグ {{ selectedTags.length }}件
+                        {{
+                            selectedTags.length >= 2
+                                ? tagMode === 'or'
+                                    ? '（OR）'
+                                    : '（AND）'
+                                : ''
+                        }}
+                    </p>
+                </div>
+
                 <KiokuLetterPreview
                     :letters="letters"
                     :test-letters="testLetters ?? []"
@@ -517,19 +689,63 @@ defineOptions({
                     <Brain :size="26" class="mx-auto mb-2.5 text-os-faint" />
                     <p class="text-[13px] leading-relaxed text-os-sub">
                         {{
-                            q
-                                ? `「${q}」に一致する記憶はありません。`
+                            hasActiveFilters
+                                ? '条件に一致する記憶はありません。'
                                 : 'まだ記憶がありません。左の保存ボックスからどうぞ。'
                         }}
                     </p>
                 </div>
 
-                <MemoryCard
-                    v-for="memory in memories"
-                    :key="memory.id"
-                    :memory="memory"
-                    :transcription-enabled="transcriptionEnabled"
-                />
+                <template v-else-if="viewMode === 'timeline'">
+                    <MemoryCard
+                        v-for="memory in memories"
+                        :key="memory.id"
+                        :memory="memory"
+                        :transcription-enabled="transcriptionEnabled"
+                    />
+                </template>
+
+                <template v-else>
+                    <div
+                        v-if="tagGroups.length === 0"
+                        class="rounded-2xl border border-os-line bg-os-kioku-paper p-9 text-center shadow-[0_1px_3px_rgba(43,41,36,0.05)]"
+                    >
+                        <p class="text-[13px] leading-relaxed text-os-sub">
+                            表示できるタググループがありません。
+                        </p>
+                    </div>
+                    <section
+                        v-for="group in tagGroups"
+                        :key="group.untagged ? '__untagged__' : group.tag"
+                        class="space-y-2.5"
+                    >
+                        <div
+                            class="flex flex-wrap items-baseline justify-between gap-2 px-0.5"
+                        >
+                            <h2
+                                class="text-[12.5px] font-bold tracking-wide"
+                                :class="
+                                    group.untagged
+                                        ? 'text-os-sub'
+                                        : 'text-os-kioku'
+                                "
+                            >
+                                {{
+                                    group.untagged ? group.tag : `#${group.tag}`
+                                }}
+                            </h2>
+                            <span class="font-mono text-[11px] text-os-sub"
+                                >{{ group.memories.length }}件</span
+                            >
+                        </div>
+                        <MemoryCard
+                            v-for="memory in group.memories"
+                            :key="`${group.untagged ? 'untagged' : group.tag}-${memory.id}`"
+                            :memory="memory"
+                            :transcription-enabled="transcriptionEnabled"
+                        />
+                    </section>
+                </template>
 
                 <p
                     class="pt-2 text-center text-[11px] leading-relaxed text-os-sub"

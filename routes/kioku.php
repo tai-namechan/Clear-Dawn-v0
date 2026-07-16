@@ -25,6 +25,7 @@ Route::middleware(['auth', 'verified'])->prefix('kioku')->name('kioku.')->group(
     Route::get('/memories/{memory}/audio', [MemoryController::class, 'audio'])->name('memories.audio');
     Route::post('/memories/{memory}/reenrich', [MemoryController::class, 'reenrich'])->name('memories.reenrich');
     Route::post('/memories/{memory}/retry-transcription', [MemoryController::class, 'retryTranscription'])->name('memories.retry-transcription');
+    Route::put('/memories/{memory}/tags', [MemoryController::class, 'updateTags'])->name('memories.tags.update');
     Route::get('/letters/preview', [LetterController::class, 'preview'])->name('letters.preview');
     Route::get('/letters/{letter}', [LetterController::class, 'show'])->name('letters.show');
     Route::post('/letters/{letter}/open', [LetterController::class, 'open'])->name('letters.open');
