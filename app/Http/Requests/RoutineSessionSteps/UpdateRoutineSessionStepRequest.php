@@ -17,6 +17,9 @@ class UpdateRoutineSessionStepRequest extends FormRequest
             'status' => ['sometimes', Rule::enum(RoutineSessionStepStatus::class)],
             'actual_duration_seconds' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:86400'],
             'memo' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'status_reason' => ['sometimes', 'nullable', 'string', 'max:1000'],
+            'pain_score' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:10'],
+            'pain_location' => ['sometimes', 'nullable', 'string', 'max:100'],
         ];
     }
 }

@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Programs\ReviseProgramVersionRequest;
 use App\Http\Resources\ProgramDetailResource;
 use App\Http\Resources\ProgramResource;
 use App\Models\Program;
 use App\Queries\GetProgramDetailQuery;
 use App\Queries\GetProgramRoadmapQuery;
 use App\Queries\GetProgramsQuery;
+use App\Services\ReviseProgramVersionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -46,5 +49,27 @@ class ProgramController extends Controller
             ],
             'roadmap' => $query->handle($request->user(), $program),
         ]);
+    }
+
+    public function revise(
+        ReviseProgramVersionRequest $request,
+        Program $program,
+        ReviseProgramVersionService $service,
+    ): JsonResponse {
+        Gate::authorize('update', $program);
+
+        $version = $service->handle($program, $request->validated());
+
+        return response()->json([
+            'version' => [
+                'id' => $version->id,
+                'version_number' => $version->version_number,
+                'status' => $version->status->value,
+                'starts_on' => $version->starts_on->toDateString(),
+                'ends_on' => $version->ends_on->toDateString(),
+                'change_summary' => $version->change_summary,
+                'change_reason' => $version->change_reason,
+            ],
+        ], 201);
     }
 }

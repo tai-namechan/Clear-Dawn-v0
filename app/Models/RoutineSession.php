@@ -30,6 +30,7 @@ use Illuminate\Support\Carbon;
     'started_at',
     'finished_at',
     'note',
+    'session_rpe',
 ])]
 class RoutineSession extends Model
 {
@@ -45,6 +46,7 @@ class RoutineSession extends Model
             'status' => RoutineSessionStatus::class,
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
+            'session_rpe' => 'decimal:1',
         ];
     }
 

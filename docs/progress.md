@@ -8,9 +8,9 @@
 | Phase | 内容 | 状態 |
 |---|---|---|
 | 1 | 目標・プログラム・ロードマップ（goals/programs 系テーブル・画面・seed・個人値 import） | **done** |
-| 2 | 今日の実行（プログラム→プラン生成・DAY/STEP 実行 UI・型付き実績） | not_started |
-| 3 | コンディション・食事再構成（チェックイン・症状・栄養プロファイル・タブ化） | not_started |
-| 4 | 決定論の作戦カード（rule_definitions・recommendations・承認 tier A） | not_started |
+| 2 | 今日の実行（プログラム→プラン生成・DAY/STEP 実行 UI・型付き実績） | **done**（縦断） |
+| 3 | コンディション・食事再構成（チェックイン・症状・栄養プロファイル・タブ化） | **partial**（チェックイン/症状/resource_states/栄養プロファイル基盤） |
+| 4 | 決定論の作戦カード（rule_definitions・recommendations・承認 tier A） | **done**（縦断・承認A）。B/C UI は薄い |
 | 5〜7 | レポート/Kioku 学び・AI コーチ・Yoyu 連携 | not_started |
 
 Phase 1 の縦断（2026-07-17 完了）:
@@ -24,7 +24,19 @@ Phase 1 の縦断（2026-07-17 完了）:
 | 画面 | `/goals`・`/goals/{goal}`・`/programs`・`/programs/{program}`・`/programs/{program}/roadmap`（1RM×比率の表示重量は r125 丸め） |
 | Feature テスト | `GoalTest`・`ProgramTest`・`ProgramInstallTest`（計26件） |
 
-Phase 2 以降の未実装: プログラム→ RoutinePlan 生成、承認3段 A/B/C、版改訂（POST versions）、DAY/STEP/処方の編集 API、program_attachments アップロード UI。
+Phase 2〜4 の縦断（2026-07-17 追加）:
+
+| 項目 | 根拠 |
+|---|---|
+| Phase 2 migrations | `2026_07_17_100001` routine_* に program 参照・型付き実績列 |
+| プラン生成 | `GenerateProgramDayPlansService`（weekday_fixed / sequential / 選択日）。`/today` アクセスで冪等生成 |
+| 承認 A | `ApplyTodayPlanAdjustmentService` + `POST plans/{p}/today-adjust` / 作戦カード決定 |
+| 版改訂 C | `ReviseProgramVersionService` + `POST programs/{program}/versions`（コピーオンライト） |
+| Phase 3 | `daily_checkins` / `symptom_observations` / `daily_resource_states` / `personal_baselines` / `nutrition_target_profiles` / `measurement_sources` + metric_records 拡張 |
+| Phase 4 | `rule_definitions`〜`outcome_evaluations`、`EvaluateRulesForDayService`、作戦カード UI（`Today/Index`） |
+| Feature テスト | `ProgramDayPlanGenerationTest`・`TodayOpsPhaseTest`・`ProgramVersionReviseTest` |
+
+積み残し: DAY/STEP/処方の編集 API、program_attachments アップロード UI、承認 B（期間再生成）UI、コンディション専用タブ画面の仕上げ、ハードゲート割り込みのクールダウン永続化、outcome_evaluations の事後評価 UI。
 
 各マイルストーンは「Route → Controller → Query/Service → Vue → テスト」の縦断で完結させる。
 

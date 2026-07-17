@@ -11,4 +11,9 @@ class ProgramPolicy
     {
         return $program->user_id === $user->id;
     }
+
+    public function update(User $user, Program $program): bool
+    {
+        return $program->user_id === $user->id;
+    }
 }

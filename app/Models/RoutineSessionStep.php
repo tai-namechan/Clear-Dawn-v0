@@ -49,6 +49,9 @@ use Illuminate\Support\Carbon;
     'status',
     'actual_duration_seconds',
     'memo',
+    'status_reason',
+    'pain_score',
+    'pain_location',
 ])]
 class RoutineSessionStep extends Model
 {

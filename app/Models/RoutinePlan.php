@@ -17,6 +17,14 @@ use Illuminate\Support\Carbon;
  * @property int $user_id
  * @property string|null $life_area_id
  * @property string|null $routine_id
+ * @property string|null $program_version_id
+ * @property string|null $program_week_id
+ * @property string|null $program_day_template_id
+ * @property string|null $generation_source
+ * @property string|null $choice_option_id
+ * @property string|null $choice_reason
+ * @property string|null $repeat_reason
+ * @property string|null $adjustment_reason
  * @property string $title
  * @property Carbon $scheduled_on
  * @property RoutinePlanStatus $status
@@ -28,6 +36,14 @@ use Illuminate\Support\Carbon;
     'user_id',
     'life_area_id',
     'routine_id',
+    'program_version_id',
+    'program_week_id',
+    'program_day_template_id',
+    'generation_source',
+    'choice_option_id',
+    'choice_reason',
+    'repeat_reason',
+    'adjustment_reason',
     'title',
     'scheduled_on',
     'status',
@@ -71,6 +87,38 @@ class RoutinePlan extends Model
     public function routine(): BelongsTo
     {
         return $this->belongsTo(Routine::class);
+    }
+
+    /**
+     * @return BelongsTo<ProgramVersion, $this>
+     */
+    public function programVersion(): BelongsTo
+    {
+        return $this->belongsTo(ProgramVersion::class);
+    }
+
+    /**
+     * @return BelongsTo<ProgramWeek, $this>
+     */
+    public function programWeek(): BelongsTo
+    {
+        return $this->belongsTo(ProgramWeek::class);
+    }
+
+    /**
+     * @return BelongsTo<ProgramDayTemplate, $this>
+     */
+    public function dayTemplate(): BelongsTo
+    {
+        return $this->belongsTo(ProgramDayTemplate::class, 'program_day_template_id');
+    }
+
+    /**
+     * @return BelongsTo<ProgramChoiceOption, $this>
+     */
+    public function choiceOption(): BelongsTo
+    {
+        return $this->belongsTo(ProgramChoiceOption::class, 'choice_option_id');
     }
 
     /**
