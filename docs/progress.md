@@ -1,19 +1,30 @@
 # 実装進捗（v0）
 
-> 最終更新: 2026-07-16（セルフマネジメントOS拡張 着手 — ADR-0010/0011、branch: feature/self-management-os）
+> 最終更新: 2026-07-17  
+> 正: [roadmap.md](./roadmap.md) のマイルストーン定義。本ファイルは **実装の現在地** を可視化する。
 
-## セルフマネジメントOS拡張（2026-07-16〜）
+## セルフマネジメントOS拡張（2026-07-16〜 / ADR-0010・0011）
 
 | Phase | 内容 | 状態 |
 |---|---|---|
-| 1 | 目標・プログラム・ロードマップ（goals/programs 系テーブル・画面・seed・個人値 import） | in_progress |
+| 1 | 目標・プログラム・ロードマップ（goals/programs 系テーブル・画面・seed・個人値 import） | **done** |
 | 2 | 今日の実行（プログラム→プラン生成・DAY/STEP 実行 UI・型付き実績） | not_started |
 | 3 | コンディション・食事再構成（チェックイン・症状・栄養プロファイル・タブ化） | not_started |
 | 4 | 決定論の作戦カード（rule_definitions・recommendations・承認 tier A） | not_started |
 | 5〜7 | レポート/Kioku 学び・AI コーチ・Yoyu 連携 | not_started |
 
-> 最終更新: 2026-07-10  
-> 正: [roadmap.md](./roadmap.md) のマイルストーン定義。本ファイルは **実装の現在地** を可視化する。
+Phase 1 の縦断（2026-07-17 完了）:
+
+| 項目 | 根拠 |
+|---|---|
+| Migrations（goal/program/personal_profile/module + metrics 拡張） | `2026_07_16_1000*` 4本（metrics key は (user_id, key) ユニークに変更） |
+| Models / Enums / Factories | `app/Models`（18新規 + User/Metric 拡張）、`app/Enums` 12種 |
+| seed（11週プログラム） | `InstallElevenWeekProgramService` + `php artisan cleardawn:install-program {userId}`（冪等） |
+| 個人値 import | `php artisan cleardawn:import-personal {userId} --path=personal/profile.json`（gitignore 済み personal/ から投入） |
+| 画面 | `/goals`・`/goals/{goal}`・`/programs`・`/programs/{program}`・`/programs/{program}/roadmap`（1RM×比率の表示重量は r125 丸め） |
+| Feature テスト | `GoalTest`・`ProgramTest`・`ProgramInstallTest`（計26件） |
+
+Phase 2 以降の未実装: プログラム→ RoutinePlan 生成、承認3段 A/B/C、版改訂（POST versions）、DAY/STEP/処方の編集 API、program_attachments アップロード UI。
 
 各マイルストーンは「Route → Controller → Query/Service → Vue → テスト」の縦断で完結させる。
 

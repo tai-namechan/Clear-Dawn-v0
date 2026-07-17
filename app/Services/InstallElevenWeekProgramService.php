@@ -18,6 +18,7 @@ use App\Models\ProgramDayStep;
 use App\Models\ProgramDayTemplate;
 use App\Models\ProgramStepItem;
 use App\Models\ProgramVersion;
+use App\Models\ProgramWeek;
 use App\Models\RoutineItem;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -153,7 +154,7 @@ class InstallElevenWeekProgramService
     }
 
     /**
-     * @return array<int, \App\Models\ProgramWeek> week_number => week
+     * @return array<int, ProgramWeek> week_number => week
      */
     private function createPhasesAndWeeks(ProgramVersion $version): array
     {
@@ -199,7 +200,7 @@ class InstallElevenWeekProgramService
      * メインリフトの週次処方（percent = PDF 掲載重量 ÷ 基準1RM を4桁で固定）。
      *
      * @return array<string, array{percents: list<float>, schemes: list<array{int, int}>, rpes: list<float>}>
-     *                       schemes は [reps, sets]
+     *                                                                                                        schemes は [reps, sets]
      */
     private function weeklyMainTable(): array
     {
@@ -224,7 +225,7 @@ class InstallElevenWeekProgramService
 
     /**
      * @param  array<string, RoutineItem>  $items
-     * @param  array<int, \App\Models\ProgramWeek>  $weeks
+     * @param  array<int, ProgramWeek>  $weeks
      */
     private function createDays(ProgramVersion $version, array $items, array $weeks): void
     {
@@ -453,7 +454,7 @@ class InstallElevenWeekProgramService
      * メインリフト（週次処方つき）を登録する。
      *
      * @param  array<string, array{percents: list<float>, schemes: list<array{int, int}>, rpes: list<float>}>  $mainTable
-     * @param  array<int, \App\Models\ProgramWeek>  $weeks
+     * @param  array<int, ProgramWeek>  $weeks
      */
     private function addMainLift(
         ProgramDayStep $step,

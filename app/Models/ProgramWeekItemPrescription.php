@@ -47,6 +47,9 @@ class ProgramWeekItemPrescription extends Model
     protected function casts(): array
     {
         return [
+            'percent_of_reference' => 'decimal:4',
+            'fixed_load' => 'decimal:2',
+            'rpe_target' => 'decimal:1',
             'is_test' => 'boolean',
         ];
     }

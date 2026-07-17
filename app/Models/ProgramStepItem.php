@@ -75,6 +75,10 @@ class ProgramStepItem extends Model
     protected function casts(): array
     {
         return [
+            'amount_value' => 'decimal:2',
+            'fixed_load' => 'decimal:2',
+            'percent_of_reference' => 'decimal:4',
+            'rpe_target' => 'decimal:1',
             'required_level' => RequiredLevel::class,
             'progression_mode' => ProgressionMode::class,
             'alternates' => 'array',

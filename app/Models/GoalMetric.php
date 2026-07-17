@@ -44,6 +44,10 @@ class GoalMetric extends Model
     protected function casts(): array
     {
         return [
+            'baseline_value' => 'decimal:2',
+            'target_value' => 'decimal:2',
+            'target_low' => 'decimal:2',
+            'target_high' => 'decimal:2',
             'direction' => GoalMetricDirection::class,
         ];
     }

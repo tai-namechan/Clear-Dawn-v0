@@ -2,12 +2,15 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FoodItemController;
+use App\Http\Controllers\GoalController;
+use App\Http\Controllers\GoalMetricController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\LifeAreaController;
 use App\Http\Controllers\MatrixCellItemController;
 use App\Http\Controllers\MealEntryController;
 use App\Http\Controllers\MetricRecordController;
 use App\Http\Controllers\NutritionGoalController;
+use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\RoutineBlockLogController;
 use App\Http\Controllers\RoutineController;
 use App\Http\Controllers\RoutineItemController;
@@ -73,6 +76,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('life-areas/{lifeArea}', [LifeAreaController::class, 'update'])->name('life-areas.update');
     Route::delete('life-areas/{lifeArea}', [LifeAreaController::class, 'destroy'])->name('life-areas.destroy');
     Route::patch('life-areas/{lifeArea}/restore', [LifeAreaController::class, 'restore'])->name('life-areas.restore');
+
+    Route::get('goals', [GoalController::class, 'index'])->name('goals.index');
+    Route::post('goals', [GoalController::class, 'store'])->name('goals.store');
+    Route::get('goals/{goal}', [GoalController::class, 'show'])->name('goals.show');
+    Route::patch('goals/{goal}', [GoalController::class, 'update'])->name('goals.update');
+    Route::delete('goals/{goal}', [GoalController::class, 'destroy'])->name('goals.destroy');
+    Route::post('goals/{goal}/metrics', [GoalMetricController::class, 'store'])->name('goal-metrics.store');
+    Route::patch('goal-metrics/{goalMetric}', [GoalMetricController::class, 'update'])->name('goal-metrics.update');
+    Route::delete('goal-metrics/{goalMetric}', [GoalMetricController::class, 'destroy'])->name('goal-metrics.destroy');
+
+    Route::get('programs', [ProgramController::class, 'index'])->name('programs.index');
+    Route::get('programs/{program}', [ProgramController::class, 'show'])->name('programs.show');
+    Route::get('programs/{program}/roadmap', [ProgramController::class, 'roadmap'])->name('programs.roadmap');
 
     Route::post('matrix-cells/{matrixCell}/items', [MatrixCellItemController::class, 'store'])->name('matrix-cell-items.store');
     Route::patch('matrix-cell-items/{matrixCellItem}', [MatrixCellItemController::class, 'update'])->name('matrix-cell-items.update');

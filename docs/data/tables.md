@@ -473,7 +473,7 @@ M7 着手前に保存要否・保持期間を確定する。
 | program_constraints / program_metric_targets / program_attachments | 配置制約等の program_rule / 指標目標 / 添付（PDF等） |
 | personal_profile_entries | 個人プロファイル（key×value×有効日。1RM・既往・安全方針等。値は import コマンドで投入・リポジトリ非収載） |
 | user_module_settings | モジュール有効/無効（module_key × enabled） |
-| metrics 拡張 | nullable user_id・description_plain・measurement_method・is_advanced 追加 |
+| metrics 拡張 | nullable user_id・description_plain・measurement_method・is_advanced 追加。key のユニークはグローバル一意から (user_id, key) に変更（グローバル行の一意性は seeder / アプリ層で担保） |
 
 ### Phase 2: 実行連携（新テーブルなし・nullable 列追加のみ）
 

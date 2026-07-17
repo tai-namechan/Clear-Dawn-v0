@@ -20,7 +20,7 @@ class ProgramWeekFactory extends Factory
     {
         return [
             'program_version_id' => fn (array $attributes) => ProgramPhase::query()
-                ->findOrFail($attributes['program_phase_id'])->program_version_id,
+                ->whereKey($attributes['program_phase_id'])->firstOrFail()->program_version_id,
             'program_phase_id' => ProgramPhase::factory(),
             'week_number' => 1,
             'starts_on' => '2026-07-16',

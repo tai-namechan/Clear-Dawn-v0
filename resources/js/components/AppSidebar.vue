@@ -4,8 +4,10 @@ import {
     ChartLine,
     CircleCheck,
     Clapperboard,
+    Dumbbell,
     Home,
     Settings,
+    Target,
 } from '@lucide/vue';
 import type { Component } from 'vue';
 import {
@@ -38,6 +40,18 @@ const navItems: CdNavItem[] = [
         title: 'パフォーマンス管理',
         icon: ChartLine,
         href: '/records',
+        matchPrefix: true,
+    },
+    {
+        title: '目標',
+        icon: Target,
+        href: '/goals',
+        matchPrefix: true,
+    },
+    {
+        title: 'プログラム',
+        icon: Dumbbell,
+        href: '/programs',
         matchPrefix: true,
     },
     { title: '動画', icon: Clapperboard, href: '/videos' },
@@ -85,34 +99,36 @@ function isNavActive(item: CdNavItem): boolean {
             <Link
                 :href="dashboard()"
                 aria-label="Clear Dawn ダッシュボード"
-                class="mx-auto mt-5 flex items-baseline font-serif text-white landscape-compact:mt-2 group-data-[collapsible=icon]:mt-1"
+                class="mx-auto mt-5 flex items-baseline font-serif text-white group-data-[collapsible=icon]:mt-1 landscape-compact:mt-2"
             >
                 <span
-                    class="text-6xl leading-none landscape-compact:text-4xl group-data-[collapsible=icon]:text-2xl"
+                    class="text-6xl leading-none group-data-[collapsible=icon]:text-2xl landscape-compact:text-4xl"
                     >C</span
                 >
                 <span
-                    class="-ml-3 translate-y-3 text-5xl leading-none landscape-compact:-ml-2 landscape-compact:translate-y-2 landscape-compact:text-3xl group-data-[collapsible=icon]:hidden"
+                    class="-ml-3 translate-y-3 text-5xl leading-none group-data-[collapsible=icon]:hidden landscape-compact:-ml-2 landscape-compact:translate-y-2 landscape-compact:text-3xl"
                     >D</span
                 >
             </Link>
             <span
-                class="mt-1 font-serif text-[0.7rem] tracking-[0.32em] text-white/70 landscape-compact:tracking-[0.24em] group-data-[collapsible=icon]:hidden"
+                class="mt-1 font-serif text-[0.7rem] tracking-[0.32em] text-white/70 group-data-[collapsible=icon]:hidden landscape-compact:tracking-[0.24em]"
             >
                 Clear Dawn
             </span>
         </SidebarHeader>
 
-        <SidebarContent class="relative z-10 overflow-visible landscape-compact:overflow-y-auto">
+        <SidebarContent
+            class="relative z-10 overflow-visible landscape-compact:overflow-y-auto"
+        >
             <nav
                 aria-label="メインメニュー"
-                class="mt-24 flex flex-col items-center gap-3 landscape-compact:mt-6 landscape-compact:gap-1.5 group-data-[collapsible=icon]:mt-8 group-data-[collapsible=icon]:gap-5"
+                class="mt-24 flex flex-col items-center gap-3 group-data-[collapsible=icon]:mt-8 group-data-[collapsible=icon]:gap-5 landscape-compact:mt-6 landscape-compact:gap-1.5"
             >
                 <template v-for="item in navItems" :key="item.title">
                     <Link
                         :href="item.href"
                         :aria-current="isNavActive(item) ? 'page' : undefined"
-                        class="flex w-24 flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 transition-colors landscape-compact:w-20 landscape-compact:gap-1 landscape-compact:rounded-xl landscape-compact:px-2 landscape-compact:py-1.5 group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-2"
+                        class="flex w-24 flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 transition-colors group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-2 landscape-compact:w-20 landscape-compact:gap-1 landscape-compact:rounded-xl landscape-compact:px-2 landscape-compact:py-1.5"
                         :class="
                             isNavActive(item)
                                 ? 'border-white/15 bg-white/10 text-white'
@@ -126,7 +142,7 @@ function isNavActive(item: CdNavItem): boolean {
                             class="landscape-compact:size-5"
                         />
                         <span
-                            class="font-serif text-xs tracking-[0.2em] whitespace-nowrap landscape-compact:text-[0.65rem] landscape-compact:tracking-[0.12em] group-data-[collapsible=icon]:hidden"
+                            class="font-serif text-xs tracking-[0.2em] whitespace-nowrap group-data-[collapsible=icon]:hidden landscape-compact:text-[0.65rem] landscape-compact:tracking-[0.12em]"
                         >
                             {{ item.title }}
                         </span>

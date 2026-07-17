@@ -61,6 +61,7 @@ class PersonalProfileEntry extends Model
     protected function casts(): array
     {
         return [
+            'value_numeric' => 'decimal:3',
             'value_json' => 'array',
             'effective_from' => 'date',
         ];
