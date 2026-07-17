@@ -145,6 +145,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('meals/{mealEntry}', [MealEntryController::class, 'destroy'])->name('meals.destroy');
 });
 
+Route::redirect('/finance', '/yoyu/money')->middleware(['auth', 'verified']);
+
 require __DIR__.'/settings.php';
 require __DIR__.'/yoyu.php';
 require __DIR__.'/kioku.php';
