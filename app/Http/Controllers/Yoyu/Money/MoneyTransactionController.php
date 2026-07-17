@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Yoyu\Money;
 
+use App\Domain\Yoyu\Money\Models\MoneyAccount;
 use App\Domain\Yoyu\Money\Models\MoneyTransaction;
 use App\Domain\Yoyu\Money\Services\MoneyTransactionService;
 use App\Http\Controllers\Controller;
@@ -38,8 +39,20 @@ class MoneyTransactionController extends Controller
                 'voided_at' => $transaction->voided_at?->toIso8601String(),
             ]);
 
+        $accounts = MoneyAccount::query()
+            ->withoutUserScope()
+            ->where('user_id', $request->user()->id)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn (MoneyAccount $account): array => [
+                'id' => $account->id,
+                'name' => $account->name,
+            ]);
+
         return Inertia::render('Yoyu/Money/Transactions/Index', [
             'transactions' => $transactions,
+            'accounts' => $accounts,
             'pagination' => [
                 'current_page' => $paginator->currentPage(),
                 'last_page' => $paginator->lastPage(),

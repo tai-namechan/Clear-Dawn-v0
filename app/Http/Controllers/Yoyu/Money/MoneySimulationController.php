@@ -34,6 +34,7 @@ class MoneySimulationController extends Controller
                 'base_date' => (string) $simulation->base_date?->toDateString(),
                 'horizon_months' => (int) $simulation->horizon_months,
                 'created_at' => $simulation->created_at?->toIso8601String(),
+                'result_payload' => $simulation->result_payload,
             ]);
 
         return Inertia::render('Yoyu/Money/Simulations/Index', [

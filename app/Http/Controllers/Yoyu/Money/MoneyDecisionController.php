@@ -27,6 +27,9 @@ class MoneyDecisionController extends Controller
                 'decided_on' => (string) $decision->decided_on?->toDateString(),
                 'reviewed_at' => $decision->reviewed_at?->toIso8601String(),
                 'memo' => $decision->memo,
+                'before_payload' => $decision->before_payload,
+                'expected_effect_payload' => $decision->expected_effect_payload,
+                'actual_effect_payload' => $decision->actual_effect_payload,
             ]);
 
         return Inertia::render('Yoyu/Money/Decisions/Index', [

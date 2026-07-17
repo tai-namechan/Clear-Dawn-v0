@@ -59,8 +59,31 @@ class MoneyImportController extends Controller
                 'type' => $account->type->value,
             ]);
 
+        $importId = $request->string('import_id')->toString();
+        $importPayload = null;
+
+        if ($importId !== '') {
+            $import = MoneyImport::query()
+                ->withoutUserScope()
+                ->where('user_id', $user->id)
+                ->whereKey($importId)
+                ->first();
+
+            if ($import !== null) {
+                $importPayload = [
+                    'id' => $import->id,
+                    'account_id' => $import->account_id,
+                    'status' => $import->status->value,
+                    'source_filename' => $import->source_filename,
+                    'row_count' => $import->row_count,
+                    'mapping_config' => $import->mapping_config,
+                ];
+            }
+        }
+
         return Inertia::render('Yoyu/Money/Imports/Create', [
             'accounts' => $accounts,
+            'currentImport' => $importPayload,
         ]);
     }
 
@@ -80,7 +103,9 @@ class MoneyImportController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'CSVをアップロードしました。']);
 
-        return redirect()->route('yoyu.money.imports.index')->with('import_id', $import->id);
+        return redirect()->route('yoyu.money.imports.create', [
+            'import_id' => $import->id,
+        ]);
     }
 
     public function configure(
@@ -94,7 +119,9 @@ class MoneyImportController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => '取込設定を保存しました。']);
 
-        return redirect()->back();
+        return redirect()->route('yoyu.money.imports.create', [
+            'import_id' => $import->id,
+        ]);
     }
 
     public function execute(
@@ -108,7 +135,7 @@ class MoneyImportController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => '取込を開始しました。']);
 
-        return redirect()->back();
+        return redirect()->route('yoyu.money.imports.index');
     }
 
     public function rollback(

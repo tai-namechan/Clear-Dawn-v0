@@ -35,7 +35,7 @@ class MoneySettingsController extends Controller
                 'name' => $category->name,
                 'direction_scope' => $category->direction_scope->value,
                 'flexibility_default' => $category->flexibility_default->value,
-                'cost_behavior_default' => $category->cost_behavior_default->value,
+                'cost_behavior_default' => $category->cost_behavior_default?->value,
                 'is_essential' => (bool) $category->is_essential,
                 'is_active' => (bool) $category->is_active,
                 'sort_order' => (int) $category->sort_order,
