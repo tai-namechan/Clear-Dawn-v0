@@ -24,3 +24,8 @@ Schedule::command('kioku:letters:pilot:dispatch-due')
     ->everyMinute()
     ->withoutOverlapping(5)
     ->onOneServer();
+
+Schedule::command('yoyu-money:purge-imports')
+    ->daily()
+    ->withoutOverlapping(30)
+    ->onOneServer();

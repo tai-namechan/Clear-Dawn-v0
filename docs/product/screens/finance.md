@@ -1,6 +1,11 @@
-# Finance 仕様
+# Finance 仕様（superseded）
 
-対象フェーズ: Phase 3
+> **置き換え済み**: 本ドラフトは実装しない。
+> ヨユウ「お金の余裕」へ統合する。詳細は [ADR-0010](../../adr/0010-yoyu-money-margin-domain.md) と
+> [yoyu-money-margin-design.md](../yoyu-money-margin-design.md) を正とする。
+> 認証後の旧 URL `/finance` は `/yoyu/money` へ redirect する。
+
+対象フェーズ: Phase 3（廃止）
 
 ## 目的
 

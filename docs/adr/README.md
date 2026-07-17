@@ -16,6 +16,7 @@
 | [0007](./0007-routine-system-conversion.md) | Training System から Routine System への転換（汎用化と命名） | 承認済み |
 | [0008](./0008-condition-records-hybrid-schema.md) | 記録系ハイブリッドスキーマ（メトリクス汎用 + 食事専用） | 承認済み |
 | [0009](./0009-meal-records-snapshot.md) | 食事記録の栄養スナップショット | 承認済み |
+| [0010](./0010-yoyu-money-margin-domain.md) | 「お金の余裕」をヨユウの意思決定支援ドメインとして実装する | 承認済み |
 
 ## フォーマット
 
