@@ -455,3 +455,47 @@ index: (user_id, date), (user_id, finance_category_id)
 | status | string(Enum) | pending / adopted / dismissed |
 
 M7 着手前に保存要否・保持期間を確定する。
+
+## セルフマネジメントOS拡張（2026-07-16 確定 / ADR-0010・0011）
+
+列の詳細は各 migration を正とする。ここでは所属と役割のみ列挙する。全テーブル ULID PK・user_id スコープ。
+
+### Phase 1: 目標・プログラム
+
+| テーブル | 役割 |
+|---|---|
+| goals / goal_metrics / goal_change_logs | 階層目標・達成指標（metrics 参照）・理由つき変更履歴。matrix_cell への片方向参照のみ |
+| programs / program_versions | プログラムと版（コピーオンライト。旧版・実行済み記録は不変） |
+| program_phases / program_weeks | フェーズ（intent: base/deload/intensify/taper/test）と週 |
+| program_day_templates / program_day_steps / program_step_items | DAY テンプレート（曜日固定 or 順番制・優先度3段）→ STEP（step_kind 9種）→ 種目処方（1RM比・RPE・左右・テンポ・必須度・代替） |
+| program_week_item_prescriptions | 週×処方のメインリフト重量表（percent_of_reference が正。個人1RMは personal_profile_entries） |
+| program_choice_groups / program_choice_options | 選択式メニュー（例: 水曜） |
+| program_constraints / program_metric_targets / program_attachments | 配置制約等の program_rule / 指標目標 / 添付（PDF等） |
+| personal_profile_entries | 個人プロファイル（key×value×有効日。1RM・既往・安全方針等。値は import コマンドで投入・リポジトリ非収載） |
+| user_module_settings | モジュール有効/無効（module_key × enabled） |
+| metrics 拡張 | nullable user_id・description_plain・measurement_method・is_advanced 追加 |
+
+### Phase 2: 実行連携（新テーブルなし・nullable 列追加のみ）
+
+routine_plans（program_version_id / program_week_id / program_day_template_id / generation_source / choice_option_id / choice_reason / repeat_reason）、
+routine_plan_steps（program_step_item_id / step_kind / required_level）、
+routine_sessions（session_rpe）、routine_session_steps（status_reason / pain_score / pain_location）、
+routine_block_logs（rpe / distance_value / duration_seconds / side / extra json）、
+routine_items（resource_weights json / neural_demand / throw_type / flags / plain_description）
+
+### Phase 3: コンディション・食事
+
+daily_checkins（日次一意・Hooper系0-10・部位別張り json）/ symptom_observations（部位×種別×重症度 — H7/S13 の入力）/
+measurement_sources / personal_baselines（再計算可能キャッシュ）/ daily_resource_states（resource_key 別 EWMA・z_load・relStrain + readiness）/
+nutrition_target_profiles（期間・フェーズ別栄養目標。既存 nutrition_goals は初期値としてコピー後フォールバック）/
+metric_records 拡張（source_id / is_estimated / reliability / corrected_from_id）
+
+### Phase 4: ルール・推奨・判断
+
+rule_definitions（kind: evidence_rule/clinician_rule/user_policy/program_rule/ai_suggestion。params json・根拠・対象・限界・確信度・版）/
+rule_evaluations（日次評価・入力スナップショット）/ recommendations + recommendation_options（scope=承認3段 A/B/C・差分・確信度・不足データ）/
+recommendation_decisions（選択・理由）/ outcome_evaluations（事後評価）
+
+### Phase 5 以降（未実装・ドラフト）
+
+weekly_reports / kioku_learning_exports / kioku_recall_references
