@@ -11,8 +11,9 @@ class CopyPreviousDayMealsService
 {
     /**
      * 前日の食事エントリを指定日へコピーする（ユーザー所有のみ）。
+     * 対象日に既存の記録がある場合は重複防止のためコピーしない（reason: target_not_empty）。
      *
-     * @return array{copied: int}
+     * @return array{copied: int, reason?: string}
      */
     public function handle(User $user, Carbon $targetDate): array
     {
@@ -20,6 +21,16 @@ class CopyPreviousDayMealsService
         $target = $targetDate->toDateString();
 
         return DB::transaction(function () use ($user, $sourceDate, $target): array {
+            $targetHasEntries = MealEntry::query()
+                ->where('user_id', $user->id)
+                ->whereDate('eaten_on', $target)
+                ->lockForUpdate()
+                ->exists();
+
+            if ($targetHasEntries) {
+                return ['copied' => 0, 'reason' => 'target_not_empty'];
+            }
+
             $sourceEntries = MealEntry::query()
                 ->where('user_id', $user->id)
                 ->whereDate('eaten_on', $sourceDate)
@@ -27,7 +38,7 @@ class CopyPreviousDayMealsService
                 ->get();
 
             if ($sourceEntries->isEmpty()) {
-                return ['copied' => 0];
+                return ['copied' => 0, 'reason' => 'source_empty'];
             }
 
             $copied = 0;

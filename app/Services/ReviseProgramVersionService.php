@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Enums\ProgramVersionStatus;
 use App\Models\Program;
 use App\Models\ProgramVersion;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * 承認段 C: コピーオンライトで新 program_version を作る（構造の浅いコピー）。
@@ -34,14 +36,24 @@ class ReviseProgramVersionService
                 'weeks.itemPrescriptions',
             ])->firstOrFail();
 
+            $startsOn = $attributes['starts_on'] ?? $active->starts_on->toDateString();
+            $endsOn = $attributes['ends_on'] ?? $active->ends_on->toDateString();
+
+            // starts_on 省略時のフォールバック解決後にも期間の整合を保証する
+            if (Carbon::parse($endsOn)->lt(Carbon::parse($startsOn))) {
+                throw ValidationException::withMessages([
+                    'ends_on' => '終了日は開始日以降の日付にしてください。',
+                ]);
+            }
+
             $active->update(['status' => ProgramVersionStatus::Superseded]);
 
             /** @var ProgramVersion $newVersion */
             $newVersion = $program->versions()->create([
                 'version_number' => $active->version_number + 1,
                 'status' => ProgramVersionStatus::Active,
-                'starts_on' => $attributes['starts_on'] ?? $active->starts_on->toDateString(),
-                'ends_on' => $attributes['ends_on'] ?? $active->ends_on->toDateString(),
+                'starts_on' => $startsOn,
+                'ends_on' => $endsOn,
                 'change_summary' => $attributes['change_summary'],
                 'change_reason' => $attributes['change_reason'],
                 'approved_at' => now(),

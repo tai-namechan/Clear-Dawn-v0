@@ -338,7 +338,7 @@ async function copyPreviousDay(): Promise<void> {
     message.value = null;
 
     try {
-        const data = await apiFetch<{ copied: number }>(
+        const data = await apiFetch<{ copied: number; reason?: string }>(
             '/meals/copy-previous-day',
             {
                 method: 'POST',
@@ -347,7 +347,10 @@ async function copyPreviousDay(): Promise<void> {
         );
 
         if (data.copied === 0) {
-            message.value = '前日の食事記録がありません。';
+            message.value =
+                data.reason === 'target_not_empty'
+                    ? 'この日には既に食事記録があるためコピーしませんでした。'
+                    : '前日の食事記録がありません。';
         } else {
             message.value = `前日の食事を ${data.copied} 件コピーしました。`;
             router.reload({

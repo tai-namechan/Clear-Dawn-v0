@@ -31,13 +31,20 @@ use App\Models\RoutineItem;
 use App\Models\RoutinePlan;
 use App\Models\RoutineSession;
 use App\Models\RoutineSessionStep;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
 Route::bind('metric', function (string $value): Metric {
-    return Metric::query()->where('key', $value)->firstOrFail();
+    return Metric::query()
+        ->where('key', $value)
+        ->where(function ($query): void {
+            $query->whereNull('user_id')->orWhere('user_id', Auth::id());
+        })
+        ->orderByRaw('user_id is null')
+        ->firstOrFail();
 });
 
 Route::bind('item', function (string $value): RoutineItem {

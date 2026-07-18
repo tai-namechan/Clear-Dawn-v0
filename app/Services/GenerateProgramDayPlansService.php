@@ -22,6 +22,7 @@ use App\Support\ProgramStepKindMapper;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * アクティブなプログラム版から、指定日の DAY テンプレートを RoutinePlan に生成する（冪等）。
@@ -63,25 +64,33 @@ class GenerateProgramDayPlansService
                     continue;
                 }
 
-                $dayTemplate = $this->resolveDayTemplate($version, $user, $date);
-
-                if ($dayTemplate === null) {
-                    continue;
-                }
-
+                // 同一日にこの版のプランが既にあれば再利用する（sequential でも冪等にするため、
+                // テンプレート不問で日付単位に判定する）
                 $existing = RoutinePlan::query()
                     ->where('user_id', $user->id)
+                    ->where('program_version_id', $version->id)
                     ->whereDate('scheduled_on', $date->toDateString())
-                    ->where('program_day_template_id', $dayTemplate->id)
                     ->first();
 
                 if ($existing !== null) {
-                    if ($choiceOptionId !== null && $existing->choice_option_id === null) {
-                        $created->push($this->applyChoice($user, $existing, $dayTemplate, $week, $choiceOptionId));
+                    $existingTemplate = $version->dayTemplates
+                        ->firstWhere('id', $existing->program_day_template_id);
+
+                    if ($choiceOptionId !== null
+                        && $existing->choice_option_id === null
+                        && $existingTemplate !== null
+                        && $existingTemplate->choiceGroup !== null) {
+                        $created->push($this->applyChoice($user, $existing, $existingTemplate, $week, $choiceOptionId));
                     } else {
                         $created->push($existing->load('steps'));
                     }
 
+                    continue;
+                }
+
+                $dayTemplate = $this->resolveDayTemplate($version, $user, $date);
+
+                if ($dayTemplate === null) {
                     continue;
                 }
 
@@ -137,6 +146,12 @@ class GenerateProgramDayPlansService
             'steps.items.weekPrescriptions' => fn ($query) => $query->where('program_week_id', $week->id),
         ]);
 
+        if ($dayTemplate->choiceGroup === null) {
+            $choiceOptionId = null;
+        } else {
+            $this->assertChoiceOptionBelongsToDay($dayTemplate, $choiceOptionId);
+        }
+
         $needsChoice = $dayTemplate->choiceGroup !== null && $choiceOptionId === null;
 
         $plan = $user->routinePlans()->create([
@@ -171,10 +186,13 @@ class GenerateProgramDayPlansService
         }
 
         $dayTemplate->loadMissing([
+            'choiceGroup.options',
             'steps' => fn ($query) => $query->orderBy('sort_order'),
             'steps.items.routineItem',
             'steps.items.weekPrescriptions' => fn ($query) => $query->where('program_week_id', $week->id),
         ]);
+
+        $this->assertChoiceOptionBelongsToDay($dayTemplate, $choiceOptionId);
 
         $plan->steps()->delete();
         $this->snapshotSteps($user, $plan, $dayTemplate, $week, $choiceOptionId);
@@ -186,6 +204,26 @@ class GenerateProgramDayPlansService
         ]);
 
         return $plan->refresh()->load('steps');
+    }
+
+    /**
+     * 選択オプションがこの DAY の choice group に属することを検証する。
+     */
+    private function assertChoiceOptionBelongsToDay(ProgramDayTemplate $dayTemplate, ?string $choiceOptionId): void
+    {
+        if ($choiceOptionId === null) {
+            return;
+        }
+
+        $belongs = $dayTemplate->choiceGroup
+            ?->options
+            ->contains(fn ($option): bool => $option->id === $choiceOptionId) ?? false;
+
+        if (! $belongs) {
+            throw ValidationException::withMessages([
+                'choice_option_id' => 'この DAY で選択できないオプションです。',
+            ]);
+        }
     }
 
     private function snapshotSteps(

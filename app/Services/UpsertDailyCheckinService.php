@@ -9,7 +9,21 @@ use Illuminate\Support\Facades\DB;
 
 class UpsertDailyCheckinService
 {
+    private const UPDATABLE_FIELDS = [
+        'sleep_quality',
+        'fatigue',
+        'muscle_soreness',
+        'stress',
+        'mood',
+        'region_tension',
+        'readiness_self',
+        'note',
+    ];
+
     /**
+     * 部分更新: $attributes に含まれるキーのみ更新し、
+     * 未送信のフィールド（note / region_tension 等）は既存値を保持する。
+     *
      * @param  array{
      *     sleep_quality?: int|null,
      *     fatigue?: int|null,
@@ -23,24 +37,23 @@ class UpsertDailyCheckinService
      */
     public function handle(User $user, Carbon $date, array $attributes): DailyCheckin
     {
-        return DB::transaction(function () use ($user, $date, $attributes): DailyCheckin {
-            /** @var DailyCheckin $checkin */
-            $checkin = DailyCheckin::query()->updateOrCreate(
-                [
+        $values = array_intersect_key($attributes, array_flip(self::UPDATABLE_FIELDS));
+
+        return DB::transaction(function () use ($user, $date, $values): DailyCheckin {
+            $checkin = DailyCheckin::query()
+                ->where('user_id', $user->id)
+                ->whereDate('checked_on', $date->toDateString())
+                ->first();
+
+            if ($checkin === null) {
+                $checkin = new DailyCheckin([
                     'user_id' => $user->id,
                     'checked_on' => $date->toDateString(),
-                ],
-                [
-                    'sleep_quality' => $attributes['sleep_quality'] ?? null,
-                    'fatigue' => $attributes['fatigue'] ?? null,
-                    'muscle_soreness' => $attributes['muscle_soreness'] ?? null,
-                    'stress' => $attributes['stress'] ?? null,
-                    'mood' => $attributes['mood'] ?? null,
-                    'region_tension' => $attributes['region_tension'] ?? null,
-                    'readiness_self' => $attributes['readiness_self'] ?? null,
-                    'note' => $attributes['note'] ?? null,
-                ],
-            );
+                ]);
+            }
+
+            $checkin->fill($values);
+            $checkin->save();
 
             return $checkin;
         });

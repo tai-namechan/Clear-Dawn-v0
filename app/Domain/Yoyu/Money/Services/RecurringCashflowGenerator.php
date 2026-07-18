@@ -51,53 +51,61 @@ final class RecurringCashflowGenerator
         CarbonImmutable $horizonEnd,
         string $timezone,
     ): int {
-        $startOn = CarbonImmutable::parse((string) $rule->start_on->toDateString(), $timezone)->startOfDay();
-        $endOn = $rule->end_on !== null
-            ? CarbonImmutable::parse((string) $rule->end_on->toDateString(), $timezone)->startOfDay()
-            : null;
+        // 並行生成（ダッシュボード表示とシミュレーション作成の同時発火など）でも
+        // 冪等になるよう、ルール行をロックしてから既存 occurrence を読む
+        return (int) DB::transaction(function () use ($user, $rule, $horizonEnd, $timezone): int {
+            /** @var MoneyRecurringRule|null $lockedRule */
+            $lockedRule = MoneyRecurringRule::query()
+                ->withoutUserScope()
+                ->whereKey($rule->id)
+                ->lockForUpdate()
+                ->first();
 
-        $generatedThrough = $rule->generated_through !== null
-            ? CarbonImmutable::parse((string) $rule->generated_through->toDateString(), $timezone)->startOfDay()
-            : null;
+            if ($lockedRule === null || ! $lockedRule->is_active) {
+                return 0;
+            }
 
-        $from = $generatedThrough !== null
-            ? $generatedThrough->addDay()
-            : $startOn;
+            $rule = $lockedRule;
 
-        if ($from->lt($startOn)) {
-            $from = $startOn;
-        }
+            $startOn = CarbonImmutable::parse((string) $rule->start_on->toDateString(), $timezone)->startOfDay();
+            $endOn = $rule->end_on !== null
+                ? CarbonImmutable::parse((string) $rule->end_on->toDateString(), $timezone)->startOfDay()
+                : null;
 
-        $until = $horizonEnd;
-        if ($endOn !== null && $endOn->lt($until)) {
-            $until = $endOn;
-        }
+            $generatedThrough = $rule->generated_through !== null
+                ? CarbonImmutable::parse((string) $rule->generated_through->toDateString(), $timezone)->startOfDay()
+                : null;
 
-        if ($from->gt($until)) {
-            return 0;
-        }
+            $from = $generatedThrough !== null
+                ? $generatedThrough->addDay()
+                : $startOn;
 
-        $existing = MoneyCashflow::query()
-            ->withoutUserScope()
-            ->where('recurring_rule_id', $rule->id)
-            ->whereNotNull('occurrence_on')
-            ->pluck('occurrence_on')
-            ->map(fn ($date): string => CarbonImmutable::parse((string) $date)->toDateString())
-            ->all();
-        $existingSet = array_fill_keys($existing, true);
+            if ($from->lt($startOn)) {
+                $from = $startOn;
+            }
 
-        $occurrences = $this->occurrenceDates($rule, $from, $until, $timezone);
-        $created = 0;
-        $latest = $generatedThrough;
+            $until = $horizonEnd;
+            if ($endOn !== null && $endOn->lt($until)) {
+                $until = $endOn;
+            }
 
-        DB::transaction(function () use (
-            $user,
-            $rule,
-            $occurrences,
-            &$existingSet,
-            &$created,
-            &$latest,
-        ): void {
+            if ($from->gt($until)) {
+                return 0;
+            }
+
+            $existing = MoneyCashflow::query()
+                ->withoutUserScope()
+                ->where('recurring_rule_id', $rule->id)
+                ->whereNotNull('occurrence_on')
+                ->pluck('occurrence_on')
+                ->map(fn ($date): string => CarbonImmutable::parse((string) $date)->toDateString())
+                ->all();
+            $existingSet = array_fill_keys($existing, true);
+
+            $occurrences = $this->occurrenceDates($rule, $from, $until, $timezone);
+            $created = 0;
+            $latest = $generatedThrough;
+
             foreach ($occurrences as $occurrence) {
                 $key = $occurrence->toDateString();
                 if (isset($existingSet[$key])) {
@@ -145,9 +153,9 @@ final class RecurringCashflowGenerator
                 $rule->generated_through = $latest->toDateString();
                 $rule->save();
             }
-        });
 
-        return $created;
+            return $created;
+        });
     }
 
     /**

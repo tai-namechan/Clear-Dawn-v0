@@ -17,6 +17,7 @@ class SettleMoneyCashflowRequest extends FormRequest
         return [
             'amount_minor' => $this->nonNegativeMinorRules(true),
             'occurred_on' => ['required', 'date'],
+            'lock_version' => ['required', 'integer'],
             'account_id' => ['nullable', 'string', $this->ownedExists('yoyu_money_accounts')],
             'create_transaction' => ['nullable', 'boolean'],
             'update_balance' => ['nullable', 'boolean'],

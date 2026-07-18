@@ -23,6 +23,21 @@ class MoneyCsvNormalizerTest extends TestCase
         $this->assertSame('2026-07-15', $date);
     }
 
+    public function test_parse_date_without_format_accepts_known_formats_only(): void
+    {
+        $this->assertSame('2026-07-15', $this->normalizer->parseDate('2026-07-15', []));
+        $this->assertSame('2026-07-05', $this->normalizer->parseDate('2026/7/5', []));
+        $this->assertSame('2026-07-15', $this->normalizer->parseDate('20260715', []));
+        $this->assertSame('2026-07-15', $this->normalizer->parseDate('2026年7月15日', []));
+    }
+
+    public function test_parse_date_without_format_rejects_ambiguous_values(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->normalizer->parseDate('01/02/03', []);
+    }
+
     public function test_parse_amount_strips_currency_and_commas(): void
     {
         $this->assertSame(12345, $this->normalizer->parseAmountToMinor('¥12,345'));

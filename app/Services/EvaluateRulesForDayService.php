@@ -103,14 +103,27 @@ class EvaluateRulesForDayService
                     default => ['triggered' => false, 'inputs' => []],
                 };
 
-                $evaluation = RuleEvaluation::query()->create([
-                    'user_id' => $user->id,
-                    'rule_definition_id' => $rule->id,
-                    'evaluated_on' => $date->toDateString(),
+                // 同一日の再評価は最新結果で上書きし、評価行を増殖させない
+                $evaluation = RuleEvaluation::query()
+                    ->where('user_id', $user->id)
+                    ->where('rule_definition_id', $rule->id)
+                    ->whereDate('evaluated_on', $date->toDateString())
+                    ->first();
+
+                if ($evaluation === null) {
+                    $evaluation = new RuleEvaluation([
+                        'user_id' => $user->id,
+                        'rule_definition_id' => $rule->id,
+                        'evaluated_on' => $date->toDateString(),
+                    ]);
+                }
+
+                $evaluation->fill([
                     'triggered' => $result['triggered'],
                     'inputs_snapshot' => $result['inputs'],
                     'outputs_snapshot' => ['triggered' => $result['triggered']],
                 ]);
+                $evaluation->save();
 
                 if (! $result['triggered']) {
                     continue;

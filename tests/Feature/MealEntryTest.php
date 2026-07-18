@@ -381,4 +381,113 @@ class MealEntryTest extends TestCase
                 ->exists(),
         );
     }
+
+    public function test_copy_previous_day_preserves_meal_type_and_pfc(): void
+    {
+        $user = User::factory()->create();
+
+        MealEntry::factory()->for($user)->create([
+            'eaten_on' => '2026-07-09',
+            'meal_type' => MealType::Dinner,
+            'name' => '鶏むね定食',
+            'quantity' => 1.5,
+            'kcal' => 620,
+            'protein_g' => 45,
+            'fat_g' => 12,
+            'carb_g' => 70,
+            'note' => '大盛り',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('meals.copy-previous-day'), ['date' => '2026-07-10'])
+            ->assertOk()
+            ->assertJsonPath('copied', 1);
+
+        $copy = MealEntry::query()
+            ->where('user_id', $user->id)
+            ->whereDate('eaten_on', '2026-07-10')
+            ->firstOrFail();
+
+        $this->assertSame(MealType::Dinner, $copy->meal_type);
+        $this->assertSame('鶏むね定食', $copy->name);
+        $this->assertEquals(620, $copy->kcal);
+        $this->assertEquals(45, $copy->protein_g);
+        $this->assertEquals(12, $copy->fat_g);
+        $this->assertEquals(70, $copy->carb_g);
+        $this->assertSame('大盛り', $copy->note);
+    }
+
+    public function test_copy_previous_day_is_rejected_when_target_day_already_has_entries(): void
+    {
+        $user = User::factory()->create();
+
+        MealEntry::factory()->for($user)->create([
+            'eaten_on' => '2026-07-09',
+            'name' => '昨日の朝食',
+        ]);
+        MealEntry::factory()->for($user)->create([
+            'eaten_on' => '2026-07-10',
+            'name' => '既存の記録',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('meals.copy-previous-day'), ['date' => '2026-07-10'])
+            ->assertOk()
+            ->assertJsonPath('copied', 0)
+            ->assertJsonPath('reason', 'target_not_empty');
+
+        $this->assertSame(
+            1,
+            MealEntry::query()
+                ->where('user_id', $user->id)
+                ->whereDate('eaten_on', '2026-07-10')
+                ->count(),
+        );
+    }
+
+    public function test_copy_previous_day_double_submit_does_not_duplicate(): void
+    {
+        $user = User::factory()->create();
+
+        MealEntry::factory()->for($user)->create([
+            'eaten_on' => '2026-07-09',
+            'name' => '昨日の朝食',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('meals.copy-previous-day'), ['date' => '2026-07-10'])
+            ->assertOk()
+            ->assertJsonPath('copied', 1);
+
+        $this->actingAs($user)
+            ->postJson(route('meals.copy-previous-day'), ['date' => '2026-07-10'])
+            ->assertOk()
+            ->assertJsonPath('copied', 0)
+            ->assertJsonPath('reason', 'target_not_empty');
+
+        $this->assertSame(
+            1,
+            MealEntry::query()
+                ->where('user_id', $user->id)
+                ->whereDate('eaten_on', '2026-07-10')
+                ->count(),
+        );
+    }
+
+    public function test_copy_previous_day_with_empty_source_copies_nothing(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->postJson(route('meals.copy-previous-day'), ['date' => '2026-07-10'])
+            ->assertOk()
+            ->assertJsonPath('copied', 0)
+            ->assertJsonPath('reason', 'source_empty');
+    }
+
+    public function test_guests_cannot_copy_previous_day(): void
+    {
+        $this->postJson(route('meals.copy-previous-day'), ['date' => '2026-07-10'])
+            ->assertUnauthorized();
+    }
 }

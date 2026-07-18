@@ -249,6 +249,7 @@ final class MoneyCashflowService
      * @param  array{
      *     amount_minor: int,
      *     occurred_on: string,
+     *     lock_version?: int,
      *     account_id?: string|null,
      *     create_transaction?: bool,
      *     update_balance?: bool,
@@ -274,6 +275,10 @@ final class MoneyCashflowService
                 ->first();
 
             abort_unless($locked !== null, 404);
+
+            if (isset($options['lock_version']) && (int) $locked->lock_version !== (int) $options['lock_version']) {
+                abort(409, 'Cashflow lock version mismatch.');
+            }
 
             if (in_array($locked->status, [
                 MoneyCashflowStatus::Settled,
