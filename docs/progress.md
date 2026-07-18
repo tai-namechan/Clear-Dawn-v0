@@ -36,7 +36,21 @@ Phase 2〜4 の縦断（2026-07-17 追加）:
 | Phase 4 | `rule_definitions`〜`outcome_evaluations`、`EvaluateRulesForDayService`、作戦カード UI（`Today/Index`） |
 | Feature テスト | `ProgramDayPlanGenerationTest`・`TodayOpsPhaseTest`・`ProgramVersionReviseTest` |
 
-積み残し: DAY/STEP/処方の編集 API、program_attachments アップロード UI、承認 B（期間再生成）UI、コンディション専用タブ画面の仕上げ、ハードゲート割り込みのクールダウン永続化、outcome_evaluations の事後評価 UI。
+### 後回しバックログ（意図的スコープ外・忘れ防止）
+
+> 2026-07-17 判断: Phase 2〜4 の本線（生成・チェックイン・作戦カード承認A・版改訂C）は縦通した。  
+> 下記は **バグではなく後続フェーズで拾う項目**。仕様の正は各画面 docs / ADR。着手時は本表を更新する。
+
+| ID | 項目 | 現状 | 拾う目安 | 仕様の正 | 実装の手がかり |
+|---|---|---|---|---|---|
+| SM-D01 | DAY/STEP/item CRUD・週処方 upsert API | 閲覧のみ（seed/install で投入） | Phase 2 仕上げ or プログラム編集マイルストーン | [programs.md](./product/screens/programs.md) | `ProgramController` は read のみ。FormRequest/Service 未作成 |
+| SM-D02 | `program_attachments` アップロード UI | テーブル・Model のみ | 同上（編集と同時が自然） | programs.md / tables.md Phase1 | `ProgramAttachment` 既存。Video 署名付き URL パターンを流用可 |
+| SM-D03 | 承認 B（期間調整・未実行プラン再生成） | 未実装 | Phase 4 拡張 or Phase 5 手前 | programs.md 承認3段 / today-ops.md | A=`ApplyTodayPlanAdjustmentService`、C=`ReviseProgramVersionService` の間に Service を新設 |
+| SM-D04 | ハードゲート割り込み 1日1件・48h クールダウン永続化 | 当日評価内の `interruptUsed` のみ | Phase 4 仕上げ | ADR-0011 / today-ops.md | `rule_evaluations` or 専用 cooldown 行で last_interrupt_at を保持 |
+| SM-D05 | `outcome_evaluations` 事後評価 UI | テーブルのみ | Phase 5（週次レポート）と同時が自然 | ADR-0011 | Model/Factory 済み。セッション完了後の入力導線が未配線 |
+| SM-D06 | コンディション専用タブ画面の仕上げ | `/today` に checkin/症状あり。records 側タブ再構成なし | Phase 3 仕上げ | today-ops.md §7–8 / records.md | H7 受診依頼リスト・古い測定データの専用画面 |
+| SM-D07 | ロードマップの実績状態表示 | 処方重量表示まで。セッション実績連携なし | Phase 2 プラン連携の延長 | programs.md ロードマップ | `GetProgramRoadmapQuery` + `routine_plans`/`sessions` を週×DAY で集約 |
+| SM-D08 | today-ops 表示順の残り（未入力測定・受診依頼リスト・コンディションへのリンク） | カード/プログラム/チェックイン/栄養まで | Phase 3〜4 仕上げ | today-ops.md 表示順 6–8 | `GetTodayOpsQuery` に stale metrics / H7 visit list を追加 |
 
 各マイルストーンは「Route → Controller → Query/Service → Vue → テスト」の縦断で完結させる。
 

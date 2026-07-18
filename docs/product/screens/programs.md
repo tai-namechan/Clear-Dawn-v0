@@ -34,6 +34,17 @@ Program（プログラム）
 
 API: programs CRUD、versions（POST /programs/{program}/versions = 版改訂）、day/step/item CRUD、week 処方 upsert。
 
+## 実装メモ（2026-07-17）
+
+実装済み: 一覧・詳細・ロードマップ（表示）、`POST /programs/{program}/versions`（版改訂 C・コピーオンライト）、seed/install。
+
+**後回し**（詳細 ID は [progress.md 後回しバックログ](../../progress.md)）:
+
+- day/step/item CRUD・週処方 upsert → SM-D01
+- `program_attachments` アップロード UI → SM-D02
+- 承認 B（期間調整・未実行プラン再生成）→ SM-D03
+- ロードマップの実績状態（セッション連携）→ SM-D07
+
 ## 重量の扱い（個人値分離）
 
 - メインリフト処方は **基準リフト1RM比（percent_of_reference）** で保存する。
