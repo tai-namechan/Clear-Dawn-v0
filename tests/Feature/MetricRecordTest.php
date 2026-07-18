@@ -164,6 +164,7 @@ class MetricRecordTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Records/Condition')
                 ->has('chartSeries')
+                ->has('checkin')
                 ->where('metrics', fn ($metrics) => collect($metrics)->contains(
                     fn (array $entry): bool => $entry['metric']['key'] === 'weight'
                         && $entry['record'] !== null

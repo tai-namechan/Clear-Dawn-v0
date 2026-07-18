@@ -339,4 +339,46 @@ class MealEntryTest extends TestCase
                 ->has('mealSections')
             );
     }
+
+    public function test_user_can_copy_previous_day_meals_scoped_to_owner(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        MealEntry::factory()->for($user)->create([
+            'eaten_on' => '2026-07-09',
+            'meal_type' => MealType::Breakfast,
+            'name' => '昨日の朝食',
+            'kcal' => 400,
+            'protein_g' => 20,
+            'fat_g' => 10,
+            'carb_g' => 50,
+        ]);
+        MealEntry::factory()->for($other)->create([
+            'eaten_on' => '2026-07-09',
+            'name' => '他人の食事',
+            'kcal' => 999,
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('meals.copy-previous-day'), ['date' => '2026-07-10'])
+            ->assertOk()
+            ->assertJsonPath('copied', 1);
+
+        $this->assertTrue(
+            MealEntry::query()
+                ->where('user_id', $user->id)
+                ->whereDate('eaten_on', '2026-07-10')
+                ->where('name', '昨日の朝食')
+                ->where('kcal', 400)
+                ->exists(),
+        );
+        $this->assertFalse(
+            MealEntry::query()
+                ->where('user_id', $user->id)
+                ->whereDate('eaten_on', '2026-07-10')
+                ->where('name', '他人の食事')
+                ->exists(),
+        );
+    }
 }

@@ -6,6 +6,7 @@ use App\Http\Requests\MetricRecords\UpsertDailyMetricsRequest;
 use App\Http\Resources\MetricRecordResource;
 use App\Http\Resources\MetricResource;
 use App\Http\Resources\NutritionGoalResource;
+use App\Models\DailyCheckin;
 use App\Models\Metric;
 use App\Models\MetricRecord;
 use App\Queries\GetDailyMealsQuery;
@@ -91,11 +92,28 @@ class MetricRecordController extends Controller
                 ->all();
         }
 
+        $checkin = DailyCheckin::query()
+            ->where('user_id', $request->user()->id)
+            ->whereDate('checked_on', $recordedOn->toDateString())
+            ->first();
+
         return Inertia::render('Records/Condition', [
             'date' => $recordedOn->toDateString(),
             'metrics' => $this->mapDailyMetrics($daily),
             'previousMetrics' => $this->mapDailyMetrics($previous),
             'chartSeries' => $chartSeries,
+            'checkin' => $checkin === null ? null : [
+                'id' => $checkin->id,
+                'checked_on' => $checkin->checked_on->toDateString(),
+                'sleep_quality' => $checkin->sleep_quality,
+                'fatigue' => $checkin->fatigue,
+                'muscle_soreness' => $checkin->muscle_soreness,
+                'stress' => $checkin->stress,
+                'mood' => $checkin->mood,
+                'region_tension' => $checkin->region_tension,
+                'readiness_self' => $checkin->readiness_self,
+                'note' => $checkin->note,
+            ],
         ]);
     }
 
