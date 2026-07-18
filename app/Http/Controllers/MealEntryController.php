@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\MealEntries\CopyPreviousDayMealsRequest;
 use App\Http\Requests\MealEntries\StoreMealEntryRequest;
 use App\Http\Requests\MealEntries\UpdateMealEntryRequest;
 use App\Http\Resources\MealEntryResource;
@@ -9,6 +10,7 @@ use App\Http\Resources\NutritionGoalResource;
 use App\Models\MealEntry;
 use App\Queries\GetDailyMealsQuery;
 use App\Queries\GetNutritionChartQuery;
+use App\Services\CopyPreviousDayMealsService;
 use App\Services\CreateMealEntryService;
 use App\Services\DeleteMealEntryService;
 use App\Services\UpdateMealEntryService;
@@ -87,5 +89,17 @@ class MealEntryController extends Controller
         $service->handle($mealEntry);
 
         return response()->json(['deleted' => true]);
+    }
+
+    public function copyPreviousDay(
+        CopyPreviousDayMealsRequest $request,
+        CopyPreviousDayMealsService $service,
+    ): JsonResponse {
+        $result = $service->handle(
+            $request->user(),
+            Carbon::parse($request->validated('date')),
+        );
+
+        return response()->json($result);
     }
 }

@@ -18,6 +18,10 @@ use Illuminate\Support\Carbon;
  */
 class GetTodayOpsQuery
 {
+    public function __construct(
+        private readonly GetDailyMealsQuery $dailyMealsQuery,
+    ) {}
+
     public function handle(User $user, Carbon $date): array
     {
         $checkin = DailyCheckin::query()
@@ -62,6 +66,7 @@ class GetTodayOpsQuery
             ->first();
 
         $nutritionGoal = NutritionGoal::query()->where('user_id', $user->id)->first();
+        $mealDay = $this->dailyMealsQuery->handle($user, $date);
 
         return [
             'checkin' => $checkin === null ? null : [
@@ -136,6 +141,7 @@ class GetTodayOpsQuery
                     'fat_g' => $nutritionGoal->fat_g,
                     'carb_g' => $nutritionGoal->carb_g,
                 ],
+                'intake' => $mealDay['totals'],
             ],
         ];
     }

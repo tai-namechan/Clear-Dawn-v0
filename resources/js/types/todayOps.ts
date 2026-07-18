@@ -11,6 +11,15 @@ export type TodayOpsCheckin = {
     note: string | null;
 };
 
+export type CheckinFormState = {
+    sleep_quality: number;
+    fatigue: number;
+    muscle_soreness: number;
+    stress: number;
+    mood: number;
+    readiness_self: number;
+};
+
 export type TodayOpsProgramContext = {
     plan_id: string;
     title: string;
@@ -64,6 +73,12 @@ export type TodayOpsNutrition = {
         fat_g: string;
         carb_g: string;
     } | null;
+    intake?: {
+        kcal: number;
+        protein_g: number;
+        fat_g: number;
+        carb_g: number;
+    };
 };
 
 export type TodayOps = {

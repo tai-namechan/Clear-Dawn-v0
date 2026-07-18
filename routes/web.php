@@ -163,6 +163,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('meals', [MealEntryController::class, 'index'])->name('meals.index');
     Route::post('meals', [MealEntryController::class, 'store'])->name('meals.store');
+    Route::post('meals/copy-previous-day', [MealEntryController::class, 'copyPreviousDay'])
+        ->name('meals.copy-previous-day');
     Route::get('meals/foods', [FoodItemController::class, 'index'])->name('meals.foods.index');
     Route::post('meals/foods', [FoodItemController::class, 'store'])->name('meals.foods.store');
     Route::patch('meals/foods/{foodItem}', [FoodItemController::class, 'update'])->name('meals.foods.update');
