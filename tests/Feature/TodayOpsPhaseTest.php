@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Services\GenerateProgramDayPlansService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class TodayOpsPhaseTest extends TestCase
@@ -218,5 +219,55 @@ class TodayOpsPhaseTest extends TestCase
                 'reason' => 'ng',
             ])
             ->assertForbidden();
+    }
+
+    public function test_today_default_date_uses_user_timezone_not_utc(): void
+    {
+        // UTC 07-17 20:00 == JST 07-18 05:00 — UTC基準だと「昨日」になる境界。
+        config(['app.timezone' => 'UTC']);
+        Carbon::setTestNow(Carbon::parse('2026-07-17 20:00:00', 'UTC'));
+
+        $user = User::factory()->create(['timezone' => 'Asia/Tokyo']);
+
+        $this->actingAs($user)
+            ->get(route('today.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Today/Index')
+                ->where('date', '2026-07-18')
+            );
+
+        Carbon::setTestNow();
+    }
+
+    public function test_checkin_without_checked_on_defaults_to_user_timezone_today(): void
+    {
+        config(['app.timezone' => 'UTC']);
+        Carbon::setTestNow(Carbon::parse('2026-07-17 20:00:00', 'UTC'));
+
+        $user = User::factory()->create(['timezone' => 'Asia/Tokyo']);
+
+        $this->actingAs($user)
+            ->putJson(route('today.checkin.upsert'), [
+                'fatigue' => 4,
+            ])
+            ->assertOk()
+            ->assertJsonPath('checkin.checked_on', '2026-07-18');
+
+        $checkin = DailyCheckin::query()->where('user_id', $user->id)->firstOrFail();
+        $this->assertSame('2026-07-18', $checkin->checked_on->toDateString());
+
+        Carbon::setTestNow();
+    }
+
+    public function test_invalid_today_date_query_redirects_with_errors(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->from(route('dashboard'))
+            ->get(route('today.index', ['date' => 'not-a-date']))
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHasErrors(['date']);
     }
 }

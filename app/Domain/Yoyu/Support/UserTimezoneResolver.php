@@ -3,6 +3,7 @@
 namespace App\Domain\Yoyu\Support;
 
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use DateTimeZone;
 use Exception;
 
@@ -23,6 +24,14 @@ final class UserTimezoneResolver
         }
 
         return $this->validate($candidate) ?? 'UTC';
+    }
+
+    /**
+     * Calendar "today" for the user (date-only Y-m-d in their timezone).
+     */
+    public function todayDateString(?User $user = null): string
+    {
+        return CarbonImmutable::now($this->for($user))->toDateString();
     }
 
     public function validate(string $timezone): ?string

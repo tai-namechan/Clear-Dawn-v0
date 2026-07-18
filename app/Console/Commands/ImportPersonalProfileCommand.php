@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 
 /**
- * 個人プロファイル（1RM・既往・安全方針等）を JSON から投入する（ADR-0010）。
+ * 個人プロファイル（1RM・既往・安全方針等）を JSON から投入する（ADR-0012）。
  * 個人実測値はリポジトリに含めないため、既定パスは gitignore 済みの personal/ 配下。
  *
  * JSON 形式: [{"key": "one_rm_bench", "value_numeric": 57, "unit": "kg",

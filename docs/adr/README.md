@@ -17,6 +17,8 @@
 | [0008](./0008-condition-records-hybrid-schema.md) | 記録系ハイブリッドスキーマ（メトリクス汎用 + 食事専用） | 承認済み |
 | [0009](./0009-meal-records-snapshot.md) | 食事記録の栄養スナップショット | 承認済み |
 | [0010](./0010-yoyu-money-margin-domain.md) | 「お金の余裕」をヨユウの意思決定支援ドメインとして実装する | 承認済み |
+| [0011](./0011-five-data-kinds-and-rule-engine.md) | 5データ種の分離と決定論ルールエンジン | 承認済み |
+| [0012](./0012-program-layer-on-routine-engine.md) | ルーティンエンジン上のプログラム層（版管理・DAYテンプレート・プラン生成） | 承認済み |
 
 ## フォーマット
 

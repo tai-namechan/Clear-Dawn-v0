@@ -9,6 +9,7 @@ use App\Models\NutritionGoal;
 use App\Models\User;
 use Database\Seeders\MatrixRowSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -489,5 +490,34 @@ class MealEntryTest extends TestCase
     {
         $this->postJson(route('meals.copy-previous-day'), ['date' => '2026-07-10'])
             ->assertUnauthorized();
+    }
+
+    public function test_meals_default_date_uses_user_timezone_not_utc(): void
+    {
+        config(['app.timezone' => 'UTC']);
+        Carbon::setTestNow(Carbon::parse('2026-07-17 20:00:00', 'UTC'));
+
+        $user = User::factory()->create(['timezone' => 'Asia/Tokyo']);
+
+        $this->actingAs($user)
+            ->get(route('meals.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Meals/Index')
+                ->where('date', '2026-07-18')
+            );
+
+        Carbon::setTestNow();
+    }
+
+    public function test_invalid_meals_date_query_redirects_with_errors(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->from(route('dashboard'))
+            ->get(route('meals.index', ['date' => 'not-a-date']))
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHasErrors(['date']);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Yoyu\Support\UserTimezoneResolver;
+use App\Http\Requests\MetricRecords\ShowDailyRecordsRequest;
 use App\Http\Requests\MetricRecords\UpsertDailyMetricsRequest;
 use App\Http\Resources\MetricRecordResource;
 use App\Http\Resources\MetricResource;
@@ -26,19 +28,23 @@ use Inertia\Response;
 class MetricRecordController extends Controller
 {
     public function index(
-        Request $request,
+        ShowDailyRecordsRequest $request,
         GetDailyMetricsQuery $query,
         GetDailyMealsQuery $mealsQuery,
         EnsureMetricsService $ensureMetrics,
+        UserTimezoneResolver $timezoneResolver,
     ): Response {
         $ensureMetrics->handle();
 
-        $recordedOn = Carbon::parse($request->input('date', now()->toDateString()));
+        $user = $request->user();
+        $recordedOn = Carbon::parse(
+            $request->validated('date') ?? $timezoneResolver->todayDateString($user),
+        );
         $previousOn = $recordedOn->copy()->subDay();
 
-        $daily = $query->handle($request->user(), $recordedOn);
-        $previous = $query->handle($request->user(), $previousOn);
-        $meals = $mealsQuery->handle($request->user(), $recordedOn);
+        $daily = $query->handle($user, $recordedOn);
+        $previous = $query->handle($user, $previousOn);
+        $meals = $mealsQuery->handle($user, $recordedOn);
 
         return Inertia::render('Records/Index', [
             'date' => $recordedOn->toDateString(),
@@ -58,19 +64,23 @@ class MetricRecordController extends Controller
     }
 
     public function condition(
-        Request $request,
+        ShowDailyRecordsRequest $request,
         GetDailyMetricsQuery $query,
         GetMetricChartQuery $chartQuery,
         EnsureMetricsService $ensureMetrics,
+        UserTimezoneResolver $timezoneResolver,
     ): Response {
         $ensureMetrics->handle();
 
-        $recordedOn = Carbon::parse($request->input('date', now()->toDateString()));
+        $user = $request->user();
+        $recordedOn = Carbon::parse(
+            $request->validated('date') ?? $timezoneResolver->todayDateString($user),
+        );
         $previousOn = $recordedOn->copy()->subDay();
         $from = $recordedOn->copy()->subDays(6);
 
-        $daily = $query->handle($request->user(), $recordedOn);
-        $previous = $query->handle($request->user(), $previousOn);
+        $daily = $query->handle($user, $recordedOn);
+        $previous = $query->handle($user, $previousOn);
 
         $chartKeys = ['weight', 'sleep_minutes', 'pitch_speed_max'];
         $metricsByKey = Metric::query()->whereIn('key', $chartKeys)->get()->keyBy('key');
@@ -130,9 +140,15 @@ class MetricRecordController extends Controller
         return response()->json(['saved' => true]);
     }
 
-    public function show(Request $request, Metric $metric, GetMetricHistoryQuery $historyQuery, GetMetricChartQuery $chartQuery): Response
-    {
-        [$from, $to, $period] = $this->resolveChartRange($request);
+    public function show(
+        Request $request,
+        Metric $metric,
+        GetMetricHistoryQuery $historyQuery,
+        GetMetricChartQuery $chartQuery,
+        UserTimezoneResolver $timezoneResolver,
+    ): Response {
+        $today = $timezoneResolver->todayDateString($request->user());
+        [$from, $to, $period] = $this->resolveChartRange($request, $today);
         $granularity = $this->resolveGranularity($request);
 
         $history = $historyQuery->handle($request->user(), $metric, $from, $to);
@@ -149,9 +165,13 @@ class MetricRecordController extends Controller
         ]);
     }
 
-    public function strength(Request $request, GetStrengthChartQuery $chartQuery): Response
-    {
-        [$from, $to, $period] = $this->resolveChartRange($request);
+    public function strength(
+        Request $request,
+        GetStrengthChartQuery $chartQuery,
+        UserTimezoneResolver $timezoneResolver,
+    ): Response {
+        $today = $timezoneResolver->todayDateString($request->user());
+        [$from, $to, $period] = $this->resolveChartRange($request, $today);
 
         $chartPoints = $chartQuery->handle($request->user(), $from, $to);
 
@@ -193,9 +213,9 @@ class MetricRecordController extends Controller
     /**
      * @return array{0: Carbon, 1: Carbon, 2: string|null}
      */
-    private function resolveChartRange(Request $request): array
+    private function resolveChartRange(Request $request, string $today): array
     {
-        $to = Carbon::parse($request->input('to', now()->toDateString()))->startOfDay();
+        $to = Carbon::parse($request->input('to', $today))->startOfDay();
         $period = $request->input('period');
         $period = is_string($period) && in_array($period, ['week', 'month', '3months', 'year'], true)
             ? $period
@@ -206,7 +226,7 @@ class MetricRecordController extends Controller
             'month' => $to->copy()->subMonthNoOverflow(),
             '3months' => $to->copy()->subMonthsNoOverflow(3),
             'year' => $to->copy()->subYearNoOverflow(),
-            default => Carbon::parse($request->input('from', now()->subMonths(3)->toDateString()))->startOfDay(),
+            default => Carbon::parse($request->input('from', Carbon::parse($today)->subMonths(3)->toDateString()))->startOfDay(),
         };
 
         if ($from->greaterThan($to)) {

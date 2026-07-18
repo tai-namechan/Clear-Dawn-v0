@@ -13,7 +13,7 @@ class GetProgramRoadmapQuery
 {
     /**
      * フェーズ帯 + 週タブ + DAY カード + メインリフト週次重量表を返す。
-     * 表示重量 = 個人1RM（personal_profile_entries）× percent を 1.25kg 丸め（ADR-0010）。
+     * 表示重量 = 個人1RM（personal_profile_entries）× percent を 1.25kg 丸め（ADR-0012）。
      *
      * @return array<string, mixed>
      */

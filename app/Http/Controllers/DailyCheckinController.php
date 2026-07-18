@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Yoyu\Support\UserTimezoneResolver;
 use App\Http\Requests\DailyCheckins\UpsertDailyCheckinRequest;
 use App\Services\ComputeDailyResourceStatesService;
 use App\Services\EvaluateRulesForDayService;
@@ -16,9 +17,12 @@ class DailyCheckinController extends Controller
         UpsertDailyCheckinService $service,
         ComputeDailyResourceStatesService $computeResourceStates,
         EvaluateRulesForDayService $evaluateRules,
+        UserTimezoneResolver $timezoneResolver,
     ): JsonResponse {
-        $date = Carbon::parse($request->validated('checked_on') ?? now()->toDateString());
         $user = $request->user();
+        $date = Carbon::parse(
+            $request->validated('checked_on') ?? $timezoneResolver->todayDateString($user),
+        );
 
         $checkin = $service->handle($user, $date, $request->validated());
         $states = $computeResourceStates->handle($user, $date);
