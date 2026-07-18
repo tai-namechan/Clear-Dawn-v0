@@ -240,6 +240,24 @@ class TodayOpsPhaseTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_today_default_date_uses_asia_tokyo_when_user_timezone_is_null(): void
+    {
+        config(['app.timezone' => 'UTC']);
+        Carbon::setTestNow(Carbon::parse('2026-07-17 20:00:00', 'UTC'));
+
+        $user = User::factory()->create(['timezone' => null]);
+
+        $this->actingAs($user)
+            ->get(route('today.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Today/Index')
+                ->where('date', '2026-07-18')
+            );
+
+        Carbon::setTestNow();
+    }
+
     public function test_checkin_without_checked_on_defaults_to_user_timezone_today(): void
     {
         config(['app.timezone' => 'UTC']);

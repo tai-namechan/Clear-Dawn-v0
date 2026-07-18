@@ -151,7 +151,7 @@
 
 ## 日付・タイムゾーン
 
-- **日付の正はユーザー TZ**（`users.timezone` → `UserTimezoneResolver`）。`GET /meals` の `?date=` / `?from=` / `?to=` 未指定時の既定はユーザー TZ のカレンダー日。
+- **日付の正はユーザー TZ**（`users.timezone` → `UserTimezoneResolver`。未設定時は `Asia/Tokyo`）。`GET /meals` の `?date=` / `?from=` / `?to=` 未指定時の既定はユーザー TZ のカレンダー日。
 - 不正な日付クエリはバリデーションエラー（Inertia/ブラウザはリダイレクト＋エラー、JSON は 422）。
 
 ## 昨日からコピー

@@ -62,7 +62,7 @@ M4 着手前に ADR として確定する。詳細ドラフトは [../../data/ta
 
 ## 設計方針
 
-- 日次データは `date` 型カラムで持つ（datetime にしない）。**日付の正はユーザー TZ**（`users.timezone` → `UserTimezoneResolver`。未設定時は app timezone → UTC）
+- 日次データは `date` 型カラムで持つ（datetime にしない）。**日付の正はユーザー TZ**（`users.timezone` → `UserTimezoneResolver`。未設定時は `Asia/Tokyo`）
 - 想定件数: メトリクスあたり 365 件/年 × 複数メトリクス。グラフは期間指定で取得
 - 記録の削除は物理削除でよい（履歴性より入力ミス訂正を優先）
 

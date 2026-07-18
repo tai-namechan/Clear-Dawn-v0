@@ -244,7 +244,7 @@ class GenerateProgramDayPlansService
 
             /** @var ProgramStepItem $item */
             foreach ($dayStep->items as $item) {
-                $resolved = $this->resolveTargets($user, $item, $week);
+                $resolved = $this->resolveTargets($user, $item, $week, $plan->scheduled_on);
 
                 $plan->steps()->create([
                     'routine_item_id' => $item->routine_item_id,
@@ -278,8 +278,9 @@ class GenerateProgramDayPlansService
      *     rpe_target: string|null
      * }
      */
-    private function resolveTargets(User $user, ProgramStepItem $item, ProgramWeek $week): array
+    private function resolveTargets(User $user, ProgramStepItem $item, ProgramWeek $week, \DateTimeInterface $asOf): array
     {
+        $asOfCarbon = Carbon::parse($asOf->format('Y-m-d'));
         /** @var ProgramWeekItemPrescription|null $prescription */
         $prescription = $item->weekPrescriptions->first(
             fn (ProgramWeekItemPrescription $row): bool => $row->program_week_id === $week->id,
@@ -297,7 +298,7 @@ class GenerateProgramDayPlansService
         if ($fixedLoad !== null) {
             $targetLoad = (float) $fixedLoad;
         } elseif ($percent !== null && $item->reference_lift !== null) {
-            $oneRm = PersonalProfileEntry::currentFor($user, $item->reference_lift)?->value_numeric;
+            $oneRm = PersonalProfileEntry::currentFor($user, $item->reference_lift, $asOfCarbon)?->value_numeric;
 
             if ($oneRm !== null) {
                 $targetLoad = LoadRounding::r125((float) $oneRm * (float) $percent);

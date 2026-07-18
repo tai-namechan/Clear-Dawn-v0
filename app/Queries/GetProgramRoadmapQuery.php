@@ -2,6 +2,7 @@
 
 namespace App\Queries;
 
+use App\Domain\Yoyu\Support\UserTimezoneResolver;
 use App\Models\PersonalProfileEntry;
 use App\Models\Program;
 use App\Models\ProgramWeekItemPrescription;
@@ -11,6 +12,10 @@ use Illuminate\Support\Carbon;
 
 class GetProgramRoadmapQuery
 {
+    public function __construct(
+        private readonly UserTimezoneResolver $timezoneResolver,
+    ) {}
+
     /**
      * フェーズ帯 + 週タブ + DAY カード + メインリフト週次重量表を返す。
      * 表示重量 = 個人1RM（personal_profile_entries）× percent を 1.25kg 丸め（ADR-0012）。
@@ -30,7 +35,9 @@ class GetProgramRoadmapQuery
 
         $oneRepMaxes = [];
 
-        $currentWeek = $version->weekFor(Carbon::today());
+        $currentWeek = $version->weekFor(
+            Carbon::parse($this->timezoneResolver->todayDateString($user)),
+        );
 
         return [
             'version' => [

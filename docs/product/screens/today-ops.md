@@ -29,8 +29,8 @@
 
 ## 日付・タイムゾーン
 
-- **日付の正はユーザー TZ**（`users.timezone` → `UserTimezoneResolver`。未設定時は `config('app.timezone')` → UTC）。
-- `/today`・チェックイン・症状観察・プログラム選択の「今日」既定値はユーザー TZ のカレンダー日（`Y-m-d`）。app 既定 UTC のまま時刻で切らない。
+- **日付の正はユーザー TZ**（`users.timezone` → `UserTimezoneResolver`。未設定・不正値時は製品既定 `Asia/Tokyo`。Laravel の `app.timezone=UTC` には落とさない）。
+- `/today`・チェックイン・症状観察・プログラム選択の「今日」既定値はユーザー TZ のカレンダー日（`Y-m-d`）。
 - `?date=` は任意。不正値はバリデーションエラー（Inertia/ブラウザはリダイレクト＋エラー、JSON は 422）。
 
 ## チェックイン API（部分更新）

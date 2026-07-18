@@ -8,22 +8,22 @@ use DateTimeZone;
 use Exception;
 
 /**
- * Resolve a user's IANA timezone, falling back to app config then UTC.
+ * Resolve a user's IANA timezone.
+ *
+ * Fallback is Asia/Tokyo (Clear Dawn product default), not Laravel's UTC app.timezone.
+ * Money / self-management / records share this resolver for calendar "today".
  */
 final class UserTimezoneResolver
 {
+    public const DEFAULT_TIMEZONE = 'Asia/Tokyo';
+
     public function for(?User $user = null): string
     {
         if ($user !== null && is_string($user->timezone) && $user->timezone !== '') {
-            return $this->validate($user->timezone) ?? 'UTC';
+            return $this->validate($user->timezone) ?? self::DEFAULT_TIMEZONE;
         }
 
-        $candidate = config('app.timezone', 'UTC');
-        if (! is_string($candidate) || $candidate === '') {
-            return 'UTC';
-        }
-
-        return $this->validate($candidate) ?? 'UTC';
+        return self::DEFAULT_TIMEZONE;
     }
 
     /**
