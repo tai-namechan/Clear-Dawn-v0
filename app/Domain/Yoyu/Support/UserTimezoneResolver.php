@@ -7,13 +7,15 @@ use DateTimeZone;
 use Exception;
 
 /**
- * Phase 1: users have no timezone column — use config('app.timezone') with UTC fallback.
+ * Resolve a user's IANA timezone, falling back to app config then UTC.
  */
 final class UserTimezoneResolver
 {
     public function for(?User $user = null): string
     {
-        unset($user); // reserved for a future users.timezone column
+        if ($user !== null && is_string($user->timezone) && $user->timezone !== '') {
+            return $this->validate($user->timezone) ?? 'UTC';
+        }
 
         $candidate = config('app.timezone', 'UTC');
         if (! is_string($candidate) || $candidate === '') {

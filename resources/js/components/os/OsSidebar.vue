@@ -7,6 +7,7 @@ import {
     MessageSquare,
     Settings,
     Sun,
+    WalletCards,
 } from '@lucide/vue';
 import type { Component } from 'vue';
 import { computed } from 'vue';
@@ -26,6 +27,8 @@ type OsNavItem = {
     icon: Component;
     href: string;
     active: boolean;
+    preserveState: boolean;
+    replace: boolean;
 };
 
 const page = usePage();
@@ -33,6 +36,10 @@ const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
 
 const currentProduct = computed(
     () => page.props.currentProduct as ProductKey,
+);
+
+const isMoneySection = computed(() =>
+    page.url.split('?')[0].startsWith('/yoyu/money'),
 );
 
 const yoyuTab = computed(() => {
@@ -66,18 +73,24 @@ const navItems = computed((): OsNavItem[] => {
                 active:
                     isCurrentUrl(kiokuHome.url()) ||
                     isCurrentOrParentUrl('/kioku/memories'),
+                preserveState: false,
+                replace: false,
             },
             {
                 title: '取り込み元',
                 icon: Link2,
                 href: kiokuSources.url(),
                 active: isCurrentUrl(kiokuSources.url()),
+                preserveState: false,
+                replace: false,
             },
             {
                 title: '設定',
                 icon: Settings,
                 href: kiokuSettings.url(),
                 active: isCurrentUrl(kiokuSettings.url()),
+                preserveState: false,
+                replace: false,
             },
         ];
     }
@@ -89,12 +102,26 @@ const navItems = computed((): OsNavItem[] => {
         { key: 'chat', title: '秘書', icon: MessageSquare },
     ];
 
-    return tabs.map((tab) => ({
+    const homeItems = tabs.map((tab) => ({
         title: tab.title,
         icon: tab.icon,
         href: yoyuHome.url({ query: { tab: tab.key } }),
-        active: yoyuTab.value === tab.key,
+        active: !isMoneySection.value && yoyuTab.value === tab.key,
+        preserveState: true,
+        replace: true,
     }));
+
+    return [
+        ...homeItems,
+        {
+            title: 'お金',
+            icon: WalletCards,
+            href: '/yoyu/money',
+            active: isMoneySection.value,
+            preserveState: false,
+            replace: false,
+        },
+    ];
 });
 
 const accentClass = computed(() =>
@@ -142,8 +169,8 @@ const idleClass = computed(() =>
                     :aria-current="item.active ? 'page' : undefined"
                     class="flex w-24 flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-center transition-colors group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-2"
                     :class="item.active ? accentClass : idleClass"
-                    :preserve-state="currentProduct === 'yoyu'"
-                    :replace="currentProduct === 'yoyu'"
+                    :preserve-state="item.preserveState"
+                    :replace="item.replace"
                 >
                     <component
                         :is="item.icon"
