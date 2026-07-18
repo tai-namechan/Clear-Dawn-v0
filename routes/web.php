@@ -1,13 +1,19 @@
 <?php
 
+use App\Http\Controllers\DailyCheckinController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FoodItemController;
+use App\Http\Controllers\GoalController;
+use App\Http\Controllers\GoalMetricController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\LifeAreaController;
 use App\Http\Controllers\MatrixCellItemController;
 use App\Http\Controllers\MealEntryController;
 use App\Http\Controllers\MetricRecordController;
 use App\Http\Controllers\NutritionGoalController;
+use App\Http\Controllers\ProgramController;
+use App\Http\Controllers\ProgramPlanController;
+use App\Http\Controllers\RecommendationDecisionController;
 use App\Http\Controllers\RoutineBlockLogController;
 use App\Http\Controllers\RoutineController;
 use App\Http\Controllers\RoutineItemController;
@@ -16,6 +22,7 @@ use App\Http\Controllers\RoutinePlanStepController;
 use App\Http\Controllers\RoutineSessionController;
 use App\Http\Controllers\RoutineSessionStepController;
 use App\Http\Controllers\RoutineStepController;
+use App\Http\Controllers\SymptomObservationController;
 use App\Http\Controllers\TodayController;
 use App\Http\Controllers\VideoController;
 use App\Models\Metric;
@@ -74,6 +81,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('life-areas/{lifeArea}', [LifeAreaController::class, 'destroy'])->name('life-areas.destroy');
     Route::patch('life-areas/{lifeArea}/restore', [LifeAreaController::class, 'restore'])->name('life-areas.restore');
 
+    Route::get('goals', [GoalController::class, 'index'])->name('goals.index');
+    Route::post('goals', [GoalController::class, 'store'])->name('goals.store');
+    Route::get('goals/{goal}', [GoalController::class, 'show'])->name('goals.show');
+    Route::patch('goals/{goal}', [GoalController::class, 'update'])->name('goals.update');
+    Route::delete('goals/{goal}', [GoalController::class, 'destroy'])->name('goals.destroy');
+    Route::post('goals/{goal}/metrics', [GoalMetricController::class, 'store'])->name('goal-metrics.store');
+    Route::patch('goal-metrics/{goalMetric}', [GoalMetricController::class, 'update'])->name('goal-metrics.update');
+    Route::delete('goal-metrics/{goalMetric}', [GoalMetricController::class, 'destroy'])->name('goal-metrics.destroy');
+
+    Route::get('programs', [ProgramController::class, 'index'])->name('programs.index');
+    Route::get('programs/{program}', [ProgramController::class, 'show'])->name('programs.show');
+    Route::get('programs/{program}/roadmap', [ProgramController::class, 'roadmap'])->name('programs.roadmap');
+    Route::post('programs/{program}/versions', [ProgramController::class, 'revise'])->name('programs.versions.store');
+
     Route::post('matrix-cells/{matrixCell}/items', [MatrixCellItemController::class, 'store'])->name('matrix-cell-items.store');
     Route::patch('matrix-cell-items/{matrixCellItem}', [MatrixCellItemController::class, 'update'])->name('matrix-cell-items.update');
     Route::patch('matrix-cell-items/{matrixCellItem}/toggle', [MatrixCellItemController::class, 'toggle'])->name('matrix-cell-items.toggle');
@@ -107,9 +128,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('routines/{routine}/steps/{routineStep}', [RoutineStepController::class, 'destroy'])->name('routine-steps.destroy');
 
     Route::get('today', [TodayController::class, 'index'])->name('today.index');
+    Route::put('today/checkin', [DailyCheckinController::class, 'upsert'])->name('today.checkin.upsert');
+    Route::post('today/symptoms', [SymptomObservationController::class, 'store'])->name('today.symptoms.store');
+    Route::post('today/program-choice', [ProgramPlanController::class, 'selectChoice'])->name('today.program-choice');
+    Route::post('recommendations/{recommendation}/decisions', [RecommendationDecisionController::class, 'store'])
+        ->name('recommendations.decisions.store');
     Route::post('plans', [RoutinePlanController::class, 'store'])->name('routine-plans.store');
     Route::get('plans/{p}', [RoutinePlanController::class, 'show'])->name('routine-plans.show');
     Route::patch('plans/{p}', [RoutinePlanController::class, 'update'])->name('routine-plans.update');
+    Route::post('plans/{p}/today-adjust', [ProgramPlanController::class, 'todayAdjust'])->name('routine-plans.today-adjust');
     Route::delete('plans/{p}', [RoutinePlanController::class, 'destroy'])->name('routine-plans.destroy');
     Route::post('plans/{p}/steps', [RoutinePlanStepController::class, 'store'])->name('routine-plan-steps.store');
     Route::patch('plans/{p}/steps/reorder', [RoutinePlanStepController::class, 'reorder'])->name('routine-plan-steps.reorder');

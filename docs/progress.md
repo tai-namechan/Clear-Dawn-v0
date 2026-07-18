@@ -1,7 +1,56 @@
 # 実装進捗（v0）
 
-> 最終更新: 2026-07-10  
+> 最終更新: 2026-07-17  
 > 正: [roadmap.md](./roadmap.md) のマイルストーン定義。本ファイルは **実装の現在地** を可視化する。
+
+## セルフマネジメントOS拡張（2026-07-16〜 / ADR-0010・0011）
+
+| Phase | 内容 | 状態 |
+|---|---|---|
+| 1 | 目標・プログラム・ロードマップ（goals/programs 系テーブル・画面・seed・個人値 import） | **done** |
+| 2 | 今日の実行（プログラム→プラン生成・DAY/STEP 実行 UI・型付き実績） | **done**（縦断） |
+| 3 | コンディション・食事再構成（チェックイン・症状・栄養プロファイル・タブ化） | **partial**（チェックイン/症状/resource_states/栄養プロファイル基盤） |
+| 4 | 決定論の作戦カード（rule_definitions・recommendations・承認 tier A） | **done**（縦断・承認A）。B/C UI は薄い |
+| 5〜7 | レポート/Kioku 学び・AI コーチ・Yoyu 連携 | not_started |
+
+Phase 1 の縦断（2026-07-17 完了）:
+
+| 項目 | 根拠 |
+|---|---|
+| Migrations（goal/program/personal_profile/module + metrics 拡張） | `2026_07_16_1000*` 4本（metrics key は (user_id, key) ユニークに変更） |
+| Models / Enums / Factories | `app/Models`（18新規 + User/Metric 拡張）、`app/Enums` 12種 |
+| seed（11週プログラム） | `InstallElevenWeekProgramService` + `php artisan cleardawn:install-program {userId}`（冪等） |
+| 個人値 import | `php artisan cleardawn:import-personal {userId} --path=personal/profile.json`（gitignore 済み personal/ から投入） |
+| 画面 | `/goals`・`/goals/{goal}`・`/programs`・`/programs/{program}`・`/programs/{program}/roadmap`（1RM×比率の表示重量は r125 丸め） |
+| Feature テスト | `GoalTest`・`ProgramTest`・`ProgramInstallTest`（計26件） |
+
+Phase 2〜4 の縦断（2026-07-17 追加）:
+
+| 項目 | 根拠 |
+|---|---|
+| Phase 2 migrations | `2026_07_17_100001` routine_* に program 参照・型付き実績列 |
+| プラン生成 | `GenerateProgramDayPlansService`（weekday_fixed / sequential / 選択日）。`/today` アクセスで冪等生成 |
+| 承認 A | `ApplyTodayPlanAdjustmentService` + `POST plans/{p}/today-adjust` / 作戦カード決定 |
+| 版改訂 C | `ReviseProgramVersionService` + `POST programs/{program}/versions`（コピーオンライト） |
+| Phase 3 | `daily_checkins` / `symptom_observations` / `daily_resource_states` / `personal_baselines` / `nutrition_target_profiles` / `measurement_sources` + metric_records 拡張 |
+| Phase 4 | `rule_definitions`〜`outcome_evaluations`、`EvaluateRulesForDayService`、作戦カード UI（`Today/Index`） |
+| Feature テスト | `ProgramDayPlanGenerationTest`・`TodayOpsPhaseTest`・`ProgramVersionReviseTest` |
+
+### 後回しバックログ（意図的スコープ外・忘れ防止）
+
+> 2026-07-17 判断: Phase 2〜4 の本線（生成・チェックイン・作戦カード承認A・版改訂C）は縦通した。  
+> 下記は **バグではなく後続フェーズで拾う項目**。仕様の正は各画面 docs / ADR。着手時は本表を更新する。
+
+| ID | 項目 | 現状 | 拾う目安 | 仕様の正 | 実装の手がかり |
+|---|---|---|---|---|---|
+| SM-D01 | DAY/STEP/item CRUD・週処方 upsert API | 閲覧のみ（seed/install で投入） | Phase 2 仕上げ or プログラム編集マイルストーン | [programs.md](./product/screens/programs.md) | `ProgramController` は read のみ。FormRequest/Service 未作成 |
+| SM-D02 | `program_attachments` アップロード UI | テーブル・Model のみ | 同上（編集と同時が自然） | programs.md / tables.md Phase1 | `ProgramAttachment` 既存。Video 署名付き URL パターンを流用可 |
+| SM-D03 | 承認 B（期間調整・未実行プラン再生成） | 未実装 | Phase 4 拡張 or Phase 5 手前 | programs.md 承認3段 / today-ops.md | A=`ApplyTodayPlanAdjustmentService`、C=`ReviseProgramVersionService` の間に Service を新設 |
+| SM-D04 | ハードゲート割り込み 1日1件・48h クールダウン永続化 | 当日評価内の `interruptUsed` のみ | Phase 4 仕上げ | ADR-0011 / today-ops.md | `rule_evaluations` or 専用 cooldown 行で last_interrupt_at を保持 |
+| SM-D05 | `outcome_evaluations` 事後評価 UI | テーブルのみ | Phase 5（週次レポート）と同時が自然 | ADR-0011 | Model/Factory 済み。セッション完了後の入力導線が未配線 |
+| SM-D06 | コンディション専用タブ画面の仕上げ | `/today` に checkin/症状あり。records 側タブ再構成なし | Phase 3 仕上げ | today-ops.md §7–8 / records.md | H7 受診依頼リスト・古い測定データの専用画面 |
+| SM-D07 | ロードマップの実績状態表示 | 処方重量表示まで。セッション実績連携なし | Phase 2 プラン連携の延長 | programs.md ロードマップ | `GetProgramRoadmapQuery` + `routine_plans`/`sessions` を週×DAY で集約 |
+| SM-D08 | today-ops 表示順の残り（未入力測定・受診依頼リスト・コンディションへのリンク） | カード/プログラム/チェックイン/栄養まで | Phase 3〜4 仕上げ | today-ops.md 表示順 6–8 | `GetTodayOpsQuery` に stale metrics / H7 visit list を追加 |
 
 各マイルストーンは「Route → Controller → Query/Service → Vue → テスト」の縦断で完結させる。
 

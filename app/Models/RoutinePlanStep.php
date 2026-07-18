@@ -32,9 +32,12 @@ use Illuminate\Support\Carbon;
 #[Fillable([
     'routine_plan_id',
     'routine_item_id',
+    'program_step_item_id',
     'title',
     'video_id',
     'purpose',
+    'step_kind',
+    'required_level',
     'sort_order',
     'target_load',
     'load_unit',

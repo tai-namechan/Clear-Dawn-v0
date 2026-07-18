@@ -144,4 +144,84 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->hasMany(NutritionGoal::class);
     }
+
+    /**
+     * @return HasMany<Goal, $this>
+     */
+    public function goals(): HasMany
+    {
+        return $this->hasMany(Goal::class);
+    }
+
+    /**
+     * @return HasMany<Program, $this>
+     */
+    public function programs(): HasMany
+    {
+        return $this->hasMany(Program::class);
+    }
+
+    /**
+     * @return HasMany<PersonalProfileEntry, $this>
+     */
+    public function personalProfileEntries(): HasMany
+    {
+        return $this->hasMany(PersonalProfileEntry::class);
+    }
+
+    /**
+     * @return HasMany<DailyCheckin, $this>
+     */
+    public function dailyCheckins(): HasMany
+    {
+        return $this->hasMany(DailyCheckin::class);
+    }
+
+    /**
+     * @return HasMany<SymptomObservation, $this>
+     */
+    public function symptomObservations(): HasMany
+    {
+        return $this->hasMany(SymptomObservation::class);
+    }
+
+    /**
+     * @return HasMany<DailyResourceState, $this>
+     */
+    public function dailyResourceStates(): HasMany
+    {
+        return $this->hasMany(DailyResourceState::class);
+    }
+
+    /**
+     * @return HasMany<Recommendation, $this>
+     */
+    public function recommendations(): HasMany
+    {
+        return $this->hasMany(Recommendation::class);
+    }
+
+    /**
+     * @return HasMany<RuleDefinition, $this>
+     */
+    public function ruleDefinitions(): HasMany
+    {
+        return $this->hasMany(RuleDefinition::class);
+    }
+
+    /**
+     * @return HasMany<NutritionTargetProfile, $this>
+     */
+    public function nutritionTargetProfiles(): HasMany
+    {
+        return $this->hasMany(NutritionTargetProfile::class);
+    }
+
+    /**
+     * @return HasMany<UserModuleSetting, $this>
+     */
+    public function moduleSettings(): HasMany
+    {
+        return $this->hasMany(UserModuleSetting::class);
+    }
 }

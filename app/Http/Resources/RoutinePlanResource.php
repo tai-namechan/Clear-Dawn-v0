@@ -24,6 +24,12 @@ class RoutinePlanResource extends JsonResource
             'note' => $this->note,
             'life_area_id' => $this->life_area_id,
             'routine_id' => $this->routine_id,
+            'generation_source' => $this->generation_source,
+            'program_version_id' => $this->program_version_id,
+            'program_week_id' => $this->program_week_id,
+            'program_day_template_id' => $this->program_day_template_id,
+            'choice_option_id' => $this->choice_option_id,
+            'adjustment_reason' => $this->adjustment_reason,
             'life_area' => LifeAreaResource::make($this->whenLoaded('lifeArea')),
             'steps' => $this->relationLoaded('steps')
                 ? RoutinePlanStepResource::collection($this->steps)->resolve()

@@ -16,7 +16,12 @@ class RecordRoutineBlockService
      *     load_unit?: string|null,
      *     amount_value?: float|string|null,
      *     amount_unit?: string|null,
-     *     memo?: string|null
+     *     memo?: string|null,
+     *     rpe?: float|string|null,
+     *     distance_value?: float|string|null,
+     *     duration_seconds?: int|null,
+     *     side?: string|null,
+     *     extra?: array<string, mixed>|null
      * }  $attributes
      */
     public function handle(RoutineSessionStep $sessionStep, array $attributes): RoutineBlockLog
@@ -31,6 +36,11 @@ class RecordRoutineBlockService
                 'amount_value' => $attributes['amount_value'] ?? null,
                 'amount_unit' => $attributes['amount_unit'] ?? null,
                 'memo' => $attributes['memo'] ?? null,
+                'rpe' => $attributes['rpe'] ?? null,
+                'distance_value' => $attributes['distance_value'] ?? null,
+                'duration_seconds' => $attributes['duration_seconds'] ?? null,
+                'side' => $attributes['side'] ?? null,
+                'extra' => $attributes['extra'] ?? null,
             ]);
         });
     }

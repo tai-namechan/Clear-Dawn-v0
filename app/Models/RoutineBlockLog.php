@@ -30,6 +30,11 @@ use Illuminate\Support\Carbon;
     'amount_value',
     'amount_unit',
     'memo',
+    'rpe',
+    'distance_value',
+    'duration_seconds',
+    'side',
+    'extra',
 ])]
 class RoutineBlockLog extends Model
 {
@@ -44,6 +49,9 @@ class RoutineBlockLog extends Model
         return [
             'load_value' => 'decimal:2',
             'amount_value' => 'decimal:2',
+            'rpe' => 'decimal:1',
+            'distance_value' => 'decimal:2',
+            'extra' => 'array',
         ];
     }
 
