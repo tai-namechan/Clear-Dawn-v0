@@ -56,6 +56,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Public Sign-up Entry Points
+    |--------------------------------------------------------------------------
+    |
+    | Clear Dawn is currently operated for a single owner only. While this is
+    | false, the "新規登録" (register) and "パスワードをお忘れですか？" links are
+    | hidden from the login/landing UI. The underlying routes still exist
+    | (register.store / password.email / password.update remain rate-limited),
+    | this only removes the invitation to use them. Flip to true via
+    | APP_PUBLIC_SIGNUP_ENABLED once the app is ready for other users.
+    |
+    */
+
+    'public_signup_enabled' => (bool) env('APP_PUBLIC_SIGNUP_ENABLED', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

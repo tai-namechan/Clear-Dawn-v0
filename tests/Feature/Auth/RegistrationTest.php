@@ -55,4 +55,23 @@ class RegistrationTest extends TestCase
         ]);
         $this->assertGuest();
     }
+
+    public function test_register_store_is_rate_limited_after_five_attempts_per_ip(): void
+    {
+        for ($i = 0; $i < 5; $i++) {
+            $this->post(route('register.store'), [
+                'name' => 'Test User',
+                'email' => "throttle-test-{$i}@example.com",
+                'password' => 'not-matching',
+                'password_confirmation' => 'does-not-match',
+            ])->assertSessionHasErrors('password');
+        }
+
+        $this->post(route('register.store'), [
+            'name' => 'Test User',
+            'email' => 'throttle-test-6@example.com',
+            'password' => 'not-matching',
+            'password_confirmation' => 'does-not-match',
+        ])->assertStatus(429);
+    }
 }
