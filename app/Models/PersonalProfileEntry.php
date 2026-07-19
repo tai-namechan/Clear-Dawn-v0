@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Yoyu\Support\UserTimezoneResolver;
 use Database\Factories\PersonalProfileEntryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -77,13 +78,17 @@ class PersonalProfileEntry extends Model
 
     /**
      * 指定日時点で有効な値（同一 key の最新 effective_from）を返す。
+     * $asOf 省略時はユーザー TZ のカレンダー「今日」。
      */
     public static function currentFor(User $user, string $key, ?Carbon $asOf = null): ?self
     {
+        $asOfDate = $asOf?->toDateString()
+            ?? app(UserTimezoneResolver::class)->todayDateString($user);
+
         return self::query()
             ->where('user_id', $user->id)
             ->where('key', $key)
-            ->where('effective_from', '<=', ($asOf ?? Carbon::today())->toDateString())
+            ->where('effective_from', '<=', $asOfDate)
             ->orderByDesc('effective_from')
             ->first();
     }

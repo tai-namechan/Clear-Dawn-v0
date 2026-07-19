@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Yoyu\Support\UserTimezoneResolver;
 use App\Http\Requests\SymptomObservations\StoreSymptomObservationRequest;
 use App\Services\EvaluateRulesForDayService;
 use App\Services\RecordSymptomObservationService;
@@ -14,9 +15,12 @@ class SymptomObservationController extends Controller
         StoreSymptomObservationRequest $request,
         RecordSymptomObservationService $service,
         EvaluateRulesForDayService $evaluateRules,
+        UserTimezoneResolver $timezoneResolver,
     ): JsonResponse {
-        $date = Carbon::parse($request->validated('observed_on') ?? now()->toDateString());
         $user = $request->user();
+        $date = Carbon::parse(
+            $request->validated('observed_on') ?? $timezoneResolver->todayDateString($user),
+        );
 
         $symptom = $service->handle($user, $date, $request->validated());
         $evaluateRules->handle($user, $date);

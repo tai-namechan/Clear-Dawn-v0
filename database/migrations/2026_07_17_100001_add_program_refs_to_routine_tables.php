@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Phase 2: Program → RoutinePlan 連携（ADR-0010）。
+ * Phase 2: Program → RoutinePlan 連携（ADR-0012）。
  * 新テーブルは作らず、既存 routine_* に nullable 列のみ追加する。
  */
 return new class extends Migration

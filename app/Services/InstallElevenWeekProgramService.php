@@ -28,7 +28,7 @@ use Illuminate\Support\Facades\DB;
  *
  * 個人実測値（1RM・体組成等）は一切含めない。メインリフトは基準リフト1RM比
  * （percent_of_reference）で登録し、表示重量は personal_profile_entries の
- * 1RM（import コマンドで投入）から導出する（ADR-0010）。
+ * 1RM（import コマンドで投入）から導出する（ADR-0012）。
  *
  * 投球モジュールは H7 神経症状ロック前提で登録する（受診クリアまでビルド開始しない）。
  */

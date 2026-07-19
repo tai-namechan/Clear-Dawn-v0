@@ -62,7 +62,7 @@ class EvaluateRulesForDayService
                 ->exists()
                 || ! PersonalBaseline::query()->where('user_id', $user->id)->exists();
 
-            $h7Locked = (bool) PersonalProfileEntry::currentFor($user, PersonalProfileEntry::KEY_H7_NEURAL_LOCK)?->value_text
+            $h7Locked = (bool) PersonalProfileEntry::currentFor($user, PersonalProfileEntry::KEY_H7_NEURAL_LOCK, $date)?->value_text
                 || SymptomObservation::query()
                     ->where('user_id', $user->id)
                     ->where('symptom_kind', 'neural_ulnar')
