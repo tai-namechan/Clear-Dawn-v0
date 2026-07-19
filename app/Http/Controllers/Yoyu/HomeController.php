@@ -10,6 +10,7 @@ use App\Domain\Kioku\Services\RecallService;
 use App\Domain\Shared\AI\AiGateway;
 use App\Domain\Shared\AI\PromptTemplate;
 use App\Domain\Shared\AI\QuotaExceededException;
+use App\Domain\Yoyu\Data\BriefingContext;
 use App\Domain\Yoyu\Data\ClearDawnHand;
 use App\Domain\Yoyu\Models\YoyuFocusItem;
 use App\Domain\Yoyu\Models\YoyuTask;
@@ -40,63 +41,72 @@ class HomeController extends Controller
         // DB staleness check + queue dispatch only; never synchronous Google HTTP.
         $syncCoordinator->syncIfStale($user);
 
-        $context = $contextBuilder->build($user, CarbonImmutable::now());
-        $timezone = $context->timezone;
+        // 重い入力（カレンダー・想起・ギャップ分析・ブリーフィング）は遅延クロージャ +
+        // メモ化で解決する。サイドバーのタブ切替は only=['tab'] の partial reload に
+        // なるため、これらは一切再計算されない（初回・フル遷移時のみ実行される）。
+        $context = null;
+        $resolveContext = function () use (&$context, $contextBuilder, $user): BriefingContext {
+            return $context ??= $contextBuilder->build($user, CarbonImmutable::now());
+        };
 
-        // First Today access for the local day: create row + dispatch once (after commit).
-        $ensured = $ensureTodayBriefing->ensure($user);
-        $briefingProps = (new YoyuBriefingResource($ensured['briefing']))->resolve();
+        $briefingProps = null;
+        $resolveBriefing = function () use (&$briefingProps, $ensureTodayBriefing, $user): array {
+            if ($briefingProps === null) {
+                // First Today access for the local day: create row + dispatch once (after commit).
+                $ensured = $ensureTodayBriefing->ensure($user);
+                $briefingProps = (new YoyuBriefingResource($ensured['briefing']))->resolve();
+            }
 
-        $tasks = YoyuTask::query()
-            ->where('user_id', $user->id)
-            ->orderByDesc('created_at')
-            ->get()
-            ->map(fn (YoyuTask $task) => [
-                'id' => $task->id,
-                'title' => $task->title,
-                'status' => $task->status,
-                'estimate_minutes' => $task->estimate_minutes,
-            ]);
-
-        $focusItems = YoyuFocusItem::query()
-            ->with('memory')
-            ->where('user_id', $user->id)
-            ->whereIn('status', ['open', 'snoozed'])
-            ->orderByDesc('created_at')
-            ->get()
-            ->map(fn (YoyuFocusItem $item) => [
-                'id' => $item->id,
-                'status' => $item->status,
-                'text' => $item->memory !== null ? (string) $item->memory->raw_content : '',
-                'memory_id' => $item->memory_id,
-            ]);
+            return $briefingProps;
+        };
 
         return Inertia::render('Yoyu/Index', [
-            'tasks' => $tasks,
-            'focusItems' => $focusItems,
-            'briefing' => $briefingProps['body'],
-            'briefingStatus' => $briefingProps['status'],
-            'structuredBriefing' => $briefingProps['structured'],
-            'calendar' => array_map(
-                fn (CalendarEventData $event): array => $event->toClientArray($timezone),
-                $context->calendar->timedEvents(),
+            'tasks' => fn () => YoyuTask::query()
+                ->where('user_id', $user->id)
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(fn (YoyuTask $task) => [
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'status' => $task->status,
+                    'estimate_minutes' => $task->estimate_minutes,
+                ]),
+            'focusItems' => fn () => YoyuFocusItem::query()
+                ->with('memory')
+                ->where('user_id', $user->id)
+                ->whereIn('status', ['open', 'snoozed'])
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(fn (YoyuFocusItem $item) => [
+                    'id' => $item->id,
+                    'status' => $item->status,
+                    'text' => $item->memory !== null ? (string) $item->memory->raw_content : '',
+                    'memory_id' => $item->memory_id,
+                ]),
+            'briefing' => fn () => $resolveBriefing()['body'],
+            'briefingStatus' => fn () => $resolveBriefing()['status'],
+            'structuredBriefing' => fn () => $resolveBriefing()['structured'],
+            'calendar' => fn () => array_map(
+                fn (CalendarEventData $event): array => $event->toClientArray($resolveContext()->timezone),
+                $resolveContext()->calendar->timedEvents(),
             ),
-            'calendarConnection' => [
-                'status' => $context->calendar->connectionStatus->value,
-                'synced_at' => $context->calendar->syncedAt?->toIso8601String(),
-                'is_stale' => $context->calendar->isStale,
-                'warning_code' => $context->calendar->warningCode,
-                'account_email' => $context->calendar->accountEmail,
-                'all_day_titles' => $context->calendar->allDayTitles(),
+            'calendarConnection' => fn () => [
+                'status' => $resolveContext()->calendar->connectionStatus->value,
+                'synced_at' => $resolveContext()->calendar->syncedAt?->toIso8601String(),
+                'is_stale' => $resolveContext()->calendar->isStale,
+                'warning_code' => $resolveContext()->calendar->warningCode,
+                'account_email' => $resolveContext()->calendar->accountEmail,
+                'all_day_titles' => $resolveContext()->calendar->allDayTitles(),
             ],
-            'clearDawnHand' => $context->hand?->toClientArray(),
-            'analysis' => $context->analysisArray(),
-            'travelLead' => $context->travelLead,
-            'recallPreview' => $context->recallLines,
+            'clearDawnHand' => fn () => $resolveContext()->hand?->toClientArray(),
+            'analysis' => fn () => $resolveContext()->analysisArray(),
+            'travelLead' => fn () => $resolveContext()->travelLead,
+            'recallPreview' => fn () => $resolveContext()->recallLines,
             'tab' => $request->string('tab')->toString() ?: 'today',
-            'chatReply' => $request->session()->pull('chat_reply'),
-            'chatErrorCode' => $request->session()->pull('chat_error_code'),
-            'chatRecallCount' => $request->session()->pull('chat_recall_count'),
+            // session pull はクロージャ内で行い、partial reload で値が破棄されないようにする
+            'chatReply' => fn () => $request->session()->pull('chat_reply'),
+            'chatErrorCode' => fn () => $request->session()->pull('chat_error_code'),
+            'chatRecallCount' => fn () => $request->session()->pull('chat_recall_count'),
         ]);
     }
 

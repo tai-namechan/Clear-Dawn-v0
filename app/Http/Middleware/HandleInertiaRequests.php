@@ -53,7 +53,7 @@ class HandleInertiaRequests extends Middleware
             'currentProduct' => ProductCatalog::resolveFromPath($request->path()),
             'products' => $user !== null ? ProductCatalog::all() : [],
             'aiUsageBanner' => $user !== null
-                ? app(AiUsageSummary::class)->bannerForUser((int) $user->id)
+                ? app(AiUsageSummary::class)->bannerForUserCached((int) $user->id)
                 : null,
         ];
     }

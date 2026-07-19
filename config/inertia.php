@@ -16,8 +16,12 @@ return [
     */
 
     'ssr' => [
-        // PHPUnit sets INERTIA_SSR_ENABLED=false; local/production keep the default (true).
-        'enabled' => (bool) env('INERTIA_SSR_ENABLED', true),
+        // Default OFF: this app is auth-gated (SEO benefit is nil) and in Vite dev
+        // mode Inertia v3 renders EVERY response through a synchronous HTTP round
+        // trip to the dev server, adding 1-3s per navigation (first visit to a
+        // page is worst — Vite must transform its whole module graph). Set
+        // INERTIA_SSR_ENABLED=true explicitly if SSR is ever needed.
+        'enabled' => (bool) env('INERTIA_SSR_ENABLED', false),
         'url' => env('INERTIA_SSR_URL', 'http://127.0.0.1:13714'),
         // 'bundle' => base_path('bootstrap/ssr/ssr.mjs'),
 

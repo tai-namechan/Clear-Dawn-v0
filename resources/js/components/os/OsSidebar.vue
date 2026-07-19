@@ -29,6 +29,10 @@ type OsNavItem = {
     active: boolean;
     preserveState: boolean;
     replace: boolean;
+    /** hover でページ+チャンクを先読みし、初回クリックの待ちを消す */
+    prefetch?: boolean;
+    /** 指定時は partial reload（このprops以外はサーバー再計算しない） */
+    only?: string[];
 };
 
 const page = usePage();
@@ -75,6 +79,7 @@ const navItems = computed((): OsNavItem[] => {
                     isCurrentOrParentUrl('/kioku/memories'),
                 preserveState: false,
                 replace: false,
+                prefetch: true,
             },
             {
                 title: '取り込み元',
@@ -83,6 +88,7 @@ const navItems = computed((): OsNavItem[] => {
                 active: isCurrentUrl(kiokuSources.url()),
                 preserveState: false,
                 replace: false,
+                prefetch: true,
             },
             {
                 title: '設定',
@@ -91,6 +97,7 @@ const navItems = computed((): OsNavItem[] => {
                 active: isCurrentUrl(kiokuSettings.url()),
                 preserveState: false,
                 replace: false,
+                prefetch: true,
             },
         ];
     }
@@ -109,6 +116,9 @@ const navItems = computed((): OsNavItem[] => {
         active: !isMoneySection.value && yoyuTab.value === tab.key,
         preserveState: true,
         replace: true,
+        // ヨユウのタブは同一ページ内の表示切替なので、tab 以外の重い props
+        //（カレンダー・ブリーフィング・想起など）はサーバー再計算させない
+        only: isMoneySection.value ? undefined : ['tab'],
     }));
 
     return [
@@ -120,6 +130,7 @@ const navItems = computed((): OsNavItem[] => {
             active: isMoneySection.value,
             preserveState: false,
             replace: false,
+            prefetch: true,
         },
     ];
 });
@@ -171,6 +182,8 @@ const idleClass = computed(() =>
                     :class="item.active ? accentClass : idleClass"
                     :preserve-state="item.preserveState"
                     :replace="item.replace"
+                    :prefetch="item.prefetch ?? false"
+                    :only="item.only ?? []"
                 >
                     <component
                         :is="item.icon"
