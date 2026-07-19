@@ -5,6 +5,7 @@ namespace Tests\Feature\Yoyu;
 use App\Domain\Kioku\Models\Connector;
 use App\Domain\Yoyu\Models\YoyuCalendarEvent;
 use App\Domain\Yoyu\Models\YoyuPlace;
+use App\Domain\Yoyu\Support\UserTimezoneResolver;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -202,7 +203,10 @@ class YoyuPlacelessRegistrationTest extends TestCase
             'last_synced_at' => now(),
         ]);
 
-        $day = CarbonImmutable::today('UTC')->startOfDay();
+        // 「今日」の判定はユーザーTZ（S-02: 既定 Asia/Tokyo）。UTC 日付で作ると
+        // JST の日付が変わった後（UTC 15時以降）の実行でウィンドウ外になり flaky になる。
+        $timezone = app(UserTimezoneResolver::class)->for($user);
+        $day = CarbonImmutable::now($timezone)->startOfDay();
 
         return YoyuCalendarEvent::query()->withoutUserScope()->create([
             'user_id' => $user->id,
@@ -210,8 +214,8 @@ class YoyuPlacelessRegistrationTest extends TestCase
             'external_id' => $externalId,
             'title' => '病院',
             'all_day' => false,
-            'starts_at' => $day->setTime(15, 0),
-            'ends_at' => $day->setTime(16, 0),
+            'starts_at' => $day->setTime(15, 0)->utc(),
+            'ends_at' => $day->setTime(16, 0)->utc(),
             'status' => 'confirmed',
             'transparency' => 'opaque',
             'location' => $location,

@@ -5,6 +5,7 @@ namespace App\Domain\Shared\AI;
 use App\Domain\Shared\Models\AiUsageLog;
 use App\Domain\Shared\Models\AiUsageRequest;
 use App\Enums\AiUsageRequestStatus;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 final class AiUsageSummary
@@ -69,6 +70,26 @@ final class AiUsageSummary
             'by_model' => $this->spendByModel($userId, $period),
             'by_feature' => $this->spendByFeature($userId, $period),
         ];
+    }
+
+    /**
+     * bannerForUser() の短TTLキャッシュ版。全 Inertia レスポンスの共有 props として
+     * 毎ナビゲーションで呼ばれるため、都度の ledger 参照（期首は SUM 集計 + INSERT）を
+     * 避ける。バナー表示は最大 TTL 秒だけ遅れるが、警告バナー用途では許容。
+     * null（バナー非表示）もキャッシュ対象になるよう配列に包んで保存する。
+     *
+     * @return array{warning: bool, at_limit: bool, progress_ratio: string, remaining_usd: string, limit_usd: string, spent_usd: string, reserved_usd: string}|null
+     */
+    public function bannerForUserCached(int $userId, int $ttlSeconds = 60): ?array
+    {
+        /** @var array{value: array{warning: bool, at_limit: bool, progress_ratio: string, remaining_usd: string, limit_usd: string, spent_usd: string, reserved_usd: string}|null} $cached */
+        $cached = Cache::remember(
+            "ai-usage-banner:{$userId}",
+            $ttlSeconds,
+            fn (): array => ['value' => $this->bannerForUser($userId)],
+        );
+
+        return $cached['value'];
     }
 
     /**
