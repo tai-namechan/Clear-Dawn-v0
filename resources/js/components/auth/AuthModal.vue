@@ -16,6 +16,7 @@ interface Props {
     open: boolean;
     mode: AuthModalMode;
     canResetPassword: boolean;
+    canRegister: boolean;
     passwordRules: string;
 }
 
@@ -82,10 +83,11 @@ function switchToLogin(): void {
                         :key="'login'"
                         modal
                         :can-reset-password="canResetPassword"
+                        :can-register="canRegister"
                         @switch-to-register="switchToRegister"
                     />
                     <AuthRegisterForm
-                        v-else
+                        v-else-if="canRegister"
                         :key="'register'"
                         modal
                         :password-rules="passwordRules"

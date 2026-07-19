@@ -92,4 +92,20 @@ class PasswordResetTest extends TestCase
 
         $response->assertSessionHasErrors('email');
     }
+
+    public function test_reset_link_request_is_rate_limited_after_five_attempts_per_email_and_ip(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+
+        // Laravel の PasswordBroker 自体にもメール単位の再送クールダウンがあるため、
+        // 個々のレスポンス内容は問わず、6回目で throttle:password-reset の 429 になることのみ検証する。
+        for ($i = 0; $i < 5; $i++) {
+            $this->post(route('password.email'), ['email' => $user->email]);
+        }
+
+        $this->post(route('password.email'), ['email' => $user->email])
+            ->assertStatus(429);
+    }
 }
