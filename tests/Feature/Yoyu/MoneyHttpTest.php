@@ -97,6 +97,47 @@ class MoneyHttpTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_settle_with_stale_lock_version_returns_409(): void
+    {
+        $user = User::factory()->create();
+
+        /** @var MoneyCashflow $cashflow */
+        $cashflow = MoneyCashflow::query()->withoutUserScope()->create([
+            'user_id' => $user->id,
+            'direction' => MoneyDirection::Outflow,
+            'kind' => MoneyCashflowKind::Expense,
+            'name' => '家賃',
+            'amount_minor' => 80000,
+            'currency_code' => 'JPY',
+            'due_on' => now()->toDateString(),
+            'status' => 'planned',
+            'certainty' => MoneyCertainty::Confirmed,
+            'flexibility' => MoneyFlexibility::Required,
+            'priority' => MoneyPriority::High,
+            'lock_version' => 2,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('yoyu.money.cashflows.settle', $cashflow), [
+                'amount_minor' => '80000',
+                'occurred_on' => now()->toDateString(),
+                'lock_version' => 1,
+            ])
+            ->assertStatus(409);
+
+        $this->assertSame('planned', $cashflow->refresh()->status->value);
+
+        $this->actingAs($user)
+            ->post(route('yoyu.money.cashflows.settle', $cashflow), [
+                'amount_minor' => '80000',
+                'occurred_on' => now()->toDateString(),
+                'lock_version' => 2,
+            ])
+            ->assertRedirect();
+
+        $this->assertSame('settled', $cashflow->refresh()->status->value);
+    }
+
     public function test_settings_index_includes_categories_after_setup(): void
     {
         $user = User::factory()->create();

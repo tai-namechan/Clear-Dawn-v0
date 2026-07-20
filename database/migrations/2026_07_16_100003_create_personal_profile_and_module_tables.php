@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * 個人プロファイル（有効日つき履歴）とモジュール設定（ADR-0010/0011）。
+ * 個人プロファイル（有効日つき履歴）とモジュール設定（ADR-0012/0011）。
  * 値は import コマンドで投入し、リポジトリには含めない。
  */
 return new class extends Migration

@@ -6,6 +6,7 @@ use App\Enums\ProgramVersionStatus;
 use App\Models\Program;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class ProgramVersionReviseTest extends TestCase
@@ -35,6 +36,27 @@ class ProgramVersionReviseTest extends TestCase
         $newVersion = $program->activeVersion()->firstOrFail();
         $this->assertSame(7, $newVersion->dayTemplates()->count());
         $this->assertSame(11, $newVersion->weeks()->count());
+    }
+
+    public function test_revise_rejects_ends_on_before_effective_starts_on(): void
+    {
+        $user = User::factory()->create();
+        $this->artisan('cleardawn:install-program', ['userId' => $user->id])->assertSuccessful();
+
+        $program = Program::query()->where('user_id', $user->id)->firstOrFail();
+        $startsOn = $program->activeVersion->starts_on->toDateString();
+
+        // starts_on を省略し、実効開始日（現行版の開始日）より前の ends_on を指定
+        $this->actingAs($user)
+            ->postJson(route('programs.versions.store', $program), [
+                'change_summary' => '期間短縮',
+                'change_reason' => 'テスト',
+                'ends_on' => Carbon::parse($startsOn)->subDay()->toDateString(),
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['ends_on']);
+
+        $this->assertSame(1, $program->versions()->count());
     }
 
     public function test_other_user_cannot_revise_program(): void

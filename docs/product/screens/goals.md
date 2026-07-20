@@ -1,7 +1,7 @@
 # 目標設定画面 仕様
 
 対象: セルフマネジメントOS拡張 Phase 1（2026-07-16 確定）
-関連: [programs.md](./programs.md)、[ADR-0010](../../adr/0010-program-layer-on-routine-engine.md)
+関連: [programs.md](./programs.md)、[ADR-0012](../../adr/0012-program-layer-on-routine-engine.md)
 
 ## 目的
 

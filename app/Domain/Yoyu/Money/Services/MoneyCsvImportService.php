@@ -17,6 +17,7 @@ use App\Domain\Yoyu\Money\Models\MoneyReconciliation;
 use App\Domain\Yoyu\Money\Models\MoneyTransaction;
 use App\Domain\Yoyu\Money\Support\MoneyCsvNormalizer;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -79,17 +80,31 @@ final class MoneyCsvImportService
         $path = self::PATH_PREFIX.'/'.$user->id.'/'.$ulid.'.csv';
         Storage::disk(self::DISK)->put($path, $contents);
 
-        /** @var MoneyImport $import */
-        $import = MoneyImport::query()->withoutUserScope()->create([
-            'user_id' => $user->id,
-            'account_id' => $accountId,
-            'status' => MoneyImportStatus::Uploaded,
-            'source_filename' => $file->getClientOriginalName(),
-            'source_storage_path' => $path,
-            'source_checksum' => $checksum,
-            'idempotency_key' => $idempotencyKey,
-            'mapping_config' => null,
-        ]);
+        try {
+            /** @var MoneyImport $import */
+            $import = MoneyImport::query()->withoutUserScope()->create([
+                'user_id' => $user->id,
+                'account_id' => $accountId,
+                'status' => MoneyImportStatus::Uploaded,
+                'source_filename' => $file->getClientOriginalName(),
+                'source_storage_path' => $path,
+                'source_checksum' => $checksum,
+                'idempotency_key' => $idempotencyKey,
+                'mapping_config' => null,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            // 同一ファイルの並行アップロードに敗れた場合は勝った方の import を返す
+            Storage::disk(self::DISK)->delete($path);
+
+            /** @var MoneyImport $import */
+            $import = MoneyImport::query()
+                ->withoutUserScope()
+                ->where('user_id', $user->id)
+                ->where('idempotency_key', $idempotencyKey)
+                ->firstOrFail();
+
+            return $import;
+        }
 
         $this->auditService->record(
             (int) $user->id,
@@ -124,10 +139,13 @@ final class MoneyCsvImportService
         }
 
         $mapping = $this->normalizeMapping($mapping);
+        // import ID を含め import 単位で安定・一意なキーにする。同一ファイル+同一マッピングの
+        // 再取込は行レベルの duplicate 検知で冪等化される（キー衝突で 500 にしない）。
         $idempotencyKey = hash('sha256', implode('|', [
             (string) $user->id,
             (string) $import->account_id,
             (string) $import->source_checksum,
+            (string) $import->id,
             json_encode($mapping, JSON_THROW_ON_ERROR),
         ]));
 

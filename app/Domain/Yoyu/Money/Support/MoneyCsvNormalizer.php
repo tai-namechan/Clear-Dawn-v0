@@ -3,6 +3,7 @@
 namespace App\Domain\Yoyu\Money\Support;
 
 use Carbon\CarbonImmutable;
+use Carbon\Exceptions\InvalidFormatException;
 use InvalidArgumentException;
 
 /**
@@ -10,6 +11,23 @@ use InvalidArgumentException;
  */
 final class MoneyCsvNormalizer
 {
+    /**
+     * date_format 未指定時に許容するフォーマット。曖昧な暗黙解釈
+     * （例: 01/02/03 の月日順推測）を避けるため、明示リスト以外は invalid_date に落とす。
+     *
+     * @var list<string>
+     */
+    private const FALLBACK_DATE_FORMATS = [
+        'Y-m-d',
+        'Y-n-j',
+        'Y/m/d',
+        'Y/n/j',
+        'Y.m.d',
+        'Y.n.j',
+        'Ymd',
+        'Y年n月j日',
+    ];
+
     /**
      * @param  array<string, mixed>  $mapping
      */
@@ -33,7 +51,19 @@ final class MoneyCsvNormalizer
             return $parsed->toDateString();
         }
 
-        return CarbonImmutable::parse($raw)->toDateString();
+        foreach (self::FALLBACK_DATE_FORMATS as $candidate) {
+            try {
+                $parsed = CarbonImmutable::createFromFormat($candidate, $raw);
+            } catch (InvalidFormatException) {
+                continue;
+            }
+
+            if ($parsed !== false && $parsed->format($candidate) === $raw) {
+                return $parsed->toDateString();
+            }
+        }
+
+        throw new InvalidArgumentException("Date '{$raw}' does not match any supported format.");
     }
 
     /**

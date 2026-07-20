@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Yoyu\Support\UserTimezoneResolver;
 use App\Http\Requests\MealEntries\CopyPreviousDayMealsRequest;
+use App\Http\Requests\MealEntries\ShowMealsRequest;
 use App\Http\Requests\MealEntries\StoreMealEntryRequest;
 use App\Http\Requests\MealEntries\UpdateMealEntryRequest;
 use App\Http\Resources\MealEntryResource;
@@ -14,8 +16,8 @@ use App\Services\CopyPreviousDayMealsService;
 use App\Services\CreateMealEntryService;
 use App\Services\DeleteMealEntryService;
 use App\Services\UpdateMealEntryService;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -24,16 +26,20 @@ use Inertia\Response;
 class MealEntryController extends Controller
 {
     public function index(
-        Request $request,
+        ShowMealsRequest $request,
         GetDailyMealsQuery $dailyQuery,
         GetNutritionChartQuery $chartQuery,
+        UserTimezoneResolver $timezoneResolver,
     ): Response {
-        $date = Carbon::parse($request->input('date', now()->toDateString()));
-        $from = Carbon::parse($request->input('from', now()->subDays(29)->toDateString()));
-        $to = Carbon::parse($request->input('to', now()->toDateString()));
+        $user = $request->user();
+        $today = CarbonImmutable::now($timezoneResolver->for($user))->startOfDay();
 
-        $daily = $dailyQuery->handle($request->user(), $date);
-        $chartPoints = $chartQuery->handle($request->user(), $from, $to);
+        $date = Carbon::parse($request->validated('date') ?? $today->toDateString());
+        $from = Carbon::parse($request->validated('from') ?? $today->subDays(29)->toDateString());
+        $to = Carbon::parse($request->validated('to') ?? $today->toDateString());
+
+        $daily = $dailyQuery->handle($user, $date);
+        $chartPoints = $chartQuery->handle($user, $from, $to);
 
         return Inertia::render('Meals/Index', [
             'date' => $daily['date'],

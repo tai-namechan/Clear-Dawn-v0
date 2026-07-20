@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * プログラム層（ADR-0010）。Program → Version → Phase/Week → DAY → STEP → 種目処方。
+ * プログラム層（ADR-0012）。Program → Version → Phase/Week → DAY → STEP → 種目処方。
  */
 return new class extends Migration
 {

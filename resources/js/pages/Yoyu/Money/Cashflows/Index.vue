@@ -67,6 +67,7 @@ function confirmSettle(): void {
             occurred_on: settleOccurredOn.value,
             create_transaction: true,
             update_balance: true,
+            lock_version: target.lock_version,
         },
         {
             preserveScroll: true,

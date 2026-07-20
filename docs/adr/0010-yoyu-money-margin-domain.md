@@ -2,7 +2,6 @@
 
 - 状態: 承認済み
 - 作成日: 2026-07-17
-- 対象: `main@62cac501289e956cd00da64e59b986f5d0b450af`
 - 詳細設計: [ヨユウ「お金の余裕」設計・実装計画](../product/yoyu-money-margin-design.md)
 
 ## 文脈

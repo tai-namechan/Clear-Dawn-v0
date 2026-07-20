@@ -15,6 +15,7 @@ use Database\Seeders\MatrixRowSeeder;
 use Database\Seeders\MetricSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Inertia\Testing\AssertableInertia;
 use Tests\TestCase;
 
 class MetricRecordTest extends TestCase
@@ -203,6 +204,56 @@ class MetricRecordTest extends TestCase
             ->assertForbidden();
 
         $this->assertDatabaseHas('metric_records', ['id' => $record->id]);
+    }
+
+    public function test_metric_route_binding_resolves_own_metric_over_other_users(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        $ownMetric = Metric::query()->create([
+            'user_id' => $user->id,
+            'key' => 'grip_custom',
+            'label' => '自分の握力',
+            'unit' => 'kg',
+            'value_type' => 'decimal',
+            'sort_order' => 100,
+        ]);
+        Metric::query()->create([
+            'user_id' => $other->id,
+            'key' => 'grip_custom',
+            'label' => '他人の握力',
+            'unit' => 'kg',
+            'value_type' => 'decimal',
+            'sort_order' => 100,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('records.show', ['metric' => 'grip_custom']))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->where('metric.id', $ownMetric->id)
+                ->where('metric.label', '自分の握力')
+            );
+    }
+
+    public function test_metric_route_binding_does_not_resolve_other_users_private_metric(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+
+        Metric::query()->create([
+            'user_id' => $other->id,
+            'key' => 'private_only',
+            'label' => '他人専用',
+            'unit' => 'kg',
+            'value_type' => 'decimal',
+            'sort_order' => 100,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('records.show', ['metric' => 'private_only']))
+            ->assertNotFound();
     }
 
     public function test_unknown_metric_key_returns_not_found(): void
