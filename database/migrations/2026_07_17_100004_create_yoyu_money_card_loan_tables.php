@@ -71,7 +71,7 @@ return new class extends Migration
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['credit_card_id', 'period_end', 'revision']);
+            $table->unique(['credit_card_id', 'period_end', 'revision'], 'ym_card_stmts_card_period_rev_uniq');
         });
 
         Schema::create('yoyu_money_loans', function (Blueprint $table) {

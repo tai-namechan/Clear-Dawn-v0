@@ -84,7 +84,7 @@ return new class extends Migration
             $table->text('note')->nullable();
             $table->timestamps();
 
-            $table->index(['account_id', 'observed_at']);
+            $table->index(['account_id', 'observed_at'], 'ym_bal_snaps_account_observed_idx');
         });
     }
 
