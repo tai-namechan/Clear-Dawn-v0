@@ -8,6 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Clean up partial state from a previously failed migration run.
+        // Safe: these are new tables with no user data yet.
+        Schema::dropIfExists('yoyu_money_account_balance_snapshots');
+        Schema::dropIfExists('yoyu_money_accounts');
+        Schema::dropIfExists('yoyu_money_counterparties');
+        Schema::dropIfExists('yoyu_money_categories');
+        Schema::dropIfExists('yoyu_money_settings');
+
         Schema::create('yoyu_money_settings', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
