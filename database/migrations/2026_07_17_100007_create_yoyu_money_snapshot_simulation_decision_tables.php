@@ -93,7 +93,7 @@ return new class extends Migration
             $table->string('relation_type');
             $table->timestamps();
 
-            $table->unique(['decision_id', 'subject_type', 'subject_id']);
+            $table->unique(['decision_id', 'subject_type', 'subject_id'], 'ym_dec_links_dec_subj_uniq');
             $table->index(['subject_type', 'subject_id']);
         });
     }
