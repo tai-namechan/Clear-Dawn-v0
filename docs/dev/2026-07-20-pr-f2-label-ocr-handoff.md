@@ -31,6 +31,13 @@
 - Q1: #143 を先にマージ → 本ブランチを main へ rebase してよいか
 - Q2: バーコードなし登録は範囲外でよいか（推奨: 範囲外）
 - Q3: 画像破棄タイミングは「終端状態で即削除 + prune 安全網」でよいか（推奨: この解釈）
+- Q4: Managed queue「integrations」が default キューも処理するか（Laravel Cloud 設定画面で確認。No なら F1 の Job も本番で動かない）
+
+## 本番構成メモ（2026-07-20 スクリーンショット確認）
+
+- Web と Queue worker は別コンテナ → temp 画像は本番でバケット必須（filesystems に `food-label-ocr` スタブ + `MEALS_LABEL_OCR_DISK` env。デプロイ前にバケット作成）
+- Scheduler 有効（prune は動く）/ worker 0-1 ゼロスケール（Job 開始に数十秒かかりうる）
+- 既存バケット: videos（default）/ kioku-audio
 
 ## 詰まりそうな点・注意
 
