@@ -47,9 +47,4 @@ return [
         'calendar_enabled' => (bool) env('GOOGLE_CALENDAR_ENABLED', false),
     ],
 
-    'openfoodfacts' => [
-        'base_url' => env('OPENFOODFACTS_BASE_URL', 'https://world.openfoodfacts.org'),
-        'user_agent' => env('OPENFOODFACTS_USER_AGENT', 'ClearDawn/1.0 (personal-use)'),
-    ],
-
 ];

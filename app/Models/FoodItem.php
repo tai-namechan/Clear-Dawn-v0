@@ -21,8 +21,6 @@ use Illuminate\Support\Carbon;
  * @property string $protein_g
  * @property string $fat_g
  * @property string $carb_g
- * @property string|null $barcode 正規化済みバーコード（PR-F1）
- * @property string|null $barcode_type
  * @property Carbon|null $deleted_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -35,8 +33,6 @@ use Illuminate\Support\Carbon;
     'protein_g',
     'fat_g',
     'carb_g',
-    'barcode',
-    'barcode_type',
 ])]
 class FoodItem extends Model
 {

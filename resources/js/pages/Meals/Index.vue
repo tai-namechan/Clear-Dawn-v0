@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
+    Camera,
     Copy,
     Pencil,
     Plus,
-    ScanLine,
     Search,
     Trash2,
     UtensilsCrossed,
@@ -27,7 +27,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import BarcodeLookupModal from '@/components/BarcodeLookupModal.vue';
 import { apiFetch } from '@/lib/apiFetch';
 import { PFC_COLORS } from '@/lib/pfcColors';
 import type {
@@ -88,8 +87,6 @@ const entryForm = ref({
     note: '',
     register_as_food: false,
 });
-
-const showBarcodeModal = ref(false);
 
 const filterFrom = ref(props.from);
 const filterTo = ref(props.to);
@@ -332,19 +329,8 @@ function openUsualMeals(): void {
     entryTab.value = 'food';
 }
 
-function openBarcodeScanner(): void {
-    showBarcodeModal.value = true;
-}
-
-function onBarcodeRegistered(food: FoodItem): void {
-    message.value = `「${food.name}」をマイ食品に登録しました。`;
-    router.reload({ only: ['sections', 'totals', 'chartPoints', 'goal'] });
-}
-
-function onBarcodeHit(food: FoodItem): void {
-    selectFood(food);
-    entryMealType.value = nextMealType();
-    showEntryModal.value = true;
+function notifyPhotoSoon(): void {
+    message.value = '写真で記録は準備中です。検索または直接入力をご利用ください。';
 }
 
 async function copyPreviousDay(): Promise<void> {
@@ -664,11 +650,11 @@ function applyChartFilter(): void {
                     <button
                         type="button"
                         class="rounded-2xl border border-cd-line bg-cd-surface px-4 py-4 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
-                        @click="openBarcodeScanner"
+                        @click="notifyPhotoSoon"
                     >
-                        <ScanLine :size="18" :stroke-width="1.6" class="text-primary" />
-                        <p class="mt-3 font-sans text-sm font-semibold text-cd-ink">バーコード</p>
-                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">スキャンして食品を登録</p>
+                        <Camera :size="18" :stroke-width="1.6" class="text-primary" />
+                        <p class="mt-3 font-sans text-sm font-semibold text-cd-ink">写真で記録</p>
+                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">準備中 · 近日公開</p>
                     </button>
                     <button
                         type="button"
@@ -947,12 +933,6 @@ function applyChartFilter(): void {
             </DialogFooter>
         </DialogContent>
     </Dialog>
-
-    <BarcodeLookupModal
-        v-model:open="showBarcodeModal"
-        @food-registered="onBarcodeRegistered"
-        @food-hit="onBarcodeHit"
-    />
 
     <Dialog :open="showEntryModal" @update:open="(v) => (showEntryModal = v)">
         <DialogContent class="bg-cd-surface sm:max-w-lg">
