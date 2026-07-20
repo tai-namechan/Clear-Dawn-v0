@@ -1441,6 +1441,12 @@ Open Food Factsへ画面リクエスト中に同期通信しない。API attribu
 
 ### 13.4 PR-F2
 
+入口は2系統（2026-07-20 オーナー承認で拡張）。
+
+- OFF miss後の誘導（従来どおり）
+- **バーコードなし直接登録**: バーコードが無い/読めない商品は成分表撮影から直接開始できる（`food_lookup_requests.barcode` は nullable 化）
+- 不変原則: バーコードがある場合は必ず無料のOFF照合を先に試す。有料のAI OCRは最後の手段
+
 1. miss時に成分表画像upload
 2. private temporary storage
 3. file size/MIME/dimension検証
