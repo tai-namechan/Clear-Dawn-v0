@@ -19,7 +19,7 @@ Phase 1 の縦断（2026-07-17 完了）:
 |---|---|
 | Migrations（goal/program/personal_profile/module + metrics 拡張） | `2026_07_16_1000*` 4本（metrics key は (user_id, key) ユニークに変更） |
 | Models / Enums / Factories | `app/Models`（18新規 + User/Metric 拡張）、`app/Enums` 12種 |
-| seed（11週プログラム） | `InstallElevenWeekProgramService` + `php artisan cleardawn:install-program {userId}`（冪等） |
+| seed（11週プログラム） | `InstallElevenWeekProgramService` + `php artisan cleardawn:install-program {userId?}`（冪等。userId 省略時はユーザーが1人だけならそのユーザーに登録） |
 | 個人値 import | `php artisan cleardawn:import-personal {userId} --path=personal/profile.json`（gitignore 済み personal/ から投入） |
 | 画面 | `/goals`・`/goals/{goal}`・`/programs`・`/programs/{program}`・`/programs/{program}/roadmap`（1RM×比率の表示重量は r125 丸め） |
 | Feature テスト | `GoalTest`・`ProgramTest`・`ProgramInstallTest`（計26件） |

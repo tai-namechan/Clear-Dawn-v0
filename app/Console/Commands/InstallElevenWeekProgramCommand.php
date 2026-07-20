@@ -8,17 +8,15 @@ use Illuminate\Console\Command;
 
 class InstallElevenWeekProgramCommand extends Command
 {
-    protected $signature = 'cleardawn:install-program {userId : users.id}';
+    protected $signature = 'cleardawn:install-program {userId? : users.id（省略時はユーザーが1人だけならそのユーザー）}';
 
     protected $description = '11週 統合プログラム（筋力・投球・栄養）を登録する（冪等）';
 
     public function handle(InstallElevenWeekProgramService $service): int
     {
-        $user = User::find($this->argument('userId'));
+        $user = $this->resolveUser();
 
         if ($user === null) {
-            $this->error('User not found.');
-
             return self::FAILURE;
         }
 
@@ -30,5 +28,28 @@ class InstallElevenWeekProgramCommand extends Command
         $this->line("  phases={$version->phases()->count()} weeks={$version->weeks()->count()} days={$version->dayTemplates()->count()} constraints={$version->constraints()->count()}");
 
         return self::SUCCESS;
+    }
+
+    private function resolveUser(): ?User
+    {
+        $userId = $this->argument('userId');
+
+        if ($userId !== null) {
+            $user = User::find($userId);
+
+            if ($user === null) {
+                $this->error('User not found.');
+            }
+
+            return $user;
+        }
+
+        if (User::query()->count() !== 1) {
+            $this->error('userId is required when there is not exactly one user.');
+
+            return null;
+        }
+
+        return User::query()->sole();
     }
 }

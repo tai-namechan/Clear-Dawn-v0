@@ -52,6 +52,29 @@ class ProgramInstallTest extends TestCase
         $this->artisan('cleardawn:install-program', ['userId' => 999])->assertFailed();
     }
 
+    public function test_install_program_command_defaults_to_the_sole_user_when_user_id_is_omitted(): void
+    {
+        $user = User::factory()->create();
+
+        $this->artisan('cleardawn:install-program')->assertSuccessful();
+
+        $this->assertSame(1, Program::query()->where('user_id', $user->id)->count());
+    }
+
+    public function test_install_program_command_fails_without_user_id_when_no_users_exist(): void
+    {
+        $this->artisan('cleardawn:install-program')->assertFailed();
+    }
+
+    public function test_install_program_command_fails_without_user_id_when_multiple_users_exist(): void
+    {
+        User::factory()->count(2)->create();
+
+        $this->artisan('cleardawn:install-program')->assertFailed();
+
+        $this->assertSame(0, Program::query()->count());
+    }
+
     public function test_main_lift_prescriptions_are_stored_as_percent_of_reference(): void
     {
         $user = User::factory()->create();
