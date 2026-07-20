@@ -37,7 +37,7 @@ return new class extends Migration
             $table->date('generated_through')->nullable();
             $table->timestamps();
 
-            $table->index(['user_id', 'is_active', 'generated_through']);
+            $table->index(['user_id', 'is_active', 'generated_through'], 'ym_recur_rules_active_gen_through_idx');
         });
 
         Schema::create('yoyu_money_cashflows', function (Blueprint $table) {
