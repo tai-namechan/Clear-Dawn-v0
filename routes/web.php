@@ -178,7 +178,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('meals/foods', [FoodItemController::class, 'store'])->name('meals.foods.store');
     Route::patch('meals/foods/{foodItem}', [FoodItemController::class, 'update'])->name('meals.foods.update');
     Route::delete('meals/foods/{foodItem}', [FoodItemController::class, 'destroy'])->name('meals.foods.destroy');
-    Route::post('meals/barcode-lookup', [FoodBarcodeLookupController::class, 'store'])->name('meals.barcode-lookup.store');
+    Route::post('meals/barcode-lookup', [FoodBarcodeLookupController::class, 'store'])
+        ->middleware('throttle:20,1')
+        ->name('meals.barcode-lookup.store');
     Route::get('meals/barcode-lookup/{lookupId}', [FoodBarcodeLookupController::class, 'show'])->name('meals.barcode-lookup.show');
     Route::post('meals/barcode-lookup/{lookupId}/confirm', [FoodBarcodeLookupController::class, 'confirm'])->name('meals.barcode-lookup.confirm');
     Route::put('meals/goals', [NutritionGoalController::class, 'upsert'])->name('meals.goals.upsert');

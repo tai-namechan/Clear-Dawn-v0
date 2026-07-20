@@ -280,6 +280,23 @@ class FoodBarcodeLookupTest extends TestCase
         Queue::assertPushed(LookupOpenFoodFactsJob::class, 1);
     }
 
+    public function test_store_is_throttled_to_twenty_requests_per_minute(): void
+    {
+        $user = User::factory()->create();
+
+        Queue::fake();
+
+        for ($i = 0; $i < 20; $i++) {
+            $this->actingAs($user)
+                ->postJson(route('meals.barcode-lookup.store'), ['barcode' => '4901234567894'])
+                ->assertStatus(202);
+        }
+
+        $this->actingAs($user)
+            ->postJson(route('meals.barcode-lookup.store'), ['barcode' => '4901234567894'])
+            ->assertStatus(429);
+    }
+
     public function test_upca_barcode_normalizes_to_ean13(): void
     {
         $user = User::factory()->create();

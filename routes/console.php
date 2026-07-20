@@ -29,3 +29,8 @@ Schedule::command('yoyu-money:purge-imports')
     ->daily()
     ->withoutOverlapping(30)
     ->onOneServer();
+
+Schedule::command('meals:prune-expired-lookups')
+    ->daily()
+    ->withoutOverlapping(10)
+    ->onOneServer();
