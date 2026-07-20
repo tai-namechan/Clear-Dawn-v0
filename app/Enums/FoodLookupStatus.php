@@ -8,6 +8,7 @@ namespace App\Enums;
 enum FoodLookupStatus: string
 {
     case Pending = 'pending';
+    case OcrPending = 'ocr_pending';
     case Found = 'found';
     case NotFound = 'not_found';
     case Failed = 'failed';

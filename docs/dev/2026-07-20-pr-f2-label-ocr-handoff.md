@@ -1,30 +1,31 @@
 # PR-F2 成分表OCR — 残作業 handoff
 
-更新: 2026-07-20 / ブランチ: `feature/meals-label-ocr-f2`（PR #143 `cursor/meals-barcode-lookup-a703` 上にスタック）
-正本: `docs/dev/2026-07-20-pr-f2-label-ocr-implementation-plan.md`（先に読むこと）
+更新: 2026-07-20 / ブランチ: `feature/meals-label-ocr-f2`（**main ベース**。#143 マージ済み）
+正本: `docs/dev/2026-07-20-pr-f2-label-ocr-implementation-plan.md`（先に読むこと。入口拡張版に改訂済み）
 
 ## 状態
 
-- 最新コミット: このファイルと同一コミット（`git log --oneline -1` で確認）
-- **Phase 0 完了（設計書 push 済み）。実装は未着手 — オーナーの続行指示待ち**
+- 最新コミット: このファイルと同一コミット（`git log --oneline -1` で確認)
+- **Phase 1 まで完了。次は Phase 2（Upload API 2本）**
 
 ## Phase チェックリスト
 
 - [x] Phase 0: 実装計画書 + handoff の作成・push
-- [ ] Phase 1: `FoodLookupStatus::OcrPending` 追加 / `config/meals.php` / Factory state（`notFound()` / `ocrPending()`）
-- [ ] Phase 2: Upload API — `StoreFoodLabelImageRequest` / `FoodBarcodeLookupController@storeLabelImage` / route（throttle:10,1）/ quota 事前チェック / `tests/Feature/FoodLabelImageUploadTest.php`
+- [x] Phase 0.5: 設計docs（§13.4 / 完成設計§3）へ入口拡張追記 + 計画書改訂
+- [x] Phase 1: barcode nullable migration / `FoodLookupStatus::OcrPending` / `config/meals.php` / filesystems `food-label-ocr` スタブ / Factory state（notFound / ocrPending / withoutBarcode）— F1回帰 38 passed
+- [ ] Phase 2: Upload API 2本 — `StoreFoodLabelImageRequest` / `StartFoodLabelOcrService` / controller 2 action / route（throttle:10,1）/ quota 事前チェック / `tests/Feature/FoodLabelImageUploadTest.php`
 - [ ] Phase 3: `AiGateway` PHPDoc 緩和（型のみ）/ `app/Jobs/LookupFoodLabelOcrJob.php` / `tests/Feature/LookupFoodLabelOcrJobTest.php`
-- [ ] Phase 4: confirm 経路の Feature テスト追加（source=label_ocr）
-- [ ] Phase 5: フロント — `useLabelImageCapture.ts` / `BarcodeLookupModal.vue` に `ocr_capture` ステップ + polling へ `ocr_pending` 追加
-- [ ] Phase 6: `PruneExpiredFoodLookupsCommand` の temp 画像削除 + 再アップロード時の旧ファイル削除 + テスト
+- [ ] Phase 4: `ConfirmFoodLookupService` barcode=null 対応 + source=label_ocr の Feature テスト
+- [ ] Phase 5: フロント — `useLabelImageCapture.ts` / `BarcodeLookupModal.vue` に `ocr_capture` ステップ（入口1+2）+ polling へ `ocr_pending` 追加
+- [ ] Phase 6: `PruneExpiredFoodLookupsCommand` の temp 画像削除 + テスト
 - [ ] Phase 7: Pint / ESLint / types:check / F1 回帰 / docs 更新 / draft PR 作成
 
-## 次にやる具体タスク（Phase 1）
+## 次にやる具体タスク（Phase 2）
 
-1. `app/Enums/FoodLookupStatus.php` に `case OcrPending = 'ocr_pending';`
-2. `config/meals.php` 新規: `['label_ocr' => ['disk' => env('MEALS_LABEL_OCR_DISK', 'local')]]`
-3. `database/factories/FoodLookupRequestFactory.php` に `notFound()` / `ocrPending()`（temp_image_path 付き）state
-4. `php artisan test --compact tests/Feature/FoodBarcodeLookupTest.php` で回帰確認 → Pint → commit/push → 本ファイル更新
+1. `app/Http/Requests/FoodLookups/StoreFoodLabelImageRequest.php`（image: required/image/mimes:jpeg,png,webp/max:5120/dimensions 200–8000px）
+2. `app/Services/StartFoodLabelOcrService.php`（attachToLookup / startWithoutBarcode。quota→store→条件付きUPDATE or create→afterCommit dispatch。Job クラスは Phase 3 なので dispatch 部分は Job 作成後に有効化 or 同時作成）
+3. `FoodBarcodeLookupController` に storeLabelImage / storeLabelOcr、`routes/web.php` に route 2本（throttle:10,1）
+4. `tests/Feature/FoodLabelImageUploadTest.php`（計画書のテスト計画参照）→ Pint → commit/push → 本ファイル更新
 
 ## 未決事項（オーナー回答待ち）
 

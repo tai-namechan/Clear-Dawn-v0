@@ -99,6 +99,20 @@ return [
             'report' => false,
         ],
 
+        /*
+         * Local stub for meals label-OCR temp images (PR-F2). On Laravel
+         * Cloud, MEALS_LABEL_OCR_DISK points at an Object Storage disk
+         * instead (web and queue containers do not share a filesystem);
+         * this stub keeps local dev and tests working without a bucket.
+         */
+        'food-label-ocr' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private'),
+            'serve' => false,
+            'throw' => false,
+            'report' => false,
+        ],
+
     ],
 
     /*
