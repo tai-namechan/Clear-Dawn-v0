@@ -73,7 +73,8 @@ Route::get('/', function () {
     }
 
     return Inertia::render('PublicLandingPage', [
-        'canResetPassword' => Features::enabled(Features::resetPasswords()),
+        'canResetPassword' => config('app.public_signup_enabled') && Features::enabled(Features::resetPasswords()),
+        'canRegister' => config('app.public_signup_enabled') && Features::enabled(Features::registration()),
         'passwordRules' => Password::defaults()->toPasswordRulesString(),
     ]);
 })->name('home');

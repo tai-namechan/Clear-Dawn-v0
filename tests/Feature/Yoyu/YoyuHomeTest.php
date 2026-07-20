@@ -47,6 +47,35 @@ class YoyuHomeTest extends TestCase
             );
     }
 
+    public function test_tab_switch_partial_reload_skips_heavy_props_and_keeps_chat_session(): void
+    {
+        $user = User::factory()->create();
+
+        // フル訪問（全 props が入る）
+        $this->actingAs($user)->get(route('yoyu.home'))->assertOk();
+
+        // タブ切替は only=['tab'] の partial reload（サイドバーの実装と同じヘッダ）
+        session(['chat_reply' => '残しておく返信']);
+
+        $response = $this->actingAs($user)->get(route('yoyu.home', ['tab' => 'tasks']), [
+            'X-Inertia' => 'true',
+            'X-Inertia-Version' => '',
+            'X-Inertia-Partial-Component' => 'Yoyu/Index',
+            'X-Inertia-Partial-Data' => 'tab',
+        ]);
+
+        $response->assertOk();
+        $props = $response->json('props');
+
+        $this->assertSame('tasks', $props['tab']);
+        $this->assertArrayNotHasKey('calendar', $props);
+        $this->assertArrayNotHasKey('briefing', $props);
+        $this->assertArrayNotHasKey('recallPreview', $props);
+
+        // 遅延化した session pull が partial reload で評価されず、値が破棄されないこと
+        $this->assertSame('残しておく返信', session('chat_reply'));
+    }
+
     public function test_user_can_create_task(): void
     {
         $user = User::factory()->create();
@@ -126,7 +155,9 @@ class YoyuHomeTest extends TestCase
         $user = User::factory()->create();
         YoyuBriefing::query()->create([
             'user_id' => $user->id,
-            'date' => today()->toDateString(),
+            // ブリーフィングの「今日」はユーザーTZ（S-02）。サーバーTZの today() だと
+            // JST の日付が変わった後（UTC 15時以降）の実行で日付がずれて flaky になる。
+            'date' => app(UserTimezoneResolver::class)->todayDateString($user),
             'body' => 'テストブリーフィング',
             'status' => 'ready',
         ]);

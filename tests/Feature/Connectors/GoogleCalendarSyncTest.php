@@ -11,6 +11,7 @@ use App\Domain\Connectors\Jobs\DisconnectGoogleCalendarJob;
 use App\Domain\Connectors\Jobs\SyncGoogleCalendarJob;
 use App\Domain\Kioku\Models\Connector;
 use App\Domain\Yoyu\Models\YoyuCalendarEvent;
+use App\Domain\Yoyu\Support\UserTimezoneResolver;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -673,7 +674,9 @@ class GoogleCalendarSyncTest extends TestCase
     {
         $user = User::factory()->create();
         $connector = $this->makeConnector($user, ['last_synced_at' => now()]);
-        $today = CarbonImmutable::now((string) config('app.timezone', 'UTC'))->startOfDay();
+        // 「今日」の判定はユーザーTZ（S-02: 既定 Asia/Tokyo）。app.timezone(UTC) 基準だと
+        // JST の日付が変わった後（UTC 15時以降）の実行でウィンドウ外になり flaky になる。
+        $today = CarbonImmutable::now(app(UserTimezoneResolver::class)->for($user))->startOfDay();
         YoyuCalendarEvent::query()->withoutUserScope()->create([
             'user_id' => $user->id,
             'connector_id' => $connector->id,

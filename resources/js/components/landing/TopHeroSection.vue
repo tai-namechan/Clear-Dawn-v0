@@ -3,6 +3,10 @@ import HeroBackground from '@/components/landing/HeroBackground.vue';
 import HeroContent from '@/components/landing/HeroContent.vue';
 import LandingHeader from '@/components/landing/LandingHeader.vue';
 
+defineProps<{
+    canRegister: boolean;
+}>();
+
 defineEmits<{
     (e: 'open-login'): void;
     (e: 'open-register'): void;
@@ -16,6 +20,7 @@ defineEmits<{
     >
         <HeroBackground />
         <LandingHeader
+            :can-register="canRegister"
             @open-login="$emit('open-login')"
             @open-register="$emit('open-register')"
         />

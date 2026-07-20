@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { router, usePage } from '@inertiajs/vue3';
 import { Check, ChevronDown, Compass, Library, Sun } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import {
     Dialog,
     DialogContent,
@@ -75,6 +75,32 @@ function selectProduct(product: ProductDefinition): void {
     open.value = false;
     router.visit(product.href);
 }
+
+// プレビュー画像をマウント時に先読みし、モーダルを開いた瞬間に表示できるようにする
+onMounted(() => {
+    products.value.forEach((product) => {
+        const image = new Image();
+        image.src = previewByKey[product.key].src;
+    });
+});
+
+// モーダルを開いた時点で他プロダクトのページ（JSチャンク + props）を先読みし、
+// カードを押してからの初回遷移待ちを消す
+watch(open, (isOpen) => {
+    if (!isOpen) {
+        return;
+    }
+
+    products.value
+        .filter((product) => product.key !== currentProductKey.value)
+        .forEach((product) => {
+            router.prefetch(
+                product.href,
+                { method: 'get' },
+                { cacheFor: '1m' },
+            );
+        });
+});
 </script>
 
 <template>

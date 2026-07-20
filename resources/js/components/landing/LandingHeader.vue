@@ -1,4 +1,8 @@
 <script setup lang="ts">
+defineProps<{
+    canRegister: boolean;
+}>();
+
 defineEmits<{
     (e: 'open-login'): void;
     (e: 'open-register'): void;
@@ -21,6 +25,7 @@ defineEmits<{
                 ログイン
             </button>
             <button
+                v-if="canRegister"
                 type="button"
                 class="rounded-full border border-white/35 bg-white/10 px-4 py-1.5 font-sans text-sm tracking-[0.08em] text-white/92 backdrop-blur-[2px] transition-colors hover:border-white/55 hover:bg-white/16 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none md:px-5 md:text-[0.95rem]"
                 @click="$emit('open-register')"

@@ -7,6 +7,7 @@ import TopHeroSection from '@/components/landing/TopHeroSection.vue';
 
 interface Props {
     canResetPassword: boolean;
+    canRegister: boolean;
     passwordRules: string;
 }
 
@@ -25,6 +26,7 @@ function openAuthModal(mode: AuthModalMode): void {
     <Head title="Clear Dawn" />
 
     <TopHeroSection
+        :can-register="canRegister"
         @open-login="openAuthModal('login')"
         @open-register="openAuthModal('register')"
     />
@@ -33,6 +35,7 @@ function openAuthModal(mode: AuthModalMode): void {
         v-model:open="authModalOpen"
         v-model:mode="authModalMode"
         :can-reset-password="canResetPassword"
+        :can-register="canRegister"
         :password-rules="passwordRules"
     />
 </template>

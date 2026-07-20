@@ -118,6 +118,8 @@ return [
         'login' => 'login',
         'two-factor' => 'two-factor',
         'passkeys' => 'passkeys',
+        'register' => 'register',
+        'password-reset' => 'password-reset',
     ],
 
     /*

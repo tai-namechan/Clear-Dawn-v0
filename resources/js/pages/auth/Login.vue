@@ -12,6 +12,7 @@ defineOptions({
 defineProps<{
     status?: string;
     canResetPassword: boolean;
+    canRegister: boolean;
 }>();
 </script>
 
@@ -25,5 +26,5 @@ defineProps<{
         {{ status }}
     </div>
 
-    <AuthLoginForm :can-reset-password="canResetPassword" />
+    <AuthLoginForm :can-reset-password="canResetPassword" :can-register="canRegister" />
 </template>

@@ -15,6 +15,7 @@ import { request } from '@/routes/password';
 
 interface Props {
     canResetPassword: boolean;
+    canRegister: boolean;
     /** モーダル内ではページ遷移せずモード切替 */
     modal?: boolean;
 }
@@ -95,7 +96,7 @@ const emit = defineEmits<{
             </Button>
         </div>
 
-        <div class="text-center text-sm text-muted-foreground">
+        <div v-if="canRegister" class="text-center text-sm text-muted-foreground">
             アカウントをお持ちでない方
             <button
                 v-if="modal"
