@@ -1,4 +1,5 @@
-import { onUnmounted, ref, type Ref } from 'vue';
+import { onUnmounted, ref } from 'vue';
+import type { Ref } from 'vue';
 
 declare global {
     interface Window {
@@ -64,6 +65,7 @@ export function useBarcodeScan(
             for (const track of stream.getTracks()) {
                 track.stop();
             }
+
             stream = null;
         }
 

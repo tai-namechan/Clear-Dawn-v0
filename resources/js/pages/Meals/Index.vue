@@ -11,6 +11,7 @@ import {
 } from '@lucide/vue';
 import type { EChartsCoreOption } from 'echarts/core';
 import { computed, ref, watch } from 'vue';
+import BarcodeLookupModal from '@/components/BarcodeLookupModal.vue';
 import BaseChart from '@/components/charts/BaseChart.vue';
 import DateNavigator from '@/components/DateNavigator.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
@@ -27,7 +28,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import BarcodeLookupModal from '@/components/BarcodeLookupModal.vue';
 import { apiFetch } from '@/lib/apiFetch';
 import { PFC_COLORS } from '@/lib/pfcColors';
 import type {

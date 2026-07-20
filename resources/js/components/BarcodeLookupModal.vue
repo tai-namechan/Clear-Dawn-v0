@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { Loader2, ScanLine, X } from '@lucide/vue';
+import { Loader2, ScanLine } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
-import { useBarcodeScan } from '@/composables/useBarcodeScan';
-import { apiFetch, ApiError } from '@/lib/apiFetch';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -14,6 +12,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useBarcodeScan } from '@/composables/useBarcodeScan';
+import { apiFetch, ApiError } from '@/lib/apiFetch';
 import type { FoodItem } from '@/types/routine';
 
 type Step = 'scan' | 'polling' | 'confirm' | 'hit';
