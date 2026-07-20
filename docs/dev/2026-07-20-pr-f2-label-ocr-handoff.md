@@ -6,7 +6,7 @@
 ## 状態
 
 - 最新コミット: このファイルと同一コミット（`git log --oneline -1` で確認)
-- **Phase 4 まで完了。次は Phase 6（prune拡張。フロントの Phase 5 は最後に回す）**
+- **全 Phase 完了（Phase 0〜7）。draft PR 作成済み — レビュー待ち**
 
 ## Phase チェックリスト
 
@@ -16,15 +16,14 @@
 - [x] Phase 2: Upload API 2本 — `StoreFoodLabelImageRequest` / `StartFoodLabelOcrService` / controller 2 action / route（throttle:10,1）/ quota 事前チェック / `FoodLabelImageUploadTest` 9 passed。**注: `LookupFoodLabelOcrJob` は dispatch 契約のみの骨格（handle 空実装）**
 - [x] Phase 3: `AiGateway` PHPDoc 緩和（型のみ）/ `LookupFoodLabelOcrJob@handle` 本実装（vision content blocks・schema検証・失敗分類・終端で画像破棄・ledger settle 検証）/ `LookupFoodLabelOcrJobTest` 10 passed
 - [x] Phase 4: `ConfirmFoodLookupService` barcode=null 対応（重複判定スキップ）+ confirm テスト3件追加（label_ocr / barcodeなし / barcodeなし複数共存）— FoodBarcodeLookupTest 20 passed
-- [ ] Phase 5: フロント — `useLabelImageCapture.ts` / `BarcodeLookupModal.vue` に `ocr_capture` ステップ（入口1+2）+ polling へ `ocr_pending` 追加
-- [ ] Phase 6: `PruneExpiredFoodLookupsCommand` の temp 画像削除 + テスト
-- [ ] Phase 7: Pint / ESLint / types:check / F1 回帰 / docs 更新 / draft PR 作成
+- [x] Phase 5: フロント — `useLabelImageCapture.ts`（canvas縮小）/ `BarcodeLookupModal.vue` に `ocr_capture` ステップ（入口1+2）/ polling は `ocr_pending` 継続 / error_code 分岐 / 出典表示 — vue-tsc・ESLint・Prettier green / test:js 124 passed
+- [x] Phase 6: `PruneExpiredFoodLookupsCommand` で行削除前に temp 画像を破棄（chunkById）+ テスト — 4 passed
+- [x] Phase 7: 全体回帰 782/785 passed（残3件は既知の環境制約: S3リージョン1件・bcmath 2件）/ Pint green / draft PR 作成
 
-## 次にやる具体タスク（Phase 6 → 5 → 7 の順で残りを消化）
+## マージ前・デプロイ前チェック（オーナー作業）
 
-Phase 6: `PruneExpiredFoodLookupsCommand` を拡張 — `->delete()` 一括ではなく chunk して、`temp_image_path` があれば `Storage::disk(config('meals.label_ocr.disk'))` から削除してから行を削除。`PruneExpiredFoodLookupsCommandTest` に画像付き期限切れのケース追加。
-Phase 5: フロント — `useLabelImageCapture.ts`（input capture + canvas縮小 長辺1600px JPEG q0.85）/ `BarcodeLookupModal.vue` に `ocr_capture` ステップ（入口1: not_found/failed 時 CTA、入口2: scan 常設副ボタン）/ polling 継続条件に `ocr_pending` / confirm の出典表示に label_ocr 分岐。
-Phase 7: 全回帰 / Pint / ESLint / types:check / test:js / handoff 最終化 / draft PR。
+1. **本番 env に `MEALS_LABEL_OCR_DISK` を設定**（例: `kioku-audio`。未設定だと local disk になり、Web と worker が別コンテナのため OCR Job が画像を読めない）
+2. 動作確認: バーコード miss → 撮影 → 確認 → 保存 / バーコードなし直接撮影 / AI利用量バナーに meals.label_ocr 分が乗ること
 
 ## 未決事項（オーナー回答待ち）
 
