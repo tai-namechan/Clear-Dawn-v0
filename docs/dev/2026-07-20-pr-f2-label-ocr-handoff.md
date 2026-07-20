@@ -6,7 +6,7 @@
 ## 状態
 
 - 最新コミット: このファイルと同一コミット（`git log --oneline -1` で確認)
-- **Phase 2 まで完了。次は Phase 3（OCR Job 本実装）**
+- **Phase 3 まで完了。次は Phase 4（confirm の barcode=null 対応）**
 
 ## Phase チェックリスト
 
@@ -14,18 +14,17 @@
 - [x] Phase 0.5: 設計docs（§13.4 / 完成設計§3）へ入口拡張追記 + 計画書改訂
 - [x] Phase 1: barcode nullable migration / `FoodLookupStatus::OcrPending` / `config/meals.php` / filesystems `food-label-ocr` スタブ / Factory state（notFound / ocrPending / withoutBarcode）— F1回帰 38 passed
 - [x] Phase 2: Upload API 2本 — `StoreFoodLabelImageRequest` / `StartFoodLabelOcrService` / controller 2 action / route（throttle:10,1）/ quota 事前チェック / `FoodLabelImageUploadTest` 9 passed。**注: `LookupFoodLabelOcrJob` は dispatch 契約のみの骨格（handle 空実装）**
-- [ ] Phase 3: `AiGateway` PHPDoc 緩和（型のみ）/ `LookupFoodLabelOcrJob@handle` 本実装（vision呼び出し・schema検証・失敗分類・画像削除）/ `tests/Feature/LookupFoodLabelOcrJobTest.php`
+- [x] Phase 3: `AiGateway` PHPDoc 緩和（型のみ）/ `LookupFoodLabelOcrJob@handle` 本実装（vision content blocks・schema検証・失敗分類・終端で画像破棄・ledger settle 検証）/ `LookupFoodLabelOcrJobTest` 10 passed
 - [ ] Phase 4: `ConfirmFoodLookupService` barcode=null 対応 + source=label_ocr の Feature テスト
 - [ ] Phase 5: フロント — `useLabelImageCapture.ts` / `BarcodeLookupModal.vue` に `ocr_capture` ステップ（入口1+2）+ polling へ `ocr_pending` 追加
 - [ ] Phase 6: `PruneExpiredFoodLookupsCommand` の temp 画像削除 + テスト
 - [ ] Phase 7: Pint / ESLint / types:check / F1 回帰 / docs 更新 / draft PR 作成
 
-## 次にやる具体タスク（Phase 3）
+## 次にやる具体タスク（Phase 4）
 
-1. `AiGateway::complete` の `$messages` PHPDoc を `list<array{role: string, content: string|list<array<string, mixed>>}>` に緩和（**型のみ。ロジック変更禁止**）
-2. `LookupFoodLabelOcrJob@handle` 実装: status===OcrPending ガード → disk から画像読込+base64 → `$ai->complete(feature:'meals.label_ocr', tier:'cheap', maxTokens:300, messages:[image+text blocks])` → JSON parse → schema 検証（per∈{serving,100g} / kcal 0-9999 / macros 0-999）→ F1同形 result で found(source=label_ocr) or failed(error_code)。終端で画像削除+temp_image_path null 化。失敗分類は計画書E参照（quota/unreadable は即終端、他はリトライ）
-3. `tests/Feature/LookupFoodLabelOcrJobTest.php`（計画書テスト計画参照。`$this->anthropicFakePattern()` 使用、`config(['ai.anthropic.api_key' => 'test-key'])` 必要）
-4. テスト → Pint → commit/push → 本ファイル更新
+1. `app/Services/ConfirmFoodLookupService.php`: `$lookup->barcode === null` のときは `withTrashed()` の既存行検索をスキップして常に新規 create（barcode/barcode_type は null で保存）
+2. `tests/Feature/FoodBarcodeLookupTest.php` に追加: source=label_ocr の found を confirm できる / barcode=null の found を confirm すると barcode なしの food_items ができる / barcode=null 同名でも unique 制約に当たらない
+3. テスト → Pint → commit/push → 本ファイル更新
 
 ## 未決事項（オーナー回答待ち）
 
