@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Loader2, ScanLine } from '@lucide/vue';
+import { Camera, Loader2, ScanLine } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,10 +13,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useBarcodeScan } from '@/composables/useBarcodeScan';
+import { downscaleLabelImage } from '@/composables/useLabelImageCapture';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
 import type { FoodItem } from '@/types/routine';
 
-type Step = 'scan' | 'polling' | 'confirm' | 'hit';
+type Step = 'scan' | 'ocr_capture' | 'polling' | 'confirm' | 'hit';
 
 interface LookupResult {
     name: string | null;
@@ -50,6 +51,9 @@ const lookupSource = ref<string | null>(null);
 const hitFood = ref<FoodItem | null>(null);
 const saving = ref(false);
 const errorMessage = ref<string | null>(null);
+const ocrFile = ref<File | null>(null);
+const ocrPreviewUrl = ref<string | null>(null);
+const labelFileInput = ref<HTMLInputElement | null>(null);
 let pollTimer: ReturnType<typeof setTimeout> | null = null;
 
 const confirmForm = ref({
@@ -101,12 +105,23 @@ function reset(): void {
     hitFood.value = null;
     saving.value = false;
     errorMessage.value = null;
+    clearOcrFile();
     confirmForm.value = { name: '', serving_label: '', kcal: '', protein_g: '', fat_g: '', carb_g: '' };
 }
 
 function cleanup(): void {
     stopCamera();
     clearPollTimer();
+    clearOcrFile();
+}
+
+function clearOcrFile(): void {
+    if (ocrPreviewUrl.value !== null) {
+        URL.revokeObjectURL(ocrPreviewUrl.value);
+    }
+
+    ocrFile.value = null;
+    ocrPreviewUrl.value = null;
 }
 
 function clearPollTimer(): void {
@@ -197,15 +212,31 @@ async function pollLookup(): Promise<void> {
         }
 
         if (data.status === 'not_found') {
-            errorMessage.value = 'この商品はデータベースに見つかりませんでした。直接入力で登録してください。';
+            errorMessage.value =
+                'Open Food Facts に見つかりませんでした。「成分表を撮影して登録」で AI 読み取りができます。';
             step.value = 'scan';
 
             return;
         }
 
         if (data.status === 'failed') {
-            errorMessage.value = '照合に失敗しました。もう一度スキャンしてください。';
-            step.value = 'scan';
+            if (data.error_code === 'ocr_unreadable') {
+                errorMessage.value =
+                    '成分表を読み取れませんでした。明るい場所で成分表全体が写るように撮り直してください。';
+                step.value = 'ocr_capture';
+            } else if (data.error_code === 'ocr_quota_exceeded') {
+                errorMessage.value =
+                    '今月のAI利用枠を使い切ったため読み取れません。直接入力で登録してください。';
+                step.value = 'scan';
+            } else if (data.error_code?.startsWith('ocr_')) {
+                errorMessage.value =
+                    '読み取りに失敗しました。もう一度撮影するか、直接入力で登録してください。';
+                step.value = 'ocr_capture';
+            } else {
+                errorMessage.value =
+                    '照合に失敗しました。もう一度スキャンするか、「成分表を撮影して登録」をお試しください。';
+                step.value = 'scan';
+            }
 
             return;
         }
@@ -214,6 +245,85 @@ async function pollLookup(): Promise<void> {
     } catch {
         errorMessage.value = '通信エラーが発生しました。';
         step.value = 'scan';
+    }
+}
+
+/** 入口1: F1 miss した lookup に成分表を添付して再解析 */
+function startOcrForMiss(): void {
+    stopCamera();
+    errorMessage.value = null;
+    step.value = 'ocr_capture';
+}
+
+/** 入口2: バーコードなしで成分表から直接登録 */
+function startOcrWithoutBarcode(): void {
+    stopCamera();
+    lookupId.value = null;
+    errorMessage.value = null;
+    step.value = 'ocr_capture';
+}
+
+function openLabelFilePicker(): void {
+    labelFileInput.value?.click();
+}
+
+function onLabelFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+
+    if (!file) {
+        return;
+    }
+
+    clearOcrFile();
+    ocrFile.value = file;
+    ocrPreviewUrl.value = URL.createObjectURL(file);
+}
+
+async function submitLabelImage(): Promise<void> {
+    if (!ocrFile.value || saving.value) {
+        return;
+    }
+
+    saving.value = true;
+    errorMessage.value = null;
+
+    try {
+        const image = await downscaleLabelImage(ocrFile.value);
+        const form = new FormData();
+        form.append('image', image);
+
+        const url = lookupId.value
+            ? `/meals/barcode-lookup/${lookupId.value}/label-image`
+            : '/meals/label-ocr';
+
+        const data = await apiFetch<{ status: string; lookup_id: string }>(url, {
+            method: 'POST',
+            body: form,
+        });
+
+        lookupId.value = data.lookup_id;
+        clearOcrFile();
+        step.value = 'polling';
+        startPolling();
+    } catch (e) {
+        if (e instanceof ApiError && e.status === 422) {
+            const body = e.body as {
+                message?: string;
+                errors?: Record<string, string[]>;
+            };
+            errorMessage.value =
+                body.errors?.image?.[0] ?? body.message ?? '画像を確認してください。';
+        } else if (e instanceof ApiError && e.status === 409) {
+            // すでに解析中: そのままポーリングへ合流
+            step.value = 'polling';
+            startPolling();
+        } else {
+            errorMessage.value = '送信に失敗しました。もう一度お試しください。';
+        }
+    } finally {
+        saving.value = false;
     }
 }
 
@@ -283,22 +393,26 @@ function useHitFood(): void {
                     {{
                         step === 'scan'
                             ? 'バーコードスキャン'
-                            : step === 'polling'
-                              ? '照合中...'
-                              : step === 'confirm'
-                                ? '栄養情報の確認'
-                                : '登録済み食品'
+                            : step === 'ocr_capture'
+                              ? '成分表を撮影'
+                              : step === 'polling'
+                                ? '照合中...'
+                                : step === 'confirm'
+                                  ? '栄養情報の確認'
+                                  : '登録済み食品'
                     }}
                 </DialogTitle>
                 <DialogDescription class="font-sans text-sm text-cd-ink-muted">
                     {{
                         step === 'scan'
                             ? 'カメラでバーコードを読み取るか、番号を直接入力してください。'
-                            : step === 'polling'
-                              ? 'Open Food Facts からデータを取得しています...'
-                              : step === 'confirm'
-                                ? '内容を確認・編集して保存してください。値は自由に修正できます。'
-                                : 'この商品は既にマイ食品に登録されています。'
+                            : step === 'ocr_capture'
+                              ? '栄養成分表示を撮影すると AI が読み取ります。'
+                              : step === 'polling'
+                                ? 'データベースを照合しています...'
+                                : step === 'confirm'
+                                  ? '内容を確認・編集して保存してください。値は自由に修正できます。'
+                                  : 'この商品は既にマイ食品に登録されています。'
                     }}
                 </DialogDescription>
             </DialogHeader>
@@ -366,13 +480,87 @@ function useHitFood(): void {
                         </Button>
                     </div>
                 </div>
+
+                <div class="flex flex-col gap-2 border-t border-cd-line pt-3">
+                    <Button
+                        v-if="lookupId"
+                        type="button"
+                        class="font-sans"
+                        @click="startOcrForMiss"
+                    >
+                        <Camera :size="16" class="mr-1" />
+                        この商品の成分表を撮影して登録
+                    </Button>
+                    <button
+                        type="button"
+                        class="font-sans text-xs text-cd-ink-muted underline-offset-2 hover:underline"
+                        @click="startOcrWithoutBarcode"
+                    >
+                        バーコードがない商品は、成分表の撮影から登録できます
+                    </button>
+                </div>
+            </div>
+
+            <!-- OCR capture step -->
+            <div v-if="step === 'ocr_capture'" class="flex flex-col gap-4">
+                <input
+                    ref="labelFileInput"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    class="hidden"
+                    @change="onLabelFileSelected"
+                />
+
+                <div
+                    v-if="ocrPreviewUrl"
+                    class="overflow-hidden rounded-xl border border-cd-line"
+                >
+                    <img
+                        :src="ocrPreviewUrl"
+                        alt="成分表のプレビュー"
+                        class="max-h-64 w-full object-contain"
+                    />
+                </div>
+                <button
+                    v-else
+                    type="button"
+                    class="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-cd-line bg-muted/30 text-cd-ink-muted"
+                    @click="openLabelFilePicker"
+                >
+                    <Camera :size="32" />
+                    <span class="font-sans text-sm">栄養成分表示を撮影 / 選択</span>
+                </button>
+
+                <div class="flex gap-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        class="flex-1 font-sans"
+                        @click="openLabelFilePicker"
+                    >
+                        {{ ocrPreviewUrl ? '撮り直す' : '撮影 / 選択' }}
+                    </Button>
+                    <Button
+                        type="button"
+                        class="flex-1 font-sans"
+                        :disabled="saving || !ocrFile"
+                        @click="submitLabelImage"
+                    >
+                        AIで読み取る
+                    </Button>
+                </div>
+
+                <p class="font-sans text-xs text-cd-ink-muted">
+                    成分表全体が明るく写るように撮影してください。読み取り結果は保存前に必ず確認できます。写真は解析後に破棄されます。
+                </p>
             </div>
 
             <!-- Polling step -->
             <div v-if="step === 'polling'" class="flex flex-col items-center gap-4 py-8">
                 <Loader2 :size="32" class="animate-spin text-primary" />
                 <p class="font-sans text-sm text-cd-ink-muted">
-                    データベースを照合しています...
+                    照合しています…（読み取りには数十秒かかることがあります）
                 </p>
             </div>
 
@@ -382,7 +570,14 @@ function useHitFood(): void {
                     v-if="lookupSource"
                     class="font-sans text-xs text-cd-ink-muted"
                 >
-                    出典: {{ lookupSource === 'openfoodfacts' ? 'Open Food Facts' : lookupSource }}
+                    出典:
+                    {{
+                        lookupSource === 'openfoodfacts'
+                            ? 'Open Food Facts'
+                            : lookupSource === 'label_ocr'
+                              ? 'AI読み取り（成分表）· 値を必ず確認してください'
+                              : lookupSource
+                    }}
                     <template v-if="lookupResult?.brands">
                         · {{ lookupResult.brands }}
                     </template>
@@ -474,6 +669,17 @@ function useHitFood(): void {
                     @click="close"
                 >
                     閉じる
+                </Button>
+            </DialogFooter>
+
+            <DialogFooter v-if="step === 'ocr_capture'">
+                <Button
+                    type="button"
+                    variant="outline"
+                    class="font-sans"
+                    @click="step = 'scan'"
+                >
+                    バーコード入力に戻る
                 </Button>
             </DialogFooter>
         </DialogContent>
