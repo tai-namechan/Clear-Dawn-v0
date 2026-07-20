@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Shared\AI\QuotaExceededException;
 use App\Enums\FoodLookupStatus;
 use App\Http\Requests\FoodLookups\ConfirmFoodLookupRequest;
 use App\Http\Requests\FoodLookups\StoreFoodBarcodeLookupRequest;
+use App\Http\Requests\FoodLookups\StoreFoodLabelImageRequest;
 use App\Http\Resources\FoodItemResource;
 use App\Models\FoodLookupRequest;
 use App\Services\ConfirmFoodLookupService;
 use App\Services\StartFoodBarcodeLookupService;
+use App\Services\StartFoodLabelOcrService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -31,6 +34,52 @@ class FoodBarcodeLookupController extends Controller
             'status' => 'pending',
             'lookup_id' => $result['lookup']->id,
         ], 202);
+    }
+
+    /**
+     * 入口1（PR-F2）: F1 miss の lookup へ成分表画像を添付して OCR を開始する。
+     */
+    public function storeLabelImage(
+        StoreFoodLabelImageRequest $request,
+        string $lookupId,
+        StartFoodLabelOcrService $service,
+    ): JsonResponse {
+        try {
+            $lookup = $service->attachToLookup($request->user(), $lookupId, $request->validated('image'));
+        } catch (QuotaExceededException) {
+            return $this->quotaExceededResponse();
+        }
+
+        return response()->json([
+            'status' => 'ocr_pending',
+            'lookup_id' => $lookup->id,
+        ], 202);
+    }
+
+    /**
+     * 入口2（PR-F2）: バーコードなしで成分表画像から新規 lookup を作成する。
+     */
+    public function storeLabelOcr(
+        StoreFoodLabelImageRequest $request,
+        StartFoodLabelOcrService $service,
+    ): JsonResponse {
+        try {
+            $lookup = $service->startWithoutBarcode($request->user(), $request->validated('image'));
+        } catch (QuotaExceededException) {
+            return $this->quotaExceededResponse();
+        }
+
+        return response()->json([
+            'status' => 'ocr_pending',
+            'lookup_id' => $lookup->id,
+        ], 202);
+    }
+
+    private function quotaExceededResponse(): JsonResponse
+    {
+        return response()->json([
+            'message' => '今月のAI利用枠を使い切りました。来月また利用できます。',
+        ], 422);
     }
 
     public function show(Request $request, string $lookupId): JsonResponse
