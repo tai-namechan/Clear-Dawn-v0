@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * 決定論ルール評価 → recommendations（作戦カード）生成。同入力同出力。
+ * 推奨カードは冪等に再利用し、ID を安定させる。
  */
 class EvaluateRulesForDayService
 {
@@ -35,14 +36,6 @@ class EvaluateRulesForDayService
         $this->ensureDefaultRuleDefinitions->handle();
 
         return DB::transaction(function () use ($user, $date): Collection {
-            // 当日の pending を作り直す（決定済みは保持）
-            Recommendation::query()
-                ->where('user_id', $user->id)
-                ->whereDate('recommended_on', $date->toDateString())
-                ->where('status', RecommendationStatus::Pending)
-                ->whereDoesntHave('decision')
-                ->delete();
-
             $rules = RuleDefinition::query()
                 ->where('is_active', true)
                 ->where(function ($query) use ($user): void {
@@ -78,6 +71,7 @@ class EvaluateRulesForDayService
 
             $recommendations = collect();
             $interruptUsed = false;
+            $keptEvaluationIds = [];
 
             foreach ($rules as $rule) {
                 $result = match ($rule->key) {
@@ -103,7 +97,6 @@ class EvaluateRulesForDayService
                     default => ['triggered' => false, 'inputs' => []],
                 };
 
-                // 同一日の再評価は最新結果で上書きし、評価行を増殖させない
                 $evaluation = RuleEvaluation::query()
                     ->where('user_id', $user->id)
                     ->where('rule_definition_id', $rule->id)
@@ -129,7 +122,6 @@ class EvaluateRulesForDayService
                     continue;
                 }
 
-                // 較正中はハードゲート以外の警告を抑制（calibration 自体と program_day は出す）
                 if ($calibrating && $rule->key === 'missing_daily_checkin') {
                     // 入力促しは較正中でも出す
                 } elseif ($calibrating && ! $rule->is_hard_gate && $rule->key !== 'calibration_period' && $rule->key !== 'program_day_ready') {
@@ -142,6 +134,21 @@ class EvaluateRulesForDayService
                     $interruptUsed = true;
                 }
 
+                $existing = Recommendation::query()
+                    ->where('user_id', $user->id)
+                    ->where('rule_evaluation_id', $evaluation->id)
+                    ->whereDate('recommended_on', $date->toDateString())
+                    ->where('status', RecommendationStatus::Pending)
+                    ->whereDoesntHave('decision')
+                    ->first();
+
+                if ($existing !== null) {
+                    $keptEvaluationIds[] = $evaluation->id;
+                    $recommendations->push($existing->load('options'));
+
+                    continue;
+                }
+
                 $recommendation = $this->createRecommendation(
                     $user,
                     $date,
@@ -152,8 +159,18 @@ class EvaluateRulesForDayService
                     $calibrating,
                 );
 
+                $keptEvaluationIds[] = $evaluation->id;
                 $recommendations->push($recommendation);
             }
+
+            // ルールが発火しなくなった stale な pending 推奨を削除
+            Recommendation::query()
+                ->where('user_id', $user->id)
+                ->whereDate('recommended_on', $date->toDateString())
+                ->where('status', RecommendationStatus::Pending)
+                ->whereDoesntHave('decision')
+                ->when($keptEvaluationIds !== [], fn ($query) => $query->whereNotIn('rule_evaluation_id', $keptEvaluationIds))
+                ->delete();
 
             return $recommendations->values();
         });

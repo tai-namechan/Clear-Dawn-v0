@@ -143,6 +143,37 @@ class TodayOpsPhaseTest extends TestCase
         );
     }
 
+    public function test_repeated_rule_evaluation_preserves_recommendation_ids(): void
+    {
+        $user = User::factory()->create();
+        $date = Carbon::parse('2026-07-21');
+
+        $this->actingAs($user)->get(route('today.index', ['date' => $date->toDateString()]))->assertOk();
+
+        $firstIds = Recommendation::query()
+            ->where('user_id', $user->id)
+            ->whereDate('recommended_on', $date->toDateString())
+            ->where('status', RecommendationStatus::Pending)
+            ->orderBy('id')
+            ->pluck('id')
+            ->all();
+
+        $this->assertNotEmpty($firstIds);
+
+        $this->actingAs($user)->get(route('today.index', ['date' => $date->toDateString()]))->assertOk();
+        $this->actingAs($user)->get(route('today.index', ['date' => $date->toDateString()]))->assertOk();
+
+        $laterIds = Recommendation::query()
+            ->where('user_id', $user->id)
+            ->whereDate('recommended_on', $date->toDateString())
+            ->where('status', RecommendationStatus::Pending)
+            ->orderBy('id')
+            ->pluck('id')
+            ->all();
+
+        $this->assertSame($firstIds, $laterIds);
+    }
+
     public function test_user_can_record_symptom_observation(): void
     {
         $user = User::factory()->create();

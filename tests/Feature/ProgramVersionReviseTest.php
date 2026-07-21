@@ -59,6 +59,42 @@ class ProgramVersionReviseTest extends TestCase
         $this->assertSame(1, $program->versions()->count());
     }
 
+    public function test_revise_with_shifted_start_recalculates_week_dates(): void
+    {
+        $user = User::factory()->create();
+        $this->artisan('cleardawn:install-program', ['userId' => $user->id])->assertSuccessful();
+
+        $program = Program::query()->where('user_id', $user->id)->firstOrFail();
+        $oldVersion = $program->activeVersion;
+        $oldWeek1Start = Carbon::parse($oldVersion->weeks->firstWhere('week_number', 1)->starts_on);
+
+        $newStart = $oldWeek1Start->copy()->addWeeks(2);
+        $newEnd = $newStart->copy()->addWeeks(11)->subDay();
+
+        $this->actingAs($user)
+            ->postJson(route('programs.versions.store', $program), [
+                'change_summary' => '開始日シフトテスト',
+                'change_reason' => '2週遅延のため',
+                'starts_on' => $newStart->toDateString(),
+                'ends_on' => $newEnd->toDateString(),
+            ])
+            ->assertCreated();
+
+        $newVersion = $program->activeVersion()->with('weeks')->firstOrFail();
+
+        $this->assertSame($newStart->toDateString(), $newVersion->starts_on->toDateString());
+
+        $newWeek1 = $newVersion->weeks->firstWhere('week_number', 1);
+        $this->assertSame($newStart->toDateString(), $newWeek1->starts_on->toDateString());
+
+        $newWeek2 = $newVersion->weeks->firstWhere('week_number', 2);
+        $this->assertSame($newStart->copy()->addWeek()->toDateString(), $newWeek2->starts_on->toDateString());
+
+        // weekFor should resolve correctly for the new date range
+        $this->assertNotNull($newVersion->weekFor($newStart));
+        $this->assertNull($newVersion->weekFor($oldWeek1Start));
+    }
+
     public function test_other_user_cannot_revise_program(): void
     {
         $owner = User::factory()->create();
