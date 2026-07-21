@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import { Button } from '@/components/ui/button';
-import MoneySubnav from '@/components/yoyu-money/MoneySubnav.vue';
+import MoneyEmptyState from '@/components/yoyu-money/MoneyEmptyState.vue';
+import MoneyPageShell from '@/components/yoyu-money/MoneyPageShell.vue';
+import { moneyLedgerTabs } from '@/lib/yoyuMoney/navigation';
 import type { MoneyImportRow } from '@/lib/yoyuMoney/types';
 
 interface Props {
@@ -15,9 +17,11 @@ function rollback(importRow: MoneyImportRow): void {
         return;
     }
 
-    router.post(`/yoyu/money/imports/${importRow.id}/rollback`, {}, {
-        preserveScroll: true,
-    });
+    router.post(
+        `/yoyu/money/imports/${importRow.id}/rollback`,
+        {},
+        { preserveScroll: true },
+    );
 }
 
 function statusLabel(status: string): string {
@@ -34,6 +38,10 @@ function statusLabel(status: string): string {
     return labels[status] ?? status;
 }
 
+function canContinue(status: string): boolean {
+    return ['uploaded', 'mapped', 'previewed', 'failed'].includes(status);
+}
+
 defineOptions({
     layout: {
         title: 'ヨユウ',
@@ -43,55 +51,112 @@ defineOptions({
 </script>
 
 <template>
-    <div class="mx-auto max-w-[720px] space-y-4">
-        <Head title="CSV取込 — お金の余裕" />
-
-        <MoneySubnav active="imports" />
-
-        <div class="flex justify-end">
-            <Button as-child size="sm" class="rounded-full">
-                <Link href="/yoyu/money/imports/create">新規取込</Link>
+    <MoneyPageShell
+        title="取込履歴"
+        :section-tabs="moneyLedgerTabs"
+        section-active="imports"
+        section-label="明細"
+        primary-active="ledger"
+    >
+        <template #actions>
+            <Button as-child class="rounded-lg">
+                <Link href="/yoyu/money/imports/create">＋新規取込</Link>
             </Button>
-        </div>
+        </template>
+
+        <MoneyEmptyState
+            v-if="imports.length === 0"
+            title="取込履歴がありません"
+            description="銀行やカード会社のCSVを取り込むと、取引を一括で登録できます。"
+            action-label="CSVを取り込む"
+            action-href="/yoyu/money/imports/create"
+        />
 
         <section
-            class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
+            v-else
+            class="overflow-hidden rounded-2xl border border-os-line bg-white shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
         >
-            <h2 class="mb-3 text-sm font-bold text-os-ink">取込履歴</h2>
-            <p v-if="imports.length === 0" class="text-[13px] text-os-sub">
-                取込履歴はまだありません。
-            </p>
-            <ul v-else class="divide-y divide-os-line">
+            <!-- Desktop table -->
+            <div class="hidden overflow-x-auto md:block">
+                <table class="min-w-full text-left text-[13px]">
+                    <thead class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub">
+                        <tr>
+                            <th class="px-4 py-2.5 font-semibold">ファイル名</th>
+                            <th class="px-4 py-2.5 font-semibold">状態</th>
+                            <th class="px-4 py-2.5 font-semibold">件数</th>
+                            <th class="px-4 py-2.5 font-semibold">日時</th>
+                            <th class="px-4 py-2.5 font-semibold">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr
+                            v-for="item in imports"
+                            :key="item.id"
+                            class="border-b border-os-line/80"
+                        >
+                            <td class="px-4 py-3 font-semibold text-os-ink">
+                                {{ item.source_filename || '(ファイル名なし)' }}
+                            </td>
+                            <td class="px-4 py-3 text-os-sub">{{ statusLabel(item.status) }}</td>
+                            <td class="px-4 py-3 tabular-nums text-os-sub">
+                                {{ item.row_count ?? 0 }} 行
+                            </td>
+                            <td class="px-4 py-3 text-os-faint">{{ item.created_at ?? '—' }}</td>
+                            <td class="px-4 py-3">
+                                <div class="flex gap-2">
+                                    <Button
+                                        v-if="canContinue(item.status)"
+                                        as-child
+                                        size="sm"
+                                        variant="outline"
+                                    >
+                                        <Link :href="`/yoyu/money/imports/create?import_id=${item.id}`">
+                                            続行
+                                        </Link>
+                                    </Button>
+                                    <Button
+                                        v-if="item.status === 'completed'"
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        class="text-[#8A5A3B]"
+                                        @click="rollback(item)"
+                                    >
+                                        取消
+                                    </Button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile cards -->
+            <ul class="divide-y divide-os-line md:hidden">
                 <li
                     v-for="item in imports"
-                    :key="item.id"
-                    class="flex flex-wrap items-center justify-between gap-3 py-3"
+                    :key="`m-${item.id}`"
+                    class="p-4"
                 >
-                    <div>
-                        <p class="font-semibold text-os-ink">
-                            {{ item.source_filename || '(ファイル名なし)' }}
-                        </p>
-                        <p class="text-[12px] text-os-sub">
-                            {{ statusLabel(item.status) }} ·
-                            {{ item.row_count ?? 0 }} 行 ·
-                            {{ item.created_at ?? '—' }}
-                        </p>
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="truncate font-semibold text-os-ink">
+                                {{ item.source_filename || '(ファイル名なし)' }}
+                            </p>
+                            <p class="text-[12px] text-os-sub">
+                                {{ statusLabel(item.status) }} · {{ item.row_count ?? 0 }} 行 ·
+                                {{ item.created_at ?? '—' }}
+                            </p>
+                        </div>
                     </div>
-                    <div class="flex gap-2">
+                    <div class="mt-2 flex gap-2">
                         <Button
-                            v-if="
-                                item.status === 'uploaded' ||
-                                item.status === 'mapped' ||
-                                item.status === 'previewed' ||
-                                item.status === 'failed'
-                            "
+                            v-if="canContinue(item.status)"
                             as-child
                             size="sm"
                             variant="outline"
                         >
-                            <Link
-                                :href="`/yoyu/money/imports/create?import_id=${item.id}`"
-                            >
+                            <Link :href="`/yoyu/money/imports/create?import_id=${item.id}`">
                                 続行
                             </Link>
                         </Button>
@@ -100,7 +165,7 @@ defineOptions({
                             type="button"
                             size="sm"
                             variant="outline"
-                            class="text-[#C05A48]"
+                            class="text-[#8A5A3B]"
                             @click="rollback(item)"
                         >
                             取消
@@ -109,5 +174,5 @@ defineOptions({
                 </li>
             </ul>
         </section>
-    </div>
+    </MoneyPageShell>
 </template>
