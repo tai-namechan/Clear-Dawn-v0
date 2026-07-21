@@ -479,7 +479,7 @@ function optionVariant(actionKey: string): 'default' | 'outline' {
                         >
                             <Link href="/routines">
                                 <Plus :size="14" :stroke-width="1.8" />
-                                追加
+                                ルーティンから追加
                             </Link>
                         </Button>
                     </div>
