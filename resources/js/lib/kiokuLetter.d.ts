@@ -41,10 +41,40 @@ declare module '@/lib/kiokuLetter.mjs' {
 
     export const KIOKU_LETTER_EMPTY_MESSAGE_DAILY: string;
 
+    export const KIOKU_LETTER_FAILED_MESSAGE: string;
+
+    export const KIOKU_LETTER_HALTED_MESSAGE: string;
+
+    export const KIOKU_LETTER_PAUSED_MESSAGE: string;
+
+    export const KIOKU_LETTER_GROWING_MESSAGE: string;
+
     export function kiokuLetterPreviewMode(letter: {
         status: string;
         opened: boolean;
-    }): 'empty' | 'unread' | 'in_progress' | 'done';
+    }): 'empty' | 'unread' | 'in_progress' | 'done' | 'failed' | 'halted';
+
+    export function kiokuLetterHomeMode(
+        letter: { status: string; opened: boolean } | null | undefined,
+        schedule?: { state?: string } | null,
+    ):
+        | 'none'
+        | 'growing'
+        | 'schedule_halted'
+        | 'schedule_paused'
+        | 'failed'
+        | 'halted'
+        | 'empty'
+        | 'unread'
+        | 'in_progress'
+        | 'done';
+
+    export function groupKiokuLetterHistory<T extends { id: string; status: string }>(
+        letters: T[],
+    ): Array<
+        | { type: 'letter'; letter: T }
+        | { type: 'empty_run'; count: number; letters: T[] }
+    >;
 
     export function kiokuLetterPreviewLabel(letter: {
         status: string;

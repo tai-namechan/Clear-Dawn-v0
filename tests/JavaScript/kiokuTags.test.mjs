@@ -14,6 +14,28 @@ describe('toggleTagFilter', () => {
         assert.deepEqual(toggleTagFilter(['ヨガ'], '仕事'), ['ヨガ', '仕事']);
         assert.deepEqual(toggleTagFilter(['ヨガ', '仕事'], 'ヨガ'), ['仕事']);
     });
+
+    it('lets a selected tag be cleared by clicking it again', () => {
+        const selected = toggleTagFilter([], '自動化');
+        assert.deepEqual(selected, ['自動化']);
+        assert.deepEqual(toggleTagFilter(selected, '自動化'), []);
+    });
+
+    it('keeps candidate lists independent from selection state', () => {
+        const candidates = [
+            { tag: 'ヨガ', count: 3 },
+            { tag: '仕事', count: 2 },
+            { tag: '趣味', count: 1 },
+        ];
+        const selected = toggleTagFilter(['ヨガ'], '仕事');
+
+        assert.deepEqual(
+            candidates.map((item) => item.tag),
+            ['ヨガ', '仕事', '趣味'],
+        );
+        assert.deepEqual(selected, ['ヨガ', '仕事']);
+        assert.ok(candidates.every((item) => typeof item.count === 'number'));
+    });
 });
 
 describe('buildKiokuHomeQuery', () => {

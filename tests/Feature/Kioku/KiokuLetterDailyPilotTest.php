@@ -602,6 +602,17 @@ class KiokuLetterDailyPilotTest extends TestCase
             ->get(route('kioku.home'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
+                ->component('Kioku/Index')
+                ->has('letters', 1)
+                ->where('letters.0.id', $live->id)
+                ->missing('testLetters'),
+            );
+
+        $this->actingAs($user)
+            ->get(route('kioku.letters.index'))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Kioku/Letters')
                 ->has('letters', 1)
                 ->where('letters.0.id', $live->id)
                 ->has('testLetters', 1)

@@ -96,13 +96,33 @@ export const KIOKU_LETTER_EMPTY_MESSAGE =
 export const KIOKU_LETTER_EMPTY_MESSAGE_DAILY =
     '今日は、無理に届ける記憶はありませんでした。';
 
+export const KIOKU_LETTER_FAILED_MESSAGE =
+    '今日の便りを作れませんでした。記憶や保存内容には影響していません。';
+
+export const KIOKU_LETTER_HALTED_MESSAGE =
+    'キオク便りは一時停止しています。表示すべきでない記憶が届いたため、配信を止めています。';
+
+export const KIOKU_LETTER_PAUSED_MESSAGE =
+    'キオク便りは一時停止しています。しばらく開かれなかったため、配信を控えめにしています。';
+
+export const KIOKU_LETTER_GROWING_MESSAGE =
+    'キオクが育つと、過去の記憶から今役立ちそうなものを届けます。';
+
 /**
  * Home preview mode for one letter summary.
  *
  * @param {{ status: string, opened: boolean }} letter
- * @returns {'empty' | 'unread' | 'in_progress' | 'done'}
+ * @returns {'empty' | 'unread' | 'in_progress' | 'done' | 'failed' | 'halted'}
  */
 export function kiokuLetterPreviewMode(letter) {
+    if (letter.status === 'failed') {
+        return 'failed';
+    }
+
+    if (letter.status === 'halted') {
+        return 'halted';
+    }
+
     if (letter.status === 'empty') {
         return 'empty';
     }
@@ -119,10 +139,72 @@ export function kiokuLetterPreviewMode(letter) {
 }
 
 /**
+ * Home-facing card mode. Distinguishes schedule halt/pause from missing letters
+ * so halted is never shown as a quiet empty state.
+ *
+ * @param {{ status: string, opened: boolean } | null | undefined} letter
+ * @param {{ state?: string } | null | undefined} schedule
+ * @returns {'none' | 'growing' | 'schedule_halted' | 'schedule_paused' | 'failed' | 'halted' | 'empty' | 'unread' | 'in_progress' | 'done'}
+ */
+export function kiokuLetterHomeMode(letter, schedule = null) {
+    if (letter) {
+        return kiokuLetterPreviewMode(letter);
+    }
+
+    if (schedule?.state === 'halted') {
+        return 'schedule_halted';
+    }
+
+    if (schedule?.state === 'paused') {
+        return 'schedule_paused';
+    }
+
+    if (schedule?.state === 'active') {
+        return 'growing';
+    }
+
+    return 'none';
+}
+
+/**
+ * Collapse consecutive empty letters into compact history rows.
+ *
+ * @param {Array<{ id: string, status: string }>} letters
+ * @returns {Array<{ type: 'letter', letter: object } | { type: 'empty_run', count: number, letters: object[] }>}
+ */
+export function groupKiokuLetterHistory(letters) {
+    /** @type {Array<{ type: 'letter', letter: object } | { type: 'empty_run', count: number, letters: object[] }>} */
+    const groups = [];
+
+    for (const letter of letters) {
+        const last = groups[groups.length - 1];
+
+        if (letter.status === 'empty') {
+            if (last?.type === 'empty_run') {
+                last.letters.push(letter);
+                last.count += 1;
+            } else {
+                groups.push({ type: 'empty_run', count: 1, letters: [letter] });
+            }
+
+            continue;
+        }
+
+        groups.push({ type: 'letter', letter });
+    }
+
+    return groups;
+}
+
+/**
  * @param {{ status: string, opened: boolean, item_count: number, judged_count: number, hit_count: number, cadence?: string }} letter
  */
 export function kiokuLetterPreviewLabel(letter) {
     switch (kiokuLetterPreviewMode(letter)) {
+        case 'failed':
+            return KIOKU_LETTER_FAILED_MESSAGE;
+        case 'halted':
+            return KIOKU_LETTER_HALTED_MESSAGE;
         case 'empty':
             return letter.cadence === 'daily'
                 ? KIOKU_LETTER_EMPTY_MESSAGE_DAILY
@@ -130,7 +212,7 @@ export function kiokuLetterPreviewLabel(letter) {
         case 'unread':
             return '未読の便りが届いています';
         case 'done':
-            return `HIT ${letter.hit_count} / ${letter.item_count}件`;
+            return `評価済み · HIT ${letter.hit_count} / ${letter.item_count}件`;
         default:
             return `${letter.item_count}件中${letter.judged_count}件を判定済み`;
     }

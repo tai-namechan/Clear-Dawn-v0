@@ -35,10 +35,10 @@ class MemoryTagSearchTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get(route('kioku.home', ['tags' => ['ヨガ']]))
+            ->get(route('kioku.memories.index', ['tags' => ['ヨガ']]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('Kioku/Index')
+                ->component('Kioku/Library')
                 ->has('memories', 1)
                 ->where('memories.0.title', 'ヨガメモ')
                 ->where('filters.tags', ['ヨガ'])
@@ -69,7 +69,7 @@ class MemoryTagSearchTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get(route('kioku.home', [
+            ->get(route('kioku.memories.index', [
                 'tags' => ['ヨガ', '仕事'],
                 'tag_mode' => 'and',
             ]))
@@ -80,7 +80,7 @@ class MemoryTagSearchTest extends TestCase
             );
 
         $this->actingAs($user)
-            ->get(route('kioku.home', [
+            ->get(route('kioku.memories.index', [
                 'tags' => ['ヨガ', '仕事'],
                 'tag_mode' => 'or',
             ]))
@@ -120,7 +120,7 @@ class MemoryTagSearchTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get(route('kioku.home', [
+            ->get(route('kioku.memories.index', [
                 'q' => 'Vite',
                 'types' => ['error_log'],
                 'tags' => ['仕事'],
@@ -146,7 +146,7 @@ class MemoryTagSearchTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get(route('kioku.home', [
+            ->get(route('kioku.memories.index', [
                 'tags' => ['通常'],
                 'tag_mode' => 'xor',
             ]))
@@ -157,7 +157,7 @@ class MemoryTagSearchTest extends TestCase
             );
 
         $this->actingAs($user)
-            ->get(route('kioku.home', [
+            ->get(route('kioku.memories.index', [
                 'tags' => [],
                 'tag_mode' => ['or'],
                 'q' => ['配列は無視'],
@@ -169,7 +169,7 @@ class MemoryTagSearchTest extends TestCase
             );
 
         $this->actingAs($user)
-            ->get(route('kioku.home', ['tags' => '通常']))
+            ->get(route('kioku.memories.index', ['tags' => '通常']))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->has('memories', 1)
@@ -198,7 +198,7 @@ class MemoryTagSearchTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get(route('kioku.home', [
+            ->get(route('kioku.memories.index', [
                 'q' => 'ポートフォリオ',
                 'types' => ['thought'],
             ]))

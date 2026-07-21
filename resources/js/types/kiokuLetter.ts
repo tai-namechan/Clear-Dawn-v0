@@ -56,8 +56,15 @@ export type KiokuLetterSummary = {
     cadence?: KiokuLetterCadence;
     status: string;
     character_variant: KiokuLetterCharacterVariant;
+    intro?: string | null;
     item_count: number;
     judged_count: number;
     hit_count: number;
     opened: boolean;
+};
+
+export type KiokuLetterScheduleSummary = {
+    state: string;
+    pause_reason: string | null;
+    consecutive_unopened: number;
 };

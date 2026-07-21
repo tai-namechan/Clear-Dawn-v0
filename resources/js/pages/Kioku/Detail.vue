@@ -4,15 +4,12 @@ import {
     ArrowLeft,
     ChevronRight,
     Clock,
-    Compass,
     Plus,
     RefreshCw,
     Sparkles,
-    Sun,
     X,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
-import { toast } from 'vue-sonner';
 import SourceBadge from '@/components/kioku/SourceBadge.vue';
 import TypeChip from '@/components/kioku/TypeChip.vue';
 import { Button } from '@/components/ui/button';
@@ -21,11 +18,13 @@ import {
     kiokuMemoryDisplayTitle,
 } from '@/lib/kiokuMemoryCard.mjs';
 import { formatAgo, sourceTypeMeta } from '@/lib/kiokuMeta';
+import { relatedMemoryReason } from '@/lib/kiokuRelated.mjs';
 import { KIOKU_MAX_TAG_CHARS, KIOKU_MAX_TAGS } from '@/lib/kiokuTags.mjs';
 import { kiokuTranscriptDisplayMode } from '@/lib/kiokuTranscriptDisplay.mjs';
 import { home } from '@/routes/kioku';
 import {
     audio,
+    index as memoriesIndex,
     reenrich,
     retryTranscription,
     show,
@@ -223,13 +222,21 @@ defineOptions({
     <div class="mx-auto max-w-[640px] space-y-4">
         <Head :title="displayTitle" />
 
-        <Link
-            :href="home()"
-            class="inline-flex items-center gap-1 text-sm text-os-sub hover:text-os-ink"
-        >
-            <ArrowLeft :size="14" />
-            一覧へ
-        </Link>
+        <div class="flex flex-wrap gap-3 text-sm">
+            <Link
+                :href="home()"
+                class="inline-flex items-center gap-1 text-os-sub hover:text-os-ink"
+            >
+                <ArrowLeft :size="14" />
+                ホームへ
+            </Link>
+            <Link
+                :href="memoriesIndex()"
+                class="inline-flex items-center gap-1 text-os-sub hover:text-os-ink"
+            >
+                キオクを探す
+            </Link>
+        </div>
 
         <article
             class="overflow-hidden rounded-[20px] border border-os-line bg-os-kioku-paper shadow-[0_8px_28px_rgba(43,41,36,0.1)]"
@@ -552,59 +559,50 @@ defineOptions({
                         class="mb-2 flex items-center gap-1.5 text-[11px] font-bold tracking-wide text-os-kioku"
                     >
                         <Sparkles :size="12" />
-                        関連する記憶
+                        このキオクとつながる記憶
                     </div>
+                    <p class="mb-2 text-[11.5px] leading-relaxed text-os-sub">
+                        タグや内容から、関連するキオクを見つけます。
+                    </p>
                     <Link
                         v-for="item in related"
                         :key="item.id"
                         :href="show.url(item.id)"
-                        class="mb-1.5 flex items-center gap-2 rounded-[11px] bg-os-kioku-bg px-3 py-2.5"
+                        class="mb-1.5 flex items-start gap-2 rounded-[11px] bg-os-kioku-bg px-3 py-2.5"
                     >
                         <TypeChip
                             v-if="item.memory_type"
                             :type="item.memory_type"
                             small
                         />
-                        <span
-                            class="flex-1 text-[12.5px] font-medium"
-                            :class="
-                                sourceTypeMeta(item.source_type).titleClass ??
-                                'text-os-ink'
-                            "
-                            >{{ kiokuMemoryDisplayTitle(item) }}</span
-                        >
-                        <ChevronRight :size="14" class="text-os-faint" />
+                        <span class="min-w-0 flex-1">
+                            <span
+                                class="block text-[12.5px] font-medium"
+                                :class="
+                                    sourceTypeMeta(item.source_type)
+                                        .titleClass ?? 'text-os-ink'
+                                "
+                                >{{ kiokuMemoryDisplayTitle(item) }}</span
+                            >
+                            <span
+                                class="mt-0.5 block text-[11px] leading-relaxed text-os-sub"
+                            >
+                                {{ relatedMemoryReason(memory, item) }}
+                            </span>
+                        </span>
+                        <ChevronRight
+                            :size="14"
+                            class="mt-0.5 shrink-0 text-os-faint"
+                        />
                     </Link>
                 </div>
             </div>
 
-            <div class="flex flex-wrap gap-2 border-t border-os-line px-5 py-4">
+            <div
+                v-if="canReenrich"
+                class="flex flex-wrap gap-2 border-t border-os-line px-5 py-4"
+            >
                 <Button
-                    type="button"
-                    class="gap-1.5 rounded-full border border-[#12948844] bg-[#E4F4F2] text-[#129488] hover:bg-[#E4F4F2]"
-                    variant="outline"
-                    @click="
-                        toast.message('ヨユウのタスクに送信しました（モック）')
-                    "
-                >
-                    <Sun :size="13" />
-                    ヨユウのタスクへ
-                </Button>
-                <Button
-                    type="button"
-                    class="gap-1.5 rounded-full border border-[#5C4E8E44] bg-[#EDEAF5] text-[#5C4E8E] hover:bg-[#EDEAF5]"
-                    variant="outline"
-                    @click="
-                        toast.message(
-                            'Clear Dawnの目標に紐づけました（モック）',
-                        )
-                    "
-                >
-                    <Compass :size="13" />
-                    Clear Dawnへ
-                </Button>
-                <Button
-                    v-if="canReenrich"
                     type="button"
                     class="gap-1.5 rounded-full border border-os-line text-os-sub hover:bg-os-kioku-soft"
                     variant="outline"
