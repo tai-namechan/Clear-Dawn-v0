@@ -63,6 +63,47 @@ class SidebarSpacingContractTest extends TestCase
         );
     }
 
+    public function test_clear_dawn_sidebar_keeps_top_breathing_room(): void
+    {
+        $source = $this->componentSource('resources/js/components/AppSidebar.vue');
+
+        $this->assertStringContainsString(
+            'mx-auto mt-8 flex items-baseline',
+            $source,
+            'CD logo needs top margin so the brand is not flush to the viewport edge',
+        );
+        $this->assertStringContainsString(
+            'mt-3 font-serif text-[0.7rem]',
+            $source,
+            'Clear Dawn wordmark needs space under the CD monogram',
+        );
+        $this->assertStringContainsString(
+            'justify-center overflow-visible landscape-compact:justify-start',
+            $source,
+            'Tall desktops should vertically center the nav block instead of packing it under the logo',
+        );
+        $this->assertStringContainsString(
+            'gap-5 group-data-[collapsible=icon]:mt-8',
+            $source,
+            'Desktop nav item gaps need room so the cluster does not look crushed',
+        );
+        $this->assertStringContainsString(
+            'landscape-compact:mt-10 landscape-compact:gap-2',
+            $source,
+            'iPad landscape compact mode must keep usable brand-to-nav breathing room',
+        );
+        $this->assertStringNotContainsString(
+            'mt-24 flex flex-col items-center gap-3',
+            $source,
+            'Regression guard: previous desktop top pack felt cramped on tall laptops',
+        );
+        $this->assertStringNotContainsString(
+            'landscape-compact:mt-6 landscape-compact:gap-1.5',
+            $source,
+            'Regression guard: previous iPad compact packing crushed the top of the sidebar',
+        );
+    }
+
     #[DataProvider('requiredComponentPaths')]
     public function test_spacing_contract_targets_exist(string $relativePath): void
     {
@@ -79,6 +120,7 @@ class SidebarSpacingContractTest extends TestCase
         return [
             'os sidebar' => ['resources/js/components/os/OsSidebar.vue'],
             'clear dawn header' => ['resources/js/components/AppSidebarHeader.vue'],
+            'clear dawn sidebar' => ['resources/js/components/AppSidebar.vue'],
         ];
     }
 
