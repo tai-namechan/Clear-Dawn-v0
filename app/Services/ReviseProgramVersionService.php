@@ -80,7 +80,7 @@ class ReviseProgramVersionService
                 $newWeek = $newVersion->weeks()->create([
                     'program_phase_id' => $phaseMap[$week->program_phase_id],
                     'week_number' => $week->week_number,
-                    'starts_on' => $week->starts_on->toDateString(),
+                    'starts_on' => $newVersion->starts_on->copy()->addWeeks($week->week_number - 1),
                     'intent' => $week->intent,
                 ]);
                 $weekMap[$week->id] = $newWeek->id;
