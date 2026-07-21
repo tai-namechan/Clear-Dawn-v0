@@ -49,8 +49,11 @@ class ComputeDailyResourceStatesService
             return collect();
         }
 
+        $windowStart = $date->copy()->subDays(self::CALIBRATION_SAMPLES - 1)->toDateString();
+
         $history = DailyCheckin::query()
             ->where('user_id', $user->id)
+            ->whereDate('checked_on', '>=', $windowStart)
             ->whereDate('checked_on', '<=', $date->toDateString())
             ->orderBy('checked_on')
             ->get();
@@ -98,7 +101,7 @@ class ComputeDailyResourceStatesService
                 $baseline->mean_value = round($mean, 4);
                 $baseline->stddev_value = round($stddev, 4);
                 $baseline->sample_count = $sampleCount;
-                $baseline->window_start = $samples->first()?->checked_on?->toDateString() ?? $date->toDateString();
+                $baseline->window_start = $samples->first()?->checked_on?->toDateString() ?? $windowStart;
                 $baseline->window_end = $date->toDateString();
                 $baseline->computed_at = now();
                 $baseline->save();

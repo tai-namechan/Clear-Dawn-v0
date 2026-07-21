@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use LogicException;
 
 /**
@@ -106,6 +107,20 @@ class Memory extends Model
                 fn (MemoryAsset $asset) => $asset->delete(),
             );
         });
+
+        $bumpVersion = function (Memory $memory): void {
+            DB::table('users')
+                ->where('id', $memory->user_id)
+                ->increment('memory_version');
+        };
+
+        static::created($bumpVersion);
+        static::updated(function (Memory $memory) use ($bumpVersion): void {
+            if ($memory->wasChanged(['status', 'sensitive', 'tags', 'summary', 'title'])) {
+                $bumpVersion($memory);
+            }
+        });
+        static::deleted($bumpVersion);
     }
 
     protected static function newFactory(): MemoryFactory

@@ -9,6 +9,7 @@ use App\Domain\Kioku\Services\KiokuContextBuilder;
 use App\Domain\Kioku\Services\RecallService;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
@@ -459,6 +460,135 @@ class KiokuContextBuilderTest extends TestCase
         Log::shouldNotHaveReceived('info');
         Log::shouldNotHaveReceived('debug');
         Log::shouldNotHaveReceived('warning');
+    }
+
+    public function test_cache_hit_returns_same_results_without_db_query(): void
+    {
+        $user = User::factory()->create();
+        Memory::factory()->create([
+            'user_id' => $user->id,
+            'title' => 'キャッシュ対象',
+            'summary' => 'キャッシュ確認',
+            'raw_content' => 'キャッシュ確認',
+            'tags' => ['キャッシュ'],
+            'status' => 'ready',
+            'sensitive' => false,
+        ]);
+
+        $first = $this->builder->retrieve((int) $user->id, 'キャッシュ', ['キャッシュ']);
+        $this->assertCount(1, $first);
+
+        $second = $this->builder->retrieve((int) $user->id, 'キャッシュ', ['キャッシュ']);
+        $this->assertCount(1, $second);
+        $this->assertSame($first->first()->memory->id, $second->first()->memory->id);
+    }
+
+    public function test_memory_change_invalidates_cache_via_version_bump(): void
+    {
+        $user = User::factory()->create();
+        $memory = Memory::factory()->create([
+            'user_id' => $user->id,
+            'title' => '版管理対象',
+            'summary' => '版管理確認',
+            'raw_content' => '版管理確認',
+            'tags' => ['版管理'],
+            'status' => 'ready',
+            'sensitive' => false,
+        ]);
+
+        $this->builder->retrieve((int) $user->id, '版管理', ['版管理']);
+        $versionBefore = $user->fresh()->memory_version;
+
+        $memory->update(['status' => 'archived']);
+        $versionAfter = $user->fresh()->memory_version;
+
+        $this->assertGreaterThan($versionBefore, $versionAfter);
+    }
+
+    public function test_memory_creation_bumps_version(): void
+    {
+        $user = User::factory()->create();
+        $versionBefore = $user->fresh()->memory_version;
+
+        Memory::factory()->create([
+            'user_id' => $user->id,
+            'title' => '新規',
+            'status' => 'captured',
+            'sensitive' => false,
+        ]);
+
+        $this->assertGreaterThan($versionBefore, $user->fresh()->memory_version);
+    }
+
+    public function test_memory_deletion_bumps_version(): void
+    {
+        $user = User::factory()->create();
+        $memory = Memory::factory()->create([
+            'user_id' => $user->id,
+            'title' => '削除対象',
+            'status' => 'ready',
+            'sensitive' => false,
+        ]);
+
+        $versionBefore = $user->fresh()->memory_version;
+        $memory->delete();
+        $this->assertGreaterThan($versionBefore, $user->fresh()->memory_version);
+    }
+
+    public function test_query_terms_are_capped_at_max(): void
+    {
+        $user = User::factory()->create();
+        Memory::factory()->create([
+            'user_id' => $user->id,
+            'title' => 'term1',
+            'summary' => 'term1',
+            'raw_content' => 'term1',
+            'status' => 'ready',
+            'sensitive' => false,
+        ]);
+
+        $longQuery = implode(' ', array_map(fn (int $i) => "term{$i}", range(1, 20)));
+        $items = $this->builder->retrieve((int) $user->id, $longQuery);
+
+        $this->assertLessThanOrEqual(KiokuContextBuilder::MAX_TERMS, 8);
+        $this->assertNotEmpty($items);
+    }
+
+    public function test_seed_memory_ids_bypass_cache(): void
+    {
+        $user = User::factory()->create();
+        $seed = Memory::factory()->create([
+            'user_id' => $user->id,
+            'title' => 'seed',
+            'status' => 'ready',
+            'sensitive' => false,
+        ]);
+        $neighbor = Memory::factory()->create([
+            'user_id' => $user->id,
+            'title' => '隣接',
+            'summary' => '隣接',
+            'raw_content' => '隣接',
+            'tags' => [],
+            'status' => 'ready',
+            'sensitive' => false,
+        ]);
+        MemoryLink::query()->create([
+            'from_memory_id' => $seed->id,
+            'to_memory_id' => $neighbor->id,
+            'kind' => 'related',
+            'score' => 1,
+            'created_by' => 'system',
+        ]);
+
+        Cache::flush();
+
+        $items = $this->builder->retrieve(
+            (int) $user->id,
+            '',
+            seedMemoryIds: [$seed->id],
+        );
+
+        $this->assertNotEmpty($items);
     }
 
     public function test_recall_increments_referenced_count_once_and_respects_count_reference_false(): void
