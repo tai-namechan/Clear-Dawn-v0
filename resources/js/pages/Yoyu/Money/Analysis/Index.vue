@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { router } from '@inertiajs/vue3';
 import { reactive } from 'vue';
 import { Button } from '@/components/ui/button';
-import MoneySubnav from '@/components/yoyu-money/MoneySubnav.vue';
+import MoneyPageShell from '@/components/yoyu-money/MoneyPageShell.vue';
 import { formatYen } from '@/lib/yoyuMoney/format';
+import { moneyPlanTabs } from '@/lib/yoyuMoney/navigation';
 
 type MonthlyRow = {
     year_month: string;
@@ -56,13 +57,17 @@ defineOptions({
 </script>
 
 <template>
-    <div class="mx-auto max-w-[720px] space-y-4">
-        <Head title="分析 — お金の余裕" />
-
-        <MoneySubnav active="analysis" />
-
+    <MoneyPageShell
+        title="分析"
+        :section-tabs="moneyPlanTabs"
+        section-active="analysis"
+        section-label="計画"
+        primary-active="plan"
+        :show-record-menu="false"
+    >
+        <!-- Filter + Summary -->
         <section
-            class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
+            class="rounded-2xl border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
         >
             <form
                 class="flex flex-wrap items-end gap-3"
@@ -97,24 +102,38 @@ defineOptions({
             </div>
         </section>
 
+        <!-- Monthly breakdown -->
         <section
-            class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
+            class="overflow-hidden rounded-2xl border border-os-line bg-white shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
         >
-            <h2 class="mb-3 text-sm font-bold text-os-ink">月次</h2>
-            <p v-if="monthly.length === 0" class="text-[13px] text-os-sub">
+            <div class="border-b border-os-line px-5 py-3">
+                <h2 class="text-sm font-bold text-os-ink">月次</h2>
+            </div>
+            <p
+                v-if="monthly.length === 0"
+                class="px-5 py-4 text-[13px] text-os-sub"
+            >
                 データがありません。
             </p>
-            <table v-else class="w-full text-left text-[13px]">
-                <thead class="text-[12px] text-os-sub">
+            <table v-else class="min-w-full text-left text-[13px]">
+                <thead
+                    class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub"
+                >
                     <tr>
-                        <th class="pb-2 font-semibold">月</th>
-                        <th class="pb-2 text-right font-semibold">支出</th>
+                        <th class="px-4 py-2.5 font-semibold">月</th>
+                        <th class="px-4 py-2.5 text-right font-semibold">
+                            支出
+                        </th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-os-line">
                     <tr v-for="row in monthly" :key="row.year_month">
-                        <td class="py-2 text-os-ink">{{ row.year_month }}</td>
-                        <td class="py-2 text-right font-semibold text-os-ink">
+                        <td class="px-4 py-2.5 text-os-ink">
+                            {{ row.year_month }}
+                        </td>
+                        <td
+                            class="px-4 py-2.5 text-right font-semibold text-os-ink"
+                        >
                             {{ formatYen(row.amount_minor) }}
                         </td>
                     </tr>
@@ -122,70 +141,90 @@ defineOptions({
             </table>
         </section>
 
-        <section
-            class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
-        >
-            <h2 class="mb-3 text-sm font-bold text-os-ink">カテゴリ別</h2>
-            <p
-                v-if="by_category.length === 0"
-                class="text-[13px] text-os-sub"
+        <div class="grid gap-4 lg:grid-cols-2">
+            <!-- Category breakdown -->
+            <section
+                class="overflow-hidden rounded-2xl border border-os-line bg-white shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
             >
-                データがありません。
-            </p>
-            <table v-else class="w-full text-left text-[13px]">
-                <thead class="text-[12px] text-os-sub">
-                    <tr>
-                        <th class="pb-2 font-semibold">カテゴリ</th>
-                        <th class="pb-2 text-right font-semibold">支出</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-os-line">
-                    <tr
-                        v-for="(row, index) in by_category"
-                        :key="row.category_id ?? `cat-${index}`"
+                <div class="border-b border-os-line px-5 py-3">
+                    <h2 class="text-sm font-bold text-os-ink">カテゴリ別</h2>
+                </div>
+                <p
+                    v-if="by_category.length === 0"
+                    class="px-5 py-4 text-[13px] text-os-sub"
+                >
+                    データがありません。
+                </p>
+                <table v-else class="min-w-full text-left text-[13px]">
+                    <thead
+                        class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub"
                     >
-                        <td class="py-2 text-os-ink">
-                            {{ row.category_id ?? '(未分類)' }}
-                        </td>
-                        <td class="py-2 text-right font-semibold text-os-ink">
-                            {{ formatYen(row.amount_minor) }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </section>
+                        <tr>
+                            <th class="px-4 py-2.5 font-semibold">カテゴリ</th>
+                            <th class="px-4 py-2.5 text-right font-semibold">
+                                支出
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-os-line">
+                        <tr
+                            v-for="(row, index) in by_category"
+                            :key="row.category_id ?? `cat-${index}`"
+                        >
+                            <td class="px-4 py-2.5 text-os-ink">
+                                {{ row.category_id ?? '(未分類)' }}
+                            </td>
+                            <td
+                                class="px-4 py-2.5 text-right font-semibold text-os-ink"
+                            >
+                                {{ formatYen(row.amount_minor) }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
 
-        <section
-            class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
-        >
-            <h2 class="mb-3 text-sm font-bold text-os-ink">支払先別</h2>
-            <p
-                v-if="by_counterparty.length === 0"
-                class="text-[13px] text-os-sub"
+            <!-- Counterparty breakdown -->
+            <section
+                class="overflow-hidden rounded-2xl border border-os-line bg-white shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
             >
-                データがありません。
-            </p>
-            <table v-else class="w-full text-left text-[13px]">
-                <thead class="text-[12px] text-os-sub">
-                    <tr>
-                        <th class="pb-2 font-semibold">支払先</th>
-                        <th class="pb-2 text-right font-semibold">支出</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-os-line">
-                    <tr
-                        v-for="(row, index) in by_counterparty"
-                        :key="row.counterparty_id ?? `cp-${index}`"
+                <div class="border-b border-os-line px-5 py-3">
+                    <h2 class="text-sm font-bold text-os-ink">支払先別</h2>
+                </div>
+                <p
+                    v-if="by_counterparty.length === 0"
+                    class="px-5 py-4 text-[13px] text-os-sub"
+                >
+                    データがありません。
+                </p>
+                <table v-else class="min-w-full text-left text-[13px]">
+                    <thead
+                        class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub"
                     >
-                        <td class="py-2 text-os-ink">
-                            {{ row.counterparty_id ?? '(未設定)' }}
-                        </td>
-                        <td class="py-2 text-right font-semibold text-os-ink">
-                            {{ formatYen(row.amount_minor) }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </section>
-    </div>
+                        <tr>
+                            <th class="px-4 py-2.5 font-semibold">支払先</th>
+                            <th class="px-4 py-2.5 text-right font-semibold">
+                                支出
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-os-line">
+                        <tr
+                            v-for="(row, index) in by_counterparty"
+                            :key="row.counterparty_id ?? `cp-${index}`"
+                        >
+                            <td class="px-4 py-2.5 text-os-ink">
+                                {{ row.counterparty_id ?? '(未設定)' }}
+                            </td>
+                            <td
+                                class="px-4 py-2.5 text-right font-semibold text-os-ink"
+                            >
+                                {{ formatYen(row.amount_minor) }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </div>
+    </MoneyPageShell>
 </template>

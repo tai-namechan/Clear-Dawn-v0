@@ -1,9 +1,23 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
-import { computed, reactive } from 'vue';
+import { usePage, router } from '@inertiajs/vue3';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { Button } from '@/components/ui/button';
-import MoneySubnav from '@/components/yoyu-money/MoneySubnav.vue';
-import { formatSignedYen, formatYen, minorToDisplayString } from '@/lib/yoyuMoney/format';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+} from '@/components/ui/sheet';
+import MoneyEmptyState from '@/components/yoyu-money/MoneyEmptyState.vue';
+import MoneyPageShell from '@/components/yoyu-money/MoneyPageShell.vue';
+import {
+    formatSignedYen,
+    formatYen,
+    minorToDisplayString,
+} from '@/lib/yoyuMoney/format';
+import { simulationStatusLabel } from '@/lib/yoyuMoney/labels';
+import { moneyPlanTabs } from '@/lib/yoyuMoney/navigation';
 import type { MoneySimulationRow } from '@/lib/yoyuMoney/types';
 
 interface Props {
@@ -11,6 +25,9 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+const page = usePage();
+const drawerOpen = ref(false);
 
 const createForm = reactive({
     name: '',
@@ -31,15 +48,18 @@ function submitCreate(): void {
             onSuccess: () => {
                 createForm.name = '';
                 createForm.memo = '';
+                drawerOpen.value = false;
             },
         },
     );
 }
 
 function calculate(simulation: MoneySimulationRow): void {
-    router.post(`/yoyu/money/simulations/${simulation.id}/calculate`, {}, {
-        preserveScroll: true,
-    });
+    router.post(
+        `/yoyu/money/simulations/${simulation.id}/calculate`,
+        {},
+        { preserveScroll: true },
+    );
 }
 
 function discard(simulation: MoneySimulationRow): void {
@@ -47,9 +67,11 @@ function discard(simulation: MoneySimulationRow): void {
         return;
     }
 
-    router.post(`/yoyu/money/simulations/${simulation.id}/discard`, {}, {
-        preserveScroll: true,
-    });
+    router.post(
+        `/yoyu/money/simulations/${simulation.id}/discard`,
+        {},
+        { preserveScroll: true },
+    );
 }
 
 type MarginSlice = {
@@ -98,16 +120,17 @@ function marginSlices(simulation: MoneySimulationRow): MarginSlice[] {
             label: item.label,
             projected_margin_minor:
                 minorToDisplayString(
-                    slice.projected_margin_minor as string | number | null | undefined,
+                    slice.projected_margin_minor as
+                        string | number | null | undefined,
                 ) ?? undefined,
             safe_to_spend_minor:
                 minorToDisplayString(
-                    slice.safe_to_spend_minor as string | number | null | undefined,
+                    slice.safe_to_spend_minor as
+                        string | number | null | undefined,
                 ) ?? undefined,
         });
     }
 
-    // Fallback: iterate object keys if named slices missing.
     if (rows.length === 0) {
         for (const [key, value] of Object.entries(margins)) {
             const slice = asRecord(value);
@@ -121,18 +144,12 @@ function marginSlices(simulation: MoneySimulationRow): MarginSlice[] {
                 projected_margin_minor:
                     minorToDisplayString(
                         slice.projected_margin_minor as
-                            | string
-                            | number
-                            | null
-                            | undefined,
+                            string | number | null | undefined,
                     ) ?? undefined,
                 safe_to_spend_minor:
                     minorToDisplayString(
                         slice.safe_to_spend_minor as
-                            | string
-                            | number
-                            | null
-                            | undefined,
+                            string | number | null | undefined,
                     ) ?? undefined,
             });
         }
@@ -141,7 +158,15 @@ function marginSlices(simulation: MoneySimulationRow): MarginSlice[] {
     return rows;
 }
 
-function paymentDelta(simulation: MoneySimulationRow): string | null {
+type PaymentDeltaInfo = {
+    thisMonthReduction: string | null;
+    futureMonthly: string | null;
+    feeEstimate: string | null;
+};
+
+function paymentDeltaInfo(
+    simulation: MoneySimulationRow,
+): PaymentDeltaInfo | null {
     const payload = asRecord(simulation.result_payload);
     const change = asRecord(payload?.change_card_payment);
 
@@ -163,18 +188,22 @@ function paymentDelta(simulation: MoneySimulationRow): string | null {
         return null;
     }
 
-    return [
-        reduction ? `今月軽減 ${formatYen(reduction)}` : null,
-        future ? `将来月額 ${formatYen(future)}` : null,
-        fee ? `手数料見積 ${formatYen(fee)}` : null,
-    ]
-        .filter((part): part is string => part !== null)
-        .join(' · ');
+    return {
+        thisMonthReduction: reduction,
+        futureMonthly: future,
+        feeEstimate: fee,
+    };
 }
 
 const hasAnyResult = computed(() =>
     props.simulations.some((item) => item.result_payload != null),
 );
+
+onMounted(() => {
+    if (page.url.includes('compose=1')) {
+        drawerOpen.value = true;
+    }
+});
 
 defineOptions({
     layout: {
@@ -185,143 +214,216 @@ defineOptions({
 </script>
 
 <template>
-    <div class="mx-auto max-w-[720px] space-y-4">
-        <Head title="シミュレーター — お金の余裕" />
+    <MoneyPageShell
+        title="シミュレーター"
+        :section-tabs="moneyPlanTabs"
+        section-active="simulations"
+        section-label="計画"
+        primary-active="plan"
+        :show-record-menu="false"
+    >
+        <template #actions>
+            <Button type="button" class="rounded-lg" @click="drawerOpen = true">
+                ＋シナリオを作成
+            </Button>
+        </template>
 
-        <MoneySubnav active="simulations" />
-
-        <section
-            class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
+        <div
+            class="rounded-xl bg-os-yoyu-soft/60 px-3 py-2 text-[12.5px] text-os-ink"
         >
-            <h2 class="mb-2 text-sm font-bold text-os-ink">下書きを作成</h2>
-            <p class="mb-3 text-[12px] text-os-sub">
-                計算は実データを変更しません。適用するまで口座・予定は変わりません。
-            </p>
-            <form
-                class="flex flex-wrap items-end gap-3"
-                @submit.prevent="submitCreate"
-            >
-                <label class="text-[12px] text-os-sub">
-                    名前
-                    <input
-                        v-model="createForm.name"
-                        type="text"
-                        class="mt-1 block w-40 rounded-lg border border-os-line px-2 py-1.5 text-[13px] text-os-ink"
-                    />
-                </label>
-                <label class="text-[12px] text-os-sub">
-                    期間（月）
-                    <input
-                        v-model.number="createForm.horizon_months"
-                        type="number"
-                        min="1"
-                        max="24"
-                        class="mt-1 block w-20 rounded-lg border border-os-line px-2 py-1.5 text-[13px] text-os-ink"
-                    />
-                </label>
-                <Button type="submit" size="sm" class="rounded-full">
-                    作成
-                </Button>
-            </form>
-        </section>
+            計算結果は参考値です。「適用」ボタンを押すまで実データは変わりません。
+        </div>
 
-        <section
-            class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
-        >
-            <h2 class="mb-3 text-sm font-bold text-os-ink">シミュレーション</h2>
-            <p
-                v-if="simulations.length === 0"
-                class="text-[13px] text-os-sub"
-            >
-                まだありません。
-            </p>
-            <ul v-else class="space-y-4">
-                <li
-                    v-for="simulation in simulations"
-                    :key="simulation.id"
-                    class="rounded-xl border border-os-line px-4 py-3"
-                >
-                    <div
-                        class="flex flex-wrap items-start justify-between gap-2"
-                    >
-                        <div>
-                            <p class="font-bold text-os-ink">
-                                {{ simulation.name || '(無題)' }}
-                            </p>
-                            <p class="text-[12px] text-os-sub">
-                                {{ simulation.status }} · 基準
-                                {{ simulation.base_date }} ·
-                                {{ simulation.horizon_months }}か月
-                            </p>
-                        </div>
-                        <div class="flex flex-wrap gap-2">
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                @click="calculate(simulation)"
-                            >
-                                計算
-                            </Button>
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                class="text-[#C05A48]"
-                                @click="discard(simulation)"
-                            >
-                                破棄
-                            </Button>
-                        </div>
-                    </div>
+        <MoneyEmptyState
+            v-if="simulations.length === 0 && !hasAnyResult"
+            title="シミュレーションがまだありません"
+            description="支払い計画の変更が余裕にどう影響するか、シナリオを作って比較できます。"
+            action-label="シナリオを作成"
+            action-href="/yoyu/money/simulations?compose=1"
+        />
 
-                    <div
-                        v-if="marginSlices(simulation).length > 0"
-                        class="mt-3 space-y-2"
-                    >
-                        <p class="text-[12px] font-semibold text-os-sub">
-                            余裕の比較
+        <ul v-else class="space-y-4">
+            <li
+                v-for="simulation in simulations"
+                :key="simulation.id"
+                class="rounded-2xl border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
+            >
+                <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                        <p class="font-bold text-os-ink">
+                            {{ simulation.name || '(無題)' }}
                         </p>
-                        <ul class="grid gap-2 sm:grid-cols-3">
-                            <li
-                                v-for="slice in marginSlices(simulation)"
-                                :key="`${simulation.id}-${slice.label}`"
-                                class="rounded-lg bg-os-yoyu-soft/50 px-3 py-2"
-                            >
-                                <p class="text-[11px] text-os-sub">
-                                    {{ slice.label }}
-                                </p>
-                                <p class="text-[13px] font-bold text-os-ink">
-                                    {{
-                                        formatSignedYen(
-                                            slice.projected_margin_minor ?? '0',
-                                        )
-                                    }}
-                                </p>
-                                <p
-                                    v-if="slice.safe_to_spend_minor"
-                                    class="text-[11px] text-os-sub"
-                                >
-                                    安全額
-                                    {{ formatYen(slice.safe_to_spend_minor) }}
-                                </p>
-                            </li>
-                        </ul>
-                        <p
-                            v-if="paymentDelta(simulation)"
-                            class="text-[12px] text-os-sub"
+                        <p class="text-[12px] text-os-sub">
+                            {{ simulationStatusLabel(simulation.status) }} ·
+                            基準 {{ simulation.base_date }} ·
+                            {{ simulation.horizon_months }}か月
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            @click="calculate(simulation)"
                         >
-                            支払差分: {{ paymentDelta(simulation) }}
-                        </p>
+                            計算
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            class="text-[#8A5A3B]"
+                            @click="discard(simulation)"
+                        >
+                            破棄
+                        </Button>
                     </div>
-                </li>
-            </ul>
-            <p
-                v-if="!hasAnyResult && simulations.length > 0"
-                class="mt-3 text-[12px] text-os-sub"
+                </div>
+
+                <!-- Margin comparison -->
+                <div
+                    v-if="marginSlices(simulation).length > 0"
+                    class="mt-4 space-y-2"
+                >
+                    <p class="text-[12px] font-semibold text-os-sub">
+                        余裕の比較（試算）
+                    </p>
+                    <ul class="grid gap-2 sm:grid-cols-3">
+                        <li
+                            v-for="slice in marginSlices(simulation)"
+                            :key="`${simulation.id}-${slice.label}`"
+                            class="rounded-xl bg-os-yoyu-soft/50 px-3 py-2"
+                        >
+                            <p class="text-[11px] text-os-sub">
+                                {{ slice.label }}
+                            </p>
+                            <p class="text-[14px] font-bold text-os-ink">
+                                {{
+                                    formatSignedYen(
+                                        slice.projected_margin_minor ?? '0',
+                                    )
+                                }}
+                            </p>
+                            <p
+                                v-if="slice.safe_to_spend_minor"
+                                class="text-[11px] text-os-faint"
+                            >
+                                安全額
+                                {{ formatYen(slice.safe_to_spend_minor) }}
+                            </p>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Payment delta info -->
+                <div
+                    v-if="paymentDeltaInfo(simulation)"
+                    class="mt-3 rounded-xl border border-os-line px-3 py-2 text-[12px]"
+                >
+                    <p class="font-semibold text-os-sub">支払差分の詳細</p>
+                    <dl class="mt-1 space-y-0.5 text-os-ink">
+                        <div
+                            v-if="
+                                paymentDeltaInfo(simulation)?.thisMonthReduction
+                            "
+                            class="flex justify-between gap-4"
+                        >
+                            <dt class="text-os-sub">今月の軽減額</dt>
+                            <dd class="font-semibold">
+                                {{
+                                    formatYen(
+                                        paymentDeltaInfo(simulation)
+                                            ?.thisMonthReduction ?? '0',
+                                    )
+                                }}
+                            </dd>
+                        </div>
+                        <div
+                            v-if="paymentDeltaInfo(simulation)?.futureMonthly"
+                            class="flex justify-between gap-4"
+                        >
+                            <dt class="text-os-sub">将来の月額負担</dt>
+                            <dd class="font-semibold">
+                                {{
+                                    formatYen(
+                                        paymentDeltaInfo(simulation)
+                                            ?.futureMonthly ?? '0',
+                                    )
+                                }}
+                            </dd>
+                        </div>
+                        <div
+                            v-if="paymentDeltaInfo(simulation)?.feeEstimate"
+                            class="flex justify-between gap-4"
+                        >
+                            <dt class="text-os-sub">手数料見積</dt>
+                            <dd class="font-semibold">
+                                {{
+                                    formatYen(
+                                        paymentDeltaInfo(simulation)
+                                            ?.feeEstimate ?? '0',
+                                    )
+                                }}
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <p
+                    v-if="simulation.result_payload == null"
+                    class="mt-3 text-[12px] text-os-faint"
+                >
+                    「計算」を押すと試算結果が表示されます。
+                </p>
+            </li>
+        </ul>
+
+        <Sheet :open="drawerOpen" @update:open="drawerOpen = $event">
+            <SheetContent
+                side="right"
+                class="w-full border-os-line bg-white sm:max-w-md"
             >
-                「計算」を実行すると比較結果が表示されます。助言やおすすめは出しません。
-            </p>
-        </section>
-    </div>
+                <SheetHeader>
+                    <SheetTitle>シナリオを作成</SheetTitle>
+                    <SheetDescription>
+                        計算は実データを変更しません。「適用」するまで口座・予定は変わりません。
+                    </SheetDescription>
+                </SheetHeader>
+                <form
+                    class="mt-4 space-y-3 px-1"
+                    @submit.prevent="submitCreate"
+                >
+                    <label class="block text-[12px] text-os-sub">
+                        名前（任意）
+                        <input
+                            v-model="createForm.name"
+                            type="text"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
+                            placeholder="例: 分割払いに変更した場合"
+                        />
+                    </label>
+                    <label class="block text-[12px] text-os-sub">
+                        投影期間（月）
+                        <input
+                            v-model.number="createForm.horizon_months"
+                            type="number"
+                            min="1"
+                            max="24"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
+                        />
+                    </label>
+                    <div class="flex justify-end gap-2 pt-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="drawerOpen = false"
+                        >
+                            キャンセル
+                        </Button>
+                        <Button type="submit">作成する</Button>
+                    </div>
+                </form>
+            </SheetContent>
+        </Sheet>
+    </MoneyPageShell>
 </template>

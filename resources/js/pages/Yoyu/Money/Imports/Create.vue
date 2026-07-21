@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { Head, Link, router, useForm } from '@inertiajs/vue3';
+import { Link, router, useForm } from '@inertiajs/vue3';
 import { computed, reactive } from 'vue';
 import { Button } from '@/components/ui/button';
-import MoneySubnav from '@/components/yoyu-money/MoneySubnav.vue';
+import MoneyPageShell from '@/components/yoyu-money/MoneyPageShell.vue';
+import { moneyLedgerTabs } from '@/lib/yoyuMoney/navigation';
 
 type AccountOption = {
     id: string;
@@ -34,7 +35,9 @@ const uploadForm = useForm({
 });
 
 const mapping = reactive({
-    date_column: String(props.currentImport?.mapping_config?.date_column ?? '0'),
+    date_column: String(
+        props.currentImport?.mapping_config?.date_column ?? '0',
+    ),
     description_column: String(
         props.currentImport?.mapping_config?.description_column ?? '1',
     ),
@@ -142,7 +145,7 @@ function submitExecute(): void {
 
     if (
         !confirm(
-            'プレビュー結果で取込を実行しますか？実データに反映されます。',
+            'プレビュー内容で取込を実行しますか？実データに反映されます。取消は一覧ページから可能です。',
         )
     ) {
         return;
@@ -164,25 +167,27 @@ defineOptions({
 </script>
 
 <template>
-    <div class="mx-auto max-w-[720px] space-y-4">
-        <Head title="CSV取込ウィザード — お金の余裕" />
+    <MoneyPageShell
+        title="CSV取込"
+        :section-tabs="moneyLedgerTabs"
+        section-active="imports-create"
+        section-label="明細"
+        primary-active="ledger"
+    >
+        <div class="flex items-center gap-2 text-[12px] text-os-sub">
+            <Link href="/yoyu/money/imports" class="hover:text-os-ink">
+                ← 取込一覧へ
+            </Link>
+        </div>
 
-        <MoneySubnav active="imports" />
-
-        <Link
-            href="/yoyu/money/imports"
-            class="inline-block text-[13px] text-os-sub hover:text-os-ink"
-        >
-            ← 取込一覧へ
-        </Link>
-
+        <!-- Step indicator -->
         <ol class="flex flex-wrap gap-2 text-[12px] font-semibold">
             <li
                 class="rounded-full px-3 py-1"
                 :class="
                     step === 1
                         ? 'bg-os-yoyu-soft text-os-yoyu'
-                        : 'bg-white text-os-sub border border-os-line'
+                        : 'border border-os-line bg-white text-os-sub'
                 "
             >
                 1. アップロード
@@ -192,7 +197,7 @@ defineOptions({
                 :class="
                     step === 2
                         ? 'bg-os-yoyu-soft text-os-yoyu'
-                        : 'bg-white text-os-sub border border-os-line'
+                        : 'border border-os-line bg-white text-os-sub'
                 "
             >
                 2. マッピング
@@ -202,18 +207,24 @@ defineOptions({
                 :class="
                     step === 3
                         ? 'bg-os-yoyu-soft text-os-yoyu'
-                        : 'bg-white text-os-sub border border-os-line'
+                        : 'border border-os-line bg-white text-os-sub'
                 "
             >
                 3. 実行
             </li>
         </ol>
 
+        <!-- Step 1: Upload -->
         <section
             v-if="step === 1"
-            class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
+            class="rounded-2xl border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
         >
-            <h2 class="mb-3 text-sm font-bold text-os-ink">CSVをアップロード</h2>
+            <h2 class="mb-1 text-sm font-bold text-os-ink">
+                CSVをアップロード
+            </h2>
+            <p class="mb-3 text-[12px] text-os-sub">
+                銀行やカード会社からダウンロードしたCSVを選択してください。
+            </p>
             <form class="space-y-3" @submit.prevent="submitUpload">
                 <label class="block text-[12px] text-os-sub">
                     取込先口座
@@ -252,15 +263,16 @@ defineOptions({
             </form>
             <p
                 v-if="accounts.length === 0"
-                class="mt-2 text-[12px] text-[#C05A48]"
+                class="mt-2 text-[12px] text-[#8A5A3B]"
             >
                 先に口座を追加してください。
             </p>
         </section>
 
+        <!-- Step 2: Mapping -->
         <section
             v-if="showMapping && currentImport"
-            class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
+            class="rounded-2xl border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
         >
             <h2 class="mb-1 text-sm font-bold text-os-ink">列マッピング</h2>
             <p class="mb-3 text-[12px] text-os-sub">
@@ -329,7 +341,7 @@ defineOptions({
                     />
                 </label>
                 <label class="text-[12px] text-os-sub">
-                    区切り
+                    区切り文字
                     <input
                         v-model="mapping.delimiter"
                         type="text"
@@ -348,7 +360,7 @@ defineOptions({
                     class="col-span-2 flex items-center gap-2 text-[13px] text-os-ink sm:col-span-3"
                 >
                     <input v-model="mapping.has_header" type="checkbox" />
-                    1行目はヘッダー
+                    1行目はヘッダー行
                 </label>
                 <div class="col-span-2 sm:col-span-3">
                     <Button type="submit" size="sm" class="rounded-full">
@@ -358,9 +370,10 @@ defineOptions({
             </form>
         </section>
 
+        <!-- Step 3: Execute -->
         <section
             v-if="showExecute && currentImport"
-            class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
+            class="rounded-2xl border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
         >
             <h2 class="mb-2 text-sm font-bold text-os-ink">取込実行</h2>
             <p class="text-[13px] text-os-sub">
@@ -369,8 +382,10 @@ defineOptions({
                 }}
                 行 / 状態: {{ currentImport.status }}）
             </p>
-            <p class="mt-2 text-[12px] text-os-sub">
-                プレビュー後に実行します。実行後は取引が作成されます（取消は一覧から可能）。
+            <p
+                class="mt-2 rounded-xl bg-os-yoyu-soft/60 px-3 py-2 text-[12px] text-os-ink"
+            >
+                実行すると取引が実データに登録されます。取消は取込一覧ページから可能です。
             </p>
             <div class="mt-4 flex flex-wrap gap-2">
                 <Button
@@ -383,9 +398,9 @@ defineOptions({
                     class="rounded-full"
                     @click="submitExecute"
                 >
-                    取込を実行
+                    取込を実行する
                 </Button>
             </div>
         </section>
-    </div>
+    </MoneyPageShell>
 </template>

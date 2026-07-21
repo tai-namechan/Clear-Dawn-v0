@@ -22,8 +22,15 @@ export type MoneyCashflowRow = {
     kind: string;
     status: string;
     certainty: string;
+    flexibility: string;
     due_on: string;
     amount: MoneyAmountDto;
+    remaining_minor: string;
+    balance_after_minor: string | null;
+    category_name: string | null;
+    counterparty_name: string | null;
+    payment_method: string | null;
+    is_essential: boolean;
     lock_version: number;
 };
 
