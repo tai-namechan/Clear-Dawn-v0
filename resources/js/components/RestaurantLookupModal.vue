@@ -430,7 +430,7 @@ async function confirmAndSave(): Promise<void> {
                         step === 'choose'
                             ? '外食メニューの栄養推定'
                             : step === 'photo_capture'
-                              ? '料理を撮影'
+                              ? '料理の写真を選択'
                               : step === 'menu_input'
                                 ? '店名・メニュー名を入力'
                                 : 'AI が推定中...'
@@ -441,7 +441,7 @@ async function confirmAndSave(): Promise<void> {
                         step === 'choose'
                             ? '写真またはメニュー名から栄養成分を AI が推定します。'
                             : step === 'photo_capture'
-                              ? '料理の写真を撮影すると AI が栄養成分を推定します。'
+                              ? '料理の写真を撮影または選択すると AI が栄養成分を推定します。'
                               : step === 'menu_input'
                                 ? '店名とメニュー名を入力すると AI が栄養成分を推定します。'
                                 : 'AI が栄養成分を推定しています...'
@@ -467,9 +467,9 @@ async function confirmAndSave(): Promise<void> {
                         <Camera :size="22" :stroke-width="1.6" class="text-primary" />
                     </div>
                     <div>
-                        <p class="font-sans text-sm font-semibold text-cd-ink">料理を撮影</p>
+                        <p class="font-sans text-sm font-semibold text-cd-ink">料理の写真</p>
                         <p class="mt-0.5 font-sans text-xs text-cd-ink-muted">
-                            写真から栄養成分を AI が推定します
+                            撮影またはフォルダから選択して AI が推定
                         </p>
                     </div>
                 </button>
@@ -496,7 +496,6 @@ async function confirmAndSave(): Promise<void> {
                     ref="photoFileInput"
                     type="file"
                     accept="image/jpeg,image/png,image/webp"
-                    capture="environment"
                     class="hidden"
                     @change="onPhotoFileSelected"
                 />
@@ -525,7 +524,7 @@ async function confirmAndSave(): Promise<void> {
                     </div>
                     <div class="text-center">
                         <p class="font-sans text-sm font-medium text-cd-ink">
-                            タップして写真を撮影
+                            タップして撮影・選択
                         </p>
                         <p class="mt-1 font-sans text-xs text-cd-ink-muted">
                             料理全体が写るように撮ってください
