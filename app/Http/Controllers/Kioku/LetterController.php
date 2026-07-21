@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Kioku;
 
 use App\Domain\Kioku\Exceptions\KiokuLetterException;
 use App\Domain\Kioku\KiokuLetterMode;
+use App\Domain\Kioku\Models\KiokuConciergeSchedule;
 use App\Domain\Kioku\Models\KiokuLetter;
 use App\Domain\Kioku\Models\KiokuLetterItem;
 use App\Domain\Kioku\Services\KiokuLetterEvaluationService;
@@ -25,6 +26,20 @@ class LetterController extends Controller
     public function __construct(
         private KiokuLetterEvaluationService $evaluation,
     ) {}
+
+    /**
+     * Live letter history (+ isolated test letters when present).
+     */
+    public function index(Request $request): Response
+    {
+        $userId = (int) $request->user()->id;
+
+        return Inertia::render('Kioku/Letters', [
+            'letters' => $this->letterSummaries($userId, KiokuLetterMode::Live, 60),
+            'testLetters' => $this->letterSummaries($userId, KiokuLetterMode::Test, 20),
+            'letterSchedule' => $this->letterScheduleSummary($userId),
+        ]);
+    }
 
     public function preview(Request $request): Response
     {
@@ -116,12 +131,67 @@ class LetterController extends Controller
             'message' => 'テスト便りを削除しました。',
         ]);
 
-        return redirect()->route('kioku.home');
+        return redirect()->route('kioku.letters.index');
     }
 
     private function authorizeOwner(Request $request, KiokuLetter $letter): void
     {
         abort_unless((int) $letter->user_id === (int) $request->user()->id, 404);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function letterSummaries(int $userId, KiokuLetterMode $mode, int $limit): array
+    {
+        return KiokuLetter::query()
+            ->where('user_id', $userId)
+            ->where('mode', $mode->value)
+            ->where('status', '!=', KiokuLetter::STATUS_GENERATING)
+            ->withCount([
+                'items as judged_count' => fn ($query) => $query->whereNotNull('verdict'),
+                'items as hit_count' => fn ($query) => $query->where('verdict', 'hit'),
+            ])
+            ->orderByDesc('delivery_date')
+            ->orderByDesc('published_at')
+            ->limit($limit)
+            ->get()
+            ->map(fn (KiokuLetter $letter): array => [
+                'id' => $letter->id,
+                'week_start' => $letter->week_start->toDateString(),
+                'delivery_date' => $letter->delivery_date->toDateString(),
+                'mode' => $letter->mode,
+                'cadence' => $letter->cadence,
+                'status' => $letter->status,
+                'character_variant' => $letter->character_variant,
+                'intro' => $letter->intro,
+                'item_count' => $letter->item_count,
+                'judged_count' => (int) $letter->getAttribute('judged_count'),
+                'hit_count' => (int) $letter->getAttribute('hit_count'),
+                'opened' => $letter->opened_at !== null,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array{state: string, pause_reason: string|null, consecutive_unopened: int}|null
+     */
+    private function letterScheduleSummary(int $userId): ?array
+    {
+        $schedule = KiokuConciergeSchedule::query()
+            ->where('user_id', $userId)
+            ->first(['state', 'pause_reason', 'consecutive_unopened']);
+
+        if ($schedule === null) {
+            return null;
+        }
+
+        return [
+            'state' => $schedule->state,
+            'pause_reason' => $schedule->pause_reason,
+            'consecutive_unopened' => (int) $schedule->consecutive_unopened,
+        ];
     }
 
     /**

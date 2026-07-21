@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Kioku;
 use App\Domain\Kioku\Jobs\EnrichMemoryJob;
 use App\Domain\Kioku\Jobs\TranscribeMemoryAudioJob;
 use App\Domain\Kioku\KiokuLetterMode;
+use App\Domain\Kioku\Models\KiokuConciergeSchedule;
 use App\Domain\Kioku\Models\KiokuLetter;
 use App\Domain\Kioku\Models\Memory;
 use App\Domain\Kioku\Services\CaptureMemoryService;
@@ -21,6 +22,7 @@ use App\Http\Resources\Kioku\MemoryStatusResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,7 +30,38 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MemoryController extends Controller
 {
-    public function index(Request $request, KiokuSearchService $search, MemoryTypeRegistry $registry): Response
+    /**
+     * Kioku home: capture + today's letter + recent memories.
+     * Search filters redirect to the library for backward compatibility.
+     */
+    public function index(Request $request): Response|RedirectResponse
+    {
+        if ($this->hasLibraryFilters($request)) {
+            return redirect()->route('kioku.memories.index', $request->query());
+        }
+
+        $user = $request->user();
+        $userId = (int) $user->id;
+
+        $recent = Memory::query()
+            ->where('user_id', $userId)
+            ->whereNotIn('status', ['archived'])
+            ->orderByDesc('captured_at')
+            ->limit(6)
+            ->get();
+
+        return Inertia::render('Kioku/Index', [
+            'memories' => MemoryResource::collection($recent)->resolve(),
+            'transcriptionEnabled' => config('kioku.transcription.provider', 'none') !== 'none',
+            'letters' => $this->letterSummaries($userId, KiokuLetterMode::Live, 4),
+            'letterSchedule' => $this->letterScheduleSummary($userId),
+        ]);
+    }
+
+    /**
+     * Search / browse past memories (filters, tags, types, views).
+     */
+    public function library(Request $request, KiokuSearchService $search, MemoryTypeRegistry $registry): Response
     {
         $user = $request->user();
         $query = is_string($request->input('q'))
@@ -62,7 +95,7 @@ class MemoryController extends Controller
 
         $owned = Memory::query()
             ->where('user_id', $user->id)
-            ->get(['memory_type', 'source_type']);
+            ->get(['memory_type', 'source_type', 'tags']);
 
         $typeCounts = $owned
             ->filter(fn (Memory $m) => filled($m->memory_type))
@@ -70,8 +103,9 @@ class MemoryController extends Controller
             ->all();
 
         $sourceCounts = $owned->countBy('source_type')->all();
+        $tagCounts = $this->tagCountsFromOwned($owned);
 
-        return Inertia::render('Kioku/Index', [
+        return Inertia::render('Kioku/Library', [
             'memories' => MemoryResource::collection($memories)->resolve(),
             'filters' => [
                 'q' => $query,
@@ -85,15 +119,14 @@ class MemoryController extends Controller
                 ->all(),
             'typeCounts' => $typeCounts,
             'sourceCounts' => $sourceCounts,
+            'tagCounts' => $tagCounts,
             'totalCount' => $owned->count(),
             'transcriptionEnabled' => config('kioku.transcription.provider', 'none') !== 'none',
-            'letters' => $this->letterSummaries((int) $user->id, KiokuLetterMode::Live),
-            'testLetters' => $this->letterSummaries((int) $user->id, KiokuLetterMode::Test, 8),
         ]);
     }
 
     /**
-     * Concierge letters for the Home preview. Live and test are never mixed
+     * Concierge letters for Home / Letters list. Live and test are never mixed
      * (docs/product/kioku-concierge-daily-pilot.md).
      *
      * @return array<int, array<string, mixed>>
@@ -103,7 +136,7 @@ class MemoryController extends Controller
         return KiokuLetter::query()
             ->where('user_id', $userId)
             ->where('mode', $mode->value)
-            ->whereNotIn('status', [KiokuLetter::STATUS_GENERATING, KiokuLetter::STATUS_FAILED])
+            ->where('status', '!=', KiokuLetter::STATUS_GENERATING)
             ->withCount([
                 'items as judged_count' => fn ($query) => $query->whereNotNull('verdict'),
                 'items as hit_count' => fn ($query) => $query->where('verdict', 'hit'),
@@ -112,21 +145,110 @@ class MemoryController extends Controller
             ->orderByDesc('published_at')
             ->limit($limit)
             ->get()
-            ->map(fn (KiokuLetter $letter): array => [
-                'id' => $letter->id,
-                'week_start' => $letter->week_start->toDateString(),
-                'delivery_date' => $letter->delivery_date->toDateString(),
-                'mode' => $letter->mode,
-                'cadence' => $letter->cadence,
-                'status' => $letter->status,
-                'character_variant' => $letter->character_variant,
-                'item_count' => $letter->item_count,
-                'judged_count' => (int) $letter->getAttribute('judged_count'),
-                'hit_count' => (int) $letter->getAttribute('hit_count'),
-                'opened' => $letter->opened_at !== null,
-            ])
+            ->map(fn (KiokuLetter $letter): array => $this->mapLetterSummary($letter))
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapLetterSummary(KiokuLetter $letter): array
+    {
+        return [
+            'id' => $letter->id,
+            'week_start' => $letter->week_start->toDateString(),
+            'delivery_date' => $letter->delivery_date->toDateString(),
+            'mode' => $letter->mode,
+            'cadence' => $letter->cadence,
+            'status' => $letter->status,
+            'character_variant' => $letter->character_variant,
+            'intro' => $letter->intro,
+            'item_count' => $letter->item_count,
+            'judged_count' => (int) $letter->getAttribute('judged_count'),
+            'hit_count' => (int) $letter->getAttribute('hit_count'),
+            'opened' => $letter->opened_at !== null,
+        ];
+    }
+
+    /**
+     * @return array{state: string, pause_reason: string|null, consecutive_unopened: int}|null
+     */
+    private function letterScheduleSummary(int $userId): ?array
+    {
+        $schedule = KiokuConciergeSchedule::query()
+            ->where('user_id', $userId)
+            ->first(['state', 'pause_reason', 'consecutive_unopened']);
+
+        if ($schedule === null) {
+            return null;
+        }
+
+        return [
+            'state' => $schedule->state,
+            'pause_reason' => $schedule->pause_reason,
+            'consecutive_unopened' => (int) $schedule->consecutive_unopened,
+        ];
+    }
+
+    /**
+     * @param  Collection<int, Memory>  $owned
+     * @return array<int, array{tag: string, count: int}>
+     */
+    private function tagCountsFromOwned($owned): array
+    {
+        $counts = [];
+
+        foreach ($owned as $memory) {
+            $seen = [];
+            foreach ($memory->tags ?? [] as $tag) {
+                if ($tag === '' || isset($seen[$tag])) {
+                    continue;
+                }
+                $seen[$tag] = true;
+                $counts[$tag] = ($counts[$tag] ?? 0) + 1;
+            }
+        }
+
+        arsort($counts);
+
+        $result = [];
+        foreach ($counts as $tag => $count) {
+            $result[] = ['tag' => (string) $tag, 'count' => (int) $count];
+            if (count($result) >= 40) {
+                break;
+            }
+        }
+
+        return $result;
+    }
+
+    private function hasLibraryFilters(Request $request): bool
+    {
+        $q = $request->input('q');
+        if (is_string($q) && trim($q) !== '') {
+            return true;
+        }
+
+        $types = $request->input('types');
+        if (is_array($types) && $types !== []) {
+            return true;
+        }
+        if (is_string($types) && $types !== '') {
+            return true;
+        }
+
+        $tags = $request->input('tags');
+        if (is_array($tags) && $tags !== []) {
+            return true;
+        }
+        if (is_string($tags) && $tags !== '') {
+            return true;
+        }
+
+        $tagMode = $request->input('tag_mode');
+
+        return is_string($tagMode) && $tagMode !== '';
     }
 
     public function status(MemoryStatusRequest $request): JsonResponse

@@ -49,8 +49,79 @@ class MemoryTest extends TestCase
                 ->has('memories', 1)
                 ->where('memories.0.title', '自分の記憶')
                 ->where('currentProduct', 'kioku')
+                ->has('letters')
+                ->missing('testLetters')
+                ->missing('typeCounts')
+                ->missing('totalCount')
+            );
+    }
+
+    public function test_home_limits_recent_memories_and_excludes_other_users(): void
+    {
+        $user = User::factory()->create();
+
+        foreach (range(1, 8) as $i) {
+            Memory::factory()->create([
+                'user_id' => $user->id,
+                'title' => "自分{$i}",
+                'status' => 'ready',
+                'captured_at' => now()->subMinutes($i),
+            ]);
+        }
+
+        Memory::factory()->create([
+            'user_id' => User::factory()->create()->id,
+            'title' => '他人の記憶',
+            'status' => 'ready',
+            'captured_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('kioku.home'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Kioku/Index')
+                ->has('memories', 6)
+                ->where('memories.0.title', '自分1')
+                ->where('memories.5.title', '自分6')
+            );
+    }
+
+    public function test_home_search_query_redirects_to_library(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('kioku.home', ['q' => 'Vite', 'tags' => ['ヨガ']]))
+            ->assertRedirect(route('kioku.memories.index', [
+                'q' => 'Vite',
+                'tags' => ['ヨガ'],
+            ]));
+    }
+
+    public function test_library_returns_searchable_memories_for_owner_only(): void
+    {
+        $user = User::factory()->create();
+        Memory::factory()->create([
+            'user_id' => $user->id,
+            'title' => '自分のライブラリ',
+            'status' => 'ready',
+        ]);
+        Memory::factory()->create([
+            'user_id' => User::factory()->create()->id,
+            'title' => '他人のライブラリ',
+            'status' => 'ready',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('kioku.memories.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Kioku/Library')
+                ->has('memories', 1)
+                ->where('memories.0.title', '自分のライブラリ')
+                ->has('tagCounts')
                 ->has('typeCounts')
-                ->has('sourceCounts')
                 ->where('totalCount', 1)
             );
     }
@@ -345,9 +416,10 @@ class MemoryTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get(route('kioku.home', ['q' => 'Vite']))
+            ->get(route('kioku.memories.index', ['q' => 'Vite']))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
+                ->component('Kioku/Library')
                 ->has('memories', 1)
                 ->where('memories.0.title', 'Vite エラー')
             );

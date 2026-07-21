@@ -7,8 +7,7 @@ import {
     kiokuLetterCharacterCssVars,
     kiokuLetterTitleLabel,
 } from '@/lib/kiokuLetter.mjs';
-import { home } from '@/routes/kioku';
-import { open } from '@/routes/kioku/letters';
+import { index as lettersIndex, open } from '@/routes/kioku/letters';
 import type { KiokuLetter } from '@/types/kiokuLetter';
 
 const props = defineProps<{
@@ -59,11 +58,11 @@ defineOptions({
         <Head :title="pageTitle" />
 
         <Link
-            :href="home()"
+            :href="lettersIndex()"
             class="inline-flex items-center gap-1 text-sm text-os-sub hover:text-os-ink"
         >
             <ArrowLeft :size="14" />
-            キオクへ戻る
+            キオク便り一覧へ
         </Link>
 
         <div

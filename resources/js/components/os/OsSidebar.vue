@@ -2,9 +2,12 @@
 import { Link, usePage } from '@inertiajs/vue3';
 import {
     Brain,
+    Home,
     Link2,
     ListTodo,
+    Mail,
     MessageSquare,
+    Search,
     Settings,
     Sun,
     WalletCards,
@@ -19,6 +22,8 @@ import {
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
 import { home as kiokuHome, settings as kiokuSettings, sources as kiokuSources } from '@/routes/kioku';
+import { index as kiokuLetters } from '@/routes/kioku/letters';
+import { index as kiokuMemories } from '@/routes/kioku/memories';
 import { home as yoyuHome } from '@/routes/yoyu';
 import type { ProductKey } from '@/types/product';
 
@@ -71,12 +76,28 @@ const navItems = computed((): OsNavItem[] => {
     if (currentProduct.value === 'kioku') {
         return [
             {
-                title: '記憶',
-                icon: Brain,
+                title: 'ホーム',
+                icon: Home,
                 href: kiokuHome.url(),
-                active:
-                    isCurrentUrl(kiokuHome.url()) ||
-                    isCurrentOrParentUrl('/kioku/memories'),
+                active: isCurrentUrl(kiokuHome.url()),
+                preserveState: false,
+                replace: false,
+                prefetch: true,
+            },
+            {
+                title: 'キオクを探す',
+                icon: Search,
+                href: kiokuMemories.url(),
+                active: isCurrentOrParentUrl('/kioku/memories'),
+                preserveState: false,
+                replace: false,
+                prefetch: true,
+            },
+            {
+                title: 'キオク便り',
+                icon: Mail,
+                href: kiokuLetters.url(),
+                active: isCurrentOrParentUrl('/kioku/letters'),
                 preserveState: false,
                 replace: false,
                 prefetch: true,

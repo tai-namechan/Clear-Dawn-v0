@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->prefix('kioku')->name('kioku.')->group(function () {
     Route::get('/', [MemoryController::class, 'index'])->name('home');
+    Route::get('/memories', [MemoryController::class, 'library'])->name('memories.index');
     Route::post('/memories', [MemoryController::class, 'store'])->name('memories.store');
     Route::post('/captures/manual', [CaptureController::class, 'manual'])
         ->middleware('throttle:60,1')
@@ -26,6 +27,7 @@ Route::middleware(['auth', 'verified'])->prefix('kioku')->name('kioku.')->group(
     Route::post('/memories/{memory}/reenrich', [MemoryController::class, 'reenrich'])->name('memories.reenrich');
     Route::post('/memories/{memory}/retry-transcription', [MemoryController::class, 'retryTranscription'])->name('memories.retry-transcription');
     Route::put('/memories/{memory}/tags', [MemoryController::class, 'updateTags'])->name('memories.tags.update');
+    Route::get('/letters', [LetterController::class, 'index'])->name('letters.index');
     Route::get('/letters/preview', [LetterController::class, 'preview'])->name('letters.preview');
     Route::get('/letters/{letter}', [LetterController::class, 'show'])->name('letters.show');
     Route::post('/letters/{letter}/open', [LetterController::class, 'open'])->name('letters.open');

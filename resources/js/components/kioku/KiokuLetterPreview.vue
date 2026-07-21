@@ -3,88 +3,196 @@ import { Link, router } from '@inertiajs/vue3';
 import { ChevronRight, Mail, Trash2 } from '@lucide/vue';
 import { computed } from 'vue';
 import {
+    KIOKU_LETTER_FAILED_MESSAGE,
+    KIOKU_LETTER_GROWING_MESSAGE,
+    KIOKU_LETTER_HALTED_MESSAGE,
+    KIOKU_LETTER_PAUSED_MESSAGE,
+    kiokuLetterCharacterMeta,
+    kiokuLetterHomeMode,
     kiokuLetterPreviewLabel,
-    kiokuLetterPreviewMode,
     kiokuLetterTitleLabel,
     kiokuLetterWeekLabel,
 } from '@/lib/kiokuLetter.mjs';
-import { destroy, show } from '@/routes/kioku/letters';
-import type { KiokuLetterSummary } from '@/types/kiokuLetter';
+import { destroy, index as lettersIndex, show } from '@/routes/kioku/letters';
+import type {
+    KiokuLetterScheduleSummary,
+    KiokuLetterSummary,
+} from '@/types/kiokuLetter';
 
-const props = defineProps<{
-    letters: KiokuLetterSummary[];
-    testLetters?: KiokuLetterSummary[];
-}>();
+const props = withDefaults(
+    defineProps<{
+        letters: KiokuLetterSummary[];
+        testLetters?: KiokuLetterSummary[];
+        letterSchedule?: KiokuLetterScheduleSummary | null;
+        showAllLink?: boolean;
+        compactPastLimit?: number;
+    }>(),
+    {
+        testLetters: () => [],
+        letterSchedule: null,
+        showAllLink: true,
+        compactPastLimit: 3,
+    },
+);
 
 const latest = computed(() => props.letters[0] ?? null);
-const past = computed(() => props.letters.slice(1));
-const latestMode = computed(() =>
-    latest.value ? kiokuLetterPreviewMode(latest.value) : null,
+const past = computed(() =>
+    props.letters.slice(1, 1 + props.compactPastLimit),
+);
+const homeMode = computed(() =>
+    kiokuLetterHomeMode(latest.value, props.letterSchedule),
 );
 const tests = computed(() => props.testLetters ?? []);
+const characterName = computed(() =>
+    latest.value
+        ? kiokuLetterCharacterMeta(latest.value.character_variant).name
+        : null,
+);
 
 function discardTest(id: string): void {
     router.delete(destroy.url(id), { preserveScroll: true });
+}
+
+function dateLabel(letter: KiokuLetterSummary): string {
+    return letter.cadence === 'daily' && letter.delivery_date
+        ? kiokuLetterTitleLabel(letter)
+        : kiokuLetterWeekLabel(letter.week_start);
 }
 </script>
 
 <template>
     <div class="space-y-3">
-        <!-- Live letters only in the main frame. -->
         <section
-            v-if="latest"
-            class="rounded-2xl border border-os-line bg-os-kioku-paper p-4 shadow-[0_1px_3px_rgba(43,41,36,0.05)]"
+            class="rounded-2xl border border-os-line bg-os-kioku-paper p-4 shadow-[0_1px_3px_rgba(43,41,36,0.05)] sm:p-5"
         >
             <div
-                class="mb-2.5 flex items-center gap-1.5 text-[11.5px] font-bold tracking-wide text-os-kioku"
+                class="mb-3 flex items-center gap-1.5 text-[12px] font-bold tracking-wide text-os-kioku"
             >
-                <Mail :size="13" />
-                キオク便り
-                <span class="ml-auto font-normal text-os-sub">{{
-                    latest.cadence === 'daily' && latest.delivery_date
-                        ? kiokuLetterTitleLabel(latest)
-                        : kiokuLetterWeekLabel(latest.week_start)
-                }}</span>
+                <Mail :size="14" />
+                今日のキオク便り
             </div>
 
-            <!-- Empty still links to detail so opened_at can be recorded. -->
-            <Link
-                v-if="latestMode === 'empty'"
-                :href="show.url(latest.id)"
-                class="block text-[12.5px] leading-relaxed text-os-sub underline-offset-2 hover:underline"
-            >
-                {{ kiokuLetterPreviewLabel(latest) }}
-                <span class="ml-1 font-bold text-os-kioku">確認する</span>
-            </Link>
-            <Link
-                v-else-if="latestMode === 'unread'"
-                :href="show.url(latest.id)"
-                class="flex h-11 items-center justify-center gap-2 rounded-xl bg-os-kioku text-[13.5px] font-bold text-white shadow-[0_3px_10px_rgba(62,86,136,0.28)] transition-colors hover:bg-os-kioku/90 motion-reduce:transition-none"
-            >
-                便りを開く
-            </Link>
-            <Link
-                v-else
-                :href="show.url(latest.id)"
-                class="flex items-center justify-between gap-2 rounded-xl bg-os-kioku-soft px-3.5 py-2.5 text-[12.5px] font-bold text-os-kioku transition-colors hover:bg-os-kioku/10 motion-reduce:transition-none"
-            >
-                {{ kiokuLetterPreviewLabel(latest) }}
-                <ChevronRight :size="14" />
-            </Link>
+            <template v-if="homeMode === 'none'">
+                <p class="text-[13px] leading-relaxed text-os-sub">
+                    {{ KIOKU_LETTER_GROWING_MESSAGE }}
+                </p>
+            </template>
 
-            <div v-if="past.length" class="mt-2.5 space-y-0.5">
+            <template v-else-if="homeMode === 'growing'">
+                <p class="text-[13px] leading-relaxed text-os-sub">
+                    {{ KIOKU_LETTER_GROWING_MESSAGE }}
+                </p>
+            </template>
+
+            <template v-else-if="homeMode === 'schedule_halted'">
+                <p class="text-[13px] leading-relaxed text-os-ink">
+                    {{ KIOKU_LETTER_HALTED_MESSAGE }}
+                </p>
+            </template>
+
+            <template v-else-if="homeMode === 'schedule_paused'">
+                <p class="text-[13px] leading-relaxed text-os-ink">
+                    {{ KIOKU_LETTER_PAUSED_MESSAGE }}
+                </p>
+            </template>
+
+            <template v-else-if="homeMode === 'failed' && latest">
+                <p class="text-[12px] text-os-sub">
+                    {{ dateLabel(latest) }}
+                </p>
+                <p class="mt-1.5 text-[13px] leading-relaxed text-os-ink">
+                    {{ KIOKU_LETTER_FAILED_MESSAGE }}
+                </p>
+            </template>
+
+            <template v-else-if="homeMode === 'halted' && latest">
+                <p class="text-[12px] text-os-sub">
+                    {{ dateLabel(latest) }}
+                </p>
+                <p class="mt-1.5 text-[13px] leading-relaxed text-os-ink">
+                    {{ KIOKU_LETTER_HALTED_MESSAGE }}
+                </p>
+                <Link
+                    :href="show.url(latest.id)"
+                    class="mt-3 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-os-kioku px-4 text-[13.5px] font-bold text-white shadow-[0_3px_10px_rgba(62,86,136,0.28)] hover:bg-os-kioku/90"
+                >
+                    便りを読む
+                </Link>
+            </template>
+
+            <template v-else-if="homeMode === 'empty' && latest">
+                <p class="text-[12px] text-os-sub">
+                    {{ dateLabel(latest) }}
+                </p>
+                <p class="mt-1.5 text-[13px] leading-relaxed text-os-sub">
+                    {{ kiokuLetterPreviewLabel(latest) }}
+                </p>
+                <Link
+                    :href="show.url(latest.id)"
+                    class="mt-3 inline-flex text-[12.5px] font-bold text-os-kioku underline-offset-2 hover:underline"
+                >
+                    確認する
+                </Link>
+            </template>
+
+            <template v-else-if="latest">
+                <div class="space-y-2">
+                    <p class="text-[12px] text-os-sub">
+                        {{ dateLabel(latest) }}
+                        <span v-if="characterName" class="ml-2"
+                            >· {{ characterName }}</span
+                        >
+                    </p>
+                    <p
+                        v-if="latest.intro"
+                        class="line-clamp-2 text-[13.5px] leading-relaxed text-os-ink"
+                    >
+                        {{ latest.intro }}
+                    </p>
+                    <p class="text-[12px] text-os-sub">
+                        <template v-if="homeMode === 'done'">
+                            評価済み · {{ latest.item_count }}件
+                        </template>
+                        <template v-else>
+                            {{ latest.item_count }}件の記憶
+                        </template>
+                    </p>
+                    <Link
+                        :href="show.url(latest.id)"
+                        class="mt-1 flex h-11 items-center justify-center gap-2 rounded-xl bg-os-kioku text-[13.5px] font-bold text-white shadow-[0_3px_10px_rgba(62,86,136,0.28)] transition-colors hover:bg-os-kioku/90 motion-reduce:transition-none"
+                    >
+                        便りを読む
+                    </Link>
+                    <p
+                        v-if="homeMode === 'done' || homeMode === 'in_progress'"
+                        class="text-[11.5px] text-os-sub"
+                    >
+                        {{ kiokuLetterPreviewLabel(latest) }}
+                    </p>
+                </div>
+            </template>
+
+            <div v-if="past.length" class="mt-3 space-y-0.5 border-t border-os-line pt-2.5">
                 <Link
                     v-for="letter in past"
                     :key="letter.id"
                     :href="show.url(letter.id)"
-                    class="flex items-center justify-between gap-2 border-b border-os-line py-1.5 text-[11.5px] text-os-sub last:border-0 hover:text-os-ink"
+                    class="flex items-center justify-between gap-2 py-1.5 text-[11.5px] text-os-sub hover:text-os-ink"
                 >
-                    <span>{{
-                        letter.cadence === 'daily' && letter.delivery_date
-                            ? kiokuLetterTitleLabel(letter)
-                            : kiokuLetterWeekLabel(letter.week_start)
+                    <span class="min-w-0 truncate">{{ dateLabel(letter) }}</span>
+                    <span class="shrink-0">{{
+                        kiokuLetterPreviewLabel(letter)
                     }}</span>
-                    <span>{{ kiokuLetterPreviewLabel(letter) }}</span>
+                </Link>
+            </div>
+
+            <div v-if="showAllLink" class="mt-3">
+                <Link
+                    :href="lettersIndex()"
+                    class="inline-flex items-center gap-1 text-[12.5px] font-bold text-os-kioku hover:underline"
+                >
+                    キオク便りをすべて見る
+                    <ChevronRight :size="14" />
                 </Link>
             </div>
         </section>

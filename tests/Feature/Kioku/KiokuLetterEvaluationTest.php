@@ -327,12 +327,13 @@ class KiokuLetterEvaluationTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Kioku/Index')
-                ->has('letters', 1)
+                ->has('letters', 2)
                 ->where('letters.0.id', $letter->id)
                 ->where('letters.0.judged_count', 1)
                 ->where('letters.0.hit_count', 1)
                 ->where('letters.0.item_count', 2)
-                ->where('letters.0.character_variant', 'shiori'),
+                ->where('letters.0.character_variant', 'shiori')
+                ->where('letters.1.status', KiokuLetter::STATUS_FAILED),
             );
     }
 }

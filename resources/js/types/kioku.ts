@@ -21,12 +21,17 @@ export type KiokuMemory = {
 
 export type KiokuTagMode = 'and' | 'or';
 
-/** Home URL / Inertia filters (docs/architecture/kioku-knowledge-retrieval.md §3). */
+/** Library URL / Inertia filters (docs/architecture/kioku-knowledge-retrieval.md §3). */
 export type KiokuHomeFilters = {
     q: string | null;
     types: string[];
     tags: string[];
     tag_mode: KiokuTagMode;
+};
+
+export type KiokuTagCount = {
+    tag: string;
+    count: number;
 };
 
 /** PUT /kioku/memories/{memory}/tags body. */
