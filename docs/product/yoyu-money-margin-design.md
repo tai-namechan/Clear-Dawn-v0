@@ -2,7 +2,7 @@
 
 - 作成日: 2026-07-17
 - 調査基準: `tai-namechan/Clear-Dawn-v0` `main@62cac501289e956cd00da64e59b986f5d0b450af`
-- 状態: **実装中（YM1〜YM7）**
+- 状態: **実装中（YM1〜YM7 + UI再設計）**
 - ADR: [ADR-0010](../adr/0010-yoyu-money-margin-domain.md)
 - 置換対象: [旧 Finance 仕様](./screens/finance.md)
 
@@ -99,21 +99,51 @@ shortfall              = max(0, -projected_margin)
 | 資金繰り | closed statement の cashflow | statement 期間内の個別 purchase |
 | 未確定 | card snapshot の unconfirmed | snapshot と pending の二重加算 |
 
-## 6. 画面 URL
+## 6. 画面情報設計（UI再設計）
 
-| 画面 | URL |
-|---|---|
-| ダッシュボード | `GET /yoyu/money` |
-| 入出金予定 | `GET /yoyu/money/cashflows` |
-| 口座 | `GET /yoyu/money/accounts` |
-| カード | `GET /yoyu/money/cards` |
-| ローン | `GET /yoyu/money/loans` |
-| 明細 | `GET /yoyu/money/transactions` |
-| CSV 取込 | `GET /yoyu/money/imports` / `create` |
-| 分析 | `GET /yoyu/money/analysis` |
-| シミュレーター | `GET /yoyu/money/simulations` |
-| 判断履歴 | `GET /yoyu/money/decisions` |
-| 設定 | `GET /yoyu/money/settings` |
+最上位ナビゲーションは機能別タブではなく、次の5分類とする。
+
+| 最上位 | 含む画面 | 既存URL（互換） |
+|---|---|---|
+| ホーム | 余裕ダッシュボード、残高タイムライン、調整候補 | `GET /yoyu/money` |
+| 今月 | 収入・支払予定、支払後残高、処理済み操作 | `GET /yoyu/money/cashflows` |
+| 資産・返済 | 口座 / カード / ローン | `/accounts` `/cards` `/loans` |
+| 明細 | 取引明細 / CSV取込 / 取込履歴 | `/transactions` `/imports` |
+| 計画 | 分析 / シミュレーター / 見直したこと | `/analysis` `/simulations` `/decisions` |
+
+設定は歯車アイコン（`GET /yoyu/money/settings`）で独立操作とする。
+既存URLは削除せず、対応する最上位ナビと内部タブが選択された状態で表示する。
+
+### 6.1 ホームの表示優先順位
+
+1. 安全に使える金額（未設定時は断定しない）
+2. 月末予測・次の入金
+3. 現在の資金 / 今月の収入 / 支払い予定
+4. 今後の残高（イベント後残高付き）
+5. もうすぐ支払うもの / 今月の注意点
+6. 余裕を増やせる候補（ルールベース。無ければ「見直し候補はありません」）
+
+カード利用可能枠・借入可能額は「信用枠情報」として分離し、現在の資金へ加算しない。
+
+### 6.2 初回セットアップ
+
+DBに完了フラグを持たず、既存データから進捗を算出する。
+
+1. 口座と現在残高
+2. 次の収入予定
+3. 今月の支払い
+4. カード・ローン（任意）
+5. 最低生活費・安全資金
+
+未完了でも各画面は閲覧可能。「あとで設定」はクライアント側で一時非表示できる。
+
+### 6.3 二重計上防止のUI表現
+
+取引明細の `card_payment` 等は「カード請求に含まれるため参考表示」と表示し、支出集計済みと区別する。
+
+### 6.4 シミュレーションと実データ
+
+シミュレーションの保存・計算だけでは実データを変更しない。反映は明示的な apply 操作のみ。
 
 旧 `/finance` は認証後 `/yoyu/money` へ redirect する。
 

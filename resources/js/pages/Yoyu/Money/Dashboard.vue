@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
-import MoneySubnav from '@/components/yoyu-money/MoneySubnav.vue';
-import {
-    formatSignedYen,
-    formatYen,
-    isNegativeMinor,
-    isPositiveMinor,
-    minorToDisplayString,
-} from '@/lib/yoyuMoney/format';
+import { Link, router } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import AdjustmentCandidateCard from '@/components/yoyu-money/AdjustmentCandidateCard.vue';
+import CashflowTimeline from '@/components/yoyu-money/CashflowTimeline.vue';
+import MoneyAmount from '@/components/yoyu-money/MoneyAmount.vue';
+import MoneyPageShell from '@/components/yoyu-money/MoneyPageShell.vue';
+import MoneySetupGuide from '@/components/yoyu-money/MoneySetupGuide.vue';
+import MoneyStatusBadge from '@/components/yoyu-money/MoneyStatusBadge.vue';
+import MoneySummaryCard from '@/components/yoyu-money/MoneySummaryCard.vue';
+import { formatYen, isPositiveMinor } from '@/lib/yoyuMoney/format';
+import { missingSettingLabel } from '@/lib/yoyuMoney/labels';
 
 type MoneySettings = {
     minimum_living_budget_minor: string | null;
@@ -18,16 +19,6 @@ type MoneySettings = {
     calculation_horizon_months: number;
     formula_version: string;
     currency_code: string;
-};
-
-type AccountSummary = {
-    id: string;
-    name: string;
-    type: string;
-    current_balance_minor: string;
-    available_balance_minor: string | null;
-    balance_as_of: string | null;
-    is_stale: boolean;
 };
 
 type Margin = {
@@ -50,16 +41,71 @@ type Margin = {
     breakdown: Record<string, string | number | boolean | null>;
 };
 
-type UpcomingCashflow = {
+type SetupStep = {
+    key: string;
+    label: string;
+    description: string;
+    status: 'complete' | 'incomplete' | 'optional';
+    href: string;
+    required: boolean;
+};
+
+type SetupProgress = {
+    is_complete: boolean;
+    required_complete: boolean;
+    completed_required_count: number;
+    required_count: number;
+    next_step_key: string | null;
+    steps: SetupStep[];
+};
+
+type TimelineEvent = {
+    id: string;
+    due_on: string;
+    name: string;
+    direction: string;
+    amount_minor: string;
+    signed_amount_minor: string;
+    balance_after_minor: string;
+    is_shortfall: boolean;
+    flexibility: string;
+    certainty: string;
+};
+
+type UpcomingPayment = {
     id: string;
     name: string;
     direction: string;
     kind: string;
     status: string;
     certainty: string;
+    flexibility: string;
     due_on: string;
     amount_minor: string;
     remaining_minor: string;
+    balance_after_minor: string | null;
+    counterparty_name: string | null;
+    is_adjustable: boolean;
+    lock_version: number;
+};
+
+type Candidate = {
+    id: string;
+    type: string;
+    title: string;
+    detail: string;
+    amount_minor: string | null;
+    href: string;
+    simulate_href: string;
+};
+
+type DebtSummary = {
+    outstanding_debt_minor: string;
+    monthly_repayment_minor: string;
+    card_statement_minor: string;
+    next_repayment_on: string | null;
+    credit_available_minor: string | null;
+    credit_limit_minor: string | null;
 };
 
 type FreshnessWarning = {
@@ -73,60 +119,90 @@ interface Props {
     as_of: string;
     horizon_end: string;
     month: string;
+    month_end?: string;
     timezone: string;
     funds_minor: string;
     settings: MoneySettings;
-    accounts: AccountSummary[];
+    accounts: Array<Record<string, unknown>>;
     margin: Margin;
-    upcoming_cashflows: UpcomingCashflow[];
+    upcoming_cashflows: Array<Record<string, unknown>>;
+    upcoming_payments?: UpcomingPayment[];
     freshness_warnings: FreshnessWarning[];
+    setup_progress?: SetupProgress;
+    balance_timeline?: TimelineEvent[];
+    month_end_balance_minor?: string;
+    next_income?: { id: string; name: string; due_on: string; amount_minor: string } | null;
+    first_shortfall_date?: string | null;
+    month_summary?: {
+        income_minor: string;
+        confirmed_outflow_minor: string;
+        expected_outflow_minor: string;
+    };
+    debt_summary?: DebtSummary;
+    adjustment_candidates?: Candidate[];
 }
 
 const props = defineProps<Props>();
 
-const heroMode = computed(() => {
-    if (
-        isNegativeMinor(props.margin.projected_margin_minor) ||
-        isPositiveMinor(props.margin.shortfall_minor)
-    ) {
-        return 'shortfall' as const;
-    }
+const SETUP_DISMISS_KEY = 'yoyu-money-setup-dismissed';
 
-    if (!props.margin.is_complete) {
-        return 'incomplete' as const;
-    }
+const setupDismissed = ref(
+    typeof window !== 'undefined' &&
+        window.localStorage.getItem(SETUP_DISMISS_KEY) === '1',
+);
 
-    return 'safe' as const;
-});
+const showBreakdown = ref(false);
 
-const breakdownRows = computed(() => {
-    const labels: Array<{ key: string; label: string }> = [
-        { key: 'funds_minor', label: '保有資金 (F)' },
-        { key: 'confirmed_income_minor', label: '確定収入 (Ic)' },
-        { key: 'confirmed_outflow_minor', label: '確定支出 (Oc)' },
-        { key: 'uncertain_reserve_minor', label: '未確定支出予約 (Oe)' },
-        { key: 'expected_outflow_gross_minor', label: '見込み支出総額' },
-        { key: 'expected_income_minor', label: '見込み収入' },
-        { key: 'living_input_minor', label: '最低生活費 (L)' },
-        { key: 'safety_input_minor', label: '安全資金 (S)' },
-        { key: 'essential_scheduled_minor', label: '必須予定（今月）' },
-    ];
+const showSetup = computed(
+    () =>
+        props.setup_progress !== undefined &&
+        !props.setup_progress.required_complete &&
+        !setupDismissed.value,
+);
 
-    return labels
-        .map((row) => {
-            const raw = props.margin.breakdown[row.key];
-            const minor = minorToDisplayString(
-                typeof raw === 'boolean' ? null : raw,
-            );
+const payments = computed(() => props.upcoming_payments ?? []);
+const timeline = computed(() => props.balance_timeline ?? []);
+const candidates = computed(() => props.adjustment_candidates ?? []);
+const debt = computed(
+    () =>
+        props.debt_summary ?? {
+            outstanding_debt_minor: '0',
+            monthly_repayment_minor: '0',
+            card_statement_minor: '0',
+            next_repayment_on: null,
+            credit_available_minor: null,
+            credit_limit_minor: null,
+        },
+);
+const monthSummary = computed(
+    () =>
+        props.month_summary ?? {
+            income_minor: props.margin.confirmed_income_minor,
+            confirmed_outflow_minor: props.margin.confirmed_outflow_minor,
+            expected_outflow_minor: props.margin.uncertain_reserve_minor,
+        },
+);
 
-            return {
-                key: row.key,
-                label: row.label,
-                value: minor,
-            };
-        })
-        .filter((row) => row.value !== null);
-});
+const hasShortfall = computed(() => isPositiveMinor(props.margin.shortfall_minor));
+
+function dismissSetup(): void {
+    setupDismissed.value = true;
+    window.localStorage.setItem(SETUP_DISMISS_KEY, '1');
+}
+
+function settlePayment(payment: UpcomingPayment): void {
+    router.post(
+        `/yoyu/money/cashflows/${payment.id}/settle`,
+        {
+            amount_minor: payment.remaining_minor,
+            occurred_on: payment.due_on,
+            create_transaction: true,
+            update_balance: true,
+            lock_version: payment.lock_version,
+        },
+        { preserveScroll: true },
+    );
+}
 
 function freshnessLabel(message: string): string {
     if (message === 'balance_stale_over_7_days') {
@@ -145,208 +221,336 @@ defineOptions({
 </script>
 
 <template>
-    <div class="mx-auto max-w-[720px] space-y-4">
-        <Head title="お金の余裕" />
+    <MoneyPageShell
+        title="ホーム"
+        document-title="お金の余裕"
+        :month="month"
+        :as-of="as_of"
+        show-month-switcher
+        primary-active="home"
+    >
+        <MoneySetupGuide
+            v-if="showSetup && setup_progress"
+            :steps="setup_progress.steps"
+            :next-step-key="setup_progress.next_step_key"
+            :completed-required-count="setup_progress.completed_required_count"
+            :required-count="setup_progress.required_count"
+            @dismiss="dismissSetup"
+        />
 
-        <MoneySubnav active="dashboard" />
-
-        <section
-            class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
+        <ul
+            v-if="freshness_warnings.length > 0"
+            class="space-y-1.5 rounded-xl bg-os-yoyu-soft/60 px-3 py-2 text-[12.5px] text-os-ink"
         >
-            <div class="flex flex-wrap items-baseline justify-between gap-2">
-                <div>
-                    <p class="text-[12px] font-semibold text-os-sub">対象月</p>
-                    <p class="text-lg font-bold text-os-ink">{{ month }}</p>
-                </div>
-                <div class="text-right text-[12px] text-os-sub">
-                    <p>基準日 {{ as_of }}</p>
-                    <p>投影終了 {{ horizon_end }}</p>
-                    <p>{{ timezone }}</p>
-                </div>
-            </div>
-            <ul
-                v-if="freshness_warnings.length > 0"
-                class="mt-3 space-y-1.5 rounded-xl bg-os-yoyu-soft/60 px-3 py-2 text-[12.5px] text-os-ink"
+            <li
+                v-for="warning in freshness_warnings"
+                :key="warning.account_id"
             >
-                <li
-                    v-for="warning in freshness_warnings"
-                    :key="warning.account_id"
-                >
-                    {{ warning.account_name }}:
-                    {{ freshnessLabel(warning.message) }}
-                </li>
-            </ul>
-        </section>
+                {{ warning.account_name }}: {{ freshnessLabel(warning.message) }}
+            </li>
+        </ul>
 
+        <!-- Hero: 安全に使える金額 -->
         <section
-            class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
+            class="rounded-2xl border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)] md:p-6"
         >
-            <p class="text-[12px] font-semibold text-os-sub">余裕の見通し</p>
-            <template v-if="heroMode === 'shortfall'">
-                <h2 class="mt-1 text-xl font-bold text-[#C05A48]">
-                    不足見込み
-                </h2>
-                <p class="mt-2 text-3xl font-bold tracking-tight text-[#C05A48]">
-                    {{ formatYen(margin.shortfall_minor) }}
-                </p>
-            </template>
-            <template v-else-if="heroMode === 'incomplete'">
-                <h2 class="mt-1 text-xl font-bold text-os-ink">
-                    設定前の参考値
-                </h2>
+            <p class="text-[12px] font-semibold text-os-sub">
+                今月、安全に使える金額
+            </p>
+
+            <template v-if="!margin.is_complete">
                 <p class="mt-2 text-[13px] text-os-sub">
-                    最低生活費または安全資金が未設定のため、断定表示はしません。
+                    計算に必要な設定がまだ完了していません。参考値として投影余裕額を表示しています。
                 </p>
-                <p class="mt-2 text-3xl font-bold tracking-tight text-os-ink">
-                    {{ formatSignedYen(margin.projected_margin_minor) }}
+                <p class="mt-2 text-3xl font-bold tracking-tight text-os-faint md:text-4xl">
+                    <MoneyAmount
+                        :amount-minor="margin.projected_margin_minor"
+                        signed
+                    />
+                </p>
+                <p class="mt-2 text-[12px] text-os-sub">
+                    未設定:
+                    {{
+                        margin.missing_settings
+                            .map((key) => missingSettingLabel(key))
+                            .join('、')
+                    }}
                 </p>
                 <Link
                     href="/yoyu/money/settings"
-                    class="mt-3 inline-block text-[13px] font-semibold text-os-yoyu hover:underline"
+                    class="mt-2 inline-block text-[13px] font-semibold text-os-yoyu hover:underline"
                 >
-                    設定へ
+                    設定へ進む
                 </Link>
             </template>
+            <template v-else-if="hasShortfall">
+                <p class="mt-2 text-3xl font-bold tracking-tight text-[#8A5A3B] md:text-4xl">
+                    {{ formatYen('0') }}
+                </p>
+                <p class="mt-2 text-[13px] text-[#8A5A3B]">
+                    今月は
+                    <MoneyAmount :amount-minor="margin.shortfall_minor" />
+                    不足する見込みです
+                </p>
+            </template>
             <template v-else>
-                <h2 class="mt-1 text-xl font-bold text-os-yoyu">
-                    安全に使える余裕額
-                </h2>
-                <p class="mt-2 text-3xl font-bold tracking-tight text-os-yoyu">
+                <p class="mt-2 text-3xl font-bold tracking-tight text-os-yoyu md:text-4xl md:text-right">
                     {{ formatYen(margin.safe_to_spend_minor) }}
                 </p>
             </template>
-            <p class="mt-3 text-[13px] text-os-sub">
-                投影余裕額
-                <span class="font-semibold text-os-ink">
-                    {{ formatSignedYen(margin.projected_margin_minor) }}
-                </span>
-            </p>
-        </section>
 
-        <section
-            class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
-        >
-            <h2 class="mb-3 text-sm font-bold text-os-ink">内訳</h2>
-            <ul class="divide-y divide-os-line text-[13px]">
-                <li
-                    v-for="row in breakdownRows"
-                    :key="row.key"
-                    class="flex items-center justify-between gap-3 py-2"
-                >
-                    <span class="text-os-sub">{{ row.label }}</span>
-                    <span class="font-semibold text-os-ink">
-                        {{ formatYen(row.value) }}
-                    </span>
-                </li>
-            </ul>
-        </section>
-
-        <section
-            class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
-        >
-            <h2 class="mb-3 text-sm font-bold text-os-ink">主要指標</h2>
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <div class="rounded-xl bg-os-yoyu-soft/50 px-3 py-2.5">
-                    <p class="text-[11px] text-os-sub">保有資金</p>
-                    <p class="text-[15px] font-bold text-os-ink">
-                        {{ formatYen(funds_minor) }}
+            <div
+                class="mt-4 grid gap-3 border-t border-os-line pt-4 text-[13px] sm:grid-cols-2"
+            >
+                <div>
+                    <p class="text-os-sub">月末予測残高</p>
+                    <p class="font-semibold text-os-ink">
+                        <MoneyAmount
+                            :amount-minor="month_end_balance_minor ?? margin.projected_cash_minor"
+                        />
                     </p>
                 </div>
-                <div class="rounded-xl bg-os-yoyu-soft/50 px-3 py-2.5">
-                    <p class="text-[11px] text-os-sub">投影現金</p>
-                    <p class="text-[15px] font-bold text-os-ink">
-                        {{ formatYen(margin.projected_cash_minor) }}
+                <div>
+                    <p class="text-os-sub">次の入金予定</p>
+                    <p
+                        v-if="next_income"
+                        class="font-semibold text-os-ink"
+                    >
+                        {{ next_income.due_on }} {{ next_income.name }}
+                        <MoneyAmount
+                            :amount-minor="next_income.amount_minor"
+                            signed
+                        />
+                    </p>
+                    <p
+                        v-else
+                        class="text-os-faint"
+                    >
+                        登録なし
                     </p>
                 </div>
-                <div class="rounded-xl bg-os-yoyu-soft/50 px-3 py-2.5">
-                    <p class="text-[11px] text-os-sub">確定収入</p>
-                    <p class="text-[15px] font-bold text-os-ink">
-                        {{ formatYen(margin.confirmed_income_minor) }}
-                    </p>
-                </div>
-                <div class="rounded-xl bg-os-yoyu-soft/50 px-3 py-2.5">
-                    <p class="text-[11px] text-os-sub">確定支出</p>
-                    <p class="text-[15px] font-bold text-os-ink">
-                        {{ formatYen(margin.confirmed_outflow_minor) }}
-                    </p>
-                </div>
-                <div class="rounded-xl bg-os-yoyu-soft/50 px-3 py-2.5">
-                    <p class="text-[11px] text-os-sub">生活費予約</p>
-                    <p class="text-[15px] font-bold text-os-ink">
-                        {{ formatYen(margin.living_reserve_minor) }}
-                    </p>
-                </div>
-                <div class="rounded-xl bg-os-yoyu-soft/50 px-3 py-2.5">
-                    <p class="text-[11px] text-os-sub">安全資金</p>
-                    <p class="text-[15px] font-bold text-os-ink">
-                        {{ formatYen(margin.safety_buffer_minor) }}
+                <div class="sm:col-span-2">
+                    <p class="text-os-sub">
+                        計算に含めた期間：{{ as_of }}〜{{ horizon_end }}
                     </p>
                 </div>
             </div>
-            <p class="mt-3 text-[12px] text-os-sub">
-                口座 {{ accounts.length }} 件 · 式バージョン
-                {{ margin.formula_version }}
-            </p>
-        </section>
 
-        <section
-            class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
-        >
-            <h2 class="mb-3 text-sm font-bold text-os-ink">
-                直近7日の入出金予定
-            </h2>
-            <p
-                v-if="upcoming_cashflows.length === 0"
-                class="text-[13px] text-os-sub"
+            <button
+                type="button"
+                class="mt-3 text-[12px] font-semibold text-os-yoyu hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                @click="showBreakdown = !showBreakdown"
             >
-                予定はありません。
-            </p>
-            <ul v-else class="divide-y divide-os-line">
-                <li
-                    v-for="item in upcoming_cashflows"
-                    :key="item.id"
-                    class="flex items-center justify-between gap-3 py-2.5 text-[13px]"
-                >
-                    <div>
-                        <p class="font-semibold text-os-ink">{{ item.name }}</p>
-                        <p class="text-[12px] text-os-sub">
-                            {{ item.due_on }} · {{ item.direction }} ·
-                            {{ item.certainty }}
-                        </p>
-                    </div>
-                    <span
-                        class="shrink-0 font-bold"
-                        :class="
-                            item.direction === 'inflow'
-                                ? 'text-os-yoyu'
-                                : 'text-os-ink'
-                        "
-                    >
-                        {{ formatYen(item.remaining_minor) }}
-                    </span>
-                </li>
-            </ul>
+                {{ showBreakdown ? '計算の内訳を閉じる' : '計算の内訳を見る' }}
+            </button>
+            <dl
+                v-if="showBreakdown"
+                class="mt-3 grid gap-2 rounded-xl bg-os-yoyu-bg/70 p-3 text-[12px] sm:grid-cols-2"
+            >
+                <div class="flex justify-between gap-2">
+                    <dt class="text-os-sub">現在の資金</dt>
+                    <dd class="font-semibold">
+                        <MoneyAmount :amount-minor="margin.funds_minor" />
+                    </dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                    <dt class="text-os-sub">確定の入金予定</dt>
+                    <dd class="font-semibold">
+                        <MoneyAmount :amount-minor="margin.confirmed_income_minor" />
+                    </dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                    <dt class="text-os-sub">確定の支払い</dt>
+                    <dd class="font-semibold">
+                        <MoneyAmount :amount-minor="margin.confirmed_outflow_minor" />
+                    </dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                    <dt class="text-os-sub">見込み支出の予約</dt>
+                    <dd class="font-semibold">
+                        <MoneyAmount :amount-minor="margin.uncertain_reserve_minor" />
+                    </dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                    <dt class="text-os-sub">最低生活費の残り</dt>
+                    <dd class="font-semibold">
+                        <MoneyAmount :amount-minor="margin.living_reserve_minor" />
+                    </dd>
+                </div>
+                <div class="flex justify-between gap-2">
+                    <dt class="text-os-sub">安全資金</dt>
+                    <dd class="font-semibold">
+                        <MoneyAmount :amount-minor="margin.safety_buffer_minor" />
+                    </dd>
+                </div>
+            </dl>
         </section>
 
-        <section
-            v-if="margin.warnings.length > 0 || margin.missing_settings.length > 0"
-            class="rounded-[18px] border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
-        >
-            <h2 class="mb-3 text-sm font-bold text-os-ink">注意・不足設定</h2>
-            <ul class="space-y-1.5 text-[13px] text-os-sub">
-                <li
-                    v-for="setting in margin.missing_settings"
-                    :key="`missing-${setting}`"
-                >
-                    未設定: {{ setting }}
-                </li>
-                <li
-                    v-for="warning in margin.warnings"
-                    :key="`warn-${warning}`"
-                >
-                    {{ warning }}
-                </li>
-            </ul>
+        <!-- Summary row -->
+        <section class="grid gap-3 sm:grid-cols-3">
+            <MoneySummaryCard
+                label="現在の資金"
+                :amount-minor="funds_minor"
+                hint="口座残高の合計（カード枠は含みません）"
+            />
+            <MoneySummaryCard
+                label="今月の収入"
+                :amount-minor="monthSummary.income_minor"
+            />
+            <MoneySummaryCard
+                label="支払い予定"
+                :amount-minor="monthSummary.confirmed_outflow_minor"
+                :hint="
+                    isPositiveMinor(monthSummary.expected_outflow_minor)
+                        ? `見込み支出 ${formatYen(monthSummary.expected_outflow_minor)}`
+                        : null
+                "
+            />
         </section>
-    </div>
+
+        <section class="grid gap-3 sm:grid-cols-3">
+            <MoneySummaryCard
+                label="借入総残高"
+                :amount-minor="debt.outstanding_debt_minor"
+                emphasis="muted"
+            />
+            <MoneySummaryCard
+                label="毎月の返済額"
+                :amount-minor="debt.monthly_repayment_minor"
+                emphasis="muted"
+            />
+            <MoneySummaryCard
+                label="カード請求予定"
+                :amount-minor="debt.card_statement_minor"
+                emphasis="muted"
+                :hint="
+                    debt.credit_available_minor
+                        ? `信用枠の利用可能額 ${formatYen(debt.credit_available_minor)}（資金には加算していません）`
+                        : null
+                "
+            />
+        </section>
+
+        <CashflowTimeline :events="timeline" />
+
+        <div class="grid gap-4 lg:grid-cols-2">
+            <section
+                class="rounded-2xl border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
+            >
+                <h2 class="mb-3 text-sm font-bold text-os-ink">もうすぐ支払うもの</h2>
+                <p
+                    v-if="payments.length === 0"
+                    class="text-[13px] text-os-sub"
+                >
+                    直近の支払い予定はありません。
+                </p>
+                <ul
+                    v-else
+                    class="divide-y divide-os-line"
+                >
+                    <li
+                        v-for="payment in payments.slice(0, 6)"
+                        :key="payment.id"
+                        class="py-3"
+                    >
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <p class="truncate font-semibold text-os-ink">
+                                    {{ payment.name }}
+                                </p>
+                                <p class="text-[12px] text-os-sub">
+                                    {{ payment.due_on }}
+                                    <template v-if="payment.counterparty_name">
+                                        · {{ payment.counterparty_name }}
+                                    </template>
+                                </p>
+                                <p
+                                    v-if="payment.balance_after_minor"
+                                    class="text-[12px] text-os-faint"
+                                >
+                                    支払後残高
+                                    <MoneyAmount :amount-minor="payment.balance_after_minor" />
+                                </p>
+                            </div>
+                            <p class="shrink-0 text-right font-bold">
+                                <MoneyAmount :amount-minor="payment.remaining_minor" />
+                            </p>
+                        </div>
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                class="rounded-lg border border-os-line px-2.5 py-1.5 text-[12px] font-semibold text-os-sub hover:bg-os-yoyu-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                                @click="settlePayment(payment)"
+                            >
+                                支払い済みにする
+                            </button>
+                            <Link
+                                :href="`/yoyu/money/cashflows?highlight=${payment.id}`"
+                                class="rounded-lg border border-os-line px-2.5 py-1.5 text-[12px] font-semibold text-os-sub hover:bg-os-yoyu-soft"
+                            >
+                                詳細
+                            </Link>
+                            <Link
+                                v-if="payment.is_adjustable"
+                                :href="`/yoyu/money/simulations?from_cashflow=${payment.id}`"
+                                class="rounded-lg border border-os-line px-2.5 py-1.5 text-[12px] font-semibold text-os-yoyu hover:bg-os-yoyu-soft"
+                            >
+                                調整を比較
+                            </Link>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <section
+                class="rounded-2xl border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
+            >
+                <h2 class="mb-3 text-sm font-bold text-os-ink">今月の注意点</h2>
+                <ul class="space-y-2 text-[13px] text-os-sub">
+                    <li v-if="hasShortfall">
+                        <MoneyStatusBadge
+                            label="不足見込み"
+                            tone="caution"
+                        />
+                        <span class="ml-2">
+                            今月は
+                            <MoneyAmount :amount-minor="margin.shortfall_minor" />
+                            不足する見込みです。支払いの調整や収入の確認を検討できます。
+                        </span>
+                    </li>
+                    <li v-if="first_shortfall_date">
+                        <MoneyStatusBadge
+                            label="残高推移"
+                            tone="caution"
+                        />
+                        <span class="ml-2">
+                            {{ first_shortfall_date }} 時点で残高が不足する見込みです。
+                        </span>
+                    </li>
+                    <li v-if="!margin.is_complete">
+                        <MoneyStatusBadge
+                            label="設定不足"
+                            tone="info"
+                        />
+                        <span class="ml-2">
+                            最低生活費または安全資金が未設定のため、断定表示はしていません。
+                        </span>
+                    </li>
+                    <li v-if="!hasShortfall && margin.is_complete && !first_shortfall_date">
+                        現在の登録内容では、目立った不足見込みはありません。
+                    </li>
+                    <li>
+                        <Link
+                            href="/yoyu/money/simulations"
+                            class="font-semibold text-os-yoyu hover:underline"
+                        >
+                            シミュレーターで比較する →
+                        </Link>
+                    </li>
+                </ul>
+            </section>
+        </div>
+
+        <AdjustmentCandidateCard :candidates="candidates" />
+    </MoneyPageShell>
 </template>

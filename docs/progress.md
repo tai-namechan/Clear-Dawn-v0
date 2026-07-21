@@ -1,6 +1,6 @@
 # 実装進捗（v0）
 
-> 最終更新: 2026-07-18  
+> 最終更新: 2026-07-21  
 > 正: [roadmap.md](./roadmap.md) のマイルストーン定義。本ファイルは **実装の現在地** を可視化する。
 
 ## セルフマネジメントOS拡張（2026-07-16〜 / ADR-0011・0012）
@@ -53,6 +53,18 @@ Phase 2〜4 の縦断（2026-07-17 追加）:
 | SM-D08 | today-ops 表示順の残り（未入力測定・受診依頼リスト） | 作戦優先 UI + コンディション/食事リンクまで | Phase 3〜4 仕上げ | today-ops.md 表示順 6–7 | `GetTodayOpsQuery` に stale metrics / H7 visit list を追加 |
 
 各マイルストーンは「Route → Controller → Query/Service → Vue → テスト」の縦断で完結させる。
+
+## ヨユウ「お金の余裕」UI再設計（2026-07-21）
+
+| 項目 | 状態 | 根拠 |
+|---|---|---|
+| 5分類ナビ（ホーム/今月/資産・返済/明細/計画） | **done** | `MoneyPageShell` / `MoneyPrimaryNavigation` / ADR-0013 |
+| ホーム（安全に使える金額・残高タイムライン・候補） | **done** | `MoneyProjectionQuery` + `Dashboard.vue` |
+| 初回セットアップ進捗（既存データ導出） | **done** | `MoneySetupProgressService`（完了フラグなし） |
+| 既存URL互換 | **done** | ルート維持、内部タブ選択 |
+| Feature テスト | **done** | `MoneyUiRebuildTest` ほか Money 系 50件 |
+
+仕様の正: [yoyu-money-margin-design.md](./product/yoyu-money-margin-design.md) / [yoyu-money-ui-rebuild.md](./product/yoyu-money-ui-rebuild.md)
 
 ## サマリ
 

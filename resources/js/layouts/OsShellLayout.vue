@@ -101,7 +101,14 @@ const titleClass = computed(() => {
 
             <AiUsageBanner />
 
-            <main class="mx-auto w-full max-w-[1060px] flex-1 px-4 py-5 md:px-6 md:py-6">
+            <main
+                class="mx-auto w-full flex-1 px-4 py-5 md:px-6 md:py-6"
+                :class="
+                    page.url.startsWith('/yoyu/money')
+                        ? 'max-w-[1360px]'
+                        : 'max-w-[1060px]'
+                "
+            >
                 <slot />
             </main>
         </AppContent>

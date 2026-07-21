@@ -16,7 +16,7 @@ AI 開発支援（Laravel Boost）は [dev/laravel-boost.md](./dev/laravel-boost
 | Seed K | SK1〜 | Personal OS 切替 → キオク P0/P1 → ヨユウ → Recall | SK1 in progress |
 | Phase 2 | M3 | ルーティン / トレーニング、実行履歴 UI（/history） | done |
 | Phase 2.5 | M4 | 記録（体重・睡眠・筋力・野球）、グラフ、食事記録（M4b） | partial |
-| Phase 3 | M5 | Finance | not_started |
+| Phase 3 | M5 | Finance（旧称。実装はヨユウ「お金の余裕」として進行） | partial（UI再設計済・ADR-0013） |
 | Phase 3.5 | M6 | 動画 | partial |
 | Phase 4 | M7 | AI 支援 | not_started |
 | Phase 4.5 | M8 | Export API、v1 移行リハーサル | not_started |
