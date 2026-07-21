@@ -81,7 +81,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="mx-auto w-full max-w-[1280px] space-y-4 pb-20 md:pb-6">
+    <div class="mx-auto w-full space-y-4 pb-20 md:pb-6">
         <Head :title="pageTitle" />
 
         <header class="space-y-3">
@@ -184,7 +184,7 @@ onUnmounted(() => {
             class="fixed inset-x-0 bottom-0 z-40 border-t border-os-line bg-os-yoyu-bg/95 backdrop-blur-sm md:hidden"
         >
             <ul
-                class="mx-auto flex max-w-[1280px] items-stretch justify-around px-1 py-1"
+                class="mx-auto flex max-w-[1060px] items-stretch justify-around px-1 py-1"
             >
                 <li
                     v-for="item in moneyPrimaryNav"

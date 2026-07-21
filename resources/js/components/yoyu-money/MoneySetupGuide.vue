@@ -45,40 +45,44 @@ function nextHref(): string {
             }}/{{ requiredCount }}）
         </p>
 
-        <ol class="mt-4 space-y-3">
+        <ol class="mt-4 max-w-xl space-y-2.5">
             <li
                 v-for="(step, index) in steps"
                 :key="step.key"
-                class="flex flex-wrap items-start justify-between gap-2 rounded-xl bg-os-yoyu-bg/70 px-3 py-2.5"
+                class="rounded-xl bg-os-yoyu-bg/70 px-3 py-2.5"
             >
-                <div class="min-w-0 flex-1">
-                    <p class="text-[13px] font-semibold text-os-ink">
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <p class="min-w-0 text-[13px] font-semibold text-os-ink">
                         {{ index + 1 }}. {{ step.label }}
                     </p>
-                    <p class="text-[12px] text-os-sub">
-                        {{ step.description }}
-                    </p>
+                    <div class="flex items-center gap-2">
+                        <MoneyStatusBadge
+                            v-if="step.status === 'complete'"
+                            label="完了"
+                            tone="positive"
+                        />
+                        <MoneyStatusBadge
+                            v-else-if="step.status === 'optional'"
+                            label="任意"
+                            tone="info"
+                        />
+                        <MoneyStatusBadge
+                            v-else
+                            label="未完了"
+                            tone="caution"
+                        />
+                        <Link
+                            v-if="step.status !== 'complete'"
+                            :href="step.href"
+                            class="text-[12px] font-semibold text-os-yoyu hover:underline focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
+                        >
+                            設定
+                        </Link>
+                    </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <MoneyStatusBadge
-                        v-if="step.status === 'complete'"
-                        label="完了"
-                        tone="positive"
-                    />
-                    <MoneyStatusBadge
-                        v-else-if="step.status === 'optional'"
-                        label="任意"
-                        tone="info"
-                    />
-                    <MoneyStatusBadge v-else label="未完了" tone="caution" />
-                    <Link
-                        v-if="step.status !== 'complete'"
-                        :href="step.href"
-                        class="text-[12px] font-semibold text-os-yoyu hover:underline focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
-                    >
-                        設定
-                    </Link>
-                </div>
+                <p class="mt-1 text-[12px] text-os-sub">
+                    {{ step.description }}
+                </p>
             </li>
         </ol>
 

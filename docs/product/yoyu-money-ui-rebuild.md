@@ -25,5 +25,6 @@
 
 - Presenter相当のデータは `MoneyProjectionQuery` / `MoneySetupProgressService` で整形
 - フロント共通: `resources/js/components/yoyu-money/*`
+- 本文幅は他ヨユウ画面と同じ `max-w-[1060px]`（疎なブロックを無理に広げない）
 - 金額は minor 文字列 + BigInt 表示（浮動小数禁止）
 - Vitest は未導入のため Node test でナビIAを検証
