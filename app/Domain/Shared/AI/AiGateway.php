@@ -24,6 +24,7 @@ final class AiGateway
      * ボディへはパススルーされ、課金ライフサイクル（reserve→settle/release）は共通。
      *
      * @param  list<array{role: string, content: string|list<array<string, mixed>>}>  $messages
+     * @param  list<array<string, mixed>>  $tools
      * @return array{text: string, model: string, input_tokens: int, output_tokens: int, usage_request_id: string}
      */
     public function complete(
@@ -33,6 +34,7 @@ final class AiGateway
         string $tier = 'cheap',
         int $maxTokens = 1024,
         array $messages = [],
+        array $tools = [],
     ): array {
         $apiKey = config('ai.anthropic.api_key');
         if (! is_string($apiKey) || $apiKey === '') {
@@ -58,7 +60,12 @@ final class AiGateway
             $body['system'] = $prompt->fixedPrefix;
         }
 
-        $estimated = $this->costs->estimateReservation($model, $body, $maxTokens);
+        if ($tools !== []) {
+            $body['tools'] = $tools;
+        }
+
+        $inputBuffer = $this->webSearchInputBuffer($tools);
+        $estimated = $this->costs->estimateReservation($model, $body, $maxTokens, $inputBuffer);
         $usageRequest = $this->ledger->reserve($userId, $feature, $model, $estimated);
         $httpAttempted = false;
 
@@ -254,6 +261,20 @@ final class AiGateway
         }
 
         return 'pre_http_failure';
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $tools
+     */
+    private function webSearchInputBuffer(array $tools): int
+    {
+        foreach ($tools as $tool) {
+            if (($tool['type'] ?? '') === 'web_search_20250305') {
+                return 30_000;
+            }
+        }
+
+        return 0;
     }
 
     private function safeRelease(AiUsageRequest $usageRequest, string $failureCode): void
