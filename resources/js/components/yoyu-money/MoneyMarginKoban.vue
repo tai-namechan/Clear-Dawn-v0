@@ -58,18 +58,18 @@ const resolvedCaption = computed(() => {
     }
 
     if (props.mood === 'incomplete') {
-        return '小判箱はまだ空です。口座と収支を入れると、余裕が枚数で見えてきます。';
+        return 'まだ判断できません。口座と収支を入れると、今月の余裕が見えてきます。';
     }
 
     if (props.mood === 'shortfall') {
-        return '箱の中は小判1枚。いまの計算では余裕が足りていません。';
+        return '今月は、まだ余裕がありません。';
     }
 
     if (coinCount.value >= 5) {
-        return '箱に小判が5枚。余裕に厚みがあります。';
+        return '今月は、まだ十分に余裕があります。';
     }
 
-    return '箱に小判が3枚。いまの余裕です。';
+    return '今月は、まだ余裕があります。';
 });
 
 const statusLabel = computed(() => {
