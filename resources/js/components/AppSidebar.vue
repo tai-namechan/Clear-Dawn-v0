@@ -99,7 +99,7 @@ function isNavActive(item: CdNavItem): boolean {
             <Link
                 :href="dashboard()"
                 aria-label="Clear Dawn ダッシュボード"
-                class="mx-auto mt-5 flex items-baseline font-serif text-white group-data-[collapsible=icon]:mt-1 landscape-compact:mt-2"
+                class="mx-auto mt-8 flex items-baseline font-serif text-white group-data-[collapsible=icon]:mt-1 landscape-compact:mt-4"
             >
                 <span
                     class="text-6xl leading-none group-data-[collapsible=icon]:text-2xl landscape-compact:text-4xl"
@@ -111,18 +111,18 @@ function isNavActive(item: CdNavItem): boolean {
                 >
             </Link>
             <span
-                class="mt-1 font-serif text-[0.7rem] tracking-[0.32em] text-white/70 group-data-[collapsible=icon]:hidden landscape-compact:tracking-[0.24em]"
+                class="mt-3 font-serif text-[0.7rem] tracking-[0.32em] text-white/70 group-data-[collapsible=icon]:hidden landscape-compact:mt-2 landscape-compact:tracking-[0.24em]"
             >
                 Clear Dawn
             </span>
         </SidebarHeader>
 
         <SidebarContent
-            class="relative z-10 overflow-visible landscape-compact:overflow-y-auto"
+            class="relative z-10 justify-center overflow-visible landscape-compact:justify-start landscape-compact:overflow-y-auto"
         >
             <nav
                 aria-label="メインメニュー"
-                class="mt-24 flex flex-col items-center gap-3 group-data-[collapsible=icon]:mt-8 group-data-[collapsible=icon]:gap-5 landscape-compact:mt-6 landscape-compact:gap-1.5"
+                class="mt-8 flex flex-col items-center gap-5 group-data-[collapsible=icon]:mt-8 group-data-[collapsible=icon]:gap-5 landscape-compact:mt-10 landscape-compact:gap-2"
             >
                 <template v-for="item in navItems" :key="item.title">
                     <Link
