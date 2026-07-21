@@ -696,8 +696,8 @@ function applyChartFilter(): void {
                         @click="openPhotoEstimate"
                     >
                         <Camera :size="18" :stroke-width="1.6" class="text-primary" />
-                        <p class="mt-3 font-sans text-sm font-semibold text-cd-ink">料理を撮影</p>
-                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">写真からAIが栄養推定</p>
+                        <p class="mt-3 font-sans text-sm font-semibold text-cd-ink">料理の写真</p>
+                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">撮影・選択からAIが栄養推定</p>
                     </button>
                     <button
                         type="button"
