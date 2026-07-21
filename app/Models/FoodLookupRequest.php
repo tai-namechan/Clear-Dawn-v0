@@ -33,6 +33,7 @@ use Illuminate\Support\Carbon;
     'source',
     'result',
     'error_code',
+    'meta',
     'temp_image_path',
     'expires_at',
 ])]
@@ -49,6 +50,7 @@ class FoodLookupRequest extends Model
         return [
             'status' => FoodLookupStatus::class,
             'result' => 'array',
+            'meta' => 'array',
             'expires_at' => 'datetime',
         ];
     }

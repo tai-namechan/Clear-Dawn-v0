@@ -15,6 +15,7 @@ use App\Http\Controllers\NutritionGoalController;
 use App\Http\Controllers\ProgramController;
 use App\Http\Controllers\ProgramPlanController;
 use App\Http\Controllers\RecommendationDecisionController;
+use App\Http\Controllers\RestaurantLookupController;
 use App\Http\Controllers\RoutineBlockLogController;
 use App\Http\Controllers\RoutineController;
 use App\Http\Controllers\RoutineItemController;
@@ -189,6 +190,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:10,1')
         ->name('meals.label-ocr.store');
     Route::post('meals/barcode-lookup/{lookupId}/confirm', [FoodBarcodeLookupController::class, 'confirm'])->name('meals.barcode-lookup.confirm');
+    Route::post('meals/photo-estimate', [RestaurantLookupController::class, 'storePhotoEstimate'])
+        ->middleware('throttle:10,1')
+        ->name('meals.photo-estimate.store');
+    Route::post('meals/menu-estimate', [RestaurantLookupController::class, 'storeMenuEstimate'])
+        ->middleware('throttle:10,1')
+        ->name('meals.menu-estimate.store');
     Route::put('meals/goals', [NutritionGoalController::class, 'upsert'])->name('meals.goals.upsert');
     Route::patch('meals/{mealEntry}', [MealEntryController::class, 'update'])->name('meals.update');
     Route::delete('meals/{mealEntry}', [MealEntryController::class, 'destroy'])->name('meals.destroy');
