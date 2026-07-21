@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { Check, Search } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
-import BlockTargetGrid, {
-    type BlockTargetRow,
-} from '@/components/routine/BlockTargetGrid.vue';
+import InputError from '@/components/InputError.vue';
+import BlockTargetGrid from '@/components/routine/BlockTargetGrid.vue';
+import type { BlockTargetRow } from '@/components/routine/BlockTargetGrid.vue';
 import ChipPicker from '@/components/routine/ChipPicker.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,7 +22,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import InputError from '@/components/InputError.vue';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
 import { fetchVideosFromPage } from '@/lib/fetchVideos';
 import {
@@ -109,6 +109,8 @@ const isEditing = computed(() => props.editingStep !== null);
 
 const mode = ref<'pick' | 'create'>('create');
 const selectedItemId = ref('');
+const itemSearch = ref('');
+const itemCategoryFilter = ref<RoutineItemCategory | 'all'>('all');
 const newItemName = ref('');
 const stepTitle = ref('');
 const newItemCategory = ref<RoutineItemCategory>('strength');
@@ -137,6 +139,7 @@ watch(
     (errors) => {
         if (errors) {
             fieldErrors.value = { ...errors };
+
             if (errors.name) {
                 scrollToNameField();
             }
@@ -178,36 +181,47 @@ function applyApiErrors(error: unknown): void {
         if (body.errors.name?.[0]) {
             next.name = body.errors.name[0];
         }
+
         if (body.errors.routine_item_id?.[0]) {
             next.name = body.errors.routine_item_id[0];
         }
+
         if (body.errors.title?.[0]) {
             next.title = body.errors.title[0];
         }
+
         if (body.errors.purpose?.[0]) {
             next.purpose = body.errors.purpose[0];
         }
+
         if (body.errors.target_blocks?.[0]) {
             next.target_blocks = body.errors.target_blocks[0];
         }
+
         if (body.errors.rest_seconds?.[0]) {
             next.rest_seconds = body.errors.rest_seconds[0];
         }
+
         if (body.errors.target_amount?.[0]) {
             next.target_amount = body.errors.target_amount[0];
         }
+
         if (body.errors.target_load?.[0]) {
             next.target_load = body.errors.target_load[0];
         }
+
         if (body.errors.load_unit?.[0]) {
             next.load_unit = body.errors.load_unit[0];
         }
+
         if (body.errors.amount_unit?.[0]) {
             next.amount_unit = body.errors.amount_unit[0];
         }
+
         if (body.errors.video_id?.[0]) {
             next.general = body.errors.video_id[0];
         }
+
         if (body.errors.note?.[0]) {
             next.general = body.errors.note[0];
         }
@@ -240,6 +254,20 @@ const selectedItem = computed(
         props.routineItems.find((item) => item.id === selectedItemId.value) ??
         null,
 );
+
+const filteredRoutineItems = computed(() => {
+    const query = itemSearch.value.trim().toLocaleLowerCase('ja');
+
+    return props.routineItems.filter((item) => {
+        const matchesCategory =
+            itemCategoryFilter.value === 'all' ||
+            item.category === itemCategoryFilter.value;
+        const matchesQuery =
+            !query || item.name.toLocaleLowerCase('ja').includes(query);
+
+        return matchesCategory && matchesQuery;
+    });
+});
 
 const trackingTypeModel = computed<TrackingType>({
     get() {
@@ -398,6 +426,8 @@ watch(
         }
 
         clearFieldErrors();
+        itemSearch.value = '';
+        itemCategoryFilter.value = 'all';
 
         const step = props.editingStep;
 
@@ -749,30 +779,95 @@ defineExpose({
                             :aria-invalid="Boolean(fieldErrors.name)"
                             @input="fieldErrors.name = undefined"
                         />
-                        <Select
-                            v-else
-                            v-model="selectedItemId"
-                            :disabled="
-                                saving ||
-                                !routineItems.length ||
-                                isEditing
-                            "
-                        >
-                            <SelectTrigger
-                                :aria-invalid="Boolean(fieldErrors.name)"
-                            >
-                                <SelectValue placeholder="既存の実施項目を選択" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem
-                                    v-for="item in routineItems"
-                                    :key="item.id"
-                                    :value="item.id"
+                        <div v-else-if="isEditing && selectedItem" class="rounded-xl border border-primary/25 bg-primary/5 px-3 py-3">
+                            <p class="font-sans text-sm font-semibold text-cd-ink">
+                                {{ selectedItem.name }}
+                            </p>
+                            <p class="mt-0.5 font-sans text-xs text-cd-ink-muted">
+                                {{ routineItemCategoryLabels[selectedItem.category] }}
+                            </p>
+                        </div>
+                        <div v-else class="space-y-3">
+                            <div class="relative">
+                                <Search
+                                    :size="16"
+                                    :stroke-width="1.7"
+                                    class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-cd-ink-muted"
+                                />
+                                <Input
+                                    v-model="itemSearch"
+                                    class="pl-9"
+                                    placeholder="実施項目を検索"
+                                    :disabled="saving"
+                                />
+                            </div>
+
+                            <div class="flex gap-1.5 overflow-x-auto pb-1">
+                                <button
+                                    type="button"
+                                    class="shrink-0 rounded-full border px-2.5 py-1 font-sans text-xs transition-colors"
+                                    :class="
+                                        itemCategoryFilter === 'all'
+                                            ? 'border-primary bg-primary text-primary-foreground'
+                                            : 'border-cd-line bg-white text-cd-ink-muted hover:border-primary/40'
+                                    "
+                                    @click="itemCategoryFilter = 'all'"
                                 >
-                                    {{ item.name }}
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
+                                    すべて
+                                </button>
+                                <button
+                                    v-for="option in categoryOptions"
+                                    :key="option.value"
+                                    type="button"
+                                    class="shrink-0 rounded-full border px-2.5 py-1 font-sans text-xs transition-colors"
+                                    :class="
+                                        itemCategoryFilter === option.value
+                                            ? 'border-primary bg-primary text-primary-foreground'
+                                            : 'border-cd-line bg-white text-cd-ink-muted hover:border-primary/40'
+                                    "
+                                    @click="itemCategoryFilter = option.value"
+                                >
+                                    {{ option.label }}
+                                </button>
+                            </div>
+
+                            <div class="max-h-56 space-y-1.5 overflow-y-auto rounded-xl border border-cd-line bg-white/50 p-2">
+                                <button
+                                    v-for="item in filteredRoutineItems"
+                                    :key="item.id"
+                                    type="button"
+                                    class="flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors"
+                                    :class="
+                                        selectedItemId === item.id
+                                            ? 'border-primary/50 bg-primary/8'
+                                            : 'border-transparent hover:border-cd-line hover:bg-white'
+                                    "
+                                    :disabled="saving"
+                                    @click="selectedItemId = item.id"
+                                >
+                                    <span class="min-w-0">
+                                        <span class="block truncate font-sans text-sm font-medium text-cd-ink">
+                                            {{ item.name }}
+                                        </span>
+                                        <span class="mt-0.5 block font-sans text-xs text-cd-ink-muted">
+                                            {{ routineItemCategoryLabels[item.category] }}
+                                        </span>
+                                    </span>
+                                    <Check
+                                        v-if="selectedItemId === item.id"
+                                        :size="17"
+                                        :stroke-width="2"
+                                        class="shrink-0 text-primary"
+                                    />
+                                </button>
+                                <p
+                                    v-if="filteredRoutineItems.length === 0"
+                                    class="px-3 py-7 text-center font-sans text-sm text-cd-ink-muted"
+                                >
+                                    条件に合う実施項目がありません。
+                                </p>
+                            </div>
+                        </div>
                         <p class="font-sans text-xs text-cd-ink-muted">
                             カタログ名です。例: WGS / カノン Aパート / AWS IAM章 /
                             スクワット
