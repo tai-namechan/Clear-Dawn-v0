@@ -62,11 +62,11 @@ const resolvedCaption = computed(() => {
     }
 
     if (props.mood === 'shortfall') {
-        return '今月は、まだ余裕がありません。';
+        return '今月は、余裕がありません。';
     }
 
     if (coinCount.value >= 5) {
-        return '今月は、まだ十分に余裕があります。';
+        return '今月は、十分に余裕があります。';
     }
 
     return '今月は、まだ余裕があります。';
