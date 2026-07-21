@@ -5,8 +5,11 @@ namespace App\Domain\Kioku\Services;
 use App\Domain\Kioku\KiokuContextItem;
 use App\Domain\Kioku\Models\Memory;
 use App\Domain\Kioku\Models\MemoryLink;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Retrieval for AI-facing memory context
@@ -25,6 +28,12 @@ final class KiokuContextBuilder
     public const DEFAULT_MAX_CHARS = 4000;
 
     public const CANDIDATE_LIMIT = 50;
+
+    public const MAX_QUERY_LENGTH = 200;
+
+    public const MAX_TERMS = 8;
+
+    public const CACHE_TTL_SECONDS = 120;
 
     private const SCORE_TAG_MATCH = 8;
 
@@ -53,21 +62,36 @@ final class KiokuContextBuilder
         int $topK = self::DEFAULT_TOP_K,
         int $maxChars = self::DEFAULT_MAX_CHARS,
     ): Collection {
+        $startTime = hrtime(true);
+
         $tags = $this->tagNormalizer->normalize($tags);
         $terms = $this->terms($query);
         $linkedIds = $this->linkedIds($userId, $seedMemoryIds);
 
         if ($terms === [] && $tags === [] && $linkedIds === []) {
+            $this->logMetrics($userId, 0, 0, 0, $startTime, true);
+
             return collect();
         }
 
+        $cacheKey = $this->cacheKey($userId, $terms, $tags, $seedMemoryIds, $topK, $maxChars);
+
+        if ($cacheKey !== null) {
+            $cached = Cache::get($cacheKey);
+            if ($cached instanceof Collection) {
+                $this->logMetrics($userId, $cached->count(), $cached->count(), 0, $startTime, true);
+
+                return $cached;
+            }
+        }
+
         $candidates = $this->candidates($userId, $terms, $tags, $linkedIds, $seedMemoryIds);
+        $candidateCount = $candidates->count();
 
         $scored = $candidates
             ->map(fn (Memory $memory): KiokuContextItem => $this->scoreMemory($memory, $terms, $tags, $linkedIds))
             ->filter(fn (KiokuContextItem $item): bool => $item->score > 0)
             ->sort(function (KiokuContextItem $a, KiokuContextItem $b): int {
-                // Tie-break: score DESC → importance DESC → captured_at DESC → id ASC
                 if ($a->score !== $b->score) {
                     return $b->score <=> $a->score;
                 }
@@ -94,8 +118,6 @@ final class KiokuContextBuilder
             }
 
             $chars = $item->chars();
-            // Skip an oversized candidate and keep looking for a later one
-            // that still fits the remaining budget (do not drop it via break).
             if ($usedChars + $chars > $maxChars) {
                 continue;
             }
@@ -104,7 +126,15 @@ final class KiokuContextBuilder
             $selected[] = $item;
         }
 
-        return collect($selected);
+        $result = collect($selected);
+
+        if ($cacheKey !== null) {
+            Cache::put($cacheKey, $result, self::CACHE_TTL_SECONDS);
+        }
+
+        $this->logMetrics($userId, $candidateCount, count($selected), (hrtime(true) - $startTime) / 1e6, $startTime, false);
+
+        return $result;
     }
 
     /**
@@ -200,25 +230,63 @@ final class KiokuContextBuilder
     }
 
     /**
-     * Whitespace-delimited terms, same premise as KiokuSearchService — no
-     * new tokenizer dependency; tag matches carry the strong signal.
+     * Whitespace-delimited terms with length/count caps.
      *
      * @return list<string>
      */
     private function terms(string $query): array
     {
+        $normalized = mb_substr(trim($query), 0, self::MAX_QUERY_LENGTH);
         $terms = [];
 
-        foreach (preg_split('/[\s　]+/u', trim($query)) ?: [] as $rawTerm) {
+        foreach (preg_split('/[\s　]+/u', $normalized) ?: [] as $rawTerm) {
             $term = trim((string) $rawTerm);
             if ($term === '' || in_array($term, $terms, true)) {
                 continue;
             }
 
             $terms[] = $term;
+
+            if (count($terms) >= self::MAX_TERMS) {
+                break;
+            }
         }
 
         return $terms;
+    }
+
+    /**
+     * @param  list<string>  $terms
+     * @param  list<string>  $tags
+     * @param  list<string>  $seedMemoryIds
+     */
+    private function cacheKey(int $userId, array $terms, array $tags, array $seedMemoryIds, int $topK, int $maxChars): ?string
+    {
+        if ($seedMemoryIds !== []) {
+            return null;
+        }
+
+        $version = (int) (User::query()->whereKey($userId)->value('memory_version') ?? 0);
+
+        $queryHash = hash('xxh3', implode("\0", $terms));
+        $filtersHash = hash('xxh3', json_encode(['tags' => $tags, 'topK' => $topK, 'maxChars' => $maxChars]));
+
+        return "recall:v{$version}:{$userId}:{$queryHash}:{$filtersHash}";
+    }
+
+    private function logMetrics(int $userId, int $candidateCount, int $selectedCount, float $elapsedMs, int $startTime, bool $cached): void
+    {
+        try {
+            Log::channel('recall')->info('recall_query', [
+                'user_id' => $userId,
+                'candidates' => $candidateCount,
+                'selected' => $selectedCount,
+                'elapsed_ms' => round($cached ? (hrtime(true) - $startTime) / 1e6 : $elapsedMs, 2),
+                'cached' => $cached,
+            ]);
+        } catch (\Throwable) {
+            // Metrics logging must never break retrieval
+        }
     }
 
     /**

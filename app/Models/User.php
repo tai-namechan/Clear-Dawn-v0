@@ -26,6 +26,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $two_factor_confirmed_at
  * @property string|null $remember_token
  * @property string|null $timezone
+ * @property int $memory_version
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
