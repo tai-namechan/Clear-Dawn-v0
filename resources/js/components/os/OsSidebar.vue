@@ -165,13 +165,14 @@ const idleClass = computed(() =>
             />
         </div>
 
-        <!-- Branding + tagline live in the sidebar image; reserve space so nav clears them. -->
-        <SidebarHeader class="relative z-10 min-h-40 group-data-[collapsible=icon]:min-h-8" />
+        <!-- Branding + tagline live in the sidebar image; reserve space so nav clears them.
+             Keep overflow-y-auto so the last item (e.g. お金) stays reachable on short viewports. -->
+        <SidebarHeader class="relative z-10 min-h-48 group-data-[collapsible=icon]:min-h-8" />
 
         <SidebarContent class="relative z-10 overflow-y-auto overflow-x-hidden">
             <nav
                 aria-label="プロダクトメニュー"
-                class="mt-8 flex flex-col items-center gap-3 group-data-[collapsible=icon]:mt-4 group-data-[collapsible=icon]:gap-4"
+                class="mt-14 flex flex-col items-center gap-3 group-data-[collapsible=icon]:mt-4 group-data-[collapsible=icon]:gap-4"
             >
                 <Link
                     v-for="item in navItems"
