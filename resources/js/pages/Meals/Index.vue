@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
+    Camera,
     Copy,
     Pencil,
     Plus,
     ScanLine,
     Search,
+    Store,
     Trash2,
     UtensilsCrossed,
 } from '@lucide/vue';
 import type { EChartsCoreOption } from 'echarts/core';
 import { computed, ref, watch } from 'vue';
 import BarcodeLookupModal from '@/components/BarcodeLookupModal.vue';
+import RestaurantLookupModal from '@/components/RestaurantLookupModal.vue';
 import BaseChart from '@/components/charts/BaseChart.vue';
 import DateNavigator from '@/components/DateNavigator.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
@@ -90,6 +93,8 @@ const entryForm = ref({
 });
 
 const showBarcodeModal = ref(false);
+const showRestaurantModal = ref(false);
+const restaurantInitialStep = ref<'photo_capture' | 'menu_input' | undefined>(undefined);
 
 const filterFrom = ref(props.from);
 const filterTo = ref(props.to);
@@ -334,6 +339,21 @@ function openUsualMeals(): void {
 
 function openBarcodeScanner(): void {
     showBarcodeModal.value = true;
+}
+
+function openPhotoEstimate(): void {
+    restaurantInitialStep.value = 'photo_capture';
+    showRestaurantModal.value = true;
+}
+
+function openMenuEstimate(): void {
+    restaurantInitialStep.value = 'menu_input';
+    showRestaurantModal.value = true;
+}
+
+function onRestaurantRegistered(food: FoodItem): void {
+    message.value = `「${food.name}」をマイ食品に登録しました。`;
+    router.reload({ only: ['sections', 'totals', 'chartPoints', 'goal'] });
 }
 
 function onBarcodeRegistered(food: FoodItem): void {
@@ -651,7 +671,7 @@ function applyChartFilter(): void {
                     </div>
                 </PageSectionCard>
 
-                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     <button
                         type="button"
                         class="rounded-2xl border border-cd-line bg-cd-surface px-4 py-4 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
@@ -669,6 +689,24 @@ function applyChartFilter(): void {
                         <ScanLine :size="18" :stroke-width="1.6" class="text-primary" />
                         <p class="mt-3 font-sans text-sm font-semibold text-cd-ink">バーコード</p>
                         <p class="mt-1 font-sans text-xs text-cd-ink-muted">スキャンして食品を登録</p>
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-2xl border border-cd-line bg-cd-surface px-4 py-4 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+                        @click="openPhotoEstimate"
+                    >
+                        <Camera :size="18" :stroke-width="1.6" class="text-primary" />
+                        <p class="mt-3 font-sans text-sm font-semibold text-cd-ink">料理を撮影</p>
+                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">写真からAIが栄養推定</p>
+                    </button>
+                    <button
+                        type="button"
+                        class="rounded-2xl border border-cd-line bg-cd-surface px-4 py-4 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
+                        @click="openMenuEstimate"
+                    >
+                        <Store :size="18" :stroke-width="1.6" class="text-primary" />
+                        <p class="mt-3 font-sans text-sm font-semibold text-cd-ink">外食メニュー</p>
+                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">店名とメニュー名で栄養推定</p>
                     </button>
                     <button
                         type="button"
@@ -952,6 +990,12 @@ function applyChartFilter(): void {
         v-model:open="showBarcodeModal"
         @food-registered="onBarcodeRegistered"
         @food-hit="onBarcodeHit"
+    />
+
+    <RestaurantLookupModal
+        v-model:open="showRestaurantModal"
+        :initial-step="restaurantInitialStep"
+        @food-registered="onRestaurantRegistered"
     />
 
     <Dialog :open="showEntryModal" @update:open="(v) => (showEntryModal = v)">

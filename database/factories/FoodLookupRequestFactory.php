@@ -74,4 +74,29 @@ class FoodLookupRequestFactory extends Factory
             'barcode_type' => null,
         ]);
     }
+
+    public function aiPending(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'barcode' => null,
+            'barcode_type' => null,
+            'status' => FoodLookupStatus::AiPending,
+            'source' => null,
+            'result' => null,
+        ]);
+    }
+
+    public function photoEstimate(): static
+    {
+        return $this->aiPending()->state(fn (array $attributes) => [
+            'temp_image_path' => 'food-photo-estimate/1/'.fake()->uuid().'.jpg',
+        ]);
+    }
+
+    public function menuEstimate(): static
+    {
+        return $this->aiPending()->state(fn (array $attributes) => [
+            'meta' => ['store_name' => 'テスト屋', 'menu_name' => 'テストラーメン'],
+        ]);
+    }
 }
