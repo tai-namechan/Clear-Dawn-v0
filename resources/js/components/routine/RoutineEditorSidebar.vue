@@ -50,7 +50,7 @@ const helpLines = computed(() => {
     }
 
     return [
-        'いまは③です。「今日やるに登録して進む」で今日の予定に載せます。',
+        'いまは③です。「今日/作戦に登録して進む」で今日の予定に載せます。',
         `現在 ${stepCount.value} ステップです。同じルーティンを複数回登録しても構いません。`,
     ];
 });
@@ -75,7 +75,7 @@ const helpLines = computed(() => {
                             {{
                                 applyingToToday
                                     ? '登録中…'
-                                    : '今日やるに登録して進む'
+                                    : '今日/作戦に登録して進む'
                             }}
                         </span>
                         <ChevronRight :size="14" :stroke-width="1.6" />
@@ -164,7 +164,7 @@ const helpLines = computed(() => {
                         'font-medium text-cd-ink': flowPhase === 'ready',
                     }"
                 >
-                    ③ 今日やるに登録
+                    ③ 今日/作戦に登録
                 </li>
             </ol>
             <p

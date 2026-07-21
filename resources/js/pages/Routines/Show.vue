@@ -81,7 +81,7 @@ watch(
 const steps = computed(() => ensureArray(props.routine.steps));
 const isCreateMode = computed(() => props.isCreating || props.routine.id === null);
 
-/** ①名前 → ②ステップ → ③今日やる */
+/** ①名前 → ②ステップ → ③今日/作戦 */
 const flowPhase = computed<'name' | 'steps' | 'ready'>(() => {
     if (isCreateMode.value) {
         return 'name';
@@ -107,7 +107,7 @@ const pageSubtitle = computed(() => {
         return '② 「ステップを追加」でやることを登録し、ダイアログ内で保存します。';
     }
 
-    return '③ ステップが揃ったら「今日やる」へ進めます。基本情報の変更もこの画面で保存できます。';
+    return '③ ステップが揃ったら「今日/作戦」へ進めます。基本情報の変更もこの画面で保存できます。';
 });
 
 const documentTitle = computed(() =>
@@ -212,8 +212,8 @@ function onStepDialogOpen(open: boolean): void {
 }
 
 /**
- * 一覧の「今日やる」と同じく、今日のプランを作成してから /today へ進む。
- * 遷移だけの Link だと登録されず空の今日やる画面になる。
+ * 一覧の「今日/作戦」と同じく、今日のプランを作成してから /today へ進む。
+ * 遷移だけの Link だと登録されず空の今日/作戦画面になる。
  */
 async function applyToToday(): Promise<void> {
     if (!props.routine.id || steps.value.length < 1 || applyingToToday.value) {
@@ -235,7 +235,7 @@ async function applyToToday(): Promise<void> {
         router.visit('/today');
     } catch {
         formError.value =
-            '今日やるへの登録に失敗しました。もう一度お試しください。';
+            '今日/作戦への登録に失敗しました。もう一度お試しください。';
     } finally {
         applyingToToday.value = false;
     }
@@ -457,7 +457,7 @@ function stepPurposeKey(step: RoutineStep) {
                             >
                                 3
                             </span>
-                            今日やる
+                            今日/作戦
                         </li>
                     </ol>
 
@@ -762,7 +762,7 @@ function stepPurposeKey(step: RoutineStep) {
 
                     <section
                         v-if="flowPhase === 'ready'"
-                        aria-label="今日やる"
+                        aria-label="今日/作戦"
                         class="cd-panel px-5 py-4"
                     >
                         <div
@@ -777,7 +777,7 @@ function stepPurposeKey(step: RoutineStep) {
                                     >
                                         3
                                     </span>
-                                    今日やる
+                                    今日/作戦
                                 </h2>
                                 <p class="mt-1 font-sans text-xs text-cd-ink-muted">
                                     このルーティンを今日の予定に登録して進みます（同じルーティンを複数回登録しても構いません）
@@ -795,7 +795,7 @@ function stepPurposeKey(step: RoutineStep) {
                                 {{
                                     applyingToToday
                                         ? '登録中…'
-                                        : '今日やるに登録して進む'
+                                        : '今日/作戦に登録して進む'
                                 }}
                             </Button>
                         </div>

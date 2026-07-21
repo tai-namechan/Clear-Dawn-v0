@@ -47,6 +47,12 @@ class DailyCheckin extends Model
     {
         return [
             'checked_on' => 'date',
+            'sleep_quality' => 'integer',
+            'fatigue' => 'integer',
+            'muscle_soreness' => 'integer',
+            'stress' => 'integer',
+            'mood' => 'integer',
+            'readiness_self' => 'integer',
             'region_tension' => 'array',
         ];
     }

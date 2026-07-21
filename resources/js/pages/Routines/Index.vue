@@ -131,7 +131,7 @@ async function deleteRoutine(routine: Routine): Promise<void> {
                                         :size="14"
                                         :stroke-width="1.6"
                                     />
-                                    今日やる
+                                    今日/作戦
                                 </Button>
                                 <Button
                                     type="button"
@@ -156,7 +156,7 @@ async function deleteRoutine(routine: Routine): Promise<void> {
                             まだルーティンがありません
                         </p>
                         <p class="max-w-sm font-sans text-sm text-cd-ink-muted">
-                            ① ルーティンを作る → ② ステップを追加 → ③ 今日やる、の順で進めます。
+                            ① ルーティンを作る → ② ステップを追加 → ③ 今日/作戦、の順で進めます。
                         </p>
                     </div>
                     <Button type="button" as-child>

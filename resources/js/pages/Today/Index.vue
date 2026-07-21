@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { Check, ChevronDown, Plus } from '@lucide/vue';
-import { computed, reactive, ref } from 'vue';
+import { computed, ref } from 'vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import DailyCheckinPanel from '@/components/routine/DailyCheckinPanel.vue';
@@ -27,7 +27,7 @@ const props = defineProps<Props>();
 
 const showCompleted = ref(false);
 const showCheckinEditor = ref(props.ops?.checkin == null);
-const checkinForm = reactive<CheckinFormState>({
+const checkinForm = ref<CheckinFormState>({
     sleep_quality: props.ops?.checkin?.sleep_quality ?? 5,
     fatigue: props.ops?.checkin?.fatigue ?? 5,
     muscle_soreness: props.ops?.checkin?.muscle_soreness ?? 5,
@@ -160,11 +160,11 @@ async function saveCheckin(): Promise<void> {
             method: 'PUT',
             body: JSON.stringify({
                 checked_on: props.date,
-                ...checkinForm,
+                ...checkinForm.value,
             }),
         });
         showCheckinEditor.value = false;
-        router.reload({ only: ['ops', 'plans'] });
+        await router.reload({ only: ['ops', 'plans'] });
     } finally {
         savingCheckin.value = false;
     }

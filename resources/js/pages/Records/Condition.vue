@@ -15,7 +15,7 @@ import {
     Sparkles,
 } from '@lucide/vue';
 import type { EChartsCoreOption } from 'echarts/core';
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { Component } from 'vue';
 import BaseChart from '@/components/charts/BaseChart.vue';
 import DateNavigator from '@/components/DateNavigator.vue';
@@ -118,7 +118,7 @@ const saveMessage = ref<string | null>(null);
 const savingCheckin = ref(false);
 const checkinMessage = ref<string | null>(null);
 
-const checkinForm = reactive<CheckinFormState>({
+const checkinForm = ref<CheckinFormState>({
     sleep_quality: props.checkin?.sleep_quality ?? 5,
     fatigue: props.checkin?.fatigue ?? 5,
     muscle_soreness: props.checkin?.muscle_soreness ?? 5,
@@ -148,12 +148,14 @@ watch(
 watch(
     () => props.checkin,
     (checkin) => {
-        checkinForm.sleep_quality = checkin?.sleep_quality ?? 5;
-        checkinForm.fatigue = checkin?.fatigue ?? 5;
-        checkinForm.muscle_soreness = checkin?.muscle_soreness ?? 5;
-        checkinForm.stress = checkin?.stress ?? 5;
-        checkinForm.mood = checkin?.mood ?? 5;
-        checkinForm.readiness_self = checkin?.readiness_self ?? 5;
+        checkinForm.value = {
+            sleep_quality: checkin?.sleep_quality ?? 5,
+            fatigue: checkin?.fatigue ?? 5,
+            muscle_soreness: checkin?.muscle_soreness ?? 5,
+            stress: checkin?.stress ?? 5,
+            mood: checkin?.mood ?? 5,
+            readiness_self: checkin?.readiness_self ?? 5,
+        };
     },
 );
 
@@ -472,11 +474,11 @@ async function saveCheckin(): Promise<void> {
             method: 'PUT',
             body: JSON.stringify({
                 checked_on: props.date,
-                ...checkinForm,
+                ...checkinForm.value,
             }),
         });
         checkinMessage.value = 'チェックインを保存しました。';
-        router.reload({ only: ['checkin'] });
+        await router.reload({ only: ['checkin'] });
     } catch {
         checkinMessage.value = 'チェックインの保存に失敗しました。';
     } finally {
