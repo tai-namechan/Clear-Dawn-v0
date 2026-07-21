@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Camera, Loader2, Store } from '@lucide/vue';
+import { Camera, ChefHat, Loader2, RotateCcw, Store, Utensils } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -46,15 +46,18 @@ const lookupId = ref<string | null>(null);
 const lookupResult = ref<LookupResult | null>(null);
 const saving = ref(false);
 const errorMessage = ref<string | null>(null);
+const estimateSource = ref<'photo' | 'menu' | null>(null);
 
 const photoFile = ref<File | null>(null);
 const photoPreviewUrl = ref<string | null>(null);
+const submittedPhotoUrl = ref<string | null>(null);
 const photoFileInput = ref<HTMLInputElement | null>(null);
 
 const menuForm = ref({
     store_name: '',
     menu_name: '',
 });
+const submittedMenu = ref({ store_name: '', menu_name: '' });
 
 const confirmForm = ref({
     name: '',
@@ -64,6 +67,8 @@ const confirmForm = ref({
     fat_g: '',
     carb_g: '',
 });
+
+const showDetails = ref(false);
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -91,6 +96,32 @@ const canSubmitMenu = computed(() => {
     );
 });
 
+const pfcTotal = computed(() => {
+    const p = Number(confirmForm.value.protein_g) || 0;
+    const f = Number(confirmForm.value.fat_g) || 0;
+    const c = Number(confirmForm.value.carb_g) || 0;
+
+    return p + f + c;
+});
+
+const pfcRatios = computed(() => {
+    const total = pfcTotal.value;
+
+    if (total === 0) {
+        return { p: 33, f: 33, c: 34 };
+    }
+
+    const p = Number(confirmForm.value.protein_g) || 0;
+    const f = Number(confirmForm.value.fat_g) || 0;
+    const c = Number(confirmForm.value.carb_g) || 0;
+
+    return {
+        p: Math.round((p / total) * 100),
+        f: Math.round((f / total) * 100),
+        c: Math.round((c / total) * 100),
+    };
+});
+
 watch(
     () => props.open,
     (open) => {
@@ -112,8 +143,12 @@ function reset(): void {
     lookupResult.value = null;
     saving.value = false;
     errorMessage.value = null;
+    estimateSource.value = null;
+    showDetails.value = false;
     clearPhotoFile();
+    submittedPhotoUrl.value = null;
     menuForm.value = { store_name: '', menu_name: '' };
+    submittedMenu.value = { store_name: '', menu_name: '' };
     confirmForm.value = {
         name: '',
         serving_label: '',
@@ -127,6 +162,11 @@ function reset(): void {
 function cleanup(): void {
     clearPollTimer();
     clearPhotoFile();
+
+    if (submittedPhotoUrl.value !== null) {
+        URL.revokeObjectURL(submittedPhotoUrl.value);
+        submittedPhotoUrl.value = null;
+    }
 }
 
 function clearPhotoFile(): void {
@@ -186,7 +226,10 @@ async function submitPhoto(): Promise<void> {
         );
 
         lookupId.value = data.lookup_id;
-        clearPhotoFile();
+        estimateSource.value = 'photo';
+        submittedPhotoUrl.value = photoPreviewUrl.value;
+        photoPreviewUrl.value = null;
+        photoFile.value = null;
         step.value = 'polling';
         startPolling();
     } catch (e) {
@@ -226,6 +269,11 @@ async function submitMenu(): Promise<void> {
         );
 
         lookupId.value = data.lookup_id;
+        estimateSource.value = 'menu';
+        submittedMenu.value = {
+            store_name: menuForm.value.store_name.trim(),
+            menu_name: menuForm.value.menu_name.trim(),
+        };
         step.value = 'polling';
         startPolling();
     } catch (e) {
@@ -312,6 +360,23 @@ function prefillConfirmForm(result: LookupResult): void {
     };
 }
 
+function retryEstimate(): void {
+    errorMessage.value = null;
+    showDetails.value = false;
+
+    if (estimateSource.value === 'photo') {
+        step.value = 'photo_capture';
+    } else {
+        step.value = 'menu_input';
+    }
+}
+
+function formatNum(value: string | number): string {
+    return Number(value).toLocaleString('ja-JP', {
+        maximumFractionDigits: 1,
+    });
+}
+
 async function confirmAndSave(): Promise<void> {
     if (!lookupId.value || !canConfirm.value) {
         return;
@@ -354,8 +419,12 @@ async function confirmAndSave(): Promise<void> {
 
 <template>
     <Dialog :open="open" @update:open="(v) => emit('update:open', v)">
-        <DialogContent class="bg-cd-surface sm:max-w-lg">
-            <DialogHeader>
+        <DialogContent
+            class="bg-cd-surface sm:max-w-lg"
+            :class="step === 'confirm' ? 'p-0 gap-0' : ''"
+        >
+            <!-- Header for non-confirm steps -->
+            <DialogHeader v-if="step !== 'confirm'">
                 <DialogTitle class="font-sans">
                     {{
                         step === 'choose'
@@ -364,9 +433,7 @@ async function confirmAndSave(): Promise<void> {
                               ? '料理を撮影'
                               : step === 'menu_input'
                                 ? '店名・メニュー名を入力'
-                                : step === 'polling'
-                                  ? 'AI が推定中...'
-                                  : '栄養情報の確認'
+                                : 'AI が推定中...'
                     }}
                 </DialogTitle>
                 <DialogDescription class="font-sans text-sm text-cd-ink-muted">
@@ -377,15 +444,13 @@ async function confirmAndSave(): Promise<void> {
                               ? '料理の写真を撮影すると AI が栄養成分を推定します。'
                               : step === 'menu_input'
                                 ? '店名とメニュー名を入力すると AI が栄養成分を推定します。'
-                                : step === 'polling'
-                                  ? 'AI が栄養成分を推定しています...'
-                                  : '推定値を確認・編集して保存してください。'
+                                : 'AI が栄養成分を推定しています...'
                     }}
                 </DialogDescription>
             </DialogHeader>
 
             <p
-                v-if="errorMessage"
+                v-if="errorMessage && step !== 'confirm'"
                 class="rounded-lg bg-destructive/10 px-3 py-2 font-sans text-sm text-destructive"
             >
                 {{ errorMessage }}
@@ -398,7 +463,9 @@ async function confirmAndSave(): Promise<void> {
                     class="flex items-center gap-4 rounded-xl border border-cd-line px-4 py-4 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
                     @click="step = 'photo_capture'"
                 >
-                    <Camera :size="24" :stroke-width="1.6" class="shrink-0 text-primary" />
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                        <Camera :size="22" :stroke-width="1.6" class="text-primary" />
+                    </div>
                     <div>
                         <p class="font-sans text-sm font-semibold text-cd-ink">料理を撮影</p>
                         <p class="mt-0.5 font-sans text-xs text-cd-ink-muted">
@@ -411,7 +478,9 @@ async function confirmAndSave(): Promise<void> {
                     class="flex items-center gap-4 rounded-xl border border-cd-line px-4 py-4 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
                     @click="step = 'menu_input'"
                 >
-                    <Store :size="24" :stroke-width="1.6" class="shrink-0 text-primary" />
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                        <Store :size="22" :stroke-width="1.6" class="text-primary" />
+                    </div>
                     <div>
                         <p class="font-sans text-sm font-semibold text-cd-ink">店名・メニュー名で検索</p>
                         <p class="mt-0.5 font-sans text-xs text-cd-ink-muted">
@@ -434,7 +503,7 @@ async function confirmAndSave(): Promise<void> {
 
                 <div
                     v-if="photoPreviewUrl"
-                    class="overflow-hidden rounded-xl"
+                    class="overflow-hidden rounded-xl border border-cd-line"
                 >
                     <img
                         :src="photoPreviewUrl"
@@ -445,12 +514,23 @@ async function confirmAndSave(): Promise<void> {
 
                 <div
                     v-else
-                    class="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-cd-line px-4 py-12"
+                    class="flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-cd-line px-4 py-12 transition-colors hover:border-primary/30 hover:bg-primary/5"
+                    role="button"
+                    tabindex="0"
+                    @click="openPhotoPicker"
+                    @keydown.enter="openPhotoPicker"
                 >
-                    <Camera :size="32" class="text-cd-ink-muted" />
-                    <p class="font-sans text-sm text-cd-ink-muted">
-                        料理の写真を撮影してください
-                    </p>
+                    <div class="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                        <Camera :size="28" class="text-primary" />
+                    </div>
+                    <div class="text-center">
+                        <p class="font-sans text-sm font-medium text-cd-ink">
+                            タップして写真を撮影
+                        </p>
+                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">
+                            料理全体が写るように撮ってください
+                        </p>
+                    </div>
                 </div>
 
                 <DialogFooter class="flex-col gap-2 sm:flex-row">
@@ -462,16 +542,7 @@ async function confirmAndSave(): Promise<void> {
                     >
                         戻る
                     </Button>
-                    <Button
-                        v-if="!photoFile"
-                        type="button"
-                        class="font-sans"
-                        @click="openPhotoPicker"
-                    >
-                        <Camera :size="14" :stroke-width="1.6" />
-                        写真を撮影
-                    </Button>
-                    <template v-else>
+                    <template v-if="photoFile">
                         <Button
                             type="button"
                             variant="outline"
@@ -487,7 +558,8 @@ async function confirmAndSave(): Promise<void> {
                             @click="submitPhoto"
                         >
                             <Loader2 v-if="saving" :size="14" class="animate-spin" />
-                            推定する
+                            <Utensils v-else :size="14" :stroke-width="1.6" />
+                            AI で推定する
                         </Button>
                     </template>
                 </DialogFooter>
@@ -530,52 +602,169 @@ async function confirmAndSave(): Promise<void> {
                         @click="submitMenu"
                     >
                         <Loader2 v-if="saving" :size="14" class="animate-spin" />
-                        推定する
+                        <ChefHat v-else :size="14" :stroke-width="1.6" />
+                        AI で推定する
                     </Button>
                 </DialogFooter>
             </div>
 
             <!-- Polling step -->
-            <div v-if="step === 'polling'" class="flex flex-col items-center gap-4 py-8">
-                <Loader2 :size="32" class="animate-spin text-primary" />
-                <p class="font-sans text-sm text-cd-ink-muted">
-                    AI が栄養成分を推定しています。少々お待ちください...
-                </p>
+            <div v-if="step === 'polling'" class="flex flex-col items-center gap-5 py-10">
+                <div class="relative">
+                    <div class="h-16 w-16 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
+                    <Utensils :size="20" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-primary" />
+                </div>
+                <div class="text-center">
+                    <p class="font-sans text-sm font-medium text-cd-ink">
+                        AI が栄養成分を推定しています
+                    </p>
+                    <p class="mt-1 font-sans text-xs text-cd-ink-muted">
+                        外食の調理法や食材量を考慮して推定します
+                    </p>
+                </div>
             </div>
 
-            <!-- Confirm step -->
-            <div v-if="step === 'confirm'" class="flex flex-col gap-4">
-                <div class="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 dark:border-amber-700 dark:bg-amber-950/40">
-                    <p class="font-sans text-xs font-medium text-amber-800 dark:text-amber-300">
-                        AI推定値です。実際の値と異なる場合があります。確認してから保存してください。
+            <!-- Confirm step — full-bleed visual layout -->
+            <div v-if="step === 'confirm'" class="flex flex-col">
+                <!-- Photo header or menu header -->
+                <div
+                    v-if="submittedPhotoUrl && estimateSource === 'photo'"
+                    class="relative"
+                >
+                    <img
+                        :src="submittedPhotoUrl"
+                        alt="推定した料理"
+                        class="max-h-52 w-full object-cover"
+                    />
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    <div class="absolute bottom-0 left-0 right-0 px-5 pb-4">
+                        <p class="font-sans text-lg font-bold text-white drop-shadow-sm">
+                            {{ confirmForm.name || '料理名' }}
+                        </p>
+                        <p class="font-sans text-xs text-white/80">
+                            {{ confirmForm.serving_label }}
+                        </p>
+                    </div>
+                </div>
+
+                <div
+                    v-else-if="estimateSource === 'menu'"
+                    class="bg-gradient-to-br from-primary/10 to-primary/5 px-5 py-5"
+                >
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/15">
+                            <Store :size="24" :stroke-width="1.5" class="text-primary" />
+                        </div>
+                        <div class="min-w-0">
+                            <p class="font-sans text-lg font-bold text-cd-ink">
+                                {{ confirmForm.name || submittedMenu.menu_name }}
+                            </p>
+                            <p class="font-sans text-xs text-cd-ink-muted">
+                                {{ submittedMenu.store_name }} · {{ confirmForm.serving_label }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kcal hero -->
+                <div class="flex flex-col items-center gap-1 px-5 pt-5 pb-3">
+                    <p class="font-sans text-xs font-medium tracking-wider text-cd-ink-muted">
+                        合計
+                    </p>
+                    <p class="font-sans text-4xl font-extrabold tabular-nums text-cd-ink">
+                        {{ formatNum(confirmForm.kcal || '0') }}
+                        <span class="text-lg font-semibold text-cd-ink-muted">kcal</span>
                     </p>
                 </div>
 
-                <div class="flex flex-col gap-3">
-                    <div class="flex flex-col gap-1">
-                        <Label class="font-sans text-xs">名前</Label>
-                        <Input v-model="confirmForm.name" type="text" maxlength="100" />
+                <!-- PFC bar -->
+                <div class="mx-5 flex h-3 overflow-hidden rounded-full">
+                    <div
+                        class="bg-cd-pfc-p transition-all"
+                        :style="{ width: pfcRatios.p + '%' }"
+                    />
+                    <div
+                        class="bg-cd-pfc-f transition-all"
+                        :style="{ width: pfcRatios.f + '%' }"
+                    />
+                    <div
+                        class="bg-cd-pfc-c transition-all"
+                        :style="{ width: pfcRatios.c + '%' }"
+                    />
+                </div>
+
+                <!-- PFC numbers -->
+                <div class="mx-5 mt-3 grid grid-cols-3 gap-2">
+                    <div class="rounded-xl bg-cd-pfc-p/10 px-3 py-3 text-center">
+                        <p class="font-sans text-[11px] font-semibold text-cd-pfc-p">P</p>
+                        <p class="mt-0.5 font-sans text-lg font-bold tabular-nums text-cd-ink">
+                            {{ formatNum(confirmForm.protein_g || '0') }}
+                            <span class="text-xs font-medium text-cd-ink-muted">g</span>
+                        </p>
                     </div>
-                    <div class="flex flex-col gap-1">
-                        <Label class="font-sans text-xs">サービングラベル</Label>
-                        <Input
-                            v-model="confirmForm.serving_label"
-                            type="text"
-                            maxlength="50"
-                        />
+                    <div class="rounded-xl bg-cd-pfc-f/10 px-3 py-3 text-center">
+                        <p class="font-sans text-[11px] font-semibold text-cd-pfc-f">F</p>
+                        <p class="mt-0.5 font-sans text-lg font-bold tabular-nums text-cd-ink">
+                            {{ formatNum(confirmForm.fat_g || '0') }}
+                            <span class="text-xs font-medium text-cd-ink-muted">g</span>
+                        </p>
                     </div>
+                    <div class="rounded-xl bg-cd-pfc-c/10 px-3 py-3 text-center">
+                        <p class="font-sans text-[11px] font-semibold text-cd-pfc-c">C</p>
+                        <p class="mt-0.5 font-sans text-lg font-bold tabular-nums text-cd-ink">
+                            {{ formatNum(confirmForm.carb_g || '0') }}
+                            <span class="text-xs font-medium text-cd-ink-muted">g</span>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- AI estimation notice -->
+                <div class="mx-5 mt-4 rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/30">
+                    <p class="font-sans text-[11px] leading-relaxed text-amber-700 dark:text-amber-400">
+                        AI推定値です。外食の油脂・調味料を考慮して推定していますが、実際と異なる場合があります。
+                    </p>
+                </div>
+
+                <!-- Edit toggle -->
+                <button
+                    type="button"
+                    class="mx-5 mt-3 flex items-center justify-center gap-1.5 font-sans text-xs font-medium text-primary"
+                    @click="showDetails = !showDetails"
+                >
+                    {{ showDetails ? '編集を閉じる' : '値を編集する' }}
+                </button>
+
+                <!-- Editable fields (collapsed by default) -->
+                <div
+                    v-if="showDetails"
+                    class="mx-5 mt-3 flex flex-col gap-3 rounded-xl border border-cd-line bg-cd-surface p-4"
+                >
                     <div class="grid grid-cols-2 gap-3">
+                        <div class="col-span-2 flex flex-col gap-1">
+                            <Label class="font-sans text-xs">名前</Label>
+                            <Input v-model="confirmForm.name" type="text" maxlength="100" />
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <Label class="font-sans text-xs">サービング</Label>
+                            <Input
+                                v-model="confirmForm.serving_label"
+                                type="text"
+                                maxlength="50"
+                            />
+                        </div>
                         <div class="flex flex-col gap-1">
                             <Label class="font-sans text-xs">kcal</Label>
                             <Input
                                 v-model="confirmForm.kcal"
                                 type="number"
                                 min="0"
-                                step="0.1"
+                                step="1"
                             />
                         </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
                         <div class="flex flex-col gap-1">
-                            <Label class="font-sans text-xs">P (g)</Label>
+                            <Label class="font-sans text-xs text-cd-pfc-p">P (g)</Label>
                             <Input
                                 v-model="confirmForm.protein_g"
                                 type="number"
@@ -584,7 +773,7 @@ async function confirmAndSave(): Promise<void> {
                             />
                         </div>
                         <div class="flex flex-col gap-1">
-                            <Label class="font-sans text-xs">F (g)</Label>
+                            <Label class="font-sans text-xs text-cd-pfc-f">F (g)</Label>
                             <Input
                                 v-model="confirmForm.fat_g"
                                 type="number"
@@ -593,7 +782,7 @@ async function confirmAndSave(): Promise<void> {
                             />
                         </div>
                         <div class="flex flex-col gap-1">
-                            <Label class="font-sans text-xs">C (g)</Label>
+                            <Label class="font-sans text-xs text-cd-pfc-c">C (g)</Label>
                             <Input
                                 v-model="confirmForm.carb_g"
                                 type="number"
@@ -604,25 +793,34 @@ async function confirmAndSave(): Promise<void> {
                     </div>
                 </div>
 
-                <DialogFooter>
+                <p
+                    v-if="errorMessage"
+                    class="mx-5 mt-3 rounded-lg bg-destructive/10 px-3 py-2 font-sans text-sm text-destructive"
+                >
+                    {{ errorMessage }}
+                </p>
+
+                <!-- Actions -->
+                <div class="flex gap-2 p-5">
                     <Button
                         type="button"
                         variant="outline"
-                        class="font-sans"
-                        @click="close"
+                        size="icon"
+                        :aria-label="'やり直す'"
+                        @click="retryEstimate"
                     >
-                        キャンセル
+                        <RotateCcw :size="16" :stroke-width="1.6" />
                     </Button>
                     <Button
                         type="button"
-                        class="font-sans"
+                        class="flex-1 font-sans"
                         :disabled="saving || !canConfirm"
                         @click="confirmAndSave"
                     >
                         <Loader2 v-if="saving" :size="14" class="animate-spin" />
                         マイ食品に保存
                     </Button>
-                </DialogFooter>
+                </div>
             </div>
         </DialogContent>
     </Dialog>

@@ -31,11 +31,50 @@ class EstimateFoodPhotoJob implements ShouldBeUnique, ShouldQueue
     public int $uniqueFor = 600;
 
     private const SYSTEM_PROMPT = <<<'PROMPT'
-あなたは料理の写真から栄養成分を推定するアシスタントです。JSONのみを返してください。
-形式: {"name": string, "serving_label": string, "per": "serving", "kcal": number, "protein_g": number, "fat_g": number, "carb_g": number}
-- 料理名を日本語で記入（例: "チキンカレー", "サーモン丼"）
-- serving_label は写真に写っている量を記述（例: "1皿", "1人前"）
-- 推定不能な場合は {"error":"unrecognizable"} のみを返す
+あなたは管理栄養士レベルの知識を持つ、料理写真からの栄養成分推定アシスタントです。
+
+## 出力形式
+JSONのみを返してください。それ以外のテキストは一切不要です。
+{"name": string, "serving_label": string, "per": "serving", "kcal": number, "protein_g": number, "fat_g": number, "carb_g": number}
+
+## 推定ルール
+
+### 料理の特定
+- 写真に写っている料理を具体的に特定する（例: "味噌ラーメン" "チキンカツカレー"）
+- トッピングや具材も考慮に入れる（チャーシュー、煮卵、揚げ物など）
+- パッケージ食品の場合は商品名とサイズを読み取る
+
+### カロリー推定の重要原則
+- **外食・レストランの料理は家庭料理より大幅に高カロリーである**
+- 調理油、バター、ラード、背脂、ドレッシング等の「見えない脂質」を必ず加算する
+- 外食の1人前は一般的なレシピサイトの分量より1.3〜1.8倍多い
+- **迷ったら高めに推定する**（ダイエット目的のユーザーにとって過少推定は有害）
+
+### 代表的な外食カロリーの目安（実測値ベース）
+- ラーメン（醤油・塩）: 700〜900 kcal
+- ラーメン（味噌・豚骨）: 900〜1200 kcal
+- チャーシュー麺: +150〜250 kcal
+- つけ麺: 900〜1300 kcal
+- カレーライス: 700〜1000 kcal
+- カツカレー: 1100〜1400 kcal
+- 牛丼（並）: 650〜750 kcal
+- 天ぷら定食: 800〜1100 kcal
+- ハンバーグ定食: 800〜1100 kcal
+- 唐揚げ定食: 900〜1200 kcal
+- パスタ（クリーム系）: 700〜1000 kcal
+- ピザ（1枚）: 1500〜2500 kcal
+- チャーハン: 600〜900 kcal
+
+### PFC推定
+- protein_g: 肉・魚・卵・豆腐などの量から推定
+- fat_g: 調理法（揚げ・炒め）、ソース、チーズ、背脂を考慮。外食は脂質が多い
+- carb_g: 麺・米・パン・芋の量から推定。ラーメンの麺は通常150g前後
+
+### serving_label
+- 写真に写っている量を記述（例: "1杯", "1人前", "1皿"）
+
+### 推定不能な場合
+- 食べ物でない写真、判別不能な場合のみ {"error":"unrecognizable"} を返す
 PROMPT;
 
     public function __construct(public string $lookupRequestId) {}
@@ -65,7 +104,7 @@ PROMPT;
                 userId: (int) $lookup->user_id,
                 feature: 'meals.photo_estimate',
                 prompt: PromptTemplate::make('meals.photo_estimate.v1', self::SYSTEM_PROMPT, ''),
-                tier: 'cheap',
+                tier: 'strong',
                 maxTokens: 512,
                 messages: [[
                     'role' => 'user',
