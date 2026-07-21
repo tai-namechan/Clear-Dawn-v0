@@ -62,14 +62,14 @@ const resolvedCaption = computed(() => {
     }
 
     if (props.mood === 'shortfall') {
-        return '今月は、余裕がありません。';
+        return '今月は、余裕がありません。いまは無駄な出費を抑えておきましょう。';
     }
 
     if (coinCount.value >= 5) {
-        return '今月は、十分に余裕があります。';
+        return '今月は、十分に余裕があります。余裕があるうちに、先の支払いだけ確認しておくと安心です。';
     }
 
-    return '今月は、まだ余裕があります。';
+    return '今月は、まだ余裕があります。大きな出費の前に、予定を一度確認しておくと安心です。';
 });
 
 const statusLabel = computed(() => {
