@@ -43,8 +43,12 @@ interface Emits {
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
+type PollingKind = 'off' | 'ocr';
+
 const step = ref<Step>('scan');
 const manualBarcode = ref('');
+const knownBarcode = ref('');
+const pollingKind = ref<PollingKind>('off');
 const lookupId = ref<string | null>(null);
 const lookupResult = ref<LookupResult | null>(null);
 const lookupSource = ref<string | null>(null);
@@ -59,6 +63,7 @@ let pollTimer: ReturnType<typeof setTimeout> | null = null;
 const confirmForm = ref({
     name: '',
     serving_label: '',
+    barcode: '',
     kcal: '',
     protein_g: '',
     fat_g: '',
@@ -99,6 +104,8 @@ watch(
 function reset(): void {
     step.value = 'scan';
     manualBarcode.value = '';
+    knownBarcode.value = '';
+    pollingKind.value = 'off';
     lookupId.value = null;
     lookupResult.value = null;
     lookupSource.value = null;
@@ -106,7 +113,15 @@ function reset(): void {
     saving.value = false;
     errorMessage.value = null;
     clearOcrFile();
-    confirmForm.value = { name: '', serving_label: '', kcal: '', protein_g: '', fat_g: '', carb_g: '' };
+    confirmForm.value = {
+        name: '',
+        serving_label: '',
+        barcode: '',
+        kcal: '',
+        protein_g: '',
+        fat_g: '',
+        carb_g: '',
+    };
 }
 
 function cleanup(): void {
@@ -163,11 +178,14 @@ async function submitBarcode(barcode: string): Promise<void> {
             body: JSON.stringify({ barcode }),
         });
 
+        knownBarcode.value = barcode.trim();
+
         if (data.status === 'hit') {
             hitFood.value = data.food;
             step.value = 'hit';
         } else {
             lookupId.value = data.lookup_id;
+            pollingKind.value = 'off';
             step.value = 'polling';
             startPolling();
         }
@@ -186,7 +204,7 @@ async function submitBarcode(barcode: string): Promise<void> {
 
 function startPolling(): void {
     clearPollTimer();
-    pollTimer = setTimeout(() => void pollLookup(), 1500);
+    pollTimer = setTimeout(() => void pollLookup(), 500);
 }
 
 async function pollLookup(): Promise<void> {
@@ -241,7 +259,7 @@ async function pollLookup(): Promise<void> {
             return;
         }
 
-        pollTimer = setTimeout(() => void pollLookup(), 2000);
+        pollTimer = setTimeout(() => void pollLookup(), 1000);
     } catch {
         errorMessage.value = '通信エラーが発生しました。';
         step.value = 'scan';
@@ -259,6 +277,7 @@ function startOcrForMiss(): void {
 function startOcrWithoutBarcode(): void {
     stopCamera();
     lookupId.value = null;
+    knownBarcode.value = '';
     errorMessage.value = null;
     step.value = 'ocr_capture';
 }
@@ -305,6 +324,7 @@ async function submitLabelImage(): Promise<void> {
 
         lookupId.value = data.lookup_id;
         clearOcrFile();
+        pollingKind.value = 'ocr';
         step.value = 'polling';
         startPolling();
     } catch (e) {
@@ -317,6 +337,7 @@ async function submitLabelImage(): Promise<void> {
                 body.errors?.image?.[0] ?? body.message ?? '画像を確認してください。';
         } else if (e instanceof ApiError && e.status === 409) {
             // すでに解析中: そのままポーリングへ合流
+            pollingKind.value = 'ocr';
             step.value = 'polling';
             startPolling();
         } else {
@@ -331,6 +352,7 @@ function prefillConfirmForm(result: LookupResult): void {
     confirmForm.value = {
         name: result.name ?? '',
         serving_label: result.serving_label ?? '100g',
+        barcode: knownBarcode.value,
         kcal: result.kcal != null ? String(result.kcal) : '',
         protein_g: result.protein_g != null ? String(result.protein_g) : '',
         fat_g: result.fat_g != null ? String(result.fat_g) : '',
@@ -358,6 +380,9 @@ async function confirmAndSave(): Promise<void> {
                     protein_g: Number(confirmForm.value.protein_g),
                     fat_g: Number(confirmForm.value.fat_g),
                     carb_g: Number(confirmForm.value.carb_g),
+                    ...(confirmForm.value.barcode.trim() !== ''
+                        ? { barcode: confirmForm.value.barcode.trim() }
+                        : {}),
                 }),
             },
         );
@@ -396,7 +421,9 @@ function useHitFood(): void {
                             : step === 'ocr_capture'
                               ? '成分表を撮影'
                               : step === 'polling'
-                                ? '照合中...'
+                                ? pollingKind === 'ocr'
+                                  ? '読み取り中...'
+                                  : '照合中...'
                                 : step === 'confirm'
                                   ? '栄養情報の確認'
                                   : '登録済み食品'
@@ -409,7 +436,9 @@ function useHitFood(): void {
                             : step === 'ocr_capture'
                               ? '栄養成分表示を撮影すると AI が読み取ります。'
                               : step === 'polling'
-                                ? 'データベースを照合しています...'
+                                ? pollingKind === 'ocr'
+                                  ? '成分表を AI が読み取っています...'
+                                  : 'データベースを照合しています...'
                                 : step === 'confirm'
                                   ? '内容を確認・編集して保存してください。値は自由に修正できます。'
                                   : 'この商品は既にマイ食品に登録されています。'
@@ -560,7 +589,11 @@ function useHitFood(): void {
             <div v-if="step === 'polling'" class="flex flex-col items-center gap-4 py-8">
                 <Loader2 :size="32" class="animate-spin text-primary" />
                 <p class="font-sans text-sm text-cd-ink-muted">
-                    照合しています…（読み取りには数十秒かかることがあります）
+                    {{
+                        pollingKind === 'ocr'
+                            ? '読み取っています…（数十秒かかることがあります）'
+                            : '照合しています…'
+                    }}
                 </p>
             </div>
 
@@ -594,6 +627,17 @@ function useHitFood(): void {
                     <div class="col-span-2 flex flex-col gap-1">
                         <Label class="font-sans text-xs">1サービング <span class="text-destructive">*</span></Label>
                         <Input v-model="confirmForm.serving_label" type="text" maxlength="50" />
+                    </div>
+                    <div class="col-span-2 flex flex-col gap-1">
+                        <Label class="font-sans text-xs">バーコード（任意）</Label>
+                        <Input
+                            v-model="confirmForm.barcode"
+                            type="text"
+                            inputmode="numeric"
+                            maxlength="20"
+                            placeholder="JAN / EAN を入力"
+                            autocomplete="off"
+                        />
                     </div>
                     <div class="flex flex-col gap-1">
                         <Label class="font-sans text-xs">kcal <span class="text-destructive">*</span></Label>
