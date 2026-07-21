@@ -11,12 +11,13 @@ type HubTab = {
 
 /**
  * 主導線のみ表示:
- * ルーティンを作る → 今日/作戦 → 履歴
+ * プログラムを確認 → ルーティンを作る → 今日/作戦 → 履歴
  *
  * 実施項目（ステップで使う部品の整理画面）は主導線外。
  * ルーティン編集の「ステップを追加」から作るのが基本。
  */
 const tabs: HubTab[] = [
+    { label: 'プログラム', href: '/programs', matchPrefix: true },
     { label: 'ルーティン', href: '/routines', matchPrefix: true, primary: true },
     { label: '今日/作戦', href: '/today', matchPrefix: true },
     { label: '履歴', href: '/history' },

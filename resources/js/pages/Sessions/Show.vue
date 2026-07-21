@@ -300,7 +300,7 @@ const metrics = computed(() => {
 <template>
     <Head :title="planTitle" />
 
-    <div class="flex min-h-0 flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
+    <div class="flex min-h-0 flex-1 flex-col rounded-xl p-4 pb-28 md:px-6 md:pb-28 lg:pb-6">
         <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4">
             <PageSectionCard>
                 <div class="flex flex-col gap-4">
@@ -508,6 +508,7 @@ const metrics = computed(() => {
 
                         <div class="px-5 py-5">
                             <div
+                                v-if="currentStep.video || playbackLoading"
                                 class="overflow-hidden rounded-2xl border border-cd-line/60 bg-black/5"
                             >
                                 <div
@@ -662,7 +663,7 @@ const metrics = computed(() => {
 
                         <div
                             v-if="!isSessionFinished"
-                            class="flex flex-col gap-2 border-t border-cd-line p-3"
+                            class="hidden flex-col gap-2 border-t border-cd-line p-3 lg:flex"
                         >
                             <Button
                                 v-if="allStepsResolved"
@@ -726,6 +727,52 @@ const metrics = computed(() => {
                             </div>
                         </div>
                     </aside>
+                </div>
+            </div>
+
+            <div
+                v-if="!isSessionFinished"
+                class="fixed inset-x-4 bottom-4 z-40 rounded-2xl border border-cd-line bg-[#fffcf8]/95 p-2 shadow-xl backdrop-blur lg:hidden"
+            >
+                <div class="grid grid-cols-[1fr_auto_auto] gap-2">
+                    <Button
+                        v-if="allStepsResolved"
+                        type="button"
+                        :disabled="completing"
+                        @click="completeSession"
+                    >
+                        <Check :size="16" :stroke-width="1.8" />
+                        {{ completing ? '完了処理中…' : '実行を完了' }}
+                    </Button>
+                    <Button
+                        v-else
+                        type="button"
+                        :disabled="!currentStep || currentStep.status !== 'pending'"
+                        @click="completeStep"
+                    >
+                        <Check :size="16" :stroke-width="1.8" />
+                        完了して次へ
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        aria-label="このステップをスキップ"
+                        :disabled="!currentStep || currentStep.status !== 'pending' || allStepsResolved"
+                        @click="skipStep"
+                    >
+                        <SkipForward :size="16" :stroke-width="1.8" />
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="実行を中断"
+                        :disabled="completing"
+                        @click="abortSession"
+                    >
+                        <CircleStop :size="16" :stroke-width="1.8" />
+                    </Button>
                 </div>
             </div>
         </div>
