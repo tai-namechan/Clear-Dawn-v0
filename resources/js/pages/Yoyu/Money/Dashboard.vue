@@ -4,7 +4,7 @@ import { computed, ref } from 'vue';
 import AdjustmentCandidateCard from '@/components/yoyu-money/AdjustmentCandidateCard.vue';
 import CashflowTimeline from '@/components/yoyu-money/CashflowTimeline.vue';
 import MoneyAmount from '@/components/yoyu-money/MoneyAmount.vue';
-import MoneyMarginVessel from '@/components/yoyu-money/MoneyMarginVessel.vue';
+import MoneyMarginKoban from '@/components/yoyu-money/MoneyMarginKoban.vue';
 import MoneyPageShell from '@/components/yoyu-money/MoneyPageShell.vue';
 import MoneySetupGuide from '@/components/yoyu-money/MoneySetupGuide.vue';
 import MoneyStatusBadge from '@/components/yoyu-money/MoneyStatusBadge.vue';
@@ -207,7 +207,7 @@ const vesselMood = computed((): MoneyMarginMood => {
     return 'safe';
 });
 
-/** Visual-only fill for the vessel illustration (not a financial calculation). */
+/** Visual-only density for the koban illustration (not a financial calculation). */
 const vesselLevel = computed(() => {
     try {
         const safe = BigInt(props.margin.safe_to_spend_minor || '0');
@@ -442,7 +442,7 @@ defineOptions({
                 </dl>
             </section>
 
-            <MoneyMarginVessel :mood="vesselMood" :level="vesselLevel" />
+            <MoneyMarginKoban :mood="vesselMood" :level="vesselLevel" />
         </div>
 
         <!-- Summary row -->
