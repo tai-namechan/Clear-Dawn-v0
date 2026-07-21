@@ -40,8 +40,8 @@ const todayIso = [
     <header
         class="flex min-h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/70 px-4 py-3 transition-[width,height] ease-linear landscape-compact:min-h-12 landscape-compact:py-2 md:px-6 md:py-4 landscape-compact:md:py-2"
     >
-        <div class="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
-            <SidebarTrigger class="-ml-1 shrink-0" />
+        <div class="flex min-w-0 flex-1 items-center gap-3 md:gap-4">
+            <SidebarTrigger class="shrink-0" />
             <h1
                 class="truncate font-serif text-[2rem] leading-none font-normal tracking-[0.16em] text-cd-dawn-deep landscape-compact:text-[1.5rem] landscape-compact:tracking-[0.12em] md:text-[2.5rem] landscape-compact:md:text-[1.65rem]"
             >
