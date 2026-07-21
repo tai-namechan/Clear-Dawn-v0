@@ -19,7 +19,11 @@ final class AiGateway
     ) {}
 
     /**
-     * @param  list<array{role: string, content: string}>  $messages
+     * content は文字列に加え、vision 等の content blocks
+     * （例: [['type' => 'image', ...], ['type' => 'text', ...]]）をそのまま渡せる。
+     * ボディへはパススルーされ、課金ライフサイクル（reserve→settle/release）は共通。
+     *
+     * @param  list<array{role: string, content: string|list<array<string, mixed>>}>  $messages
      * @return array{text: string, model: string, input_tokens: int, output_tokens: int, usage_request_id: string}
      */
     public function complete(

@@ -48,4 +48,30 @@ class FoodLookupRequestFactory extends Factory
             ],
         ]);
     }
+
+    public function notFound(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => FoodLookupStatus::NotFound,
+            'source' => 'openfoodfacts',
+        ]);
+    }
+
+    public function ocrPending(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => FoodLookupStatus::OcrPending,
+            'source' => null,
+            'result' => null,
+            'temp_image_path' => 'food-label-ocr/1/'.fake()->uuid().'.jpg',
+        ]);
+    }
+
+    public function withoutBarcode(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'barcode' => null,
+            'barcode_type' => null,
+        ]);
+    }
 }

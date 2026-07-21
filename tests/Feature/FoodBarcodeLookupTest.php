@@ -260,6 +260,83 @@ class FoodBarcodeLookupTest extends TestCase
         $this->assertSame('新しい食品', $oldFood->name);
     }
 
+    public function test_confirm_saves_food_from_label_ocr_result(): void
+    {
+        $user = User::factory()->create();
+        $lookup = FoodLookupRequest::factory()->for($user)->found()->create([
+            'source' => 'label_ocr',
+        ]);
+
+        $response = $this->actingAs($user)
+            ->postJson(route('meals.barcode-lookup.confirm', $lookup->id), [
+                'name' => 'OCR読み取り食品',
+                'serving_label' => '1袋(85g)',
+                'kcal' => 380,
+                'protein_g' => 9,
+                'fat_g' => 16,
+                'carb_g' => 51,
+            ]);
+
+        $response->assertCreated();
+
+        $this->assertDatabaseHas('food_items', [
+            'user_id' => $user->id,
+            'name' => 'OCR読み取り食品',
+            'barcode' => $lookup->barcode,
+        ]);
+    }
+
+    public function test_confirm_creates_barcodeless_food_from_ocr_lookup(): void
+    {
+        $user = User::factory()->create();
+        $lookup = FoodLookupRequest::factory()->for($user)->withoutBarcode()->found()->create([
+            'source' => 'label_ocr',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('meals.barcode-lookup.confirm', $lookup->id), [
+                'name' => 'バーコードなし食品',
+                'serving_label' => '1個',
+                'kcal' => 150,
+                'protein_g' => 5,
+                'fat_g' => 3,
+                'carb_g' => 25,
+            ])
+            ->assertCreated();
+
+        $this->assertDatabaseHas('food_items', [
+            'user_id' => $user->id,
+            'name' => 'バーコードなし食品',
+            'barcode' => null,
+            'barcode_type' => null,
+        ]);
+    }
+
+    public function test_confirm_allows_multiple_barcodeless_foods(): void
+    {
+        $user = User::factory()->create();
+        FoodItem::factory()->for($user)->create(['barcode' => null, 'name' => '既存のバーコードなし']);
+
+        $lookup = FoodLookupRequest::factory()->for($user)->withoutBarcode()->found()->create([
+            'source' => 'label_ocr',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('meals.barcode-lookup.confirm', $lookup->id), [
+                'name' => '2つ目のバーコードなし',
+                'serving_label' => '1個',
+                'kcal' => 100,
+                'protein_g' => 1,
+                'fat_g' => 1,
+                'carb_g' => 20,
+            ])
+            ->assertCreated();
+
+        // barcode=null 同士は unique(user_id, barcode) に当たらず、既存も上書きされない
+        $this->assertSame(2, FoodItem::query()->where('user_id', $user->id)->whereNull('barcode')->count());
+        $this->assertDatabaseHas('food_items', ['name' => '既存のバーコードなし']);
+    }
+
     public function test_store_reuses_pending_lookup_for_same_barcode(): void
     {
         $user = User::factory()->create();

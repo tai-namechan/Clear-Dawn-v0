@@ -20,9 +20,10 @@ class ConfirmFoodLookupService
     {
         return DB::transaction(function () use ($user, $lookup, $attributes): FoodItem {
             // unique(user_id, barcode) は soft delete 行にも効くため、
-            // 過去に削除した同一バーコードは復元 + 上書きで再登録する
+            // 過去に削除した同一バーコードは復元 + 上書きで再登録する。
+            // barcode なし（成分表直接登録・PR-F2 入口2）は重複判定せず常に新規作成
             /** @var FoodItem|null $existing */
-            $existing = FoodItem::withTrashed()
+            $existing = $lookup->barcode === null ? null : FoodItem::withTrashed()
                 ->where('user_id', $user->id)
                 ->where('barcode', $lookup->barcode)
                 ->first();

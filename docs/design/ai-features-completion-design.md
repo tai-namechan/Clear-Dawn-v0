@@ -273,6 +273,7 @@ ai_usage_monthly 1行読むだけなのでどこに置いても軽い。
 [照合1] 自分のfood_items（barcode列を追加・要migration）      → hit: 即登録
 [照合2] Open Food Facts API（無料・要属性表示。日本商品のカバー率は限定的）→ hit: 確認画面→food_items保存
 [照合3] miss → 成分表カメラへ誘導
+[入口2] バーコードなし（無い/読めない商品）→ 成分表カメラから直接開始（2026-07-20拡張。バーコードがある場合は必ず照合1→2を先に試す）
 [カメラ] 栄養成分表示を撮影 → AiGateway（vision, feature=meals.label_ocr, tier=cheap）
    プロンプト: 「栄養成分表示から JSON {serving_label, kcal, protein_g, fat_g, carb_g, per:'serving|100g'} のみ」
    → 確認フォーム（AI結果は必ずユーザー確認を挟む。誤読リスクがあるため自動確定しない）
