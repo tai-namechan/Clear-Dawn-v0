@@ -5,24 +5,23 @@ namespace App\Http\Controllers;
 use App\Enums\GoalMetricDirection;
 use App\Http\Requests\Goals\StoreGoalMetricRequest;
 use App\Http\Requests\Goals\UpdateGoalMetricRequest;
-use App\Http\Resources\GoalMetricResource;
 use App\Models\Goal;
 use App\Models\GoalMetric;
 use App\Services\CreateGoalMetricService;
 use App\Services\DeleteGoalMetricService;
 use App\Services\UpdateGoalMetricService;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 
 class GoalMetricController extends Controller
 {
-    public function store(StoreGoalMetricRequest $request, Goal $goal, CreateGoalMetricService $service): JsonResponse
+    public function store(StoreGoalMetricRequest $request, Goal $goal, CreateGoalMetricService $service): RedirectResponse
     {
         Gate::authorize('update', $goal);
 
         $validated = $request->validated();
 
-        $goalMetric = $service->handle($goal, [
+        $service->handle($goal, [
             'metric_id' => $validated['metric_id'],
             'baseline_value' => $validated['baseline_value'] ?? null,
             'target_value' => $validated['target_value'] ?? null,
@@ -33,16 +32,14 @@ class GoalMetricController extends Controller
             'sort_order' => $validated['sort_order'] ?? 0,
         ]);
 
-        return response()->json([
-            'goal_metric' => GoalMetricResource::make($goalMetric->load('metric'))->resolve(),
-        ]);
+        return redirect()->route('goals.show', $goal);
     }
 
     public function update(
         UpdateGoalMetricRequest $request,
         GoalMetric $goalMetric,
         UpdateGoalMetricService $service,
-    ): JsonResponse {
+    ): RedirectResponse {
         Gate::authorize('update', $goalMetric->goal);
 
         $validated = $request->validated();
@@ -53,19 +50,18 @@ class GoalMetricController extends Controller
             $validated['direction'] = GoalMetricDirection::from($validated['direction']);
         }
 
-        $updated = $service->handle($goalMetric, $validated, $reason);
+        $service->handle($goalMetric, $validated, $reason);
 
-        return response()->json([
-            'goal_metric' => GoalMetricResource::make($updated->load('metric'))->resolve(),
-        ]);
+        return redirect()->route('goals.show', $goalMetric->goal);
     }
 
-    public function destroy(GoalMetric $goalMetric, DeleteGoalMetricService $service): JsonResponse
+    public function destroy(GoalMetric $goalMetric, DeleteGoalMetricService $service): RedirectResponse
     {
         Gate::authorize('update', $goalMetric->goal);
 
+        $goal = $goalMetric->goal;
         $service->handle($goalMetric);
 
-        return response()->json(['deleted' => true]);
+        return redirect()->route('goals.show', $goal);
     }
 }

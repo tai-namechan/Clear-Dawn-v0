@@ -71,14 +71,19 @@ class GoalTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user)
-            ->postJson(route('goals.store'), [
+        $response = $this->actingAs($user)
+            ->post(route('goals.store'), [
                 'name' => '競技復帰',
                 'why' => 'もう一度マウンドに立つ',
                 'deadline' => '2027-03-31',
-            ])
-            ->assertOk()
-            ->assertJsonPath('goal.name', '競技復帰');
+            ]);
+
+        $goal = Goal::query()
+            ->where('user_id', $user->id)
+            ->where('name', '競技復帰')
+            ->firstOrFail();
+
+        $response->assertRedirect(route('goals.show', $goal));
 
         $this->assertDatabaseHas('goals', [
             'user_id' => $user->id,
@@ -98,11 +103,11 @@ class GoalTest extends TestCase
             ->assertJsonValidationErrors('reason');
 
         $this->actingAs($user)
-            ->patchJson(route('goals.update', $goal), [
+            ->patch(route('goals.update', $goal), [
                 'name' => '球速135km/h',
                 'reason' => '進捗が想定より良いため上方修正',
             ])
-            ->assertOk();
+            ->assertRedirect(route('goals.show', $goal));
 
         $this->assertDatabaseHas('goal_change_logs', [
             'goal_id' => $goal->id,
@@ -129,8 +134,8 @@ class GoalTest extends TestCase
         $goal = Goal::factory()->create(['user_id' => $user->id]);
 
         $this->actingAs($user)
-            ->deleteJson(route('goals.destroy', $goal))
-            ->assertOk();
+            ->delete(route('goals.destroy', $goal))
+            ->assertRedirect(route('goals.index'));
 
         $this->assertSoftDeleted('goals', ['id' => $goal->id]);
     }
@@ -142,14 +147,13 @@ class GoalTest extends TestCase
         $metric = $this->createMetric();
 
         $this->actingAs($user)
-            ->postJson(route('goal-metrics.store', $goal), [
+            ->post(route('goal-metrics.store', $goal), [
                 'metric_id' => $metric->id,
                 'baseline_value' => 62,
                 'target_value' => 75,
                 'direction' => 'increase',
             ])
-            ->assertOk()
-            ->assertJsonPath('goal_metric.metric.label', '体重');
+            ->assertRedirect(route('goals.show', $goal));
 
         $this->assertDatabaseHas('goal_metrics', [
             'goal_id' => $goal->id,
@@ -174,11 +178,11 @@ class GoalTest extends TestCase
             ->assertJsonValidationErrors('reason');
 
         $this->actingAs($user)
-            ->patchJson(route('goal-metrics.update', $goalMetric), [
+            ->patch(route('goal-metrics.update', $goalMetric), [
                 'target_value' => 75,
                 'reason' => '増量ペースを引き上げ',
             ])
-            ->assertOk();
+            ->assertRedirect(route('goals.show', $goal));
 
         $this->assertSame('75.00', $goalMetric->fresh()->target_value);
         $this->assertDatabaseHas('goal_change_logs', [
@@ -197,8 +201,8 @@ class GoalTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->deleteJson(route('goal-metrics.destroy', $goalMetric))
-            ->assertOk();
+            ->delete(route('goal-metrics.destroy', $goalMetric))
+            ->assertRedirect(route('goals.show', $goal));
 
         $this->assertDatabaseMissing('goal_metrics', ['id' => $goalMetric->id]);
     }

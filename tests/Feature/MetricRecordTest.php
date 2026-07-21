@@ -178,6 +178,35 @@ class MetricRecordTest extends TestCase
             );
     }
 
+    public function test_condition_page_shows_saved_checkin_values(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->putJson(route('today.checkin.upsert'), [
+                'checked_on' => '2026-07-07',
+                'sleep_quality' => 8,
+                'fatigue' => 2,
+                'muscle_soreness' => 3,
+                'stress' => 4,
+                'mood' => 7,
+                'readiness_self' => 9,
+            ])
+            ->assertOk();
+
+        $this->actingAs($user)
+            ->get(route('records.condition', ['date' => '2026-07-07']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Records/Condition')
+                ->where('checkin.sleep_quality', 8)
+                ->where('checkin.fatigue', 2)
+                ->where('checkin.muscle_soreness', 3)
+                ->where('checkin.stress', 4)
+                ->where('checkin.mood', 7)
+                ->where('checkin.readiness_self', 9));
+    }
+
     public function test_user_can_delete_their_own_metric_record(): void
     {
         $user = User::factory()->create();

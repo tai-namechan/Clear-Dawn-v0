@@ -3,20 +3,20 @@ import { Button } from '@/components/ui/button';
 import type { CheckinFormState } from '@/types/todayOps';
 
 interface Props {
-    modelValue: CheckinFormState;
     saving?: boolean;
     hasExisting?: boolean;
     compact?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
     saving: false,
     hasExisting: false,
     compact: false,
 });
 
+const model = defineModel<CheckinFormState>({ required: true });
+
 const emit = defineEmits<{
-    'update:modelValue': [value: CheckinFormState];
     save: [];
 }>();
 
@@ -31,10 +31,10 @@ const fields = [
 
 function updateField(key: keyof CheckinFormState, raw: string): void {
     const next = Math.min(10, Math.max(0, Number(raw) || 0));
-    emit('update:modelValue', {
-        ...props.modelValue,
+    model.value = {
+        ...model.value,
         [key]: next,
-    });
+    };
 }
 </script>
 
@@ -75,7 +75,7 @@ function updateField(key: keyof CheckinFormState, raw: string): void {
                 <span class="flex items-center justify-between gap-2">
                     <span>{{ field[1] }}</span>
                     <span class="tabular-nums text-sm font-semibold text-cd-ink">
-                        {{ modelValue[field[0]] }} / 10
+                        {{ model[field[0]] }} / 10
                     </span>
                 </span>
                 <input
@@ -83,7 +83,7 @@ function updateField(key: keyof CheckinFormState, raw: string): void {
                     min="0"
                     max="10"
                     step="1"
-                    :value="modelValue[field[0]]"
+                    :value="model[field[0]]"
                     class="h-2 w-full cursor-pointer accent-primary"
                     @input="
                         updateField(

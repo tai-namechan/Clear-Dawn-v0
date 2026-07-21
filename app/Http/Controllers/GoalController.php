@@ -14,7 +14,7 @@ use App\Queries\GetGoalsQuery;
 use App\Services\CreateGoalService;
 use App\Services\DeleteGoalService;
 use App\Services\UpdateGoalService;
-use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -48,7 +48,7 @@ class GoalController extends Controller
         ]);
     }
 
-    public function store(StoreGoalRequest $request, CreateGoalService $service): JsonResponse
+    public function store(StoreGoalRequest $request, CreateGoalService $service): RedirectResponse
     {
         $validated = $request->validated();
 
@@ -63,12 +63,10 @@ class GoalController extends Controller
             'sort_order' => $validated['sort_order'] ?? 0,
         ]);
 
-        return response()->json([
-            'goal' => GoalResource::make($goal)->resolve(),
-        ]);
+        return redirect()->route('goals.show', $goal);
     }
 
-    public function update(UpdateGoalRequest $request, Goal $goal, UpdateGoalService $service): JsonResponse
+    public function update(UpdateGoalRequest $request, Goal $goal, UpdateGoalService $service): RedirectResponse
     {
         Gate::authorize('update', $goal);
 
@@ -80,19 +78,17 @@ class GoalController extends Controller
             $validated['status'] = GoalStatus::from($validated['status']);
         }
 
-        $updated = $service->handle($goal, $validated, $reason);
+        $service->handle($goal, $validated, $reason);
 
-        return response()->json([
-            'goal' => GoalResource::make($updated)->resolve(),
-        ]);
+        return redirect()->route('goals.show', $goal);
     }
 
-    public function destroy(Goal $goal, DeleteGoalService $service): JsonResponse
+    public function destroy(Goal $goal, DeleteGoalService $service): RedirectResponse
     {
         Gate::authorize('delete', $goal);
 
         $service->handle($goal);
 
-        return response()->json(['deleted' => true]);
+        return redirect()->route('goals.index');
     }
 }

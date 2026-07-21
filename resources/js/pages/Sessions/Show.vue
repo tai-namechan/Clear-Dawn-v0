@@ -404,7 +404,7 @@ const metrics = computed(() => {
                             <p
                                 class="mt-3 font-sans text-sm text-cd-ink-muted"
                             >
-                                「実行を完了する」を押すと今日やるへ戻ります。履歴にも残ります。
+                                「実行を完了する」を押すと今日/作戦へ戻ります。履歴にも残ります。
                             </p>
                             <Button
                                 type="button"
@@ -440,10 +440,10 @@ const metrics = computed(() => {
                             <p
                                 class="mt-2 font-sans text-sm text-cd-ink-muted"
                             >
-                                今日やる画面から、別の予定を開始できます。
+                                今日/作戦画面から、別の予定を開始できます。
                             </p>
                             <Button type="button" class="mt-6" as-child>
-                                <Link href="/today">今日やるへ戻る</Link>
+                                <Link href="/today">今日/作戦へ戻る</Link>
                             </Button>
                         </div>
                     </section>
