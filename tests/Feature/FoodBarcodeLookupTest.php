@@ -312,6 +312,119 @@ class FoodBarcodeLookupTest extends TestCase
         ]);
     }
 
+    public function test_confirm_links_optional_barcode_to_barcodeless_ocr_lookup(): void
+    {
+        $user = User::factory()->create();
+        $lookup = FoodLookupRequest::factory()->for($user)->withoutBarcode()->found()->create([
+            'source' => 'label_ocr',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('meals.barcode-lookup.confirm', $lookup->id), [
+                'name' => '紐づけ食品',
+                'serving_label' => '1個',
+                'kcal' => 122,
+                'protein_g' => 0.8,
+                'fat_g' => 4.2,
+                'carb_g' => 20,
+                'barcode' => '4901234567894',
+            ])
+            ->assertCreated();
+
+        $this->assertDatabaseHas('food_items', [
+            'user_id' => $user->id,
+            'name' => '紐づけ食品',
+            'barcode' => '4901234567894',
+            'barcode_type' => 'ean13',
+        ]);
+    }
+
+    public function test_confirm_rejects_invalid_optional_barcode(): void
+    {
+        $user = User::factory()->create();
+        $lookup = FoodLookupRequest::factory()->for($user)->withoutBarcode()->found()->create([
+            'source' => 'label_ocr',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('meals.barcode-lookup.confirm', $lookup->id), [
+                'name' => '不正バーコード',
+                'serving_label' => '1個',
+                'kcal' => 100,
+                'protein_g' => 1,
+                'fat_g' => 1,
+                'carb_g' => 10,
+                'barcode' => '12345',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('barcode');
+
+        $this->assertDatabaseMissing('food_items', [
+            'user_id' => $user->id,
+            'name' => '不正バーコード',
+        ]);
+    }
+
+    public function test_confirm_optional_barcode_restores_soft_deleted_food(): void
+    {
+        $user = User::factory()->create();
+        $oldFood = FoodItem::factory()->for($user)->create([
+            'barcode' => '4901234567894',
+            'barcode_type' => 'ean13',
+            'name' => '古い紐づけ食品',
+        ]);
+        $oldFood->delete();
+
+        $lookup = FoodLookupRequest::factory()->for($user)->withoutBarcode()->found()->create([
+            'source' => 'label_ocr',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('meals.barcode-lookup.confirm', $lookup->id), [
+                'name' => '再登録食品',
+                'serving_label' => '1個',
+                'kcal' => 200,
+                'protein_g' => 2,
+                'fat_g' => 3,
+                'carb_g' => 30,
+                'barcode' => '4901234567894',
+            ])
+            ->assertCreated();
+
+        $oldFood->refresh();
+        $this->assertNull($oldFood->deleted_at);
+        $this->assertSame('再登録食品', $oldFood->name);
+        $this->assertSame('4901234567894', $oldFood->barcode);
+    }
+
+    public function test_confirm_omitted_barcode_keeps_lookup_barcode(): void
+    {
+        $user = User::factory()->create();
+        $lookup = FoodLookupRequest::factory()->for($user)->found()->create([
+            'barcode' => '4901234567894',
+            'barcode_type' => 'ean13',
+            'source' => 'label_ocr',
+        ]);
+
+        $this->actingAs($user)
+            ->postJson(route('meals.barcode-lookup.confirm', $lookup->id), [
+                'name' => 'スキャン由来食品',
+                'serving_label' => '1個',
+                'kcal' => 180,
+                'protein_g' => 4,
+                'fat_g' => 6,
+                'carb_g' => 22,
+            ])
+            ->assertCreated();
+
+        $this->assertDatabaseHas('food_items', [
+            'user_id' => $user->id,
+            'name' => 'スキャン由来食品',
+            'barcode' => '4901234567894',
+            'barcode_type' => 'ean13',
+        ]);
+    }
+
     public function test_confirm_allows_multiple_barcodeless_foods(): void
     {
         $user = User::factory()->create();

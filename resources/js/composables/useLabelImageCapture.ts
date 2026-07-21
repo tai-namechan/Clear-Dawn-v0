@@ -1,12 +1,12 @@
 /**
  * 成分表撮影用の画像選択 + クライアント縮小（PR-F2 設計 G）。
  * `<input type="file" accept="image/*" capture="environment">` で取得した画像を
- * canvas で長辺 1600px / JPEG q0.85 に再エンコードしてから upload する。
+ * canvas で長辺 1200px / JPEG q0.85 に再エンコードしてから upload する。
  * 縮小は AI 課金の予約額と転送量を抑えるためで、失敗時は原本をそのまま返し
  * サーバー側 validation（≦5MB / ≦8000px）に委ねる。
  */
 
-const MAX_EDGE_PX = 1600;
+const MAX_EDGE_PX = 1200;
 const JPEG_QUALITY = 0.85;
 
 export async function downscaleLabelImage(file: File): Promise<File> {
