@@ -11,8 +11,8 @@ import {
 } from '@/components/ui/sheet';
 import MoneyEmptyState from '@/components/yoyu-money/MoneyEmptyState.vue';
 import MoneyPageShell from '@/components/yoyu-money/MoneyPageShell.vue';
-import { accountTypeLabel } from '@/lib/yoyuMoney/labels';
 import { formatYen } from '@/lib/yoyuMoney/format';
+import { accountTypeLabel } from '@/lib/yoyuMoney/labels';
 import { moneyAssetsTabs } from '@/lib/yoyuMoney/navigation';
 import type { MoneyAccountRow } from '@/lib/yoyuMoney/types';
 
@@ -20,7 +20,7 @@ interface Props {
     accounts: MoneyAccountRow[];
 }
 
-const props = defineProps<Props>();
+defineProps<Props>();
 
 const page = usePage();
 const drawerOpen = ref(false);
@@ -82,6 +82,7 @@ function toggleActive(account: MoneyAccountRow): void {
 
 onMounted(() => {
     const url = page.url;
+
     if (url.includes('compose=1')) {
         drawerOpen.value = true;
     }
@@ -124,12 +125,18 @@ defineOptions({
             <!-- Desktop table -->
             <div class="hidden overflow-x-auto md:block">
                 <table class="min-w-full text-left text-[13px]">
-                    <thead class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub">
+                    <thead
+                        class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub"
+                    >
                         <tr>
                             <th class="px-4 py-2.5 font-semibold">口座名</th>
                             <th class="px-4 py-2.5 font-semibold">種別</th>
-                            <th class="px-4 py-2.5 text-right font-semibold">残高</th>
-                            <th class="px-4 py-2.5 font-semibold">残高を更新</th>
+                            <th class="px-4 py-2.5 text-right font-semibold">
+                                残高
+                            </th>
+                            <th class="px-4 py-2.5 font-semibold">
+                                残高を更新
+                            </th>
                             <th class="px-4 py-2.5 font-semibold">操作</th>
                         </tr>
                     </thead>
@@ -159,13 +166,23 @@ defineOptions({
                             </td>
                             <td class="px-4 py-3 text-right">
                                 <p class="font-bold text-os-ink">
-                                    {{ formatYen(account.current_balance.amountMinor) }}
+                                    {{
+                                        formatYen(
+                                            account.current_balance.amountMinor,
+                                        )
+                                    }}
                                 </p>
                                 <p
                                     v-if="account.available_balance"
                                     class="text-[11px] text-os-faint"
                                 >
-                                    利用可能 {{ formatYen(account.available_balance.amountMinor) }}
+                                    利用可能
+                                    {{
+                                        formatYen(
+                                            account.available_balance
+                                                .amountMinor,
+                                        )
+                                    }}
                                 </p>
                             </td>
                             <td class="px-4 py-3">
@@ -186,7 +203,11 @@ defineOptions({
                                             ).value
                                         "
                                     />
-                                    <Button type="submit" size="sm" variant="outline">
+                                    <Button
+                                        type="submit"
+                                        size="sm"
+                                        variant="outline"
+                                    >
                                         更新
                                     </Button>
                                 </form>
@@ -226,15 +247,28 @@ defineOptions({
                                 </span>
                             </p>
                             <p class="text-[12px] text-os-sub">
-                                {{ accountTypeLabel(account.type) }} · {{ account.currency_code }}
+                                {{ accountTypeLabel(account.type) }} ·
+                                {{ account.currency_code }}
                             </p>
                         </div>
                         <div class="text-right">
                             <p class="font-bold text-os-ink">
-                                {{ formatYen(account.current_balance.amountMinor) }}
+                                {{
+                                    formatYen(
+                                        account.current_balance.amountMinor,
+                                    )
+                                }}
                             </p>
-                            <p v-if="account.available_balance" class="text-[11px] text-os-faint">
-                                利用可能 {{ formatYen(account.available_balance.amountMinor) }}
+                            <p
+                                v-if="account.available_balance"
+                                class="text-[11px] text-os-faint"
+                            >
+                                利用可能
+                                {{
+                                    formatYen(
+                                        account.available_balance.amountMinor,
+                                    )
+                                }}
                             </p>
                         </div>
                     </div>
@@ -258,7 +292,9 @@ defineOptions({
                                 "
                             />
                         </label>
-                        <Button type="submit" size="sm" variant="outline">更新</Button>
+                        <Button type="submit" size="sm" variant="outline"
+                            >更新</Button
+                        >
                         <Button
                             type="button"
                             size="sm"
@@ -273,21 +309,27 @@ defineOptions({
         </section>
 
         <Sheet :open="drawerOpen" @update:open="drawerOpen = $event">
-            <SheetContent side="right" class="w-full border-os-line bg-white sm:max-w-md">
+            <SheetContent
+                side="right"
+                class="w-full border-os-line bg-white sm:max-w-md"
+            >
                 <SheetHeader>
                     <SheetTitle>口座を追加</SheetTitle>
                     <SheetDescription>
                         残高は後からいつでも更新できます。
                     </SheetDescription>
                 </SheetHeader>
-                <form class="mt-4 space-y-3 px-1" @submit.prevent="submitCreate">
+                <form
+                    class="mt-4 space-y-3 px-1"
+                    @submit.prevent="submitCreate"
+                >
                     <label class="block text-[12px] text-os-sub">
                         口座名
                         <input
                             v-model="createForm.name"
                             type="text"
                             required
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <label class="block text-[12px] text-os-sub">
@@ -310,11 +352,15 @@ defineOptions({
                             inputmode="numeric"
                             pattern="-?[0-9]*"
                             required
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <div class="flex justify-end gap-2 pt-2">
-                        <Button type="button" variant="outline" @click="drawerOpen = false">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="drawerOpen = false"
+                        >
                             キャンセル
                         </Button>
                         <Button type="submit">追加する</Button>

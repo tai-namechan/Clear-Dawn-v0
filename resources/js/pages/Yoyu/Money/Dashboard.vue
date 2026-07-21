@@ -131,7 +131,12 @@ interface Props {
     setup_progress?: SetupProgress;
     balance_timeline?: TimelineEvent[];
     month_end_balance_minor?: string;
-    next_income?: { id: string; name: string; due_on: string; amount_minor: string } | null;
+    next_income?: {
+        id: string;
+        name: string;
+        due_on: string;
+        amount_minor: string;
+    } | null;
     first_shortfall_date?: string | null;
     month_summary?: {
         income_minor: string;
@@ -183,7 +188,9 @@ const monthSummary = computed(
         },
 );
 
-const hasShortfall = computed(() => isPositiveMinor(props.margin.shortfall_minor));
+const hasShortfall = computed(() =>
+    isPositiveMinor(props.margin.shortfall_minor),
+);
 
 function dismissSetup(): void {
     setupDismissed.value = true;
@@ -242,11 +249,9 @@ defineOptions({
             v-if="freshness_warnings.length > 0"
             class="space-y-1.5 rounded-xl bg-os-yoyu-soft/60 px-3 py-2 text-[12.5px] text-os-ink"
         >
-            <li
-                v-for="warning in freshness_warnings"
-                :key="warning.account_id"
-            >
-                {{ warning.account_name }}: {{ freshnessLabel(warning.message) }}
+            <li v-for="warning in freshness_warnings" :key="warning.account_id">
+                {{ warning.account_name }}:
+                {{ freshnessLabel(warning.message) }}
             </li>
         </ul>
 
@@ -262,7 +267,9 @@ defineOptions({
                 <p class="mt-2 text-[13px] text-os-sub">
                     計算に必要な設定がまだ完了していません。参考値として投影余裕額を表示しています。
                 </p>
-                <p class="mt-2 text-3xl font-bold tracking-tight text-os-faint md:text-4xl">
+                <p
+                    class="mt-2 text-3xl font-bold tracking-tight text-os-faint md:text-4xl"
+                >
                     <MoneyAmount
                         :amount-minor="margin.projected_margin_minor"
                         signed
@@ -284,7 +291,9 @@ defineOptions({
                 </Link>
             </template>
             <template v-else-if="hasShortfall">
-                <p class="mt-2 text-3xl font-bold tracking-tight text-[#8A5A3B] md:text-4xl">
+                <p
+                    class="mt-2 text-3xl font-bold tracking-tight text-[#8A5A3B] md:text-4xl"
+                >
                     {{ formatYen('0') }}
                 </p>
                 <p class="mt-2 text-[13px] text-[#8A5A3B]">
@@ -294,7 +303,9 @@ defineOptions({
                 </p>
             </template>
             <template v-else>
-                <p class="mt-2 text-3xl font-bold tracking-tight text-os-yoyu md:text-4xl md:text-right">
+                <p
+                    class="mt-2 text-3xl font-bold tracking-tight text-os-yoyu md:text-right md:text-4xl"
+                >
                     {{ formatYen(margin.safe_to_spend_minor) }}
                 </p>
             </template>
@@ -306,28 +317,23 @@ defineOptions({
                     <p class="text-os-sub">月末予測残高</p>
                     <p class="font-semibold text-os-ink">
                         <MoneyAmount
-                            :amount-minor="month_end_balance_minor ?? margin.projected_cash_minor"
+                            :amount-minor="
+                                month_end_balance_minor ??
+                                margin.projected_cash_minor
+                            "
                         />
                     </p>
                 </div>
                 <div>
                     <p class="text-os-sub">次の入金予定</p>
-                    <p
-                        v-if="next_income"
-                        class="font-semibold text-os-ink"
-                    >
+                    <p v-if="next_income" class="font-semibold text-os-ink">
                         {{ next_income.due_on }} {{ next_income.name }}
                         <MoneyAmount
                             :amount-minor="next_income.amount_minor"
                             signed
                         />
                     </p>
-                    <p
-                        v-else
-                        class="text-os-faint"
-                    >
-                        登録なし
-                    </p>
+                    <p v-else class="text-os-faint">登録なし</p>
                 </div>
                 <div class="sm:col-span-2">
                     <p class="text-os-sub">
@@ -338,7 +344,7 @@ defineOptions({
 
             <button
                 type="button"
-                class="mt-3 text-[12px] font-semibold text-os-yoyu hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                class="mt-3 text-[12px] font-semibold text-os-yoyu hover:underline focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                 @click="showBreakdown = !showBreakdown"
             >
                 {{ showBreakdown ? '計算の内訳を閉じる' : '計算の内訳を見る' }}
@@ -356,31 +362,41 @@ defineOptions({
                 <div class="flex justify-between gap-2">
                     <dt class="text-os-sub">確定の入金予定</dt>
                     <dd class="font-semibold">
-                        <MoneyAmount :amount-minor="margin.confirmed_income_minor" />
+                        <MoneyAmount
+                            :amount-minor="margin.confirmed_income_minor"
+                        />
                     </dd>
                 </div>
                 <div class="flex justify-between gap-2">
                     <dt class="text-os-sub">確定の支払い</dt>
                     <dd class="font-semibold">
-                        <MoneyAmount :amount-minor="margin.confirmed_outflow_minor" />
+                        <MoneyAmount
+                            :amount-minor="margin.confirmed_outflow_minor"
+                        />
                     </dd>
                 </div>
                 <div class="flex justify-between gap-2">
                     <dt class="text-os-sub">見込み支出の予約</dt>
                     <dd class="font-semibold">
-                        <MoneyAmount :amount-minor="margin.uncertain_reserve_minor" />
+                        <MoneyAmount
+                            :amount-minor="margin.uncertain_reserve_minor"
+                        />
                     </dd>
                 </div>
                 <div class="flex justify-between gap-2">
                     <dt class="text-os-sub">最低生活費の残り</dt>
                     <dd class="font-semibold">
-                        <MoneyAmount :amount-minor="margin.living_reserve_minor" />
+                        <MoneyAmount
+                            :amount-minor="margin.living_reserve_minor"
+                        />
                     </dd>
                 </div>
                 <div class="flex justify-between gap-2">
                     <dt class="text-os-sub">安全資金</dt>
                     <dd class="font-semibold">
-                        <MoneyAmount :amount-minor="margin.safety_buffer_minor" />
+                        <MoneyAmount
+                            :amount-minor="margin.safety_buffer_minor"
+                        />
                     </dd>
                 </div>
             </dl>
@@ -437,17 +453,13 @@ defineOptions({
             <section
                 class="rounded-2xl border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
             >
-                <h2 class="mb-3 text-sm font-bold text-os-ink">もうすぐ支払うもの</h2>
-                <p
-                    v-if="payments.length === 0"
-                    class="text-[13px] text-os-sub"
-                >
+                <h2 class="mb-3 text-sm font-bold text-os-ink">
+                    もうすぐ支払うもの
+                </h2>
+                <p v-if="payments.length === 0" class="text-[13px] text-os-sub">
                     直近の支払い予定はありません。
                 </p>
-                <ul
-                    v-else
-                    class="divide-y divide-os-line"
-                >
+                <ul v-else class="divide-y divide-os-line">
                     <li
                         v-for="payment in payments.slice(0, 6)"
                         :key="payment.id"
@@ -469,17 +481,23 @@ defineOptions({
                                     class="text-[12px] text-os-faint"
                                 >
                                     支払後残高
-                                    <MoneyAmount :amount-minor="payment.balance_after_minor" />
+                                    <MoneyAmount
+                                        :amount-minor="
+                                            payment.balance_after_minor
+                                        "
+                                    />
                                 </p>
                             </div>
                             <p class="shrink-0 text-right font-bold">
-                                <MoneyAmount :amount-minor="payment.remaining_minor" />
+                                <MoneyAmount
+                                    :amount-minor="payment.remaining_minor"
+                                />
                             </p>
                         </div>
                         <div class="mt-2 flex flex-wrap gap-2">
                             <button
                                 type="button"
-                                class="rounded-lg border border-os-line px-2.5 py-1.5 text-[12px] font-semibold text-os-sub hover:bg-os-yoyu-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                                class="rounded-lg border border-os-line px-2.5 py-1.5 text-[12px] font-semibold text-os-sub hover:bg-os-yoyu-soft focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                                 @click="settlePayment(payment)"
                             >
                                 支払い済みにする
@@ -508,35 +526,37 @@ defineOptions({
                 <h2 class="mb-3 text-sm font-bold text-os-ink">今月の注意点</h2>
                 <ul class="space-y-2 text-[13px] text-os-sub">
                     <li v-if="hasShortfall">
-                        <MoneyStatusBadge
-                            label="不足見込み"
-                            tone="caution"
-                        />
+                        <MoneyStatusBadge label="不足見込み" tone="caution" />
                         <span class="ml-2">
                             今月は
-                            <MoneyAmount :amount-minor="margin.shortfall_minor" />
+                            <MoneyAmount
+                                :amount-minor="margin.shortfall_minor"
+                            />
                             不足する見込みです。支払いの調整や収入の確認を検討できます。
                         </span>
                     </li>
                     <li v-if="first_shortfall_date">
-                        <MoneyStatusBadge
-                            label="残高推移"
-                            tone="caution"
-                        />
+                        <MoneyStatusBadge label="残高推移" tone="caution" />
                         <span class="ml-2">
-                            {{ first_shortfall_date }} 時点で残高が不足する見込みです。
+                            {{
+                                first_shortfall_date
+                            }}
+                            時点で残高が不足する見込みです。
                         </span>
                     </li>
                     <li v-if="!margin.is_complete">
-                        <MoneyStatusBadge
-                            label="設定不足"
-                            tone="info"
-                        />
+                        <MoneyStatusBadge label="設定不足" tone="info" />
                         <span class="ml-2">
                             最低生活費または安全資金が未設定のため、断定表示はしていません。
                         </span>
                     </li>
-                    <li v-if="!hasShortfall && margin.is_complete && !first_shortfall_date">
+                    <li
+                        v-if="
+                            !hasShortfall &&
+                            margin.is_complete &&
+                            !first_shortfall_date
+                        "
+                    >
                         現在の登録内容では、目立った不足見込みはありません。
                     </li>
                     <li>

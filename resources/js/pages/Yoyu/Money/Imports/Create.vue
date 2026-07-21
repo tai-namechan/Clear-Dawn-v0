@@ -35,7 +35,9 @@ const uploadForm = useForm({
 });
 
 const mapping = reactive({
-    date_column: String(props.currentImport?.mapping_config?.date_column ?? '0'),
+    date_column: String(
+        props.currentImport?.mapping_config?.date_column ?? '0',
+    ),
     description_column: String(
         props.currentImport?.mapping_config?.description_column ?? '1',
     ),
@@ -173,10 +175,7 @@ defineOptions({
         primary-active="ledger"
     >
         <div class="flex items-center gap-2 text-[12px] text-os-sub">
-            <Link
-                href="/yoyu/money/imports"
-                class="hover:text-os-ink"
-            >
+            <Link href="/yoyu/money/imports" class="hover:text-os-ink">
                 ← 取込一覧へ
             </Link>
         </div>
@@ -220,7 +219,9 @@ defineOptions({
             v-if="step === 1"
             class="rounded-2xl border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
         >
-            <h2 class="mb-1 text-sm font-bold text-os-ink">CSVをアップロード</h2>
+            <h2 class="mb-1 text-sm font-bold text-os-ink">
+                CSVをアップロード
+            </h2>
             <p class="mb-3 text-[12px] text-os-sub">
                 銀行やカード会社からダウンロードしたCSVを選択してください。
             </p>
@@ -260,7 +261,10 @@ defineOptions({
                     アップロード
                 </Button>
             </form>
-            <p v-if="accounts.length === 0" class="mt-2 text-[12px] text-[#8A5A3B]">
+            <p
+                v-if="accounts.length === 0"
+                class="mt-2 text-[12px] text-[#8A5A3B]"
+            >
                 先に口座を追加してください。
             </p>
         </section>
@@ -272,7 +276,8 @@ defineOptions({
         >
             <h2 class="mb-1 text-sm font-bold text-os-ink">列マッピング</h2>
             <p class="mb-3 text-[12px] text-os-sub">
-                {{ currentImport.source_filename }}（状態: {{ currentImport.status }}）
+                {{ currentImport.source_filename }}（状態:
+                {{ currentImport.status }}）
             </p>
             <form
                 class="grid grid-cols-2 gap-3 sm:grid-cols-3"
@@ -372,10 +377,14 @@ defineOptions({
         >
             <h2 class="mb-2 text-sm font-bold text-os-ink">取込実行</h2>
             <p class="text-[13px] text-os-sub">
-                {{ currentImport.source_filename }}（{{ currentImport.row_count ?? 0 }} 行 /
-                状態: {{ currentImport.status }}）
+                {{ currentImport.source_filename }}（{{
+                    currentImport.row_count ?? 0
+                }}
+                行 / 状態: {{ currentImport.status }}）
             </p>
-            <p class="mt-2 rounded-xl bg-os-yoyu-soft/60 px-3 py-2 text-[12px] text-os-ink">
+            <p
+                class="mt-2 rounded-xl bg-os-yoyu-soft/60 px-3 py-2 text-[12px] text-os-ink"
+            >
                 実行すると取引が実データに登録されます。取消は取込一覧ページから可能です。
             </p>
             <div class="mt-4 flex flex-wrap gap-2">

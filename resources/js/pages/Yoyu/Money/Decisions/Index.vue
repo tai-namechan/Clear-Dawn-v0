@@ -103,10 +103,7 @@ defineOptions({
             action-href="/yoyu/money/decisions?compose=1"
         />
 
-        <ol
-            v-else
-            class="relative space-y-4 border-l border-os-line pl-5"
-        >
+        <ol v-else class="relative space-y-4 border-l border-os-line pl-5">
             <li
                 v-for="decision in decisions"
                 :key="decision.id"
@@ -115,38 +112,66 @@ defineOptions({
                 <span
                     class="absolute top-1.5 -left-[22px] h-2.5 w-2.5 rounded-full bg-os-yoyu"
                 />
-                <div class="rounded-2xl border border-os-line bg-white px-5 py-4 shadow-[0_1px_3px_rgba(38,48,58,0.05)]">
-                    <div class="flex flex-wrap items-baseline justify-between gap-2">
-                        <p class="font-bold text-os-ink">{{ decision.title }}</p>
+                <div
+                    class="rounded-2xl border border-os-line bg-white px-5 py-4 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
+                >
+                    <div
+                        class="flex flex-wrap items-baseline justify-between gap-2"
+                    >
+                        <p class="font-bold text-os-ink">
+                            {{ decision.title }}
+                        </p>
                         <p class="text-[12px] text-os-sub">
                             {{ decision.decided_on }} ·
                             {{ decisionStatusLabel(decision.status) }}
                         </p>
                     </div>
-                    <p v-if="decision.memo" class="mt-1 text-[13px] text-os-sub">
+                    <p
+                        v-if="decision.memo"
+                        class="mt-1 text-[13px] text-os-sub"
+                    >
                         {{ decision.memo }}
                     </p>
                     <dl class="mt-3 space-y-2 text-[12px]">
                         <div v-if="decision.before_payload">
                             <dt class="font-semibold text-os-sub">変更前</dt>
-                            <dd class="mt-0.5 break-all font-mono text-[11px] text-os-ink">
+                            <dd
+                                class="mt-0.5 font-mono text-[11px] break-all text-os-ink"
+                            >
                                 {{ payloadPreview(decision.before_payload) }}
                             </dd>
                         </div>
                         <div v-if="decision.expected_effect_payload">
                             <dt class="font-semibold text-os-sub">想定効果</dt>
-                            <dd class="mt-0.5 break-all font-mono text-[11px] text-os-ink">
-                                {{ payloadPreview(decision.expected_effect_payload) }}
+                            <dd
+                                class="mt-0.5 font-mono text-[11px] break-all text-os-ink"
+                            >
+                                {{
+                                    payloadPreview(
+                                        decision.expected_effect_payload,
+                                    )
+                                }}
                             </dd>
                         </div>
                         <div v-if="decision.actual_effect_payload">
-                            <dt class="font-semibold text-os-sub">実際の効果</dt>
-                            <dd class="mt-0.5 break-all font-mono text-[11px] text-os-ink">
-                                {{ payloadPreview(decision.actual_effect_payload) }}
+                            <dt class="font-semibold text-os-sub">
+                                実際の効果
+                            </dt>
+                            <dd
+                                class="mt-0.5 font-mono text-[11px] break-all text-os-ink"
+                            >
+                                {{
+                                    payloadPreview(
+                                        decision.actual_effect_payload,
+                                    )
+                                }}
                             </dd>
                         </div>
                     </dl>
-                    <p v-if="decision.reviewed_at" class="mt-2 text-[11px] text-os-faint">
+                    <p
+                        v-if="decision.reviewed_at"
+                        class="mt-2 text-[11px] text-os-faint"
+                    >
                         振り返り: {{ decision.reviewed_at }}
                     </p>
                 </div>
@@ -154,21 +179,27 @@ defineOptions({
         </ol>
 
         <Sheet :open="drawerOpen" @update:open="drawerOpen = $event">
-            <SheetContent side="right" class="w-full border-os-line bg-white sm:max-w-md">
+            <SheetContent
+                side="right"
+                class="w-full border-os-line bg-white sm:max-w-md"
+            >
                 <SheetHeader>
                     <SheetTitle>見直しを記録</SheetTitle>
                     <SheetDescription>
                         支払い方法の変更や節約の取り組みを残しておくと、後から効果を確認できます。
                     </SheetDescription>
                 </SheetHeader>
-                <form class="mt-4 space-y-3 px-1" @submit.prevent="submitCreate">
+                <form
+                    class="mt-4 space-y-3 px-1"
+                    @submit.prevent="submitCreate"
+                >
                     <label class="block text-[12px] text-os-sub">
                         タイトル
                         <input
                             v-model="createForm.title"
                             type="text"
                             required
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                             placeholder="例: サブスクを解約した"
                         />
                     </label>
@@ -177,7 +208,7 @@ defineOptions({
                         <input
                             v-model="createForm.decided_on"
                             type="date"
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <label class="block text-[12px] text-os-sub">
@@ -185,11 +216,15 @@ defineOptions({
                         <input
                             v-model="createForm.memo"
                             type="text"
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <div class="flex justify-end gap-2 pt-2">
-                        <Button type="button" variant="outline" @click="drawerOpen = false">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="drawerOpen = false"
+                        >
                             キャンセル
                         </Button>
                         <Button type="submit">記録する</Button>

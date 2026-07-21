@@ -31,7 +31,7 @@ withDefaults(defineProps<Props>(), {
         </p>
         <p
             v-else
-            class="mt-1 text-right font-bold tabular-nums tracking-tight text-os-ink"
+            class="mt-1 text-right font-bold tracking-tight text-os-ink tabular-nums"
             :class="
                 emphasis === 'hero'
                     ? 'text-3xl text-os-yoyu md:text-4xl'
@@ -42,10 +42,7 @@ withDefaults(defineProps<Props>(), {
         >
             {{ formatYen(amountMinor) }}
         </p>
-        <p
-            v-if="hint"
-            class="mt-1 text-[12px] text-os-faint"
-        >
+        <p v-if="hint" class="mt-1 text-[12px] text-os-faint">
             {{ hint }}
         </p>
     </div>

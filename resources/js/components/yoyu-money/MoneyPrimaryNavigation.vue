@@ -31,7 +31,7 @@ const activeKey = computed(() => {
             v-for="item in moneyPrimaryNav"
             :key="item.key"
             :href="item.href"
-            class="shrink-0 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+            class="shrink-0 rounded-lg px-3 py-2 text-[13px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
             :class="
                 activeKey === item.key
                     ? 'bg-os-yoyu text-white'
@@ -44,7 +44,7 @@ const activeKey = computed(() => {
         <div class="ml-auto shrink-0">
             <Link
                 href="/yoyu/money/settings"
-                class="inline-flex size-9 items-center justify-center rounded-lg text-os-sub transition-colors hover:bg-os-yoyu-soft hover:text-os-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                class="inline-flex size-9 items-center justify-center rounded-lg text-os-sub transition-colors hover:bg-os-yoyu-soft hover:text-os-ink focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                 :aria-current="activeKey === 'settings' ? 'page' : undefined"
                 aria-label="設定"
                 title="設定"

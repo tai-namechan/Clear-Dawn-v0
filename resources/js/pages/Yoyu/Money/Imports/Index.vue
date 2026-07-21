@@ -13,7 +13,11 @@ interface Props {
 defineProps<Props>();
 
 function rollback(importRow: MoneyImportRow): void {
-    if (!confirm(`「${importRow.source_filename ?? importRow.id}」の取込を取り消しますか？`)) {
+    if (
+        !confirm(
+            `「${importRow.source_filename ?? importRow.id}」の取込を取り消しますか？`,
+        )
+    ) {
         return;
     }
 
@@ -79,9 +83,13 @@ defineOptions({
             <!-- Desktop table -->
             <div class="hidden overflow-x-auto md:block">
                 <table class="min-w-full text-left text-[13px]">
-                    <thead class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub">
+                    <thead
+                        class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub"
+                    >
                         <tr>
-                            <th class="px-4 py-2.5 font-semibold">ファイル名</th>
+                            <th class="px-4 py-2.5 font-semibold">
+                                ファイル名
+                            </th>
                             <th class="px-4 py-2.5 font-semibold">状態</th>
                             <th class="px-4 py-2.5 font-semibold">件数</th>
                             <th class="px-4 py-2.5 font-semibold">日時</th>
@@ -97,11 +105,15 @@ defineOptions({
                             <td class="px-4 py-3 font-semibold text-os-ink">
                                 {{ item.source_filename || '(ファイル名なし)' }}
                             </td>
-                            <td class="px-4 py-3 text-os-sub">{{ statusLabel(item.status) }}</td>
-                            <td class="px-4 py-3 tabular-nums text-os-sub">
+                            <td class="px-4 py-3 text-os-sub">
+                                {{ statusLabel(item.status) }}
+                            </td>
+                            <td class="px-4 py-3 text-os-sub tabular-nums">
                                 {{ item.row_count ?? 0 }} 行
                             </td>
-                            <td class="px-4 py-3 text-os-faint">{{ item.created_at ?? '—' }}</td>
+                            <td class="px-4 py-3 text-os-faint">
+                                {{ item.created_at ?? '—' }}
+                            </td>
                             <td class="px-4 py-3">
                                 <div class="flex gap-2">
                                     <Button
@@ -110,7 +122,9 @@ defineOptions({
                                         size="sm"
                                         variant="outline"
                                     >
-                                        <Link :href="`/yoyu/money/imports/create?import_id=${item.id}`">
+                                        <Link
+                                            :href="`/yoyu/money/imports/create?import_id=${item.id}`"
+                                        >
                                             続行
                                         </Link>
                                     </Button>
@@ -133,18 +147,15 @@ defineOptions({
 
             <!-- Mobile cards -->
             <ul class="divide-y divide-os-line md:hidden">
-                <li
-                    v-for="item in imports"
-                    :key="`m-${item.id}`"
-                    class="p-4"
-                >
+                <li v-for="item in imports" :key="`m-${item.id}`" class="p-4">
                     <div class="flex items-start justify-between gap-2">
                         <div class="min-w-0">
                             <p class="truncate font-semibold text-os-ink">
                                 {{ item.source_filename || '(ファイル名なし)' }}
                             </p>
                             <p class="text-[12px] text-os-sub">
-                                {{ statusLabel(item.status) }} · {{ item.row_count ?? 0 }} 行 ·
+                                {{ statusLabel(item.status) }} ·
+                                {{ item.row_count ?? 0 }} 行 ·
                                 {{ item.created_at ?? '—' }}
                             </p>
                         </div>
@@ -156,7 +167,9 @@ defineOptions({
                             size="sm"
                             variant="outline"
                         >
-                            <Link :href="`/yoyu/money/imports/create?import_id=${item.id}`">
+                            <Link
+                                :href="`/yoyu/money/imports/create?import_id=${item.id}`"
+                            >
                                 続行
                             </Link>
                         </Button>

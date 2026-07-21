@@ -23,14 +23,11 @@ withDefaults(defineProps<Props>(), {
         <Link
             v-if="actionHref && actionLabel"
             :href="actionHref"
-            class="mt-4 inline-flex min-h-10 items-center rounded-lg bg-os-yoyu px-4 text-[13px] font-semibold text-white hover:bg-os-yoyu/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+            class="mt-4 inline-flex min-h-10 items-center rounded-lg bg-os-yoyu px-4 text-[13px] font-semibold text-white hover:bg-os-yoyu/90 focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
         >
             {{ actionLabel }}
         </Link>
-        <div
-            v-else-if="$slots.action"
-            class="mt-4"
-        >
+        <div v-else-if="$slots.action" class="mt-4">
             <slot name="action" />
         </div>
     </div>

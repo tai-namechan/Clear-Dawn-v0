@@ -1,10 +1,5 @@
 export type MoneyPrimaryNavKey =
-    | 'home'
-    | 'month'
-    | 'assets'
-    | 'ledger'
-    | 'plan'
-    | 'settings';
+    'home' | 'month' | 'assets' | 'ledger' | 'plan' | 'settings';
 
 export type MoneySectionTab = {
     key: string;
@@ -67,22 +62,50 @@ export const moneyAssetsTabs: MoneySectionTab[] = [
 ];
 
 export const moneyLedgerTabs: MoneySectionTab[] = [
-    { key: 'transactions', label: '取引明細', href: '/yoyu/money/transactions' },
-    { key: 'imports-create', label: 'CSV取込', href: '/yoyu/money/imports/create' },
+    {
+        key: 'transactions',
+        label: '取引明細',
+        href: '/yoyu/money/transactions',
+    },
+    {
+        key: 'imports-create',
+        label: 'CSV取込',
+        href: '/yoyu/money/imports/create',
+    },
     { key: 'imports', label: '取込履歴', href: '/yoyu/money/imports' },
 ];
 
 export const moneyPlanTabs: MoneySectionTab[] = [
     { key: 'analysis', label: '分析', href: '/yoyu/money/analysis' },
-    { key: 'simulations', label: 'シミュレーター', href: '/yoyu/money/simulations' },
+    {
+        key: 'simulations',
+        label: 'シミュレーター',
+        href: '/yoyu/money/simulations',
+    },
     { key: 'decisions', label: '見直したこと', href: '/yoyu/money/decisions' },
 ];
 
 export const moneyRecordMenu: MoneySectionTab[] = [
-    { key: 'income', label: '収入予定', href: '/yoyu/money/cashflows?compose=income' },
-    { key: 'expense', label: '支払予定', href: '/yoyu/money/cashflows?compose=expense' },
-    { key: 'transaction', label: '取引明細', href: '/yoyu/money/transactions?compose=1' },
-    { key: 'account', label: '口座残高', href: '/yoyu/money/accounts?compose=1' },
+    {
+        key: 'income',
+        label: '収入予定',
+        href: '/yoyu/money/cashflows?compose=income',
+    },
+    {
+        key: 'expense',
+        label: '支払予定',
+        href: '/yoyu/money/cashflows?compose=expense',
+    },
+    {
+        key: 'transaction',
+        label: '取引明細',
+        href: '/yoyu/money/transactions?compose=1',
+    },
+    {
+        key: 'account',
+        label: '口座残高',
+        href: '/yoyu/money/accounts?compose=1',
+    },
     { key: 'card', label: 'カード', href: '/yoyu/money/cards?compose=1' },
     { key: 'loan', label: 'ローン', href: '/yoyu/money/loans?compose=1' },
 ];

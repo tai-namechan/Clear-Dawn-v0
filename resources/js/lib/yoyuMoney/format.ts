@@ -71,7 +71,9 @@ export function formatSignedYen(amountMinor: string): string {
     return `+${formatYen(normalized)}`;
 }
 
-export function isNegativeMinor(amountMinor: string | null | undefined): boolean {
+export function isNegativeMinor(
+    amountMinor: string | null | undefined,
+): boolean {
     const normalized = normalizeMinor(amountMinor);
 
     if (normalized === null) {
@@ -81,7 +83,9 @@ export function isNegativeMinor(amountMinor: string | null | undefined): boolean
     return BigInt(normalized) < 0n;
 }
 
-export function isPositiveMinor(amountMinor: string | null | undefined): boolean {
+export function isPositiveMinor(
+    amountMinor: string | null | undefined,
+): boolean {
     const normalized = normalizeMinor(amountMinor);
 
     if (normalized === null) {
@@ -91,7 +95,9 @@ export function isPositiveMinor(amountMinor: string | null | undefined): boolean
     return BigInt(normalized) > 0n;
 }
 
-export function minorToDisplayString(value: string | number | null | undefined): string | null {
+export function minorToDisplayString(
+    value: string | number | null | undefined,
+): string | null {
     if (value === null || value === undefined) {
         return null;
     }

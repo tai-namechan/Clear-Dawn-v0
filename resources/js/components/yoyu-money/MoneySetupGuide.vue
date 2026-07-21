@@ -36,10 +36,7 @@ function nextHref(): string {
         class="rounded-2xl border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)]"
         aria-labelledby="money-setup-heading"
     >
-        <h2
-            id="money-setup-heading"
-            class="text-base font-bold text-os-ink"
-        >
+        <h2 id="money-setup-heading" class="text-base font-bold text-os-ink">
             お金の余裕を計算する準備をしましょう
         </h2>
         <p class="mt-1 text-[13px] text-os-sub">
@@ -58,7 +55,9 @@ function nextHref(): string {
                     <p class="text-[13px] font-semibold text-os-ink">
                         {{ index + 1 }}. {{ step.label }}
                     </p>
-                    <p class="text-[12px] text-os-sub">{{ step.description }}</p>
+                    <p class="text-[12px] text-os-sub">
+                        {{ step.description }}
+                    </p>
                 </div>
                 <div class="flex items-center gap-2">
                     <MoneyStatusBadge
@@ -71,15 +70,11 @@ function nextHref(): string {
                         label="任意"
                         tone="info"
                     />
-                    <MoneyStatusBadge
-                        v-else
-                        label="未完了"
-                        tone="caution"
-                    />
+                    <MoneyStatusBadge v-else label="未完了" tone="caution" />
                     <Link
                         v-if="step.status !== 'complete'"
                         :href="step.href"
-                        class="text-[12px] font-semibold text-os-yoyu hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                        class="text-[12px] font-semibold text-os-yoyu hover:underline focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                     >
                         設定
                     </Link>
@@ -90,13 +85,13 @@ function nextHref(): string {
         <div class="mt-4 flex flex-wrap gap-2">
             <Link
                 :href="nextHref()"
-                class="inline-flex min-h-10 items-center rounded-lg bg-os-yoyu px-4 text-[13px] font-semibold text-white hover:bg-os-yoyu/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                class="inline-flex min-h-10 items-center rounded-lg bg-os-yoyu px-4 text-[13px] font-semibold text-white hover:bg-os-yoyu/90 focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
             >
                 次の設定へ進む
             </Link>
             <button
                 type="button"
-                class="inline-flex min-h-10 items-center rounded-lg border border-os-line px-4 text-[13px] font-semibold text-os-sub hover:bg-os-yoyu-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                class="inline-flex min-h-10 items-center rounded-lg border border-os-line px-4 text-[13px] font-semibold text-os-sub hover:bg-os-yoyu-soft focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                 @click="emit('dismiss')"
             >
                 あとで設定する

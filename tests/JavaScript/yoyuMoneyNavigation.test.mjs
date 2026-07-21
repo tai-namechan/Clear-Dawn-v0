@@ -3,9 +3,9 @@
  */
 
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -18,7 +18,10 @@ function loadNavigationSource() {
 }
 
 function loadLabelsSource() {
-    return readFileSync(join(root, 'resources/js/lib/yoyuMoney/labels.ts'), 'utf8');
+    return readFileSync(
+        join(root, 'resources/js/lib/yoyuMoney/labels.ts'),
+        'utf8',
+    );
 }
 
 describe('yoyu money navigation IA', () => {

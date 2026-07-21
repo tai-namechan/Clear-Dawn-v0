@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { formatSignedYen, formatYen, isNegativeMinor } from '@/lib/yoyuMoney/format';
+import {
+    formatSignedYen,
+    formatYen,
+    isNegativeMinor,
+} from '@/lib/yoyuMoney/format';
 
 interface Props {
     amountMinor: string | null | undefined;

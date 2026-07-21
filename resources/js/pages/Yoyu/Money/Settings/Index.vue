@@ -95,7 +95,12 @@ defineOptions({
                             class="mt-1 block w-36 rounded-lg border border-os-line px-2 py-1.5 text-[13px] text-os-ink outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/30"
                         />
                         <p class="mt-0.5 text-[11px] text-os-faint">
-                            現在: {{ formatYen(settings.minimum_living_budget?.amountMinor) }}
+                            現在:
+                            {{
+                                formatYen(
+                                    settings.minimum_living_budget?.amountMinor,
+                                )
+                            }}
                         </p>
                     </label>
                     <label class="text-[12px] text-os-sub">
@@ -108,7 +113,8 @@ defineOptions({
                             class="mt-1 block w-36 rounded-lg border border-os-line px-2 py-1.5 text-[13px] text-os-ink outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/30"
                         />
                         <p class="mt-0.5 text-[11px] text-os-faint">
-                            現在: {{ formatYen(settings.safety_buffer?.amountMinor) }}
+                            現在:
+                            {{ formatYen(settings.safety_buffer?.amountMinor) }}
                         </p>
                     </label>
                     <label class="text-[12px] text-os-sub">
@@ -130,9 +136,12 @@ defineOptions({
                     見込み収入を余裕計算に含める
                 </label>
                 <p class="text-[12px] text-os-faint">
-                    通貨: {{ settings.currency_code }} · 計算式バージョン: {{ settings.formula_version }}
+                    通貨: {{ settings.currency_code }} · 計算式バージョン:
+                    {{ settings.formula_version }}
                 </p>
-                <Button type="submit" size="sm" class="rounded-full">保存</Button>
+                <Button type="submit" size="sm" class="rounded-full"
+                    >保存</Button
+                >
             </form>
         </section>
 
@@ -147,9 +156,14 @@ defineOptions({
             <p v-if="categories.length === 0" class="text-[13px] text-os-sub">
                 カテゴリがありません。
             </p>
-            <div v-else class="overflow-hidden rounded-xl border border-os-line">
+            <div
+                v-else
+                class="overflow-hidden rounded-xl border border-os-line"
+            >
                 <table class="min-w-full text-left text-[13px]">
-                    <thead class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub">
+                    <thead
+                        class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub"
+                    >
                         <tr>
                             <th class="px-4 py-2.5 font-semibold">名前</th>
                             <th class="px-4 py-2.5 font-semibold">方向</th>
@@ -209,7 +223,9 @@ defineOptions({
                         </option>
                     </select>
                 </label>
-                <Button type="submit" size="sm" class="rounded-full">保存</Button>
+                <Button type="submit" size="sm" class="rounded-full"
+                    >保存</Button
+                >
             </form>
         </section>
 
@@ -221,7 +237,12 @@ defineOptions({
             <p class="mb-3 text-[13px] text-os-sub">
                 お金の余裕データをZIPでダウンロードします。
             </p>
-            <Button as="a" href="/yoyu/money/export" size="sm" variant="outline">
+            <Button
+                as="a"
+                href="/yoyu/money/export"
+                size="sm"
+                variant="outline"
+            >
                 エクスポート
             </Button>
         </section>

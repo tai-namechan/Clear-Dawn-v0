@@ -13,11 +13,10 @@ import MoneyAmount from '@/components/yoyu-money/MoneyAmount.vue';
 import MoneyEmptyState from '@/components/yoyu-money/MoneyEmptyState.vue';
 import MoneyPageShell from '@/components/yoyu-money/MoneyPageShell.vue';
 import {
+    directionLabel,
     transactionKindLabel,
     transactionSpendHint,
-    directionLabel,
 } from '@/lib/yoyuMoney/labels';
-import { formatYen } from '@/lib/yoyuMoney/format';
 import { moneyLedgerTabs } from '@/lib/yoyuMoney/navigation';
 import type { MoneyTransactionRow } from '@/lib/yoyuMoney/types';
 
@@ -154,13 +153,17 @@ defineOptions({
             <!-- Desktop table -->
             <div class="hidden overflow-x-auto md:block">
                 <table class="min-w-full text-left text-[13px]">
-                    <thead class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub">
+                    <thead
+                        class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub"
+                    >
                         <tr>
                             <th class="px-4 py-2.5 font-semibold">日付</th>
                             <th class="px-4 py-2.5 font-semibold">摘要</th>
                             <th class="px-4 py-2.5 font-semibold">区分</th>
                             <th class="px-4 py-2.5 font-semibold">種別</th>
-                            <th class="px-4 py-2.5 text-right font-semibold">金額</th>
+                            <th class="px-4 py-2.5 text-right font-semibold">
+                                金額
+                            </th>
                             <th class="px-4 py-2.5 font-semibold">参考</th>
                             <th class="px-4 py-2.5 font-semibold">操作</th>
                         </tr>
@@ -172,12 +175,19 @@ defineOptions({
                             class="border-b border-os-line/80"
                             :class="tx.voided_at ? 'opacity-40' : ''"
                         >
-                            <td class="px-4 py-3 tabular-nums text-os-sub">{{ tx.occurred_on }}</td>
+                            <td class="px-4 py-3 text-os-sub tabular-nums">
+                                {{ tx.occurred_on }}
+                            </td>
                             <td class="px-4 py-3">
-                                <p class="max-w-[14rem] truncate font-semibold text-os-ink">
+                                <p
+                                    class="max-w-[14rem] truncate font-semibold text-os-ink"
+                                >
                                     {{ tx.description || '(摘要なし)' }}
                                 </p>
-                                <p v-if="tx.voided_at" class="text-[11px] text-os-faint">
+                                <p
+                                    v-if="tx.voided_at"
+                                    class="text-[11px] text-os-faint"
+                                >
                                     取消済
                                 </p>
                             </td>
@@ -231,7 +241,8 @@ defineOptions({
                                 {{ tx.description || '(摘要なし)' }}
                             </p>
                             <p class="text-[12px] text-os-sub">
-                                {{ tx.occurred_on }} · {{ directionLabel(tx.direction) }} ·
+                                {{ tx.occurred_on }} ·
+                                {{ directionLabel(tx.direction) }} ·
                                 {{ transactionKindLabel(tx.kind) }}
                             </p>
                             <p class="text-[11px] text-os-faint">
@@ -294,14 +305,20 @@ defineOptions({
         </div>
 
         <Sheet :open="drawerOpen" @update:open="drawerOpen = $event">
-            <SheetContent side="right" class="w-full border-os-line bg-white sm:max-w-md">
+            <SheetContent
+                side="right"
+                class="w-full border-os-line bg-white sm:max-w-md"
+            >
                 <SheetHeader>
                     <SheetTitle>取引を手入力</SheetTitle>
                     <SheetDescription>
                         口座残高に反映させたい場合は残高更新ページから操作してください。
                     </SheetDescription>
                 </SheetHeader>
-                <form class="mt-4 space-y-3 px-1" @submit.prevent="submitCreate">
+                <form
+                    class="mt-4 space-y-3 px-1"
+                    @submit.prevent="submitCreate"
+                >
                     <label class="block text-[12px] text-os-sub">
                         口座
                         <select
@@ -355,7 +372,7 @@ defineOptions({
                             inputmode="numeric"
                             pattern="[0-9]*"
                             required
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <label class="block text-[12px] text-os-sub">
@@ -364,7 +381,7 @@ defineOptions({
                             v-model="createForm.occurred_on"
                             type="date"
                             required
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <label class="block text-[12px] text-os-sub">
@@ -372,14 +389,18 @@ defineOptions({
                         <input
                             v-model="createForm.description"
                             type="text"
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <p class="text-[11px] text-os-faint">
                         {{ transactionSpendHint(createForm.kind) }}
                     </p>
                     <div class="flex justify-end gap-2 pt-2">
-                        <Button type="button" variant="outline" @click="drawerOpen = false">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="drawerOpen = false"
+                        >
                             キャンセル
                         </Button>
                         <Button type="submit">登録する</Button>

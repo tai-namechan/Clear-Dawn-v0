@@ -8,8 +8,8 @@ import {
     moneyPrimaryNav,
     moneyRecordMenu,
     resolveMoneyPrimaryNav,
-    type MoneySectionTab,
 } from '@/lib/yoyuMoney/navigation';
+import type { MoneySectionTab } from '@/lib/yoyuMoney/navigation';
 
 interface Props {
     title: string;
@@ -40,7 +40,9 @@ const page = usePage();
 const recordOpen = ref(false);
 const recordRoot = ref<HTMLElement | null>(null);
 
-const pageTitle = computed(() => props.documentTitle ?? `${props.title} — お金の余裕`);
+const pageTitle = computed(
+    () => props.documentTitle ?? `${props.title} — お金の余裕`,
+);
 
 const resolvedPrimary = computed(
     () => props.primaryActive ?? resolveMoneyPrimaryNav(page.url),
@@ -85,22 +87,22 @@ onUnmounted(() => {
         <header class="space-y-3">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="min-w-0">
-                    <p class="text-[12px] font-semibold tracking-wide text-os-yoyu">
+                    <p
+                        class="text-[12px] font-semibold tracking-wide text-os-yoyu"
+                    >
                         お金の余裕
                     </p>
-                    <h1 class="truncate text-xl font-bold text-os-ink md:text-2xl">
+                    <h1
+                        class="truncate text-xl font-bold text-os-ink md:text-2xl"
+                    >
                         {{ title }}
                     </h1>
                 </div>
 
-                <div
-                    v-if="showRecordMenu"
-                    ref="recordRoot"
-                    class="relative"
-                >
+                <div v-if="showRecordMenu" ref="recordRoot" class="relative">
                     <button
                         type="button"
-                        class="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-os-yoyu px-3.5 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-os-yoyu/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                        class="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-os-yoyu px-3.5 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-os-yoyu/90 focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         :aria-expanded="recordOpen"
                         aria-haspopup="menu"
                         @click="recordOpen = !recordOpen"
@@ -137,24 +139,21 @@ onUnmounted(() => {
                     <p class="text-[15px] font-bold text-os-ink">
                         {{ formatMonthLabel(month) }}
                     </p>
-                    <p
-                        v-if="asOf"
-                        class="text-[12px] text-os-faint"
-                    >
+                    <p v-if="asOf" class="text-[12px] text-os-faint">
                         基準日 {{ asOf }}
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
                     <button
                         type="button"
-                        class="min-h-10 rounded-lg border border-os-line px-3 text-[13px] font-semibold text-os-sub hover:bg-os-yoyu-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                        class="min-h-10 rounded-lg border border-os-line px-3 text-[13px] font-semibold text-os-sub hover:bg-os-yoyu-soft focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         @click="goMonth(-1)"
                     >
                         ＜ 前月
                     </button>
                     <button
                         type="button"
-                        class="min-h-10 rounded-lg border border-os-line px-3 text-[13px] font-semibold text-os-sub hover:bg-os-yoyu-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                        class="min-h-10 rounded-lg border border-os-line px-3 text-[13px] font-semibold text-os-sub hover:bg-os-yoyu-soft focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         @click="goMonth(1)"
                     >
                         次月 ＞
@@ -184,7 +183,9 @@ onUnmounted(() => {
             aria-label="お金モバイルナビ"
             class="fixed inset-x-0 bottom-0 z-40 border-t border-os-line bg-os-yoyu-bg/95 backdrop-blur-sm md:hidden"
         >
-            <ul class="mx-auto flex max-w-[1280px] items-stretch justify-around px-1 py-1">
+            <ul
+                class="mx-auto flex max-w-[1280px] items-stretch justify-around px-1 py-1"
+            >
                 <li
                     v-for="item in moneyPrimaryNav"
                     :key="item.key"

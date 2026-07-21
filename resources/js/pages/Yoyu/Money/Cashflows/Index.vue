@@ -80,21 +80,30 @@ const createForm = reactive({
 const filtered = computed(() => {
     let rows = [...props.cashflows];
 
-    if (localFilters.direction === 'inflow' || localFilters.direction === 'outflow') {
+    if (
+        localFilters.direction === 'inflow' ||
+        localFilters.direction === 'outflow'
+    ) {
         rows = rows.filter((row) => row.direction === localFilters.direction);
     }
 
     if (localFilters.status === 'open') {
-        rows = rows.filter((row) => row.status === 'planned' || row.status === 'partial');
+        rows = rows.filter(
+            (row) => row.status === 'planned' || row.status === 'partial',
+        );
     } else if (localFilters.status === 'settled') {
         rows = rows.filter((row) => row.status === 'settled');
     }
 
-    if (localFilters.certainty === 'confirmed' || localFilters.certainty === 'expected') {
+    if (
+        localFilters.certainty === 'confirmed' ||
+        localFilters.certainty === 'expected'
+    ) {
         rows = rows.filter((row) => row.certainty === localFilters.certainty);
     }
 
     const q = localFilters.q.trim().toLowerCase();
+
     if (q !== '') {
         rows = rows.filter(
             (row) =>
@@ -105,12 +114,15 @@ const filtered = computed(() => {
     }
 
     if (localFilters.sort === 'amount') {
-        rows.sort(
-            (a, b) =>
-                Number(BigInt(b.amount.amountMinor) - BigInt(a.amount.amountMinor)),
+        rows.sort((a, b) =>
+            Number(BigInt(b.amount.amountMinor) - BigInt(a.amount.amountMinor)),
         );
     } else {
-        rows.sort((a, b) => a.due_on.localeCompare(b.due_on) || a.name.localeCompare(b.name));
+        rows.sort(
+            (a, b) =>
+                a.due_on.localeCompare(b.due_on) ||
+                a.name.localeCompare(b.name),
+        );
     }
 
     return rows;
@@ -158,6 +170,7 @@ function openSettle(cashflow: CashflowRow): void {
 
 function confirmSettle(): void {
     const target = settleTarget.value;
+
     if (!target || settleOccurredOn.value === '') {
         return;
     }
@@ -231,6 +244,7 @@ function bulkSettle(): void {
 
     const run = (index: number): void => {
         const target = targets[index];
+
         if (!target) {
             return;
         }
@@ -405,15 +419,21 @@ defineOptions({
             <!-- Desktop table -->
             <div class="hidden overflow-x-auto md:block">
                 <table class="min-w-full text-left text-[13px]">
-                    <thead class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub">
+                    <thead
+                        class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub"
+                    >
                         <tr>
                             <th class="px-3 py-2 font-semibold">選択</th>
                             <th class="px-3 py-2 font-semibold">日付</th>
                             <th class="px-3 py-2 font-semibold">区分</th>
                             <th class="px-3 py-2 font-semibold">名前</th>
                             <th class="px-3 py-2 font-semibold">カテゴリ</th>
-                            <th class="px-3 py-2 text-right font-semibold">金額</th>
-                            <th class="px-3 py-2 text-right font-semibold">残高</th>
+                            <th class="px-3 py-2 text-right font-semibold">
+                                金額
+                            </th>
+                            <th class="px-3 py-2 text-right font-semibold">
+                                残高
+                            </th>
                             <th class="px-3 py-2 font-semibold">状態</th>
                             <th class="px-3 py-2 font-semibold">操作</th>
                         </tr>
@@ -424,7 +444,9 @@ defineOptions({
                             :key="cashflow.id"
                             class="border-b border-os-line/80"
                             :class="
-                                highlight === cashflow.id ? 'bg-os-yoyu-soft/50' : ''
+                                highlight === cashflow.id
+                                    ? 'bg-os-yoyu-soft/50'
+                                    : ''
                             "
                         >
                             <td class="px-3 py-2">
@@ -435,12 +457,16 @@ defineOptions({
                                     :aria-label="`${cashflow.name}を選択`"
                                 />
                             </td>
-                            <td class="px-3 py-2 tabular-nums">{{ cashflow.due_on }}</td>
+                            <td class="px-3 py-2 tabular-nums">
+                                {{ cashflow.due_on }}
+                            </td>
                             <td class="px-3 py-2">
                                 {{ directionLabel(cashflow.direction) }}
                             </td>
                             <td class="px-3 py-2">
-                                <p class="max-w-[14rem] truncate font-semibold text-os-ink">
+                                <p
+                                    class="max-w-[14rem] truncate font-semibold text-os-ink"
+                                >
                                     {{ cashflow.name }}
                                 </p>
                                 <p
@@ -464,19 +490,29 @@ defineOptions({
                                 />
                             </td>
                             <td class="px-3 py-2 text-right">
-                                <MoneyAmount :amount-minor="cashflow.balance_after_minor" />
+                                <MoneyAmount
+                                    :amount-minor="cashflow.balance_after_minor"
+                                />
                             </td>
                             <td class="px-3 py-2">
                                 <div class="flex flex-wrap gap-1">
                                     <MoneyStatusBadge
-                                        :label="certaintyLabel(cashflow.certainty)"
+                                        :label="
+                                            certaintyLabel(cashflow.certainty)
+                                        "
                                         tone="info"
                                     />
                                     <MoneyStatusBadge
-                                        :label="flexibilityLabel(cashflow.flexibility)"
+                                        :label="
+                                            flexibilityLabel(
+                                                cashflow.flexibility,
+                                            )
+                                        "
                                     />
                                     <MoneyStatusBadge
-                                        :label="cashflowStatusLabel(cashflow.status)"
+                                        :label="
+                                            cashflowStatusLabel(cashflow.status)
+                                        "
                                         :tone="
                                             cashflow.status === 'settled'
                                                 ? 'positive'
@@ -497,7 +533,8 @@ defineOptions({
                                     </button>
                                     <a
                                         v-if="
-                                            cashflow.flexibility === 'adjustable' ||
+                                            cashflow.flexibility ===
+                                                'adjustable' ||
                                             cashflow.flexibility === 'stoppable'
                                         "
                                         :href="`/yoyu/money/simulations?from_cashflow=${cashflow.id}`"
@@ -528,7 +565,9 @@ defineOptions({
                 >
                     <div class="flex items-start justify-between gap-2">
                         <div>
-                            <p class="font-semibold text-os-ink">{{ cashflow.name }}</p>
+                            <p class="font-semibold text-os-ink">
+                                {{ cashflow.name }}
+                            </p>
                             <p class="text-[12px] text-os-sub">
                                 {{ cashflow.due_on }} ·
                                 {{ directionLabel(cashflow.direction) }}
@@ -545,7 +584,9 @@ defineOptions({
                     </div>
                     <p class="text-[12px] text-os-faint">
                         イベント後残高
-                        <MoneyAmount :amount-minor="cashflow.balance_after_minor" />
+                        <MoneyAmount
+                            :amount-minor="cashflow.balance_after_minor"
+                        />
                     </p>
                     <div class="flex flex-wrap gap-2">
                         <button
@@ -595,7 +636,7 @@ defineOptions({
                             v-model="createForm.name"
                             type="text"
                             required
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <label class="block text-[12px] text-os-sub">
@@ -606,7 +647,7 @@ defineOptions({
                             inputmode="numeric"
                             pattern="[0-9]*"
                             required
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <label class="block text-[12px] text-os-sub">
@@ -615,7 +656,7 @@ defineOptions({
                             v-model="createForm.due_on"
                             type="date"
                             required
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <label class="block text-[12px] text-os-sub">
@@ -685,7 +726,9 @@ defineOptions({
                         >
                             キャンセル
                         </Button>
-                        <Button type="button" @click="confirmSettle">確定</Button>
+                        <Button type="button" @click="confirmSettle"
+                            >確定</Button
+                        >
                     </div>
                 </div>
             </SheetContent>

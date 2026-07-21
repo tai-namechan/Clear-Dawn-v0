@@ -22,7 +22,7 @@ withDefaults(defineProps<Props>(), {
             v-for="tab in tabs"
             :key="tab.key"
             :href="tab.href"
-            class="shrink-0 border-b-2 px-3 py-2 text-[13px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+            class="shrink-0 border-b-2 px-3 py-2 text-[13px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
             :class="
                 active === tab.key
                     ? 'border-os-yoyu text-os-yoyu'

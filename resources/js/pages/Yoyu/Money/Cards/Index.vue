@@ -104,13 +104,23 @@ defineOptions({
             <!-- Desktop table -->
             <div class="hidden overflow-x-auto md:block">
                 <table class="min-w-full text-left text-[13px]">
-                    <thead class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub">
+                    <thead
+                        class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub"
+                    >
                         <tr>
                             <th class="px-4 py-2.5 font-semibold">カード名</th>
-                            <th class="px-4 py-2.5 font-semibold">締日 / 支払日</th>
-                            <th class="px-4 py-2.5 text-right font-semibold">当月請求</th>
-                            <th class="px-4 py-2.5 text-right font-semibold">未確定利用</th>
-                            <th class="px-4 py-2.5 font-semibold">信用枠情報</th>
+                            <th class="px-4 py-2.5 font-semibold">
+                                締日 / 支払日
+                            </th>
+                            <th class="px-4 py-2.5 text-right font-semibold">
+                                当月請求
+                            </th>
+                            <th class="px-4 py-2.5 text-right font-semibold">
+                                未確定利用
+                            </th>
+                            <th class="px-4 py-2.5 font-semibold">
+                                信用枠情報
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
@@ -121,24 +131,36 @@ defineOptions({
                             :class="!card.is_active ? 'opacity-50' : ''"
                         >
                             <td class="px-4 py-3">
-                                <p class="font-semibold text-os-ink">{{ card.name }}</p>
+                                <p class="font-semibold text-os-ink">
+                                    {{ card.name }}
+                                </p>
                                 <p class="text-[11px] text-os-faint">
                                     {{ card.issuer_name || '発行元未設定' }}
-                                    <span v-if="!card.is_active" class="ml-1">· 停止中</span>
+                                    <span v-if="!card.is_active" class="ml-1"
+                                        >· 停止中</span
+                                    >
                                 </p>
                             </td>
                             <td class="px-4 py-3 text-os-sub">
-                                {{ card.closing_day }}日締 / {{ card.payment_day }}日払い
+                                {{ card.closing_day }}日締 /
+                                {{ card.payment_day }}日払い
                             </td>
-                            <td class="px-4 py-3 text-right font-semibold text-os-ink">
-                                {{ formatYen(card.current_statement?.amountMinor) }}
+                            <td
+                                class="px-4 py-3 text-right font-semibold text-os-ink"
+                            >
+                                {{
+                                    formatYen(
+                                        card.current_statement?.amountMinor,
+                                    )
+                                }}
                             </td>
                             <td class="px-4 py-3 text-right text-os-sub">
                                 {{ formatYen(card.unconfirmed?.amountMinor) }}
                             </td>
                             <td class="px-4 py-3 text-[12px] text-os-faint">
                                 <template v-if="card.available">
-                                    利用可能枠 {{ formatYen(card.available.amountMinor) }}
+                                    利用可能枠
+                                    {{ formatYen(card.available.amountMinor) }}
                                 </template>
                                 <template v-else>—</template>
                             </td>
@@ -157,10 +179,13 @@ defineOptions({
                 >
                     <div class="flex items-start justify-between gap-2">
                         <div>
-                            <p class="font-semibold text-os-ink">{{ card.name }}</p>
+                            <p class="font-semibold text-os-ink">
+                                {{ card.name }}
+                            </p>
                             <p class="text-[12px] text-os-sub">
                                 {{ card.issuer_name || '発行元未設定' }} ·
-                                {{ card.closing_day }}日締 · {{ card.payment_day }}日払い
+                                {{ card.closing_day }}日締 ·
+                                {{ card.payment_day }}日払い
                                 <span v-if="!card.is_active"> · 停止中</span>
                             </p>
                         </div>
@@ -169,7 +194,11 @@ defineOptions({
                         <div>
                             <dt class="text-[11px] text-os-sub">当月請求</dt>
                             <dd class="font-semibold text-os-ink">
-                                {{ formatYen(card.current_statement?.amountMinor) }}
+                                {{
+                                    formatYen(
+                                        card.current_statement?.amountMinor,
+                                    )
+                                }}
                             </dd>
                         </div>
                         <div>
@@ -180,28 +209,35 @@ defineOptions({
                         </div>
                     </dl>
                     <p v-if="card.available" class="text-[12px] text-os-faint">
-                        信用枠情報 — 利用可能枠 {{ formatYen(card.available.amountMinor) }}
+                        信用枠情報 — 利用可能枠
+                        {{ formatYen(card.available.amountMinor) }}
                     </p>
                 </li>
             </ul>
         </section>
 
         <Sheet :open="drawerOpen" @update:open="drawerOpen = $event">
-            <SheetContent side="right" class="w-full border-os-line bg-white sm:max-w-md">
+            <SheetContent
+                side="right"
+                class="w-full border-os-line bg-white sm:max-w-md"
+            >
                 <SheetHeader>
                     <SheetTitle>カードを追加</SheetTitle>
                     <SheetDescription>
                         カードの信用枠は資金総額に含みません。請求額が余裕計算に反映されます。
                     </SheetDescription>
                 </SheetHeader>
-                <form class="mt-4 space-y-3 px-1" @submit.prevent="submitCreate">
+                <form
+                    class="mt-4 space-y-3 px-1"
+                    @submit.prevent="submitCreate"
+                >
                     <label class="block text-[12px] text-os-sub">
                         カード名
                         <input
                             v-model="createForm.name"
                             type="text"
                             required
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <label class="block text-[12px] text-os-sub">
@@ -209,7 +245,7 @@ defineOptions({
                         <input
                             v-model="createForm.issuer_name"
                             type="text"
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <div class="grid grid-cols-2 gap-3">
@@ -219,7 +255,7 @@ defineOptions({
                                 v-model="createForm.closing_day"
                                 type="text"
                                 required
-                                class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                                class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                             />
                         </label>
                         <label class="text-[12px] text-os-sub">
@@ -228,7 +264,7 @@ defineOptions({
                                 v-model="createForm.payment_day"
                                 type="text"
                                 required
-                                class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                                class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                             />
                         </label>
                     </div>
@@ -239,7 +275,7 @@ defineOptions({
                             type="text"
                             inputmode="numeric"
                             pattern="[0-9]*"
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <label class="block text-[12px] text-os-sub">
@@ -249,11 +285,15 @@ defineOptions({
                             type="text"
                             inputmode="numeric"
                             pattern="[0-9]*"
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <div class="flex justify-end gap-2 pt-2">
-                        <Button type="button" variant="outline" @click="drawerOpen = false">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="drawerOpen = false"
+                        >
                             キャンセル
                         </Button>
                         <Button type="submit">追加する</Button>

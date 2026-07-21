@@ -11,8 +11,8 @@ import {
 } from '@/components/ui/sheet';
 import MoneyEmptyState from '@/components/yoyu-money/MoneyEmptyState.vue';
 import MoneyPageShell from '@/components/yoyu-money/MoneyPageShell.vue';
-import { loanStatusLabel } from '@/lib/yoyuMoney/labels';
 import { formatYen } from '@/lib/yoyuMoney/format';
+import { loanStatusLabel } from '@/lib/yoyuMoney/labels';
 import { moneyAssetsTabs } from '@/lib/yoyuMoney/navigation';
 import type { MoneyLoanRow } from '@/lib/yoyuMoney/types';
 
@@ -111,12 +111,18 @@ defineOptions({
             <!-- Desktop table -->
             <div class="hidden overflow-x-auto md:block">
                 <table class="min-w-full text-left text-[13px]">
-                    <thead class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub">
+                    <thead
+                        class="border-b border-os-line bg-os-yoyu-bg/80 text-os-sub"
+                    >
                         <tr>
                             <th class="px-4 py-2.5 font-semibold">ローン名</th>
                             <th class="px-4 py-2.5 font-semibold">種別</th>
-                            <th class="px-4 py-2.5 text-right font-semibold">残高</th>
-                            <th class="px-4 py-2.5 text-right font-semibold">月々返済</th>
+                            <th class="px-4 py-2.5 text-right font-semibold">
+                                残高
+                            </th>
+                            <th class="px-4 py-2.5 text-right font-semibold">
+                                月々返済
+                            </th>
                             <th class="px-4 py-2.5 font-semibold">次回返済</th>
                             <th class="px-4 py-2.5 font-semibold">状態</th>
                         </tr>
@@ -127,20 +133,30 @@ defineOptions({
                             :key="loan.id"
                             class="border-b border-os-line/80"
                         >
-                            <td class="px-4 py-3 font-semibold text-os-ink">{{ loan.name }}</td>
+                            <td class="px-4 py-3 font-semibold text-os-ink">
+                                {{ loan.name }}
+                            </td>
                             <td class="px-4 py-3 text-os-sub">
                                 {{ typeLabels[loan.type] ?? loan.type }}
                             </td>
-                            <td class="px-4 py-3 text-right font-bold text-os-ink">
-                                {{ formatYen(loan.outstanding_principal.amountMinor) }}
+                            <td
+                                class="px-4 py-3 text-right font-bold text-os-ink"
+                            >
+                                {{
+                                    formatYen(
+                                        loan.outstanding_principal.amountMinor,
+                                    )
+                                }}
                             </td>
                             <td class="px-4 py-3 text-right text-os-sub">
-                                {{ formatYen(loan.monthly_payment.amountMinor) }}
+                                {{
+                                    formatYen(loan.monthly_payment.amountMinor)
+                                }}
                             </td>
-                            <td class="px-4 py-3 tabular-nums text-os-sub">
+                            <td class="px-4 py-3 text-os-sub tabular-nums">
                                 {{ loan.next_payment_on }}
                             </td>
-                            <td class="px-4 py-3 text-os-faint text-[12px]">
+                            <td class="px-4 py-3 text-[12px] text-os-faint">
                                 {{ loanStatusLabel(loan.status) }}
                             </td>
                         </tr>
@@ -159,15 +175,21 @@ defineOptions({
                         <p class="font-semibold text-os-ink">{{ loan.name }}</p>
                         <p class="text-[12px] text-os-sub">
                             {{ typeLabels[loan.type] ?? loan.type }} ·
-                            {{ loanStatusLabel(loan.status) }} · 次回 {{ loan.next_payment_on }}
+                            {{ loanStatusLabel(loan.status) }} · 次回
+                            {{ loan.next_payment_on }}
                         </p>
                     </div>
                     <div class="shrink-0 text-right text-[13px]">
                         <p class="font-bold text-os-ink">
-                            {{ formatYen(loan.outstanding_principal.amountMinor) }}
+                            {{
+                                formatYen(
+                                    loan.outstanding_principal.amountMinor,
+                                )
+                            }}
                         </p>
                         <p class="text-os-sub">
-                            月々 {{ formatYen(loan.monthly_payment.amountMinor) }}
+                            月々
+                            {{ formatYen(loan.monthly_payment.amountMinor) }}
                         </p>
                     </div>
                 </li>
@@ -175,21 +197,27 @@ defineOptions({
         </section>
 
         <Sheet :open="drawerOpen" @update:open="drawerOpen = $event">
-            <SheetContent side="right" class="w-full border-os-line bg-white sm:max-w-md">
+            <SheetContent
+                side="right"
+                class="w-full border-os-line bg-white sm:max-w-md"
+            >
                 <SheetHeader>
                     <SheetTitle>ローンを追加</SheetTitle>
                     <SheetDescription>
                         月々の返済額が余裕計算の支払い予定に自動反映されます。
                     </SheetDescription>
                 </SheetHeader>
-                <form class="mt-4 space-y-3 px-1" @submit.prevent="submitCreate">
+                <form
+                    class="mt-4 space-y-3 px-1"
+                    @submit.prevent="submitCreate"
+                >
                     <label class="block text-[12px] text-os-sub">
                         名前
                         <input
                             v-model="createForm.name"
                             type="text"
                             required
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <label class="block text-[12px] text-os-sub">
@@ -215,7 +243,7 @@ defineOptions({
                             inputmode="numeric"
                             pattern="[0-9]*"
                             required
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <label class="block text-[12px] text-os-sub">
@@ -226,7 +254,7 @@ defineOptions({
                             inputmode="numeric"
                             pattern="[0-9]*"
                             required
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <label class="block text-[12px] text-os-sub">
@@ -235,11 +263,15 @@ defineOptions({
                             v-model="createForm.next_payment_on"
                             type="date"
                             required
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <div class="flex justify-end gap-2 pt-2">
-                        <Button type="button" variant="outline" @click="drawerOpen = false">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="drawerOpen = false"
+                        >
                             キャンセル
                         </Button>
                         <Button type="submit">追加する</Button>

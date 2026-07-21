@@ -11,8 +11,12 @@ import {
 } from '@/components/ui/sheet';
 import MoneyEmptyState from '@/components/yoyu-money/MoneyEmptyState.vue';
 import MoneyPageShell from '@/components/yoyu-money/MoneyPageShell.vue';
+import {
+    formatSignedYen,
+    formatYen,
+    minorToDisplayString,
+} from '@/lib/yoyuMoney/format';
 import { simulationStatusLabel } from '@/lib/yoyuMoney/labels';
-import { formatSignedYen, formatYen, minorToDisplayString } from '@/lib/yoyuMoney/format';
 import { moneyPlanTabs } from '@/lib/yoyuMoney/navigation';
 import type { MoneySimulationRow } from '@/lib/yoyuMoney/types';
 
@@ -116,11 +120,13 @@ function marginSlices(simulation: MoneySimulationRow): MarginSlice[] {
             label: item.label,
             projected_margin_minor:
                 minorToDisplayString(
-                    slice.projected_margin_minor as string | number | null | undefined,
+                    slice.projected_margin_minor as
+                        string | number | null | undefined,
                 ) ?? undefined,
             safe_to_spend_minor:
                 minorToDisplayString(
-                    slice.safe_to_spend_minor as string | number | null | undefined,
+                    slice.safe_to_spend_minor as
+                        string | number | null | undefined,
                 ) ?? undefined,
         });
     }
@@ -137,11 +143,13 @@ function marginSlices(simulation: MoneySimulationRow): MarginSlice[] {
                 label: key,
                 projected_margin_minor:
                     minorToDisplayString(
-                        slice.projected_margin_minor as string | number | null | undefined,
+                        slice.projected_margin_minor as
+                            string | number | null | undefined,
                     ) ?? undefined,
                 safe_to_spend_minor:
                     minorToDisplayString(
-                        slice.safe_to_spend_minor as string | number | null | undefined,
+                        slice.safe_to_spend_minor as
+                            string | number | null | undefined,
                     ) ?? undefined,
             });
         }
@@ -156,7 +164,9 @@ type PaymentDeltaInfo = {
     feeEstimate: string | null;
 };
 
-function paymentDeltaInfo(simulation: MoneySimulationRow): PaymentDeltaInfo | null {
+function paymentDeltaInfo(
+    simulation: MoneySimulationRow,
+): PaymentDeltaInfo | null {
     const payload = asRecord(simulation.result_payload);
     const change = asRecord(payload?.change_card_payment);
 
@@ -275,14 +285,18 @@ defineOptions({
                     v-if="marginSlices(simulation).length > 0"
                     class="mt-4 space-y-2"
                 >
-                    <p class="text-[12px] font-semibold text-os-sub">余裕の比較（試算）</p>
+                    <p class="text-[12px] font-semibold text-os-sub">
+                        余裕の比較（試算）
+                    </p>
                     <ul class="grid gap-2 sm:grid-cols-3">
                         <li
                             v-for="slice in marginSlices(simulation)"
                             :key="`${simulation.id}-${slice.label}`"
                             class="rounded-xl bg-os-yoyu-soft/50 px-3 py-2"
                         >
-                            <p class="text-[11px] text-os-sub">{{ slice.label }}</p>
+                            <p class="text-[11px] text-os-sub">
+                                {{ slice.label }}
+                            </p>
                             <p class="text-[14px] font-bold text-os-ink">
                                 {{
                                     formatSignedYen(
@@ -290,8 +304,12 @@ defineOptions({
                                     )
                                 }}
                             </p>
-                            <p v-if="slice.safe_to_spend_minor" class="text-[11px] text-os-faint">
-                                安全額 {{ formatYen(slice.safe_to_spend_minor) }}
+                            <p
+                                v-if="slice.safe_to_spend_minor"
+                                class="text-[11px] text-os-faint"
+                            >
+                                安全額
+                                {{ formatYen(slice.safe_to_spend_minor) }}
                             </p>
                         </li>
                     </ul>
@@ -305,14 +323,17 @@ defineOptions({
                     <p class="font-semibold text-os-sub">支払差分の詳細</p>
                     <dl class="mt-1 space-y-0.5 text-os-ink">
                         <div
-                            v-if="paymentDeltaInfo(simulation)?.thisMonthReduction"
+                            v-if="
+                                paymentDeltaInfo(simulation)?.thisMonthReduction
+                            "
                             class="flex justify-between gap-4"
                         >
                             <dt class="text-os-sub">今月の軽減額</dt>
                             <dd class="font-semibold">
                                 {{
                                     formatYen(
-                                        paymentDeltaInfo(simulation)?.thisMonthReduction ?? '0',
+                                        paymentDeltaInfo(simulation)
+                                            ?.thisMonthReduction ?? '0',
                                     )
                                 }}
                             </dd>
@@ -325,7 +346,8 @@ defineOptions({
                             <dd class="font-semibold">
                                 {{
                                     formatYen(
-                                        paymentDeltaInfo(simulation)?.futureMonthly ?? '0',
+                                        paymentDeltaInfo(simulation)
+                                            ?.futureMonthly ?? '0',
                                     )
                                 }}
                             </dd>
@@ -338,7 +360,8 @@ defineOptions({
                             <dd class="font-semibold">
                                 {{
                                     formatYen(
-                                        paymentDeltaInfo(simulation)?.feeEstimate ?? '0',
+                                        paymentDeltaInfo(simulation)
+                                            ?.feeEstimate ?? '0',
                                     )
                                 }}
                             </dd>
@@ -356,20 +379,26 @@ defineOptions({
         </ul>
 
         <Sheet :open="drawerOpen" @update:open="drawerOpen = $event">
-            <SheetContent side="right" class="w-full border-os-line bg-white sm:max-w-md">
+            <SheetContent
+                side="right"
+                class="w-full border-os-line bg-white sm:max-w-md"
+            >
                 <SheetHeader>
                     <SheetTitle>シナリオを作成</SheetTitle>
                     <SheetDescription>
                         計算は実データを変更しません。「適用」するまで口座・予定は変わりません。
                     </SheetDescription>
                 </SheetHeader>
-                <form class="mt-4 space-y-3 px-1" @submit.prevent="submitCreate">
+                <form
+                    class="mt-4 space-y-3 px-1"
+                    @submit.prevent="submitCreate"
+                >
                     <label class="block text-[12px] text-os-sub">
                         名前（任意）
                         <input
                             v-model="createForm.name"
                             type="text"
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                             placeholder="例: 分割払いに変更した場合"
                         />
                     </label>
@@ -380,11 +409,15 @@ defineOptions({
                             type="number"
                             min="1"
                             max="24"
-                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-os-yoyu/40"
+                            class="mt-1 block w-full rounded-lg border border-os-line px-3 py-2 text-[13px] focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
                         />
                     </label>
                     <div class="flex justify-end gap-2 pt-2">
-                        <Button type="button" variant="outline" @click="drawerOpen = false">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            @click="drawerOpen = false"
+                        >
                             キャンセル
                         </Button>
                         <Button type="submit">作成する</Button>
