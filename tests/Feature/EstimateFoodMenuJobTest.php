@@ -120,6 +120,28 @@ class EstimateFoodMenuJobTest extends TestCase
         });
     }
 
+    public function test_job_sends_web_search_tool(): void
+    {
+        $lookup = $this->menuLookup();
+
+        $this->fakeAiText((string) json_encode([
+            'name' => 'テスト',
+            'per' => 'serving', 'kcal' => 500, 'protein_g' => 20, 'fat_g' => 25, 'carb_g' => 50, 'serving_label' => '1人前',
+        ]));
+
+        $this->runJob($lookup);
+
+        Http::assertSent(function (Request $request): bool {
+            $tools = $request->data()['tools'] ?? [];
+
+            if (! is_array($tools) || count($tools) === 0) {
+                return false;
+            }
+
+            return ($tools[0]['type'] ?? '') === 'web_search_20250305';
+        });
+    }
+
     public function test_job_marks_unknown_menu_without_retry(): void
     {
         $lookup = $this->menuLookup();

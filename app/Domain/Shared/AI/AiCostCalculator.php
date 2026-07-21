@@ -7,7 +7,7 @@ final class AiCostCalculator
     /**
      * @param  array<string, mixed>  $payload
      */
-    public function estimateReservation(string $model, array $payload, int $maxTokens): AiMoney
+    public function estimateReservation(string $model, array $payload, int $maxTokens, int $inputBuffer = 0): AiMoney
     {
         $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if ($json === false) {
@@ -17,7 +17,7 @@ final class AiCostCalculator
         $rates = $this->ratesFor($model);
 
         return AiMoney::estimateFromTokensAndRates(
-            strlen($json),
+            strlen($json) + $inputBuffer,
             $maxTokens,
             $rates['input'],
             $rates['output'],
