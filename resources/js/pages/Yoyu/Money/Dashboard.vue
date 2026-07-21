@@ -4,12 +4,15 @@ import { computed, ref } from 'vue';
 import AdjustmentCandidateCard from '@/components/yoyu-money/AdjustmentCandidateCard.vue';
 import CashflowTimeline from '@/components/yoyu-money/CashflowTimeline.vue';
 import MoneyAmount from '@/components/yoyu-money/MoneyAmount.vue';
+import MoneyMarginKoban from '@/components/yoyu-money/MoneyMarginKoban.vue';
 import MoneyPageShell from '@/components/yoyu-money/MoneyPageShell.vue';
 import MoneySetupGuide from '@/components/yoyu-money/MoneySetupGuide.vue';
 import MoneyStatusBadge from '@/components/yoyu-money/MoneyStatusBadge.vue';
 import MoneySummaryCard from '@/components/yoyu-money/MoneySummaryCard.vue';
 import { formatYen, isPositiveMinor } from '@/lib/yoyuMoney/format';
 import { missingSettingLabel } from '@/lib/yoyuMoney/labels';
+
+type MoneyMarginMood = 'safe' | 'shortfall' | 'incomplete';
 
 type MoneySettings = {
     minimum_living_budget_minor: string | null;
@@ -192,6 +195,36 @@ const hasShortfall = computed(() =>
     isPositiveMinor(props.margin.shortfall_minor),
 );
 
+const vesselMood = computed((): MoneyMarginMood => {
+    if (!props.margin.is_complete) {
+        return 'incomplete';
+    }
+
+    if (hasShortfall.value) {
+        return 'shortfall';
+    }
+
+    return 'safe';
+});
+
+/** Visual-only density for the koban illustration (not a financial calculation). */
+const vesselLevel = computed(() => {
+    try {
+        const safe = BigInt(props.margin.safe_to_spend_minor || '0');
+        const ceiling = 300000n;
+
+        if (safe <= 0n) {
+            return 0.28;
+        }
+
+        const ratio = Number((safe * 100n) / ceiling) / 100;
+
+        return Math.min(0.9, Math.max(0.35, ratio));
+    } catch {
+        return 0.55;
+    }
+});
+
 function dismissSetup(): void {
     setupDismissed.value = true;
     window.localStorage.setItem(SETUP_DISMISS_KEY, '1');
@@ -255,152 +288,162 @@ defineOptions({
             </li>
         </ul>
 
-        <!-- Hero: 安全に使える金額 -->
-        <section
-            class="rounded-2xl border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)] md:p-6"
+        <!-- Hero: 安全に使える金額 + 余裕イラスト -->
+        <div
+            class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(240px,300px)] lg:items-start"
         >
-            <p class="text-[12px] font-semibold text-os-sub">
-                今月、安全に使える金額
-            </p>
-
-            <template v-if="!margin.is_complete">
-                <p class="mt-2 text-[13px] text-os-sub">
-                    計算に必要な設定がまだ完了していません。参考値として投影余裕額を表示しています。
-                </p>
-                <p
-                    class="mt-2 text-3xl font-bold tracking-tight text-os-faint md:text-4xl"
-                >
-                    <MoneyAmount
-                        :amount-minor="margin.projected_margin_minor"
-                        signed
-                    />
-                </p>
-                <p class="mt-2 text-[12px] text-os-sub">
-                    未設定:
-                    {{
-                        margin.missing_settings
-                            .map((key) => missingSettingLabel(key))
-                            .join('、')
-                    }}
-                </p>
-                <Link
-                    href="/yoyu/money/settings"
-                    class="mt-2 inline-block text-[13px] font-semibold text-os-yoyu hover:underline"
-                >
-                    設定へ進む
-                </Link>
-            </template>
-            <template v-else-if="hasShortfall">
-                <p
-                    class="mt-2 text-3xl font-bold tracking-tight text-[#8A5A3B] md:text-4xl"
-                >
-                    {{ formatYen('0') }}
-                </p>
-                <p class="mt-2 text-[13px] text-[#8A5A3B]">
-                    今月は
-                    <MoneyAmount :amount-minor="margin.shortfall_minor" />
-                    不足する見込みです
-                </p>
-            </template>
-            <template v-else>
-                <p
-                    class="mt-2 text-3xl font-bold tracking-tight text-os-yoyu md:text-right md:text-4xl"
-                >
-                    {{ formatYen(margin.safe_to_spend_minor) }}
-                </p>
-            </template>
-
-            <div
-                class="mt-4 grid gap-3 border-t border-os-line pt-4 text-[13px] sm:grid-cols-2"
+            <section
+                class="rounded-2xl border border-os-line bg-white p-5 shadow-[0_1px_3px_rgba(38,48,58,0.05)] md:p-6"
             >
-                <div>
-                    <p class="text-os-sub">月末予測残高</p>
-                    <p class="font-semibold text-os-ink">
-                        <MoneyAmount
-                            :amount-minor="
-                                month_end_balance_minor ??
-                                margin.projected_cash_minor
-                            "
-                        />
+                <p class="text-[12px] font-semibold text-os-sub">
+                    今月、安全に使える金額
+                </p>
+
+                <template v-if="!margin.is_complete">
+                    <p class="mt-2 text-[13px] text-os-sub">
+                        計算に必要な設定がまだ完了していません。参考値として投影余裕額を表示しています。
                     </p>
-                </div>
-                <div>
-                    <p class="text-os-sub">次の入金予定</p>
-                    <p v-if="next_income" class="font-semibold text-os-ink">
-                        {{ next_income.due_on }} {{ next_income.name }}
+                    <p
+                        class="mt-2 text-3xl font-bold tracking-tight text-os-faint md:text-4xl"
+                    >
                         <MoneyAmount
-                            :amount-minor="next_income.amount_minor"
+                            :amount-minor="margin.projected_margin_minor"
                             signed
                         />
                     </p>
-                    <p v-else class="text-os-faint">登録なし</p>
-                </div>
-                <div class="sm:col-span-2">
-                    <p class="text-os-sub">
-                        計算に含めた期間：{{ as_of }}〜{{ horizon_end }}
+                    <p class="mt-2 text-[12px] text-os-sub">
+                        未設定:
+                        {{
+                            margin.missing_settings
+                                .map((key) => missingSettingLabel(key))
+                                .join('、')
+                        }}
                     </p>
-                </div>
-            </div>
+                    <Link
+                        href="/yoyu/money/settings"
+                        class="mt-2 inline-block text-[13px] font-semibold text-os-yoyu hover:underline"
+                    >
+                        設定へ進む
+                    </Link>
+                </template>
+                <template v-else-if="hasShortfall">
+                    <p
+                        class="mt-2 text-3xl font-bold tracking-tight text-[#8A5A3B] md:text-4xl"
+                    >
+                        {{ formatYen('0') }}
+                    </p>
+                    <p class="mt-2 text-[13px] text-[#8A5A3B]">
+                        今月は
+                        <MoneyAmount :amount-minor="margin.shortfall_minor" />
+                        不足する見込みです
+                    </p>
+                </template>
+                <template v-else>
+                    <p
+                        class="mt-2 text-3xl font-bold tracking-tight text-os-yoyu md:text-4xl"
+                    >
+                        {{ formatYen(margin.safe_to_spend_minor) }}
+                    </p>
+                </template>
 
-            <button
-                type="button"
-                class="mt-3 text-[12px] font-semibold text-os-yoyu hover:underline focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
-                @click="showBreakdown = !showBreakdown"
-            >
-                {{ showBreakdown ? '計算の内訳を閉じる' : '計算の内訳を見る' }}
-            </button>
-            <dl
-                v-if="showBreakdown"
-                class="mt-3 grid gap-2 rounded-xl bg-os-yoyu-bg/70 p-3 text-[12px] sm:grid-cols-2"
-            >
-                <div class="flex justify-between gap-2">
-                    <dt class="text-os-sub">現在の資金</dt>
-                    <dd class="font-semibold">
-                        <MoneyAmount :amount-minor="margin.funds_minor" />
-                    </dd>
+                <div
+                    class="mt-4 grid gap-3 border-t border-os-line pt-4 text-[13px] sm:grid-cols-2"
+                >
+                    <div>
+                        <p class="text-os-sub">月末予測残高</p>
+                        <p class="font-semibold text-os-ink">
+                            <MoneyAmount
+                                :amount-minor="
+                                    month_end_balance_minor ??
+                                    margin.projected_cash_minor
+                                "
+                            />
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-os-sub">次の入金予定</p>
+                        <p v-if="next_income" class="font-semibold text-os-ink">
+                            {{ next_income.due_on }} {{ next_income.name }}
+                            <MoneyAmount
+                                :amount-minor="next_income.amount_minor"
+                                signed
+                            />
+                        </p>
+                        <p v-else class="text-os-faint">登録なし</p>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <p class="text-os-sub">
+                            計算に含めた期間：{{ as_of }}〜{{ horizon_end }}
+                        </p>
+                    </div>
                 </div>
-                <div class="flex justify-between gap-2">
-                    <dt class="text-os-sub">確定の入金予定</dt>
-                    <dd class="font-semibold">
-                        <MoneyAmount
-                            :amount-minor="margin.confirmed_income_minor"
-                        />
-                    </dd>
-                </div>
-                <div class="flex justify-between gap-2">
-                    <dt class="text-os-sub">確定の支払い</dt>
-                    <dd class="font-semibold">
-                        <MoneyAmount
-                            :amount-minor="margin.confirmed_outflow_minor"
-                        />
-                    </dd>
-                </div>
-                <div class="flex justify-between gap-2">
-                    <dt class="text-os-sub">見込み支出の予約</dt>
-                    <dd class="font-semibold">
-                        <MoneyAmount
-                            :amount-minor="margin.uncertain_reserve_minor"
-                        />
-                    </dd>
-                </div>
-                <div class="flex justify-between gap-2">
-                    <dt class="text-os-sub">最低生活費の残り</dt>
-                    <dd class="font-semibold">
-                        <MoneyAmount
-                            :amount-minor="margin.living_reserve_minor"
-                        />
-                    </dd>
-                </div>
-                <div class="flex justify-between gap-2">
-                    <dt class="text-os-sub">安全資金</dt>
-                    <dd class="font-semibold">
-                        <MoneyAmount
-                            :amount-minor="margin.safety_buffer_minor"
-                        />
-                    </dd>
-                </div>
-            </dl>
-        </section>
+
+                <button
+                    type="button"
+                    class="mt-3 text-[12px] font-semibold text-os-yoyu hover:underline focus-visible:ring-2 focus-visible:ring-os-yoyu/40 focus-visible:outline-none"
+                    @click="showBreakdown = !showBreakdown"
+                >
+                    {{
+                        showBreakdown
+                            ? '計算の内訳を閉じる'
+                            : '計算の内訳を見る'
+                    }}
+                </button>
+                <dl
+                    v-if="showBreakdown"
+                    class="mt-3 grid gap-2 rounded-xl bg-os-yoyu-bg/70 p-3 text-[12px] sm:grid-cols-2"
+                >
+                    <div class="flex justify-between gap-2">
+                        <dt class="text-os-sub">現在の資金</dt>
+                        <dd class="font-semibold">
+                            <MoneyAmount :amount-minor="margin.funds_minor" />
+                        </dd>
+                    </div>
+                    <div class="flex justify-between gap-2">
+                        <dt class="text-os-sub">確定の入金予定</dt>
+                        <dd class="font-semibold">
+                            <MoneyAmount
+                                :amount-minor="margin.confirmed_income_minor"
+                            />
+                        </dd>
+                    </div>
+                    <div class="flex justify-between gap-2">
+                        <dt class="text-os-sub">確定の支払い</dt>
+                        <dd class="font-semibold">
+                            <MoneyAmount
+                                :amount-minor="margin.confirmed_outflow_minor"
+                            />
+                        </dd>
+                    </div>
+                    <div class="flex justify-between gap-2">
+                        <dt class="text-os-sub">見込み支出の予約</dt>
+                        <dd class="font-semibold">
+                            <MoneyAmount
+                                :amount-minor="margin.uncertain_reserve_minor"
+                            />
+                        </dd>
+                    </div>
+                    <div class="flex justify-between gap-2">
+                        <dt class="text-os-sub">最低生活費の残り</dt>
+                        <dd class="font-semibold">
+                            <MoneyAmount
+                                :amount-minor="margin.living_reserve_minor"
+                            />
+                        </dd>
+                    </div>
+                    <div class="flex justify-between gap-2">
+                        <dt class="text-os-sub">安全資金</dt>
+                        <dd class="font-semibold">
+                            <MoneyAmount
+                                :amount-minor="margin.safety_buffer_minor"
+                            />
+                        </dd>
+                    </div>
+                </dl>
+            </section>
+
+            <MoneyMarginKoban :mood="vesselMood" :level="vesselLevel" />
+        </div>
 
         <!-- Summary row -->
         <section class="grid gap-3 sm:grid-cols-3">
@@ -538,9 +581,7 @@ defineOptions({
                     <li v-if="first_shortfall_date">
                         <MoneyStatusBadge label="残高推移" tone="caution" />
                         <span class="ml-2">
-                            {{
-                                first_shortfall_date
-                            }}
+                            {{ first_shortfall_date }}
                             時点で残高が不足する見込みです。
                         </span>
                     </li>
