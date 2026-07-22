@@ -13,6 +13,10 @@ use Throwable;
 
 final class AiGateway
 {
+    // Anthropic vision charges ~1,600 tokens per image (up to 1568×1568 px).
+    // 10,000 bytes ≈ 2,500 tokens at the estimation's 4:1 byte/token ratio — a ~1.5× safety margin.
+    private const IMAGE_BYTES_ESTIMATE = 10_000;
+
     public function __construct(
         private AiUsageLedger $ledger,
         private AiCostCalculator $costs,
@@ -64,8 +68,9 @@ final class AiGateway
             $body['tools'] = $tools;
         }
 
-        $inputBuffer = $this->webSearchInputBuffer($tools);
-        $estimated = $this->costs->estimateReservation($model, $body, $maxTokens, $inputBuffer);
+        [$estimationBody, $imageCount] = $this->stripImagesForEstimation($body);
+        $inputBuffer = $this->webSearchInputBuffer($tools) + $imageCount * self::IMAGE_BYTES_ESTIMATE;
+        $estimated = $this->costs->estimateReservation($model, $estimationBody, $maxTokens, $inputBuffer);
         $usageRequest = $this->ledger->reserve($userId, $feature, $model, $estimated);
         $httpAttempted = false;
 
@@ -261,6 +266,34 @@ final class AiGateway
         }
 
         return 'pre_http_failure';
+    }
+
+    /**
+     * Strip base64 image data from the body so json_encode length reflects text tokens only.
+     *
+     * @param  array<string, mixed>  $body
+     * @return array{0: array<string, mixed>, 1: int}
+     */
+    private function stripImagesForEstimation(array $body): array
+    {
+        $imageCount = 0;
+
+        foreach ($body['messages'] ?? [] as $mi => $message) {
+            if (! is_array($message['content'] ?? null)) {
+                continue;
+            }
+
+            foreach ($message['content'] as $ci => $block) {
+                if (! is_array($block) || ($block['type'] ?? '') !== 'image') {
+                    continue;
+                }
+
+                $imageCount++;
+                $body['messages'][$mi]['content'][$ci]['source']['data'] = '';
+            }
+        }
+
+        return [$body, $imageCount];
     }
 
     /**
