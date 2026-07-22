@@ -27,6 +27,7 @@ class EstimateFoodPhotoJobTest extends TestCase
     {
         parent::setUp();
         Storage::fake('food-label-ocr');
+        Http::preventStrayRequests();
         config([
             'meals.label_ocr.disk' => 'food-label-ocr',
             'ai.anthropic.api_key' => 'test-key',

@@ -372,4 +372,28 @@ class RestaurantLookupTest extends TestCase
         $this->assertSame('nutrition_db', $existing->source);
         $this->assertEqualsWithDelta(711.0, (float) $existing->kcal, 0.01);
     }
+
+    public function test_menu_cache_hit_does_not_return_other_users_food(): void
+    {
+        $otherUser = User::factory()->create();
+        FoodItem::factory()->for($otherUser)->create([
+            'store_name' => '松屋',
+            'menu_name' => '牛めし並盛',
+        ]);
+
+        $user = User::factory()->create();
+
+        Queue::fake();
+
+        $response = $this->actingAs($user)
+            ->postJson(route('meals.menu-estimate.store'), [
+                'store_name' => '松屋',
+                'menu_name' => '牛めし並盛',
+            ]);
+
+        $response->assertStatus(202)
+            ->assertJson(['status' => 'ai_pending']);
+
+        Queue::assertPushed(EstimateFoodMenuJob::class);
+    }
 }

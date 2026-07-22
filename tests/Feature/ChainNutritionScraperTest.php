@@ -9,6 +9,12 @@ use Tests\TestCase;
 
 class ChainNutritionScraperTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Http::preventStrayRequests();
+    }
+
     private function scraper(): ChainNutritionScraper
     {
         return new ChainNutritionScraper;

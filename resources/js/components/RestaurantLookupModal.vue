@@ -36,6 +36,7 @@ interface Props {
 interface Emits {
     (e: 'update:open', value: boolean): void;
     (e: 'food-registered', food: FoodItem): void;
+    (e: 'food-hit', food: FoodItem): void;
 }
 
 const props = defineProps<Props>();
@@ -281,7 +282,7 @@ async function submitMenu(): Promise<void> {
         };
 
         if (data.status === 'hit' && data.food) {
-            emit('food-registered', data.food);
+            emit('food-hit', data.food);
             close();
 
             return;
@@ -738,7 +739,7 @@ async function confirmAndSave(): Promise<void> {
                     class="mx-5 mt-4 rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-2 dark:border-emerald-800 dark:bg-emerald-950/30"
                 >
                     <p class="font-sans text-[11px] leading-relaxed text-emerald-700 dark:text-emerald-400">
-                        栄養データベースの値です。公式情報に基づいていますが、店舗や時期により異なる場合があります。
+                        外部栄養DBの参考値です。実際の店舗メニューと異なる場合があります。
                     </p>
                 </div>
                 <div

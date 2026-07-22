@@ -996,6 +996,7 @@ function applyChartFilter(): void {
         v-model:open="showRestaurantModal"
         :initial-step="restaurantInitialStep"
         @food-registered="onRestaurantRegistered"
+        @food-hit="onBarcodeHit"
     />
 
     <Dialog :open="showEntryModal" @update:open="(v) => (showEntryModal = v)">

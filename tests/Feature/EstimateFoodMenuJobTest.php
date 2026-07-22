@@ -25,6 +25,7 @@ class EstimateFoodMenuJobTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Http::preventStrayRequests();
         config(['ai.anthropic.api_key' => 'test-key']);
     }
 
