@@ -353,6 +353,33 @@ class EstimateFoodPhotoJobTest extends TestCase
         $this->assertSame('味噌ラーメン', $meta['menu_name']);
     }
 
+    public function test_large_image_does_not_cause_false_quota_exceeded(): void
+    {
+        config(['ai.limits.monthly_usd_per_user' => '2']);
+
+        $lookup = $this->photoLookup();
+        Storage::disk('food-label-ocr')->put(
+            (string) $lookup->temp_image_path,
+            str_repeat('x', 2_000_000),
+        );
+
+        $this->fakeAiText(json_encode([
+            'name' => 'チキンカレー',
+            'serving_label' => '1皿',
+            'per' => 'serving',
+            'kcal' => 680,
+            'protein_g' => 25.0,
+            'fat_g' => 28.0,
+            'carb_g' => 80.0,
+        ], JSON_UNESCAPED_UNICODE));
+
+        $this->runJob($lookup);
+
+        $lookup->refresh();
+        $this->assertSame(FoodLookupStatus::Found, $lookup->status);
+        $this->assertNotSame('photo_quota_exceeded', $lookup->error_code);
+    }
+
     public function test_no_store_name_skips_scraper(): void
     {
         $lookup = $this->photoLookup();
