@@ -7,6 +7,7 @@ use App\Domain\Shared\AI\AiUsageLedger;
 use App\Enums\FoodLookupStatus;
 use App\Jobs\EstimateFoodMenuJob;
 use App\Jobs\EstimateFoodPhotoJob;
+use App\Models\FoodItem;
 use App\Models\FoodLookupRequest;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -272,5 +273,127 @@ class RestaurantLookupTest extends TestCase
             ])
             ->assertUnprocessable()
             ->assertJsonFragment(['message' => '今月のAI利用枠を使い切りました。来月また利用できます。']);
+    }
+
+    public function test_menu_estimate_returns_cached_food_item(): void
+    {
+        $user = User::factory()->create();
+        $food = FoodItem::factory()->for($user)->create([
+            'store_name' => '松屋',
+            'menu_name' => '牛めし並盛',
+            'source' => 'ai_menu_estimate',
+        ]);
+
+        Queue::fake();
+
+        $response = $this->actingAs($user)
+            ->postJson(route('meals.menu-estimate.store'), [
+                'store_name' => '松屋',
+                'menu_name' => '牛めし並盛',
+            ]);
+
+        $response->assertOk()
+            ->assertJson([
+                'status' => 'hit',
+                'food' => [
+                    'id' => $food->id,
+                    'name' => $food->name,
+                    'source' => 'ai_menu_estimate',
+                ],
+            ]);
+
+        Queue::assertNothingPushed();
+    }
+
+    public function test_confirm_stores_source_and_menu_key_from_lookup(): void
+    {
+        $user = User::factory()->create();
+        $lookup = FoodLookupRequest::factory()->for($user)->found()->create([
+            'source' => 'nutrition_db',
+            'barcode' => null,
+            'barcode_type' => null,
+            'meta' => ['store_name' => 'すき家', 'menu_name' => '牛丼並盛'],
+        ]);
+
+        $response = $this->actingAs($user)
+            ->postJson(route('meals.barcode-lookup.confirm', $lookup->id), [
+                'name' => 'すき家 牛丼',
+                'serving_label' => '並盛',
+                'kcal' => 733,
+                'protein_g' => 22,
+                'fat_g' => 25,
+                'carb_g' => 104,
+            ]);
+
+        $response->assertCreated();
+
+        $this->assertDatabaseHas('food_items', [
+            'user_id' => $user->id,
+            'name' => 'すき家 牛丼',
+            'source' => 'nutrition_db',
+            'store_name' => 'すき家',
+            'menu_name' => '牛丼並盛',
+        ]);
+    }
+
+    public function test_confirm_deduplicates_by_store_and_menu_name(): void
+    {
+        $user = User::factory()->create();
+        $existing = FoodItem::factory()->for($user)->create([
+            'store_name' => '松屋',
+            'menu_name' => '牛めし並盛',
+            'source' => 'ai_menu_estimate',
+            'kcal' => 600,
+        ]);
+
+        $lookup = FoodLookupRequest::factory()->for($user)->found()->create([
+            'source' => 'nutrition_db',
+            'barcode' => null,
+            'barcode_type' => null,
+            'meta' => ['store_name' => '松屋', 'menu_name' => '牛めし並盛'],
+        ]);
+
+        $response = $this->actingAs($user)
+            ->postJson(route('meals.barcode-lookup.confirm', $lookup->id), [
+                'name' => '松屋 牛めし',
+                'serving_label' => '並盛',
+                'kcal' => 711,
+                'protein_g' => 20,
+                'fat_g' => 23,
+                'carb_g' => 107,
+            ]);
+
+        $response->assertCreated();
+
+        $this->assertSame(1, FoodItem::query()->where('user_id', $user->id)->where('store_name', '松屋')->count());
+
+        $existing->refresh();
+        $this->assertSame('松屋 牛めし', $existing->name);
+        $this->assertSame('nutrition_db', $existing->source);
+        $this->assertEqualsWithDelta(711.0, (float) $existing->kcal, 0.01);
+    }
+
+    public function test_menu_cache_hit_does_not_return_other_users_food(): void
+    {
+        $otherUser = User::factory()->create();
+        FoodItem::factory()->for($otherUser)->create([
+            'store_name' => '松屋',
+            'menu_name' => '牛めし並盛',
+        ]);
+
+        $user = User::factory()->create();
+
+        Queue::fake();
+
+        $response = $this->actingAs($user)
+            ->postJson(route('meals.menu-estimate.store'), [
+                'store_name' => '松屋',
+                'menu_name' => '牛めし並盛',
+            ]);
+
+        $response->assertStatus(202)
+            ->assertJson(['status' => 'ai_pending']);
+
+        Queue::assertPushed(EstimateFoodMenuJob::class);
     }
 }

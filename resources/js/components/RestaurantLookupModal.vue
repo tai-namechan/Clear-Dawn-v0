@@ -36,6 +36,7 @@ interface Props {
 interface Emits {
     (e: 'update:open', value: boolean): void;
     (e: 'food-registered', food: FoodItem): void;
+    (e: 'food-hit', food: FoodItem): void;
 }
 
 const props = defineProps<Props>();
@@ -47,6 +48,7 @@ const lookupResult = ref<LookupResult | null>(null);
 const saving = ref(false);
 const errorMessage = ref<string | null>(null);
 const estimateSource = ref<'photo' | 'menu' | null>(null);
+const lookupSource = ref<string | null>(null);
 
 const photoFile = ref<File | null>(null);
 const photoPreviewUrl = ref<string | null>(null);
@@ -144,6 +146,7 @@ function reset(): void {
     saving.value = false;
     errorMessage.value = null;
     estimateSource.value = null;
+    lookupSource.value = null;
     showDetails.value = false;
     clearPhotoFile();
     submittedPhotoUrl.value = null;
@@ -257,7 +260,11 @@ async function submitMenu(): Promise<void> {
     errorMessage.value = null;
 
     try {
-        const data = await apiFetch<{ status: string; lookup_id: string }>(
+        const data = await apiFetch<{
+            status: string;
+            lookup_id?: string;
+            food?: FoodItem;
+        }>(
             '/meals/menu-estimate',
             {
                 method: 'POST',
@@ -268,12 +275,20 @@ async function submitMenu(): Promise<void> {
             },
         );
 
-        lookupId.value = data.lookup_id;
         estimateSource.value = 'menu';
         submittedMenu.value = {
             store_name: menuForm.value.store_name.trim(),
             menu_name: menuForm.value.menu_name.trim(),
         };
+
+        if (data.status === 'hit' && data.food) {
+            emit('food-hit', data.food);
+            close();
+
+            return;
+        }
+
+        lookupId.value = data.lookup_id!;
         step.value = 'polling';
         startPolling();
     } catch (e) {
@@ -313,6 +328,7 @@ async function pollLookup(): Promise<void> {
 
         if (data.status === 'found' && data.result) {
             lookupResult.value = data.result;
+            lookupSource.value = data.source ?? null;
             prefillConfirmForm(data.result);
             step.value = 'confirm';
 
@@ -717,8 +733,19 @@ async function confirmAndSave(): Promise<void> {
                     </div>
                 </div>
 
-                <!-- AI estimation notice -->
-                <div class="mx-5 mt-4 rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/30">
+                <!-- Source notice -->
+                <div
+                    v-if="lookupSource === 'nutrition_db'"
+                    class="mx-5 mt-4 rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-2 dark:border-emerald-800 dark:bg-emerald-950/30"
+                >
+                    <p class="font-sans text-[11px] leading-relaxed text-emerald-700 dark:text-emerald-400">
+                        外部栄養DBの参考値です。実際の店舗メニューと異なる場合があります。
+                    </p>
+                </div>
+                <div
+                    v-else
+                    class="mx-5 mt-4 rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/30"
+                >
                     <p class="font-sans text-[11px] leading-relaxed text-amber-700 dark:text-amber-400">
                         AI推定値です。外食の油脂・調味料を考慮して推定していますが、実際と異なる場合があります。
                     </p>

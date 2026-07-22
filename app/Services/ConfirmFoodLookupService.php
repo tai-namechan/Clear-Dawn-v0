@@ -26,15 +26,10 @@ class ConfirmFoodLookupService
     {
         return DB::transaction(function () use ($user, $lookup, $attributes): FoodItem {
             [$barcode, $barcodeType] = $this->resolveBarcode($lookup, $attributes);
+            [$storeName, $menuName] = $this->resolveMenuKey($lookup);
 
-            // unique(user_id, barcode) は soft delete 行にも効くため、
-            // 過去に削除した同一バーコードは復元 + 上書きで再登録する。
-            // barcode なし（成分表直接登録・PR-F2 入口2）は重複判定せず常に新規作成
             /** @var FoodItem|null $existing */
-            $existing = $barcode === null ? null : FoodItem::withTrashed()
-                ->where('user_id', $user->id)
-                ->where('barcode', $barcode)
-                ->first();
+            $existing = $this->findExisting($user, $barcode, $storeName, $menuName);
 
             $values = [
                 'name' => $attributes['name'],
@@ -43,8 +38,11 @@ class ConfirmFoodLookupService
                 'protein_g' => $attributes['protein_g'],
                 'fat_g' => $attributes['fat_g'],
                 'carb_g' => $attributes['carb_g'],
+                'source' => $lookup->source,
                 'barcode' => $barcode,
                 'barcode_type' => $barcodeType,
+                'store_name' => $storeName,
+                'menu_name' => $menuName,
             ];
 
             if ($existing !== null) {
@@ -63,6 +61,46 @@ class ConfirmFoodLookupService
                 ...$values,
             ]);
         });
+    }
+
+    private function findExisting(User $user, ?string $barcode, ?string $storeName, ?string $menuName): ?FoodItem
+    {
+        if ($barcode !== null) {
+            return FoodItem::withTrashed()
+                ->where('user_id', $user->id)
+                ->where('barcode', $barcode)
+                ->first();
+        }
+
+        if ($storeName !== null && $menuName !== null) {
+            return FoodItem::withTrashed()
+                ->where('user_id', $user->id)
+                ->where('store_name', $storeName)
+                ->where('menu_name', $menuName)
+                ->first();
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{0: string|null, 1: string|null}
+     */
+    private function resolveMenuKey(FoodLookupRequest $lookup): array
+    {
+        $meta = $lookup->meta;
+        if (! is_array($meta)) {
+            return [null, null];
+        }
+
+        $store = $meta['store_name'] ?? null;
+        $menu = $meta['menu_name'] ?? null;
+
+        if (is_string($store) && $store !== '' && is_string($menu) && $menu !== '') {
+            return [mb_substr($store, 0, 100), mb_substr($menu, 0, 100)];
+        }
+
+        return [null, null];
     }
 
     /**

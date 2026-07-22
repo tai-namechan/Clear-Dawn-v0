@@ -11,6 +11,7 @@ use App\Enums\FoodLookupStatus;
 use App\Jobs\EstimateFoodMenuJob;
 use App\Models\FoodItem;
 use App\Models\FoodLookupRequest;
+use App\Services\ChainNutritionScraper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -24,6 +25,7 @@ class EstimateFoodMenuJobTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Http::preventStrayRequests();
         config(['ai.anthropic.api_key' => 'test-key']);
     }
 
@@ -38,6 +40,7 @@ class EstimateFoodMenuJobTest extends TestCase
     private function fakeAiText(string $text): void
     {
         Http::fake([
+            'www.fatsecret.jp/*' => Http::response('', 404),
             $this->anthropicFakePattern() => Http::response([
                 'content' => [['type' => 'text', 'text' => $text]],
                 'usage' => ['input_tokens' => 500, 'output_tokens' => 80],
@@ -60,7 +63,7 @@ class EstimateFoodMenuJobTest extends TestCase
             }
         };
 
-        $job->handle(app(AiGateway::class));
+        $job->handle(app(AiGateway::class), app(ChainNutritionScraper::class));
     }
 
     public function test_job_marks_found_on_success(): void
@@ -222,7 +225,7 @@ class EstimateFoodMenuJobTest extends TestCase
         $this->assertSame('menu_invalid_output', $lookup->fresh()->error_code);
     }
 
-    public function test_job_fails_terminally_on_quota_exceeded_without_http(): void
+    public function test_job_fails_terminally_on_quota_exceeded_without_ai_http(): void
     {
         config(['ai.limits.monthly_usd_per_user' => '0.000001']);
 
@@ -235,14 +238,18 @@ class EstimateFoodMenuJobTest extends TestCase
             AiMoney::of('0.000001'),
         );
 
-        Http::fake();
+        Http::fake([
+            'www.fatsecret.jp/*' => Http::response('', 404),
+            $this->anthropicFakePattern() => Http::response([], 200),
+        ]);
 
         $this->runJob($lookup);
 
         $lookup->refresh();
         $this->assertSame(FoodLookupStatus::Failed, $lookup->status);
         $this->assertSame('menu_quota_exceeded', $lookup->error_code);
-        Http::assertNothingSent();
+
+        Http::assertNotSent(fn (Request $r): bool => str_contains($r->url(), 'anthropic'));
     }
 
     public function test_job_skips_non_ai_pending_lookup(): void
@@ -266,5 +273,72 @@ class EstimateFoodMenuJobTest extends TestCase
         $lookup->refresh();
         $this->assertSame(FoodLookupStatus::Failed, $lookup->status);
         $this->assertSame('menu_provider_error', $lookup->error_code);
+    }
+
+    public function test_scraper_hit_skips_ai_and_marks_found(): void
+    {
+        $lookup = $this->menuLookup([
+            'meta' => ['store_name' => 'すき家', 'menu_name' => 'まぐろたたき丼'],
+        ]);
+
+        $detailHtml = <<<'HTML'
+        <html><body>
+        <h1>すき家 まぐろたたき丼</h1>
+        <div>1食分（350g）</div>
+        <div>カロリー: 534 kcal</div>
+        <div>たんぱく質: 28.7 g</div>
+        <div>脂質: 8.5 g</div>
+        <div>炭水化物: 85.3 g</div>
+        </body></html>
+        HTML;
+
+        Http::fake([
+            'www.fatsecret.jp/*' => Http::sequence()
+                ->push('<a href="https://www.fatsecret.jp/カロリー-栄養/すき家/まぐろたたき丼/1食" class="prominent">まぐろたたき丼</a>', 200)
+                ->push($detailHtml, 200),
+            $this->anthropicFakePattern() => Http::response([], 500),
+        ]);
+
+        $this->runJob($lookup);
+
+        $lookup->refresh();
+        $this->assertSame(FoodLookupStatus::Found, $lookup->status);
+        $this->assertSame('nutrition_db', $lookup->source);
+        $this->assertEqualsWithDelta(534.0, (float) $lookup->result['kcal'], 0.01);
+        $this->assertEqualsWithDelta(28.7, (float) $lookup->result['protein_g'], 0.01);
+        $this->assertEqualsWithDelta(8.5, (float) $lookup->result['fat_g'], 0.01);
+        $this->assertEqualsWithDelta(85.3, (float) $lookup->result['carb_g'], 0.01);
+
+        Http::assertNotSent(fn (Request $r): bool => str_contains($r->url(), 'anthropic'));
+
+        $this->assertSame(0, AiUsageRequest::query()->withoutUserScope()->count());
+    }
+
+    public function test_scraper_miss_falls_back_to_ai(): void
+    {
+        $lookup = $this->menuLookup();
+
+        Http::fake([
+            'www.fatsecret.jp/*' => Http::response('', 404),
+            $this->anthropicFakePattern() => Http::response([
+                'content' => [['type' => 'text', 'text' => json_encode([
+                    'name' => 'テストラーメン',
+                    'serving_label' => '1人前',
+                    'per' => 'serving',
+                    'kcal' => 800,
+                    'protein_g' => 25.0,
+                    'fat_g' => 30.0,
+                    'carb_g' => 90.0,
+                ], JSON_UNESCAPED_UNICODE)]],
+                'usage' => ['input_tokens' => 500, 'output_tokens' => 80],
+            ], 200),
+        ]);
+
+        $this->runJob($lookup);
+
+        $lookup->refresh();
+        $this->assertSame(FoodLookupStatus::Found, $lookup->status);
+        $this->assertSame('ai_menu_estimate', $lookup->source);
+        $this->assertEqualsWithDelta(800.0, (float) $lookup->result['kcal'], 0.01);
     }
 }

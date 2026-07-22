@@ -11,6 +11,7 @@ use App\Enums\FoodLookupStatus;
 use App\Jobs\EstimateFoodPhotoJob;
 use App\Models\FoodItem;
 use App\Models\FoodLookupRequest;
+use App\Services\ChainNutritionScraper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -26,6 +27,7 @@ class EstimateFoodPhotoJobTest extends TestCase
     {
         parent::setUp();
         Storage::fake('food-label-ocr');
+        Http::preventStrayRequests();
         config([
             'meals.label_ocr.disk' => 'food-label-ocr',
             'ai.anthropic.api_key' => 'test-key',
@@ -46,6 +48,7 @@ class EstimateFoodPhotoJobTest extends TestCase
     private function fakeAiText(string $text): void
     {
         Http::fake([
+            'www.fatsecret.jp/*' => Http::response('', 404),
             $this->anthropicFakePattern() => Http::response([
                 'content' => [['type' => 'text', 'text' => $text]],
                 'usage' => ['input_tokens' => 1200, 'output_tokens' => 80],
@@ -68,7 +71,7 @@ class EstimateFoodPhotoJobTest extends TestCase
             }
         };
 
-        $job->handle(app(AiGateway::class));
+        $job->handle(app(AiGateway::class), app(ChainNutritionScraper::class));
     }
 
     public function test_job_marks_found_and_deletes_image_on_success(): void
@@ -267,5 +270,111 @@ class EstimateFoodPhotoJobTest extends TestCase
 
         $result = $lookup->fresh()->result;
         $this->assertSame('1人前', $result['serving_label']);
+    }
+
+    public function test_store_name_extraction_triggers_scraper_and_uses_nutrition_db(): void
+    {
+        $lookup = $this->photoLookup();
+
+        $detailHtml = <<<'HTML'
+        <html><body>
+        <h1>すき家 牛丼</h1>
+        <div>1食分（350g）</div>
+        <div>カロリー: 733 kcal</div>
+        <div>たんぱく質: 22.0 g</div>
+        <div>脂質: 25.0 g</div>
+        <div>炭水化物: 104.0 g</div>
+        </body></html>
+        HTML;
+
+        Http::fake([
+            'www.fatsecret.jp/*' => Http::sequence()
+                ->push('<a href="https://www.fatsecret.jp/カロリー-栄養/すき家/牛丼/1食" class="prominent">牛丼</a>', 200)
+                ->push($detailHtml, 200),
+            $this->anthropicFakePattern() => Http::response([
+                'content' => [['type' => 'text', 'text' => json_encode([
+                    'name' => '牛丼',
+                    'serving_label' => '並盛',
+                    'per' => 'serving',
+                    'kcal' => 700,
+                    'protein_g' => 20,
+                    'fat_g' => 24,
+                    'carb_g' => 100,
+                    'store_name' => 'すき家',
+                    'menu_name' => '牛丼',
+                ], JSON_UNESCAPED_UNICODE)]],
+                'usage' => ['input_tokens' => 1200, 'output_tokens' => 80],
+            ], 200),
+        ]);
+
+        $this->runJob($lookup);
+
+        $lookup->refresh();
+        $this->assertSame(FoodLookupStatus::Found, $lookup->status);
+        $this->assertSame('nutrition_db', $lookup->source);
+        $this->assertEqualsWithDelta(733.0, (float) $lookup->result['kcal'], 0.01);
+
+        $meta = $lookup->meta;
+        $this->assertSame('すき家', $meta['store_name']);
+        $this->assertSame('牛丼', $meta['menu_name']);
+    }
+
+    public function test_store_name_extraction_falls_back_to_ai_when_scraper_misses(): void
+    {
+        $lookup = $this->photoLookup();
+
+        Http::fake([
+            'www.fatsecret.jp/*' => Http::response('', 404),
+            $this->anthropicFakePattern() => Http::response([
+                'content' => [['type' => 'text', 'text' => json_encode([
+                    'name' => '味噌ラーメン',
+                    'serving_label' => '1杯',
+                    'per' => 'serving',
+                    'kcal' => 950,
+                    'protein_g' => 30,
+                    'fat_g' => 40,
+                    'carb_g' => 100,
+                    'store_name' => '個人店ラーメン屋',
+                    'menu_name' => '味噌ラーメン',
+                ], JSON_UNESCAPED_UNICODE)]],
+                'usage' => ['input_tokens' => 1200, 'output_tokens' => 80],
+            ], 200),
+        ]);
+
+        $this->runJob($lookup);
+
+        $lookup->refresh();
+        $this->assertSame(FoodLookupStatus::Found, $lookup->status);
+        $this->assertSame('ai_photo_estimate', $lookup->source);
+        $this->assertEqualsWithDelta(950.0, (float) $lookup->result['kcal'], 0.01);
+
+        $meta = $lookup->meta;
+        $this->assertSame('個人店ラーメン屋', $meta['store_name']);
+        $this->assertSame('味噌ラーメン', $meta['menu_name']);
+    }
+
+    public function test_no_store_name_skips_scraper(): void
+    {
+        $lookup = $this->photoLookup();
+
+        $this->fakeAiText(json_encode([
+            'name' => 'カレーライス',
+            'serving_label' => '1皿',
+            'per' => 'serving',
+            'kcal' => 680,
+            'protein_g' => 25,
+            'fat_g' => 28,
+            'carb_g' => 80,
+            'store_name' => null,
+            'menu_name' => null,
+        ], JSON_UNESCAPED_UNICODE));
+
+        $this->runJob($lookup);
+
+        $lookup->refresh();
+        $this->assertSame(FoodLookupStatus::Found, $lookup->status);
+        $this->assertSame('ai_photo_estimate', $lookup->source);
+
+        Http::assertNotSent(fn (Request $r): bool => str_contains($r->url(), 'fatsecret'));
     }
 }

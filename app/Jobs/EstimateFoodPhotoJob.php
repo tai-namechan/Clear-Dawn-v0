@@ -7,6 +7,7 @@ use App\Domain\Shared\AI\PromptTemplate;
 use App\Domain\Shared\AI\QuotaExceededException;
 use App\Enums\FoodLookupStatus;
 use App\Models\FoodLookupRequest;
+use App\Services\ChainNutritionScraper;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -35,7 +36,7 @@ class EstimateFoodPhotoJob implements ShouldBeUnique, ShouldQueue
 
 ## 出力形式
 JSONのみを返してください。それ以外のテキストは一切不要です。
-{"name": string, "serving_label": string, "per": "serving", "kcal": number, "protein_g": number, "fat_g": number, "carb_g": number}
+{"name": string, "serving_label": string, "per": "serving", "kcal": number, "protein_g": number, "fat_g": number, "carb_g": number, "store_name": string|null, "menu_name": string|null}
 
 ## 推定ルール
 
@@ -43,6 +44,12 @@ JSONのみを返してください。それ以外のテキストは一切不要�
 - 写真に写っている料理を具体的に特定する（例: "味噌ラーメン" "チキンカツカレー"）
 - トッピングや具材も考慮に入れる（チャーシュー、煮卵、揚げ物など）
 - パッケージ食品の場合は商品名とサイズを読み取る
+
+### 店名・メニュー名の抽出（重要）
+- 写真内に看板、ロゴ、メニュー表、レシート、のれん、箸袋、紙ナプキン等から店名が読み取れる場合は store_name に記入
+- 写真やコンテキストからメニュー名が特定できる場合は menu_name に記入
+- 読み取れない・特定できない場合は null を返す
+- チェーン店名は正式名称で記入（例: "すき家", "松屋", "CoCo壱番屋"）
 
 ### カロリー推定の重要原則
 - **外食・レストランの料理は家庭料理より大幅に高カロリーである**
@@ -84,7 +91,7 @@ PROMPT;
         return $this->lookupRequestId;
     }
 
-    public function handle(AiGateway $ai): void
+    public function handle(AiGateway $ai, ChainNutritionScraper $scraper): void
     {
         $lookup = FoodLookupRequest::query()->find($this->lookupRequestId);
 
@@ -147,6 +154,29 @@ PROMPT;
             return;
         }
 
+        $storeName = $this->extractString($decoded, 'store_name');
+        $menuName = $this->extractString($decoded, 'menu_name');
+
+        if ($storeName !== null && $menuName !== null) {
+            $this->saveMenuMeta($lookup, $storeName, $menuName);
+
+            $scraped = $scraper->search($storeName, $menuName);
+            if ($scraped !== null) {
+                $this->finishFound($lookup, [
+                    'name' => $scraped['name'],
+                    'brands' => null,
+                    'serving_label' => $scraped['serving_label'],
+                    'per' => $scraped['per'],
+                    'kcal' => $scraped['kcal'],
+                    'protein_g' => $scraped['protein_g'],
+                    'fat_g' => $scraped['fat_g'],
+                    'carb_g' => $scraped['carb_g'],
+                ], 'nutrition_db');
+
+                return;
+            }
+        }
+
         $this->finishFound($lookup, $result);
     }
 
@@ -184,14 +214,14 @@ PROMPT;
     /**
      * @param  array<string, mixed>  $result
      */
-    private function finishFound(FoodLookupRequest $lookup, array $result): void
+    private function finishFound(FoodLookupRequest $lookup, array $result, string $source = 'ai_photo_estimate'): void
     {
         $written = FoodLookupRequest::query()
             ->whereKey($lookup->id)
             ->where('status', FoodLookupStatus::AiPending->value)
             ->update([
                 'status' => FoodLookupStatus::Found->value,
-                'source' => 'ai_photo_estimate',
+                'source' => $source,
                 'result' => json_encode($result, JSON_UNESCAPED_UNICODE),
                 'error_code' => null,
                 'temp_image_path' => null,
@@ -270,6 +300,30 @@ PROMPT;
             'fat_g' => $this->numeric($decoded['fat_g'] ?? null, 999),
             'carb_g' => $this->numeric($decoded['carb_g'] ?? null, 999),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $decoded
+     */
+    private function extractString(array $decoded, string $key): ?string
+    {
+        $value = $decoded[$key] ?? null;
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        return mb_substr(trim($value), 0, 100);
+    }
+
+    private function saveMenuMeta(FoodLookupRequest $lookup, string $storeName, string $menuName): void
+    {
+        $meta = is_array($lookup->meta) ? $lookup->meta : [];
+        $meta['store_name'] = $storeName;
+        $meta['menu_name'] = $menuName;
+
+        FoodLookupRequest::query()
+            ->whereKey($lookup->id)
+            ->update(['meta' => json_encode($meta, JSON_UNESCAPED_UNICODE)]);
     }
 
     private function numeric(mixed $value, float $max): ?float
