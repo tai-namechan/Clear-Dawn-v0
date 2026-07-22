@@ -7,6 +7,7 @@ use App\Domain\Shared\AI\PromptTemplate;
 use App\Domain\Shared\AI\QuotaExceededException;
 use App\Enums\FoodLookupStatus;
 use App\Models\FoodLookupRequest;
+use App\Services\ChainNutritionScraper;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -87,7 +88,7 @@ PROMPT;
         return $this->lookupRequestId;
     }
 
-    public function handle(AiGateway $ai): void
+    public function handle(AiGateway $ai, ChainNutritionScraper $scraper): void
     {
         $lookup = FoodLookupRequest::query()->find($this->lookupRequestId);
 
@@ -101,6 +102,22 @@ PROMPT;
 
         if (! is_string($storeName) || ! is_string($menuName) || $storeName === '' || $menuName === '') {
             $this->finishFailed($lookup, 'menu_invalid_input');
+
+            return;
+        }
+
+        $scraped = $scraper->search($storeName, $menuName);
+        if ($scraped !== null) {
+            $this->finishFound($lookup, [
+                'name' => $scraped['name'],
+                'brands' => null,
+                'serving_label' => $scraped['serving_label'],
+                'per' => $scraped['per'],
+                'kcal' => $scraped['kcal'],
+                'protein_g' => $scraped['protein_g'],
+                'fat_g' => $scraped['fat_g'],
+                'carb_g' => $scraped['carb_g'],
+            ], 'nutrition_db');
 
             return;
         }
@@ -185,14 +202,14 @@ PROMPT;
     /**
      * @param  array<string, mixed>  $result
      */
-    private function finishFound(FoodLookupRequest $lookup, array $result): void
+    private function finishFound(FoodLookupRequest $lookup, array $result, string $source = 'ai_menu_estimate'): void
     {
         FoodLookupRequest::query()
             ->whereKey($lookup->id)
             ->where('status', FoodLookupStatus::AiPending->value)
             ->update([
                 'status' => FoodLookupStatus::Found->value,
-                'source' => 'ai_menu_estimate',
+                'source' => $source,
                 'result' => json_encode($result, JSON_UNESCAPED_UNICODE),
                 'error_code' => null,
             ]);
