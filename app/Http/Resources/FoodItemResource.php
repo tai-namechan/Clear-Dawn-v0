@@ -24,6 +24,7 @@ class FoodItemResource extends JsonResource
             'protein_g' => (string) $this->protein_g,
             'fat_g' => (string) $this->fat_g,
             'carb_g' => (string) $this->carb_g,
+            'source' => $this->source,
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }
