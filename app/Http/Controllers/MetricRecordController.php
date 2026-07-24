@@ -15,6 +15,7 @@ use App\Queries\GetDailyMealsQuery;
 use App\Queries\GetDailyMetricsQuery;
 use App\Queries\GetMetricChartQuery;
 use App\Queries\GetMetricHistoryQuery;
+use App\Queries\GetNutritionChartQuery;
 use App\Queries\GetStrengthChartQuery;
 use App\Services\EnsureMetricsService;
 use App\Services\UpsertDailyMetricsService;
@@ -31,6 +32,9 @@ class MetricRecordController extends Controller
         ShowDailyRecordsRequest $request,
         GetDailyMetricsQuery $query,
         GetDailyMealsQuery $mealsQuery,
+        GetNutritionChartQuery $nutritionChartQuery,
+        GetMetricChartQuery $metricChartQuery,
+        GetStrengthChartQuery $strengthChartQuery,
         EnsureMetricsService $ensureMetrics,
         UserTimezoneResolver $timezoneResolver,
     ): Response {
@@ -41,25 +45,48 @@ class MetricRecordController extends Controller
             $request->validated('date') ?? $timezoneResolver->todayDateString($user),
         );
         $previousOn = $recordedOn->copy()->subDay();
+        $chartFrom = $recordedOn->copy()->subDays(6);
 
         $daily = $query->handle($user, $recordedOn);
         $previous = $query->handle($user, $previousOn);
         $meals = $mealsQuery->handle($user, $recordedOn);
 
+        $conditionChartKeys = ['weight', 'sleep_minutes'];
+        $metricsByKey = Metric::query()->whereIn('key', $conditionChartKeys)->get()->keyBy('key');
+        $conditionChartSeries = [];
+
+        foreach ($conditionChartKeys as $key) {
+            /** @var Metric|null $metric */
+            $metric = $metricsByKey->get($key);
+
+            if ($metric === null) {
+                $conditionChartSeries[$key] = [];
+
+                continue;
+            }
+
+            $conditionChartSeries[$key] = $metricChartQuery
+                ->handle($user, $metric, $chartFrom, $recordedOn)
+                ->values()
+                ->all();
+        }
+
         return Inertia::render('Records/Index', [
             'date' => $recordedOn->toDateString(),
+            'chartFrom' => $chartFrom->toDateString(),
+            'chartTo' => $recordedOn->toDateString(),
             'metrics' => $this->mapDailyMetrics($daily),
             'previousMetrics' => $this->mapDailyMetrics($previous),
             'mealTotals' => $meals['totals'],
-            'mealSections' => array_map(fn (array $section): array => [
-                'meal_type' => $section['meal_type'],
-                'label' => $section['label'],
-                'kcal' => $section['subtotal']['kcal'],
-                'entry_count' => count($section['entries']),
-            ], $meals['sections']),
             'mealGoal' => $meals['goal'] !== null
                 ? NutritionGoalResource::make($meals['goal'])->resolve()
                 : null,
+            'mealChartPoints' => $nutritionChartQuery
+                ->handle($user, $chartFrom, $recordedOn)
+                ->values()
+                ->all(),
+            'conditionChartSeries' => $conditionChartSeries,
+            'strengthChartPoints' => $strengthChartQuery->handle($user, $chartFrom, $recordedOn),
         ]);
     }
 

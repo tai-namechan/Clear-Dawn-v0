@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\RoutineItemCategory;
+use App\Models\MealEntry;
 use App\Models\Metric;
 use App\Models\MetricRecord;
 use App\Models\RoutineBlockLog;
@@ -131,12 +132,103 @@ class MetricRecordTest extends TestCase
             ->assertInertia(fn ($page) => $page
                 ->component('Records/Index')
                 ->has('mealTotals')
-                ->has('mealSections')
+                ->has('mealChartPoints')
+                ->has('conditionChartSeries.weight')
+                ->has('conditionChartSeries.sleep_minutes')
+                ->has('strengthChartPoints')
+                ->where('chartFrom', '2026-07-01')
+                ->where('chartTo', '2026-07-07')
                 ->where('metrics', fn ($metrics) => collect($metrics)->contains(
                     fn (array $entry): bool => $entry['metric']['key'] === 'weight'
                         && $entry['record'] !== null
                         && $entry['record']['value'] === '70.00',
                 ))
+                ->where('conditionChartSeries.weight', fn ($points) => collect($points)->contains(
+                    fn (array $point): bool => $point['date'] === '2026-07-07'
+                        && $point['value'] === '70.00',
+                ))
+                ->where('conditionChartSeries.weight', fn ($points) => collect($points)->doesntContain(
+                    fn (array $point): bool => $point['value'] === '99.00',
+                ))
+            );
+    }
+
+    public function test_records_index_hub_charts_are_scoped_and_windowed_to_seven_days(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $weight = Metric::query()->where('key', 'weight')->firstOrFail();
+
+        MetricRecord::factory()->create([
+            'user_id' => $user->id,
+            'metric_id' => $weight->id,
+            'recorded_on' => '2026-07-10',
+            'value' => 71.5,
+        ]);
+        MetricRecord::factory()->create([
+            'user_id' => $user->id,
+            'metric_id' => $weight->id,
+            'recorded_on' => '2026-06-01',
+            'value' => 80,
+        ]);
+        MetricRecord::factory()->create([
+            'user_id' => $other->id,
+            'metric_id' => $weight->id,
+            'recorded_on' => '2026-07-10',
+            'value' => 99,
+        ]);
+
+        MealEntry::factory()->for($user)->create([
+            'eaten_on' => '2026-07-08',
+            'kcal' => 500,
+            'protein_g' => 30,
+            'fat_g' => 15,
+            'carb_g' => 50,
+        ]);
+        MealEntry::factory()->for($user)->create([
+            'eaten_on' => '2026-06-01',
+            'kcal' => 900,
+            'protein_g' => 40,
+            'fat_g' => 20,
+            'carb_g' => 80,
+        ]);
+        MealEntry::factory()->for($other)->create([
+            'eaten_on' => '2026-07-08',
+            'kcal' => 1200,
+            'protein_g' => 60,
+            'fat_g' => 40,
+            'carb_g' => 100,
+        ]);
+
+        $mine = RoutineItem::factory()->create([
+            'user_id' => $user->id,
+            'category' => RoutineItemCategory::Strength,
+            'name' => 'スクワット',
+        ]);
+        $theirs = RoutineItem::factory()->create([
+            'user_id' => $other->id,
+            'category' => RoutineItemCategory::Strength,
+            'name' => '他ユーザー種目',
+        ]);
+        $this->createCompletedStrengthSessionForHttp($user, $mine, '2026-07-09', 100);
+        $this->createCompletedStrengthSessionForHttp($other, $theirs, '2026-07-09', 200);
+
+        $this->actingAs($user)
+            ->get(route('records.index', ['date' => '2026-07-10']))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('Records/Index')
+                ->where('chartFrom', '2026-07-04')
+                ->where('chartTo', '2026-07-10')
+                ->has('mealChartPoints', 1)
+                ->where('mealChartPoints.0.date', '2026-07-08')
+                ->where('mealChartPoints.0.kcal', 500)
+                ->where('conditionChartSeries.weight', fn ($points) => collect($points)->count() === 1
+                    && collect($points)->first()['date'] === '2026-07-10'
+                    && collect($points)->first()['value'] === '71.50')
+                ->has('strengthChartPoints', 1)
+                ->where('strengthChartPoints.0.item_name', 'スクワット')
+                ->where('strengthChartPoints.0.max_load_value', '100.00')
             );
     }
 

@@ -3,8 +3,6 @@ import { Head, Link } from '@inertiajs/vue3';
 import {
     Activity,
     ArrowRight,
-    Check,
-    Circle,
     Flame,
     Gauge,
     HeartPulse,
@@ -12,8 +10,10 @@ import {
     Scale,
     UtensilsCrossed,
 } from '@lucide/vue';
+import type { EChartsCoreOption } from 'echarts/core';
 import { computed } from 'vue';
 import type { Component } from 'vue';
+import BaseChart from '@/components/charts/BaseChart.vue';
 import DateNavigator from '@/components/DateNavigator.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
@@ -26,24 +26,33 @@ import {
 import { PFC_COLORS } from '@/lib/pfcColors';
 import type {
     DailyMetricEntry,
+    NutritionChartPoint,
     NutritionGoal,
     NutritionTotals,
 } from '@/types/routine';
 
-type MealSectionSummary = {
-    meal_type: string;
-    label: string;
-    kcal: number;
-    entry_count: number;
+type ChartPoint = {
+    date: string;
+    value: string;
+};
+
+type StrengthPoint = {
+    date: string;
+    item_name: string;
+    max_load_value: string | null;
 };
 
 interface Props {
     date: string;
+    chartFrom: string;
+    chartTo: string;
     metrics: DailyMetricEntry[];
     previousMetrics: DailyMetricEntry[];
     mealTotals: NutritionTotals;
-    mealSections: MealSectionSummary[];
     mealGoal: NutritionGoal | null;
+    mealChartPoints: NutritionChartPoint[];
+    conditionChartSeries: Record<string, ChartPoint[]>;
+    strengthChartPoints: StrengthPoint[];
 }
 
 const props = defineProps<Props>();
@@ -54,6 +63,14 @@ const metricIcons: Record<string, Component> = {
     pain_level: HeartPulse,
     pitch_speed_max: Gauge,
 };
+
+const chartColors = [
+    'var(--chart-1)',
+    'var(--chart-2)',
+    'var(--chart-3)',
+    'var(--chart-4)',
+    'var(--chart-5)',
+];
 
 function metricValue(list: DailyMetricEntry[], key: string): number | null {
     const entry = list.find((item) => item.metric.key === key);
@@ -183,20 +200,248 @@ const kcalProgress = computed(() => {
     return Math.min(100, Math.round((props.mealTotals.kcal / target) * 100));
 });
 
-const conditionHighlights = computed(() =>
-    props.metrics.map((entry) => {
-        const today = entry.record ? Number(entry.record.value) : null;
-        const prev = metricValue(props.previousMetrics, entry.metric.key);
+const hasMealChartData = computed(() =>
+    props.mealChartPoints.some(
+        (point) =>
+            point.kcal > 0 ||
+            point.protein_g > 0 ||
+            point.fat_g > 0 ||
+            point.carb_g > 0,
+    ),
+);
+
+const hasConditionChartData = computed(() =>
+    Object.values(props.conditionChartSeries).some(
+        (points) => points.length > 0,
+    ),
+);
+
+const hasStrengthChartData = computed(
+    () => props.strengthChartPoints.length > 0,
+);
+
+const mealKcalChartOption = computed<EChartsCoreOption>(() => ({
+    grid: { left: 40, right: 12, top: 16, bottom: 24 },
+    tooltip: { trigger: 'axis' },
+    xAxis: {
+        type: 'category',
+        data: props.mealChartPoints.map((point) => point.date.slice(5)),
+        axisLabel: { color: '#5c5a6e', fontSize: 10 },
+        axisLine: { lineStyle: { color: '#cfc8d8' } },
+    },
+    yAxis: {
+        type: 'value',
+        axisLabel: { color: '#5c5a6e', fontSize: 10 },
+        splitLine: {
+            lineStyle: { color: '#cfc8d8', opacity: 0.45 },
+        },
+    },
+    series: [
+        {
+            name: 'kcal',
+            type: 'line',
+            smooth: true,
+            symbol: 'circle',
+            symbolSize: 6,
+            data: props.mealChartPoints.map((point) => point.kcal),
+            lineStyle: { color: '#5b5577', width: 2 },
+            itemStyle: { color: '#5b5577' },
+            areaStyle: { color: 'rgba(91, 85, 119, 0.12)' },
+        },
+    ],
+}));
+
+const mealPfcChartOption = computed<EChartsCoreOption>(() => ({
+    grid: { left: 40, right: 12, top: 28, bottom: 24 },
+    tooltip: { trigger: 'axis' },
+    legend: {
+        top: 0,
+        textStyle: { color: '#5c5a6e', fontSize: 10 },
+    },
+    xAxis: {
+        type: 'category',
+        data: props.mealChartPoints.map((point) => point.date.slice(5)),
+        axisLabel: { color: '#5c5a6e', fontSize: 10 },
+        axisLine: { lineStyle: { color: '#cfc8d8' } },
+    },
+    yAxis: {
+        type: 'value',
+        axisLabel: { color: '#5c5a6e', fontSize: 10 },
+        splitLine: {
+            lineStyle: { color: '#cfc8d8', opacity: 0.45 },
+        },
+    },
+    series: [
+        {
+            name: 'P',
+            type: 'bar',
+            stack: 'pfc',
+            barMaxWidth: 28,
+            data: props.mealChartPoints.map((point) => point.protein_g),
+            itemStyle: { color: PFC_COLORS.p.hex },
+        },
+        {
+            name: 'F',
+            type: 'bar',
+            stack: 'pfc',
+            barMaxWidth: 28,
+            data: props.mealChartPoints.map((point) => point.fat_g),
+            itemStyle: { color: PFC_COLORS.f.hex },
+        },
+        {
+            name: 'C',
+            type: 'bar',
+            stack: 'pfc',
+            barMaxWidth: 28,
+            data: props.mealChartPoints.map((point) => point.carb_g),
+            itemStyle: {
+                color: PFC_COLORS.c.hex,
+                borderRadius: [4, 4, 0, 0],
+            },
+        },
+    ],
+}));
+
+const conditionChartOption = computed<EChartsCoreOption>(() => {
+    const dates = Array.from(
+        new Set(
+            Object.values(props.conditionChartSeries)
+                .flat()
+                .map((point) => point.date),
+        ),
+    ).sort();
+
+    const seriesFor = (key: string, color: string, name: string) => {
+        const map = new Map(
+            (props.conditionChartSeries[key] ?? []).map((point) => [
+                point.date,
+                Number(point.value),
+            ]),
+        );
 
         return {
-            key: entry.metric.key,
-            label: metricLabel(entry.metric.key, entry.metric.label),
-            display: formatMetric(entry.metric.key, today),
-            unit: entry.metric.unit,
-            delta: deltaLabel(entry.metric.key, today, prev),
+            name,
+            type: 'line' as const,
+            smooth: true,
+            symbol: 'circle',
+            symbolSize: 5,
+            data: dates.map((date) => map.get(date) ?? null),
+            lineStyle: { color, width: 2 },
+            itemStyle: { color },
+        };
+    };
+
+    return {
+        grid: { left: 40, right: 40, top: 28, bottom: 24 },
+        tooltip: { trigger: 'axis' },
+        legend: {
+            top: 0,
+            textStyle: { color: '#5c5a6e', fontSize: 10 },
+        },
+        xAxis: {
+            type: 'category',
+            data: dates.map((date) => date.slice(5)),
+            axisLabel: { color: '#5c5a6e', fontSize: 10 },
+            axisLine: { lineStyle: { color: '#cfc8d8' } },
+        },
+        yAxis: [
+            {
+                type: 'value',
+                name: 'kg',
+                axisLabel: { color: '#5c5a6e', fontSize: 10 },
+                splitLine: {
+                    lineStyle: { color: '#cfc8d8', opacity: 0.45 },
+                },
+            },
+            {
+                type: 'value',
+                name: '分',
+                axisLabel: { color: '#5c5a6e', fontSize: 10 },
+                splitLine: { show: false },
+            },
+        ],
+        series: [
+            {
+                ...seriesFor('weight', '#5b5577', '体重'),
+                yAxisIndex: 0,
+            },
+            {
+                ...seriesFor('sleep_minutes', '#2b8fef', '睡眠'),
+                yAxisIndex: 1,
+            },
+        ],
+    };
+});
+
+const strengthItemNames = computed(() =>
+    [...new Set(props.strengthChartPoints.map((point) => point.item_name))]
+        .sort()
+        .slice(0, 3),
+);
+
+const strengthDates = computed(() =>
+    [...new Set(props.strengthChartPoints.map((point) => point.date))].sort(),
+);
+
+const strengthChartOption = computed<EChartsCoreOption>(() => ({
+    grid: { left: 40, right: 12, top: 28, bottom: 24 },
+    legend: {
+        top: 0,
+        textStyle: { color: 'var(--cd-ink-muted)', fontSize: 10 },
+    },
+    tooltip: { trigger: 'axis' },
+    xAxis: {
+        type: 'category',
+        data: strengthDates.value.map((date) => date.slice(5)),
+        axisLabel: {
+            color: 'var(--cd-ink-muted)',
+            fontSize: 10,
+        },
+        axisLine: {
+            lineStyle: { color: 'var(--cd-line)' },
+        },
+    },
+    yAxis: {
+        type: 'value',
+        name: 'kg',
+        axisLabel: {
+            color: 'var(--cd-ink-muted)',
+            fontSize: 10,
+        },
+        splitLine: {
+            lineStyle: { color: 'var(--cd-line)', opacity: 0.4 },
+        },
+    },
+    series: strengthItemNames.value.map((itemName, index) => {
+        const byDate = new Map(
+            props.strengthChartPoints
+                .filter((point) => point.item_name === itemName)
+                .map((point) => [point.date, point.max_load_value]),
+        );
+        const color = chartColors[index % chartColors.length];
+
+        return {
+            name: itemName,
+            type: 'line' as const,
+            smooth: true,
+            symbol: 'circle',
+            symbolSize: 5,
+            connectNulls: false,
+            data: strengthDates.value.map((date) => {
+                const value = byDate.get(date);
+
+                return value != null ? Number(value) : null;
+            }),
+            lineStyle: {
+                color,
+                width: 2,
+            },
+            itemStyle: {
+                color,
+            },
         };
     }),
-);
+}));
 </script>
 
 <template>
@@ -228,8 +473,12 @@ const conditionHighlights = computed(() =>
                             'metrics',
                             'previousMetrics',
                             'mealTotals',
-                            'mealSections',
                             'mealGoal',
+                            'mealChartPoints',
+                            'conditionChartSeries',
+                            'strengthChartPoints',
+                            'chartFrom',
+                            'chartTo',
                             'date',
                         ]"
                     />
@@ -389,138 +638,45 @@ const conditionHighlights = computed(() =>
                                     食事記録
                                 </h2>
                                 <p class="font-sans text-sm text-cd-ink-muted">
-                                    その日の食事と PFC を記録します。
+                                    直近7日の摂取推移を確認して、記録へ進みます。
                                 </p>
                             </div>
                         </div>
 
                         <div
-                            class="flex flex-col gap-4 sm:flex-row sm:items-center"
+                            v-if="hasMealChartData"
+                            class="grid gap-3"
+                            aria-label="食事の直近7日推移"
                         >
-                            <div class="min-w-0 flex-1">
-                                <p class="font-sans text-sm text-cd-ink-muted">
-                                    今日の摂取カロリー
-                                </p>
+                            <div>
                                 <p
-                                    class="mt-1 font-sans text-2xl font-semibold text-cd-ink"
+                                    class="mb-1 font-sans text-xs text-cd-ink-muted"
                                 >
-                                    {{
-                                        Number(mealTotals.kcal).toLocaleString(
-                                            'ja-JP',
-                                            { maximumFractionDigits: 0 },
-                                        )
-                                    }}
-                                    <template v-if="mealGoal">
-                                        <span
-                                            class="text-base font-medium text-cd-ink-muted"
-                                        >
-                                            /
-                                            {{
-                                                Number(
-                                                    mealGoal.kcal,
-                                                ).toLocaleString('ja-JP', {
-                                                    maximumFractionDigits: 0,
-                                                })
-                                            }}
-                                            kcal
-                                        </span>
-                                    </template>
-                                    <template v-else>
-                                        <span
-                                            class="text-base font-medium text-cd-ink-muted"
-                                            >kcal</span
-                                        >
-                                    </template>
+                                    エネルギー (kcal)
                                 </p>
-                                <div
-                                    v-if="kcalProgress !== null"
-                                    class="mt-3 h-2.5 overflow-hidden rounded-full bg-cd-line/40"
-                                >
-                                    <div
-                                        class="h-full rounded-full bg-primary"
-                                        :style="{ width: `${kcalProgress}%` }"
-                                    />
-                                </div>
+                                <BaseChart
+                                    :option="mealKcalChartOption"
+                                    class="!h-40"
+                                />
                             </div>
-
-                            <div class="flex shrink-0 items-center gap-3">
-                                <div
-                                    class="relative size-20 rounded-full"
-                                    :style="pfcDonutStyle"
+                            <div>
+                                <p
+                                    class="mb-1 font-sans text-xs text-cd-ink-muted"
                                 >
-                                    <div
-                                        class="absolute inset-[24%] rounded-full bg-cd-surface"
-                                    />
-                                </div>
-                                <div class="space-y-1 font-sans text-xs">
-                                    <p
-                                        class="inline-flex items-center gap-1.5 text-cd-pfc-p"
-                                    >
-                                        <span
-                                            class="size-2 rounded-sm bg-cd-pfc-p"
-                                        />
-                                        P {{ pfcEnergy.p }}%
-                                    </p>
-                                    <p
-                                        class="inline-flex items-center gap-1.5 text-cd-pfc-f"
-                                    >
-                                        <span
-                                            class="size-2 rounded-sm bg-cd-pfc-f"
-                                        />
-                                        F {{ pfcEnergy.f }}%
-                                    </p>
-                                    <p
-                                        class="inline-flex items-center gap-1.5 text-cd-pfc-c"
-                                    >
-                                        <span
-                                            class="size-2 rounded-sm bg-cd-pfc-c"
-                                        />
-                                        C {{ pfcEnergy.c }}%
-                                    </p>
-                                </div>
+                                    PFC (g)
+                                </p>
+                                <BaseChart
+                                    :option="mealPfcChartOption"
+                                    class="!h-40"
+                                />
                             </div>
                         </div>
-
-                        <ul class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                            <li
-                                v-for="section in mealSections"
-                                :key="section.meal_type"
-                                class="rounded-xl border border-cd-line px-3 py-2.5"
-                            >
-                                <div
-                                    class="flex items-center justify-between gap-2"
-                                >
-                                    <span
-                                        class="font-sans text-sm font-medium text-cd-ink"
-                                        >{{ section.label }}</span
-                                    >
-                                    <span
-                                        v-if="section.entry_count > 0"
-                                        class="inline-flex size-4 items-center justify-center rounded-full bg-cd-pfc-p text-white"
-                                        aria-label="記録済み"
-                                    >
-                                        <Check :size="10" :stroke-width="3" />
-                                    </span>
-                                    <Circle
-                                        v-else
-                                        class="text-cd-ink-muted"
-                                        :size="14"
-                                        :stroke-width="1.6"
-                                    />
-                                </div>
-                                <p
-                                    class="mt-1 font-sans text-xs text-cd-ink-muted"
-                                >
-                                    {{
-                                        Number(section.kcal).toLocaleString(
-                                            'ja-JP',
-                                            { maximumFractionDigits: 0 },
-                                        )
-                                    }}
-                                    kcal
-                                </p>
-                            </li>
-                        </ul>
+                        <p
+                            v-else
+                            class="rounded-xl border border-dashed border-cd-line px-3 py-6 text-center font-sans text-sm text-cd-ink-muted"
+                        >
+                            この期間の食事記録がまだありません。記録すると推移グラフが表示されます。
+                        </p>
 
                         <Button as-child class="font-sans tracking-[0.06em]">
                             <Link :href="`/meals?date=${date}`">
@@ -546,66 +702,35 @@ const conditionHighlights = computed(() =>
                                     コンディション管理
                                 </h2>
                                 <p class="font-sans text-sm text-cd-ink-muted">
-                                    体調・回復・パフォーマンスをまとめて記録します。
+                                    体重・睡眠の推移と筋力チャートをまとめて確認します。
                                 </p>
                             </div>
                         </div>
 
-                        <ul
-                            class="overflow-hidden rounded-xl border border-cd-line sm:grid sm:grid-cols-3 sm:divide-x sm:divide-cd-line"
-                        >
-                            <li
-                                v-for="item in conditionHighlights"
-                                :key="item.key"
-                                class="border-b border-cd-line px-3 py-2.5 last:border-b-0 sm:border-b-0"
+                        <div aria-label="体重・睡眠の直近7日推移">
+                            <p class="mb-1 font-sans text-xs text-cd-ink-muted">
+                                体重・睡眠（7日）
+                            </p>
+                            <BaseChart
+                                v-if="hasConditionChartData"
+                                :option="conditionChartOption"
+                                class="!h-44"
+                            />
+                            <p
+                                v-else
+                                class="rounded-xl border border-dashed border-cd-line px-3 py-6 text-center font-sans text-sm text-cd-ink-muted"
+                            >
+                                まだ推移データがありません。コンディションを記録するとここにグラフが表示されます。
+                            </p>
+                        </div>
+
+                        <div aria-label="筋力ミニチャート">
+                            <div
+                                class="mb-1 flex items-center justify-between gap-2"
                             >
                                 <p class="font-sans text-xs text-cd-ink-muted">
-                                    {{ item.label }}
+                                    筋力チャート（7日）
                                 </p>
-                                <p
-                                    class="mt-0.5 font-sans text-sm font-semibold text-cd-ink"
-                                >
-                                    {{ item.display }}
-                                    <span
-                                        v-if="
-                                            item.display !== '—' &&
-                                            item.key !== 'sleep_minutes' &&
-                                            item.key !== 'pain_level' &&
-                                            item.key !== 'fatigue_level'
-                                        "
-                                        class="text-xs font-medium text-cd-ink-muted"
-                                        >{{ item.unit }}</span
-                                    >
-                                </p>
-                                <p
-                                    v-if="item.delta"
-                                    class="font-sans text-[11px] text-cd-ink-muted"
-                                >
-                                    {{ item.delta }}
-                                </p>
-                            </li>
-                        </ul>
-
-                        <div
-                            class="flex flex-col gap-2 rounded-xl border border-dashed border-cd-line px-3 py-3 text-cd-ink-muted"
-                        >
-                            <div class="flex items-center gap-2">
-                                <Moon :size="16" :stroke-width="1.6" />
-                                <p class="font-sans text-xs">
-                                    7日間の推移はコンディション、詳細推移・週次平均・筋力チャートは各画面で確認できます。
-                                </p>
-                            </div>
-                            <div class="flex flex-wrap gap-2">
-                                <Button
-                                    as-child
-                                    variant="outline"
-                                    size="sm"
-                                    class="font-sans"
-                                >
-                                    <Link href="/records/weight?period=3months">
-                                        体重の推移
-                                    </Link>
-                                </Button>
                                 <Button
                                     as-child
                                     variant="outline"
@@ -615,10 +740,21 @@ const conditionHighlights = computed(() =>
                                     <Link
                                         href="/records/strength?period=3months"
                                     >
-                                        筋力チャート
+                                        詳細
                                     </Link>
                                 </Button>
                             </div>
+                            <BaseChart
+                                v-if="hasStrengthChartData"
+                                :option="strengthChartOption"
+                                class="!h-40"
+                            />
+                            <p
+                                v-else
+                                class="rounded-xl border border-dashed border-cd-line px-3 py-6 text-center font-sans text-sm text-cd-ink-muted"
+                            >
+                                この期間に完了した筋力セッションがありません。
+                            </p>
                         </div>
 
                         <Button as-child class="font-sans tracking-[0.06em]">
