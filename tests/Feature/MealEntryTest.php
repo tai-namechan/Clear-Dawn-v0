@@ -323,12 +323,15 @@ class MealEntryTest extends TestCase
         ]);
     }
 
-    public function test_records_index_includes_meal_totals_card_data(): void
+    public function test_records_index_includes_meal_totals_and_chart_data(): void
     {
         $user = User::factory()->create();
         MealEntry::factory()->for($user)->create([
             'eaten_on' => '2026-07-10',
             'kcal' => 450,
+            'protein_g' => 20,
+            'fat_g' => 10,
+            'carb_g' => 40,
         ]);
 
         $this->actingAs($user)
@@ -337,7 +340,10 @@ class MealEntryTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Records/Index')
                 ->where('mealTotals.kcal', 450)
-                ->has('mealSections')
+                ->has('mealChartPoints', 1)
+                ->where('mealChartPoints.0.date', '2026-07-10')
+                ->where('mealChartPoints.0.kcal', 450)
+                ->missing('mealSections')
             );
     }
 
