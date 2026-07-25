@@ -64,7 +64,7 @@ class SidebarSpacingContractTest extends TestCase
         $this->assertStringContainsString(
             'cd-app-header',
             $source,
-            'Clear Dawn header must use the shared chrome class for warm white fill',
+            'Clear Dawn header must use the shared chrome class for translucent white fill',
         );
         $this->assertStringContainsString(
             'cd-app-header-title',
@@ -79,7 +79,7 @@ class SidebarSpacingContractTest extends TestCase
         $this->assertStringNotContainsString(
             'max-md:text-primary-foreground',
             $source,
-            'Mobile Clear Dawn header title/trigger stay on warm white chrome',
+            'Mobile Clear Dawn header title/trigger stay on translucent white chrome',
         );
     }
 
@@ -149,24 +149,24 @@ class SidebarSpacingContractTest extends TestCase
             'CD sidebar chrome must target the teleported mobile SheetContent',
         );
         $this->assertStringContainsString(
-            '--cd-sidebar-start:',
-            $source,
-            'Sidebar night tokens must be defined',
-        );
-        $this->assertStringContainsString(
-            'var(--cd-sidebar-end) 100%',
-            $source,
-            'Sidebar gradient must end on deep plum, not pale lavender',
-        );
-        $this->assertStringNotContainsString(
             'var(--cd-lavender-mist) 100%',
             $source,
-            'Regression guard: pale lavender sidebar foot is retired',
+            'Sidebar keeps the original dawn gradient ending in pale lavender',
+        );
+        $this->assertStringContainsString(
+            'var(--cd-dawn-deep) 0%',
+            $source,
+            'Sidebar gradient starts from dawn-deep',
+        );
+        $this->assertStringContainsString(
+            '--cd-header-bg: rgba(255, 255, 255, 0.68)',
+            $source,
+            'Header uses translucent white over marble',
         );
         $this->assertStringContainsString(
             '.cd-app-header',
             $source,
-            'Header warm-white chrome must live in shared CSS',
+            'Header chrome must live in shared CSS',
         );
         $this->assertStringContainsString(
             'background-color: #ffffff',

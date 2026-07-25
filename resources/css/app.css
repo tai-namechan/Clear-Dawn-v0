@@ -249,10 +249,7 @@
     --cd-pfc-f: hsl(27 92% 55%);
     --cd-pfc-c: hsl(207 82% 52%);
 
-    /* Clear Dawn chrome (sidebar night / header pre-dawn) */
-    --cd-sidebar-start: #1d2036;
-    --cd-sidebar-middle: #24243d;
-    --cd-sidebar-end: #302c46;
+    /* Clear Dawn chrome (sidebar + header) */
     --cd-sidebar-text: #f5f2ec;
     --cd-sidebar-text-muted: #bbb7c4;
     --cd-sidebar-icon: #e5e1e8;
@@ -260,7 +257,7 @@
     --cd-sidebar-active-border: rgba(232, 224, 207, 0.52);
     --cd-sidebar-hover-bg: rgba(255, 255, 255, 0.07);
     --cd-sidebar-divider: rgba(255, 255, 255, 0.1);
-    --cd-header-bg: #faf8f5;
+    --cd-header-bg: rgba(255, 255, 255, 0.68);
     --cd-header-control-bg: #fffefc;
     --cd-header-border: #e5dfd7;
     --cd-text-primary: #292735;
@@ -643,7 +640,7 @@
 }
 
 /*
- * Clear Dawn sidebar — deep navy/plum night gradient (no pale lavender foot).
+ * Clear Dawn sidebar — original dawn gradient (deep purple → pale lavender).
  * Kept outside @layer so it wins over the `bg-sidebar` utility applied inside
  * the ui/sidebar component (which must not be modified directly).
  * Desktop: scoped by `.cd-sidebar` on <Sidebar> in AppSidebar.vue.
@@ -657,26 +654,36 @@
     --sidebar-accent-foreground: var(--cd-sidebar-text);
     --sidebar-border: var(--cd-sidebar-divider);
     --sidebar-ring: var(--cd-primary);
-    background: linear-gradient(
-        180deg,
-        var(--cd-sidebar-start) 0%,
-        var(--cd-sidebar-middle) 52%,
-        var(--cd-sidebar-end) 100%
-    );
+    background:
+        radial-gradient(
+            ellipse 120% 40% at 50% 0%,
+            hsl(0 0% 100% / 0.06),
+            transparent 70%
+        ),
+        linear-gradient(
+            180deg,
+            var(--cd-dawn-deep) 0%,
+            var(--cd-dawn-deep) 22%,
+            var(--cd-dawn-mid) 46%,
+            var(--cd-dawn-soft) 72%,
+            var(--cd-lavender-mist) 100%
+        );
     color: var(--cd-sidebar-text);
 }
 
-.cd-sidebar .cd-sidebar-decor {
-    opacity: 0.28;
+/* Footer sits on the pale lavender end of the gradient. */
+.cd-sidebar [data-sidebar='footer'],
+[data-sidebar='sidebar'][data-mobile='true']:has(.cd-sidebar-panel)
+    [data-sidebar='footer'] {
+    --sidebar-foreground: var(--cd-dawn-deep);
+    --sidebar-accent: hsl(237 32% 16% / 0.08);
+    --sidebar-accent-foreground: var(--cd-dawn-deep);
+    color: var(--cd-dawn-deep);
 }
 
 .cd-sidebar .cd-sidebar-brand,
 .cd-sidebar .cd-sidebar-wordmark {
     color: var(--cd-sidebar-text);
-}
-
-.cd-sidebar .cd-sidebar-decor-gold {
-    color: var(--cd-antique-gold);
 }
 
 .cd-sidebar .cd-sidebar-nav-link {
@@ -717,13 +724,13 @@
 }
 
 /*
- * Clear Dawn app header — warm pre-dawn white over marble (almost opaque).
- * Scoped to `.cd-app-header` so OS shells and page content stay untouched.
+ * Clear Dawn app header — translucent white over marble (recommendation A).
+ * Opaque controls keep text/actions readable without a solid purple bar.
  */
 .cd-app-header {
-    background: rgba(250, 248, 245, 0.97);
-    border-bottom: 1px solid var(--cd-header-border);
-    box-shadow: 0 1px 8px rgba(38, 34, 50, 0.035);
+    background: var(--cd-header-bg);
+    border-bottom: 1px solid rgba(229, 223, 215, 0.65);
+    box-shadow: 0 1px 8px rgba(38, 34, 50, 0.03);
     color: var(--cd-text-primary);
 }
 

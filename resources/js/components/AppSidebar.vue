@@ -78,17 +78,17 @@ function isNavActive(item: CdNavItem): boolean {
                 <img
                     src="/images/decorations/stars-soft.png"
                     alt=""
-                    class="absolute inset-x-0 top-0 w-full"
+                    class="absolute inset-x-0 top-0 w-full opacity-45"
                 />
                 <img
                     src="/images/decorations/stars-soft.png"
                     alt=""
-                    class="absolute inset-x-0 top-64 w-full rotate-180"
+                    class="absolute inset-x-0 top-64 w-full rotate-180 opacity-25"
                 />
                 <img
                     src="/images/decorations/moon-glow.png"
                     alt=""
-                    class="absolute top-28 right-4 w-20 -scale-x-100 landscape-compact:top-16 landscape-compact:w-12"
+                    class="absolute top-28 right-4 w-20 -scale-x-100 opacity-90 landscape-compact:top-16 landscape-compact:w-12"
                 />
             </div>
 
