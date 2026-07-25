@@ -18,9 +18,10 @@ import {
     lifeAreaColorClasses,
     lifeAreaColorOptions,
 } from '@/lib/lifeAreaColors';
-import type { LifeArea, LifeAreaColor } from '@/types/matrix';
+import { lifeAreaPublicationBadgeClasses } from '@/lib/statusBadge';
 import { dashboard } from '@/routes';
 import { destroy, reorder, restore, store, update } from '@/routes/life-areas';
+import type { LifeArea, LifeAreaColor } from '@/types/matrix';
 
 interface Props {
     lifeAreas: LifeArea[];
@@ -171,11 +172,11 @@ function reactivate(area: LifeArea): void {
                                 {{ area.name }}
                             </span>
                             <span
-                                class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs"
+                                class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
                                 :class="
                                     area.is_active
-                                        ? 'bg-cd-moss/15 text-cd-moss'
-                                        : 'bg-muted text-cd-ink-muted'
+                                        ? lifeAreaPublicationBadgeClasses.active
+                                        : lifeAreaPublicationBadgeClasses.inactive
                                 "
                             >
                                 <component

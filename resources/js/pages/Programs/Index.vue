@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import { CalendarRange, ChevronRight, Dumbbell } from '@lucide/vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
+import { programStatusBadgeClasses } from '@/lib/statusBadge';
 import { roadmap, show } from '@/routes/programs';
 import type { ProgramSummary } from '@/types/program';
 
@@ -18,6 +19,13 @@ const statusLabels: Record<string, string> = {
     completed: '完了',
     archived: 'アーカイブ',
 };
+
+function programStatusClass(status: string): string {
+    return (
+        programStatusBadgeClasses[status] ??
+        programStatusBadgeClasses.draft
+    );
+}
 </script>
 
 <template>
@@ -70,7 +78,8 @@ const statusLabels: Record<string, string> = {
                                 {{ program.name }}
                             </span>
                             <span
-                                class="inline-flex shrink-0 items-center rounded-full bg-cd-moss/15 px-2 py-0.5 font-sans text-xs text-cd-moss"
+                                class="inline-flex shrink-0 items-center rounded-full px-2 py-0.5 font-sans text-xs font-medium"
+                                :class="programStatusClass(program.status)"
                             >
                                 {{
                                     statusLabels[program.status] ??

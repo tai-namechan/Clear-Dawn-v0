@@ -6,6 +6,7 @@ import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { goalStatusBadgeClasses } from '@/lib/statusBadge';
 import {
     store as storeMetric,
     destroy as destroyMetric,
@@ -108,8 +109,13 @@ function removeGoal(): void {
                 >
                     <div>
                         <dt class="text-cd-ink-muted">状態</dt>
-                        <dd class="font-semibold text-cd-ink">
-                            {{ statusLabels[goal.status] }}
+                        <dd>
+                            <span
+                                class="inline-flex items-center rounded-full px-2 py-0.5 font-sans text-xs font-medium"
+                                :class="goalStatusBadgeClasses[goal.status]"
+                            >
+                                {{ statusLabels[goal.status] }}
+                            </span>
                         </dd>
                     </div>
                     <div>
