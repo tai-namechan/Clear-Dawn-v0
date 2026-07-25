@@ -64,12 +64,12 @@ class SidebarSpacingContractTest extends TestCase
         $this->assertStringContainsString(
             'cd-app-header',
             $source,
-            'Clear Dawn header must use the shared chrome class for translucent white fill',
+            'Clear Dawn header must use the shared chrome class for dawn sidebar-matching fill',
         );
         $this->assertStringContainsString(
             'cd-app-header-title',
             $source,
-            'Clear Dawn title uses neutral ink, not brand purple fill',
+            'Clear Dawn title uses the shared header title class for contrast on dawn chrome',
         );
         $this->assertStringNotContainsString(
             'max-md:bg-primary',
@@ -79,7 +79,7 @@ class SidebarSpacingContractTest extends TestCase
         $this->assertStringNotContainsString(
             'max-md:text-primary-foreground',
             $source,
-            'Mobile Clear Dawn header title/trigger stay on translucent white chrome',
+            'Mobile Clear Dawn header title/trigger stay on shared dawn chrome tokens',
         );
     }
 
@@ -159,9 +159,14 @@ class SidebarSpacingContractTest extends TestCase
             'Sidebar gradient starts from dawn-deep',
         );
         $this->assertStringContainsString(
-            '--cd-header-bg: rgba(255, 255, 255, 0.68)',
+            '--cd-header-bg: linear-gradient(',
             $source,
-            'Header uses translucent white over marble',
+            'Header uses the same dawn gradient family as the sidebar',
+        );
+        $this->assertStringContainsString(
+            '--cd-header-text: var(--cd-sidebar-text)',
+            $source,
+            'Header text tokens match sidebar text for contrast on dawn chrome',
         );
         $this->assertStringContainsString(
             '.cd-app-header',
