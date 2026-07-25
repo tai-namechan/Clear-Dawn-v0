@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Routine;
 use App\Models\RoutineItem;
+use App\Models\RoutinePlan;
 use App\Models\RoutineStep;
 use App\Models\User;
 use App\Models\Video;
@@ -74,8 +75,62 @@ class RoutineTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Routines/Index')
+                ->where('tab', 'today')
+                ->has('plans')
                 ->has('routines', 1)
                 ->where('routines.0.name', '自分のルーティン')
+            );
+    }
+
+    public function test_index_shows_today_plans_scoped_to_the_authenticated_user(): void
+    {
+        $user = User::factory()->create([
+            'timezone' => 'Asia/Tokyo',
+        ]);
+        $other = User::factory()->create([
+            'timezone' => 'Asia/Tokyo',
+        ]);
+
+        $today = now('Asia/Tokyo')->toDateString();
+
+        RoutinePlan::factory()->ready()->create([
+            'user_id' => $user->id,
+            'title' => '自分の今日プラン',
+            'scheduled_on' => $today,
+        ]);
+        RoutinePlan::factory()->ready()->create([
+            'user_id' => $other->id,
+            'title' => '他人の今日プラン',
+            'scheduled_on' => $today,
+        ]);
+        RoutinePlan::factory()->ready()->create([
+            'user_id' => $user->id,
+            'title' => '昨日のプラン',
+            'scheduled_on' => now('Asia/Tokyo')->subDay()->toDateString(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('routines.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Routines/Index')
+                ->where('date', $today)
+                ->where('tab', 'today')
+                ->has('plans', 1)
+                ->where('plans.0.title', '自分の今日プラン')
+            );
+    }
+
+    public function test_index_accepts_menu_tab_query(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('routines.index', ['tab' => 'menu']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Routines/Index')
+                ->where('tab', 'menu')
             );
     }
 
