@@ -53,14 +53,19 @@ class SessionExerciseVideoContractTest extends TestCase
             'Portrait shell height rules must exist',
         );
         $this->assertStringContainsString(
-            'index === currentIndex',
+            'xl:grid-cols-[minmax(0,1.35fr)_minmax(15rem,0.85fr)]',
             $show,
-            'Current step in the list must expand for inline set logging',
+            'Set logging must sit beside the video on wide layouts',
         );
         $this->assertStringContainsString(
+            'SessionBlockLogger',
+            $show,
+            'Session show must render the compact set logger beside the video',
+        );
+        $this->assertStringNotContainsString(
             'hidden border-t border-cd-line/40 bg-white/70 px-3 py-3 lg:block',
             $show,
-            'Desktop step list must host set logging for the active step',
+            'Set logging must not live inside the step list sidebar',
         );
     }
 

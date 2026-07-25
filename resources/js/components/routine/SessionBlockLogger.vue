@@ -153,19 +153,19 @@ function rowState(blockNumber: number): 'done' | 'active' | 'upcoming' {
 </script>
 
 <template>
-    <div class="space-y-3">
+    <div class="space-y-2">
         <div class="flex items-center justify-between gap-2">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5">
                 <ClipboardList
-                    :size="16"
+                    :size="14"
                     :stroke-width="1.6"
                     class="text-cd-ink-muted"
                 />
-                <p class="font-sans text-sm font-medium text-cd-ink">
+                <p class="font-sans text-xs font-semibold tracking-wide text-cd-ink">
                     セット記録
                 </p>
             </div>
-            <p class="font-sans text-xs text-cd-ink-muted">
+            <p class="font-sans text-[11px] text-cd-ink-muted">
                 セット完了 {{ completedLogs.length }} /
                 {{ targetBlocks || totalBlocks }}
             </p>
@@ -173,30 +173,34 @@ function rowState(blockNumber: number): 'done' | 'active' | 'upcoming' {
 
         <div
             v-if="trackingType === 'check'"
-            class="rounded-xl border border-cd-line/60 bg-white/40 px-4 py-3 font-sans text-sm text-cd-ink-muted"
+            class="rounded-lg border border-cd-line/60 bg-white/40 px-3 py-2.5 font-sans text-xs text-cd-ink-muted"
         >
             チェック項目です。「完了して次へ」で進めます。
         </div>
 
         <div
             v-else
-            class="overflow-x-auto rounded-xl border border-cd-line/60"
+            class="overflow-hidden rounded-lg border border-cd-line/70 bg-white/70"
         >
-            <table class="w-full min-w-[420px] text-left font-sans text-sm">
+            <table class="w-full table-fixed text-left font-sans text-xs">
+                <colgroup>
+                    <col class="w-[28%]" />
+                    <col v-if="showLoad" class="w-[28%]" />
+                    <col v-if="showAmount" class="w-[28%]" />
+                    <col class="w-[16%]" />
+                </colgroup>
                 <thead>
                     <tr
-                        class="border-b border-cd-line/60 bg-white/40 text-xs tracking-[0.06em] text-cd-ink-muted"
+                        class="border-b border-cd-line/60 bg-cd-cream/40 text-[10px] tracking-[0.06em] text-cd-ink-muted"
                     >
-                        <th class="px-3 py-2.5 font-medium">セット</th>
-                        <th v-if="showLoad" class="px-3 py-2.5 font-medium">
+                        <th class="px-2.5 py-1.5 font-medium">セット</th>
+                        <th v-if="showLoad" class="px-2 py-1.5 font-medium">
                             重量
                         </th>
-                        <th v-if="showAmount" class="px-3 py-2.5 font-medium">
+                        <th v-if="showAmount" class="px-2 py-1.5 font-medium">
                             {{ amountHeader }}
                         </th>
-                        <th class="w-16 px-3 py-2.5 text-center font-medium">
-                            状態
-                        </th>
+                        <th class="px-2 py-1.5 text-center font-medium">状態</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -207,17 +211,19 @@ function rowState(blockNumber: number): 'done' | 'active' | 'upcoming' {
                         :class="
                             rowState(blockNumber) === 'done'
                                 ? 'bg-cd-moss/5'
-                                : ''
+                                : rowState(blockNumber) === 'active'
+                                  ? 'bg-primary/[0.04]'
+                                  : ''
                         "
                     >
-                        <td class="px-3 py-2.5 text-cd-ink-muted">
+                        <td class="px-2.5 py-1.5 text-cd-ink-muted">
                             {{ blockNumber }}セット目
                         </td>
 
                         <template v-if="rowState(blockNumber) === 'done'">
                             <td
                                 v-if="showLoad"
-                                class="px-3 py-2.5 text-cd-ink"
+                                class="px-2 py-1.5 font-medium text-cd-ink"
                             >
                                 {{
                                     formatLoadTarget(
@@ -230,7 +236,7 @@ function rowState(blockNumber: number): 'done' | 'active' | 'upcoming' {
                             </td>
                             <td
                                 v-if="showAmount"
-                                class="px-3 py-2.5 text-cd-ink"
+                                class="px-2 py-1.5 font-medium text-cd-ink"
                             >
                                 {{
                                     formatAmountTarget(
@@ -241,10 +247,10 @@ function rowState(blockNumber: number): 'done' | 'active' | 'upcoming' {
                                     ) ?? '—'
                                 }}
                             </td>
-                            <td class="px-3 py-2.5 text-center">
+                            <td class="px-2 py-1.5 text-center">
                                 <button
                                     type="button"
-                                    class="inline-flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground transition-opacity hover:opacity-80 disabled:opacity-50"
+                                    class="inline-flex size-4 items-center justify-center rounded-full bg-primary text-[9px] font-semibold text-primary-foreground transition-opacity hover:opacity-80 disabled:opacity-50"
                                     :disabled="logging"
                                     aria-label="このセットの記録を取り消す"
                                     title="チェックを外す"
@@ -258,49 +264,50 @@ function rowState(blockNumber: number): 'done' | 'active' | 'upcoming' {
                         <template
                             v-else-if="rowState(blockNumber) === 'active'"
                         >
-                            <td v-if="showLoad" class="px-3 py-2.5">
-                                <div class="flex items-center gap-1.5">
+                            <td v-if="showLoad" class="px-2 py-1.5">
+                                <div class="flex items-center gap-1">
                                     <Input
                                         v-model="draftLoad"
                                         type="number"
                                         step="0.5"
-                                        class="h-8"
-                                        placeholder="重量を入力"
+                                        class="h-7 w-[4.25rem] px-1.5 text-xs"
+                                        placeholder="—"
                                         :disabled="logging"
                                         @keydown.enter.prevent="
                                             submitActiveBlock
                                         "
                                     />
                                     <span
-                                        class="shrink-0 font-sans text-xs text-cd-ink-muted"
+                                        class="shrink-0 font-sans text-[10px] text-cd-ink-muted"
                                     >
                                         {{ loadUnit ?? 'kg' }}
                                     </span>
                                 </div>
                             </td>
-                            <td v-if="showAmount" class="px-3 py-2.5">
-                                <div class="flex items-center gap-1.5">
+                            <td v-if="showAmount" class="px-2 py-1.5">
+                                <div class="flex items-center gap-1">
                                     <Input
                                         v-model="draftAmount"
                                         type="number"
                                         :step="amountStep"
-                                        class="h-8"
+                                        class="h-7 w-[4.25rem] px-1.5 text-xs"
+                                        placeholder="—"
                                         :disabled="logging"
                                         @keydown.enter.prevent="
                                             submitActiveBlock
                                         "
                                     />
                                     <span
-                                        class="shrink-0 font-sans text-xs text-cd-ink-muted"
+                                        class="shrink-0 font-sans text-[10px] text-cd-ink-muted"
                                     >
                                         {{ amountUnit ?? '回' }}
                                     </span>
                                 </div>
                             </td>
-                            <td class="px-3 py-2.5 text-center">
+                            <td class="px-2 py-1.5 text-center">
                                 <button
                                     type="button"
-                                    class="inline-flex size-5 items-center justify-center rounded-full border-2 border-cd-line transition-colors hover:border-primary hover:bg-primary/10 disabled:opacity-50"
+                                    class="inline-flex size-4 items-center justify-center rounded-full border-2 border-cd-line transition-colors hover:border-primary hover:bg-primary/10 disabled:opacity-50"
                                     :disabled="logging"
                                     aria-label="このセットを記録"
                                     @click="submitActiveBlock"
@@ -309,26 +316,26 @@ function rowState(blockNumber: number): 'done' | 'active' | 'upcoming' {
                         </template>
 
                         <template v-else>
-                            <td v-if="showLoad" class="px-3 py-2.5">
-                                <div class="flex items-center gap-1.5">
+                            <td v-if="showLoad" class="px-2 py-1.5">
+                                <div class="flex items-center gap-1">
                                     <Input
                                         type="number"
-                                        class="h-8"
-                                        placeholder="重量を入力"
+                                        class="h-7 w-[4.25rem] px-1.5 text-xs"
+                                        placeholder="—"
                                         disabled
                                     />
                                     <span
-                                        class="shrink-0 font-sans text-xs text-cd-ink-muted"
+                                        class="shrink-0 font-sans text-[10px] text-cd-ink-muted"
                                     >
                                         {{ loadUnit ?? 'kg' }}
                                     </span>
                                 </div>
                             </td>
-                            <td v-if="showAmount" class="px-3 py-2.5">
-                                <div class="flex items-center gap-1.5">
+                            <td v-if="showAmount" class="px-2 py-1.5">
+                                <div class="flex items-center gap-1">
                                     <Input
                                         type="number"
-                                        class="h-8"
+                                        class="h-7 w-[4.25rem] px-1.5 text-xs"
                                         :model-value="
                                             formatQuantityDisplay(
                                                 defaultAmount,
@@ -337,15 +344,15 @@ function rowState(blockNumber: number): 'done' | 'active' | 'upcoming' {
                                         disabled
                                     />
                                     <span
-                                        class="shrink-0 font-sans text-xs text-cd-ink-muted"
+                                        class="shrink-0 font-sans text-[10px] text-cd-ink-muted"
                                     >
                                         {{ amountUnit ?? '回' }}
                                     </span>
                                 </div>
                             </td>
-                            <td class="px-3 py-2.5 text-center">
+                            <td class="px-2 py-1.5 text-center">
                                 <span
-                                    class="inline-flex size-5 rounded-full border-2 border-cd-line/70"
+                                    class="inline-flex size-4 rounded-full border-2 border-cd-line/70"
                                     aria-hidden="true"
                                 />
                             </td>
