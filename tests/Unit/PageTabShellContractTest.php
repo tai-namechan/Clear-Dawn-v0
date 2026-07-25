@@ -9,11 +9,11 @@ use Tests\TestCase;
  */
 class PageTabShellContractTest extends TestCase
 {
-    public function test_shell_exposes_tabs_aside_and_actions_slots(): void
+    public function test_shell_is_single_card_with_header_calendar_slot(): void
     {
         $source = $this->shellSource();
 
-        foreach (['tabs', 'aside', 'actions', 'badge'] as $slot) {
+        foreach (['tabs', 'calendar', 'actions', 'badge'] as $slot) {
             $this->assertStringContainsString(
                 "name=\"{$slot}\"",
                 $source,
@@ -26,9 +26,19 @@ class PageTabShellContractTest extends TestCase
             $source,
             'Shell owns the shared page title ornament',
         );
+        $this->assertStringNotContainsString(
+            'lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]',
+            $source,
+            'Date calendar must not live in a separate side card',
+        );
+        $this->assertStringNotContainsString(
+            'name="aside"',
+            $source,
+            'Aside side-card slot is retired in favor of #calendar in the header',
+        );
     }
 
-    public function test_meals_and_condition_use_shell_with_date_aside(): void
+    public function test_meals_and_condition_put_compact_calendar_in_shell_header(): void
     {
         foreach ([
             'resources/js/pages/Meals/Index.vue',
@@ -42,14 +52,24 @@ class PageTabShellContractTest extends TestCase
                 "{$relative} must render through PageTabShell",
             );
             $this->assertStringContainsString(
-                '#aside',
+                '#calendar',
                 $source,
-                "{$relative} must place DateNavigator in the shell aside slot",
+                "{$relative} must place the date control in the shell calendar slot",
+            );
+            $this->assertStringContainsString(
+                'compact',
+                $source,
+                "{$relative} must use the compact date control in the header",
             );
             $this->assertStringContainsString(
                 'DateNavigator',
                 $source,
                 "{$relative} must keep date navigation",
+            );
+            $this->assertStringNotContainsString(
+                '#aside',
+                $source,
+                "{$relative} must not use a separate aside date card",
             );
         }
     }
@@ -81,6 +101,22 @@ class PageTabShellContractTest extends TestCase
             '今日の食事記録',
             $afterShell,
             'Meal entry list stays outside the primary shell card',
+        );
+    }
+
+    public function test_date_navigator_compact_mode_uses_calendar_icon(): void
+    {
+        $source = $this->pageSource('resources/js/components/DateNavigator.vue');
+
+        $this->assertStringContainsString(
+            'compact',
+            $source,
+            'DateNavigator must support compact header placement',
+        );
+        $this->assertStringContainsString(
+            'CalendarDays',
+            $source,
+            'Compact mode must show a calendar affordance in the shell header',
         );
     }
 

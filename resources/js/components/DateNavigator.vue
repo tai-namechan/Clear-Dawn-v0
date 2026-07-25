@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronLeft, ChevronRight } from '@lucide/vue';
+import { CalendarDays, ChevronLeft, ChevronRight } from '@lucide/vue';
 import { computed } from 'vue';
 import { useDateNavigation } from '@/composables/useDateNavigation';
 import { Button } from '@/components/ui/button';
@@ -8,9 +8,16 @@ interface Props {
     date: string;
     routeUrl: string;
     reloadOnly?: string[];
+    /**
+     * ページシェル右上向け。枠付きカードではなく、カレンダーアイコン＋日付のコンパクト表示。
+     */
+    compact?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    reloadOnly: undefined,
+    compact: false,
+});
 
 const dateRef = computed(() => props.date);
 
@@ -23,6 +30,60 @@ const { formattedDate, isToday, shiftDate, goToday } = useDateNavigation({
 
 <template>
     <div
+        v-if="compact"
+        class="inline-flex items-center gap-0.5"
+        role="group"
+        aria-label="日付"
+    >
+        <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            class="size-8"
+            aria-label="前の日"
+            @click="shiftDate(-1)"
+        >
+            <ChevronLeft :size="16" :stroke-width="1.6" />
+        </Button>
+
+        <div class="flex min-w-0 items-center gap-1.5 px-1">
+            <CalendarDays
+                :size="16"
+                :stroke-width="1.6"
+                class="shrink-0 text-cd-ink-muted"
+                aria-hidden="true"
+            />
+            <div class="min-w-0 text-left">
+                <p
+                    class="font-sans text-sm font-semibold tracking-tight text-cd-ink whitespace-nowrap"
+                >
+                    {{ formattedDate }}
+                </p>
+                <button
+                    v-if="!isToday"
+                    type="button"
+                    class="font-sans text-[11px] font-medium text-primary underline-offset-2 hover:underline"
+                    @click="goToday"
+                >
+                    今日に戻る
+                </button>
+            </div>
+        </div>
+
+        <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            class="size-8"
+            aria-label="次の日"
+            @click="shiftDate(1)"
+        >
+            <ChevronRight :size="16" :stroke-width="1.6" />
+        </Button>
+    </div>
+
+    <div
+        v-else
         class="flex w-full items-center gap-3 rounded-2xl border border-cd-line bg-white px-4 py-3"
         :class="$slots.actions ? 'justify-between' : 'justify-center'"
     >

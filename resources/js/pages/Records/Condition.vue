@@ -535,8 +535,9 @@ async function saveAll(): Promise<void> {
                 :back-href="`/records?date=${date}`"
                 back-label="パフォーマンス管理"
             >
-                <template #aside>
+                <template #calendar>
                     <DateNavigator
+                        compact
                         :date="date"
                         route-url="/records/condition"
                         :reload-only="[
