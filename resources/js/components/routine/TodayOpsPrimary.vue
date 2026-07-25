@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { router } from '@inertiajs/vue3';
+import { Star } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/apiFetch';
-import { router } from '@inertiajs/vue3';
 import type { TodayOps } from '@/types/todayOps';
 
 interface Props {
@@ -21,7 +22,9 @@ const primaryRecommendation = computed(() => {
     const list = props.ops.recommendations ?? [];
 
     return (
-        list.find((card) => card.status === 'pending' && !isCheckinNudge(card.title)) ??
+        list.find(
+            (card) => card.status === 'pending' && !isCheckinNudge(card.title),
+        ) ??
         list.find((card) => !isCheckinNudge(card.title)) ??
         null
     );
@@ -49,6 +52,14 @@ const confidenceLabel = computed(() => {
     }
 
     return { percent: null as number | null, label: confidence };
+});
+
+const gaugeStyle = computed(() => {
+    const percent = confidenceLabel.value?.percent ?? 0;
+
+    return {
+        background: `conic-gradient(var(--cd-primary) ${percent}%, #E8E4F0 ${percent}%)`,
+    };
 });
 
 const hasContent = computed(
@@ -108,10 +119,11 @@ function optionVariant(actionKey: string): 'default' | 'outline' {
 </script>
 
 <template>
-    <div v-if="hasContent" class="flex flex-col gap-5">
+    <div v-if="hasContent" class="flex flex-col gap-4">
         <section
             v-if="programContext.some((ctx) => ctx.needs_choice)"
             aria-label="今日のプログラム選択"
+            class="rounded-2xl border border-cd-line bg-white p-4 md:p-5"
         >
             <h2 class="font-sans text-sm font-semibold text-cd-ink">
                 今日のプログラム選択
@@ -120,13 +132,13 @@ function optionVariant(actionKey: string): 'default' | 'outline' {
                 <li
                     v-for="ctx in programContext.filter((c) => c.needs_choice)"
                     :key="ctx.plan_id"
-                    class="rounded-xl border border-border/70 px-4 py-3"
+                    class="rounded-xl border border-cd-line px-4 py-3"
                 >
-                    <p class="font-sans text-sm font-medium text-foreground">
+                    <p class="font-sans text-sm font-medium text-cd-ink">
                         W{{ ctx.week_number ?? '-' }} · {{ ctx.day_code }}
                         {{ ctx.day_name }}
                     </p>
-                    <p class="mt-1 font-sans text-xs text-muted-foreground">
+                    <p class="mt-1 font-sans text-xs text-cd-ink-muted">
                         {{ ctx.title }}
                     </p>
                     <div class="mt-3 flex flex-wrap gap-2">
@@ -149,63 +161,85 @@ function optionVariant(actionKey: string): 'default' | 'outline' {
         <section
             v-if="primaryRecommendation"
             aria-label="今日の作戦"
+            class="rounded-2xl border border-[#E4DFF0] bg-[#F7F4FC] p-4 md:p-5"
         >
             <div
                 class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
             >
                 <div class="min-w-0 flex-1">
                     <p
-                        class="font-sans text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                        class="font-sans text-xs font-medium text-primary"
                     >
-                        {{ primaryRecommendation.scope }} ·
-                        {{ primaryRecommendation.status }}
+                        今日の作戦
                     </p>
                     <h2
-                        class="mt-2 font-sans text-xl font-semibold tracking-tight text-cd-ink md:text-2xl"
+                        class="mt-1.5 font-sans text-xl font-semibold tracking-tight text-cd-ink md:text-2xl"
                     >
                         {{ primaryRecommendation.title }}
                     </h2>
                     <p
                         v-if="primaryRecommendation.rationale"
-                        class="mt-3 max-w-2xl font-sans text-sm leading-relaxed text-muted-foreground"
+                        class="mt-2 max-w-2xl font-sans text-sm leading-relaxed text-cd-ink-muted"
                     >
                         {{ primaryRecommendation.rationale }}
                     </p>
-                    <p
+
+                    <div
                         v-if="primaryRecommendation.goal_impact"
-                        class="mt-2 font-sans text-xs text-muted-foreground"
+                        class="mt-4 flex gap-2.5 rounded-xl bg-white/90 px-3.5 py-3"
                     >
-                        狙い: {{ primaryRecommendation.goal_impact }}
-                    </p>
+                        <span
+                            class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary"
+                        >
+                            <Star :size="13" :stroke-width="1.8" />
+                        </span>
+                        <div class="min-w-0">
+                            <p
+                                class="font-sans text-sm font-medium text-cd-ink"
+                            >
+                                狙い:
+                                {{ primaryRecommendation.goal_impact }}
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
                 <div
                     v-if="confidenceLabel"
-                    class="flex size-20 shrink-0 flex-col items-center justify-center rounded-full border-4 border-primary/30 bg-primary/5 md:size-24"
+                    class="mx-auto flex size-[4.75rem] shrink-0 items-center justify-center rounded-full p-[5px] lg:mx-0"
+                    :style="gaugeStyle"
+                    role="img"
+                    :aria-label="`確信度 ${confidenceLabel.percent ?? ''} ${confidenceLabel.label}`"
                 >
-                    <span
-                        v-if="confidenceLabel.percent !== null"
-                        class="font-sans text-lg font-bold text-cd-ink"
+                    <div
+                        class="flex size-full flex-col items-center justify-center rounded-full bg-[#F7F4FC]"
                     >
-                        {{ confidenceLabel.percent }}%
-                    </span>
-                    <span class="font-sans text-[11px] text-muted-foreground">
-                        {{ confidenceLabel.label }}
-                    </span>
+                        <span
+                            v-if="confidenceLabel.percent !== null"
+                            class="font-sans text-lg font-bold leading-none text-cd-ink"
+                        >
+                            {{ confidenceLabel.percent }}%
+                        </span>
+                        <span
+                            class="mt-0.5 font-sans text-[10px] text-cd-ink-muted"
+                        >
+                            {{ confidenceLabel.label }}
+                        </span>
+                    </div>
                 </div>
             </div>
 
             <div
                 v-if="primaryRecommendation.status === 'pending'"
-                class="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
+                class="mt-4 flex flex-wrap gap-2"
             >
                 <Button
                     v-for="option in primaryRecommendation.options"
                     :key="option.id"
                     type="button"
-                    size="lg"
+                    size="sm"
                     :variant="optionVariant(option.action_key)"
-                    class="h-auto min-h-12 flex-col gap-0.5 py-3 font-sans"
+                    class="font-sans"
                     :disabled="decidingId === primaryRecommendation.id"
                     @click="
                         decideRecommendation(
@@ -215,20 +249,12 @@ function optionVariant(actionKey: string): 'default' | 'outline' {
                         )
                     "
                 >
-                    <span class="text-sm font-semibold">{{
-                        option.label
-                    }}</span>
-                    <span
-                        v-if="option.description"
-                        class="text-[11px] font-normal opacity-80"
-                    >
-                        {{ option.description }}
-                    </span>
+                    {{ option.label }}
                 </Button>
             </div>
             <p
                 v-else-if="primaryRecommendation.decision"
-                class="mt-4 font-sans text-sm text-muted-foreground"
+                class="mt-4 font-sans text-sm text-cd-ink-muted"
             >
                 決定済み: {{ primaryRecommendation.decision.action_key }}
             </p>

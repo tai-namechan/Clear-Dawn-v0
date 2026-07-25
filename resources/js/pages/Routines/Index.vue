@@ -6,6 +6,7 @@ import {
     ChevronDown,
     Dumbbell,
     Footprints,
+    Heart,
     HeartPulse,
     Music,
     NotebookPen,
@@ -14,6 +15,7 @@ import {
     Sparkles,
     Target,
     Trash2,
+    Utensils,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import type { Component } from 'vue';
@@ -80,6 +82,7 @@ watch(
     () => props.ops.checkin,
     (checkin) => {
         showCheckinEditor.value = checkin == null;
+
         if (checkin) {
             checkinForm.value = {
                 sleep_quality: checkin.sleep_quality ?? 5,
@@ -306,7 +309,7 @@ function historyDescription(log: ActivityLog): string {
     <Head title="ルーティン" />
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
-        <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4">
+        <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4">
             <PageTabShell
                 title="ルーティン"
                 subtitle="今日やるセッションを最初に。ルーティンと履歴はここから。"
@@ -345,7 +348,7 @@ function historyDescription(log: ActivityLog): string {
                         class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.8fr)]"
                     >
                         <section
-                            class="min-w-0 rounded-2xl border border-cd-line bg-cd-surface/70 p-4 shadow-sm md:p-5"
+                            class="min-w-0 rounded-2xl border border-cd-line bg-white p-4 shadow-sm md:p-5"
                             aria-label="今日のセッション"
                         >
                             <div
@@ -456,11 +459,16 @@ function historyDescription(log: ActivityLog): string {
                         </section>
 
                         <aside
-                            class="min-w-0 rounded-2xl border border-cd-line bg-cd-surface/70 p-4 shadow-sm md:p-5"
-                            aria-label="食事の残り"
+                            class="min-w-0 rounded-2xl border border-cd-line bg-white p-4 shadow-sm md:p-5"
+                            aria-label="今日の状態"
                         >
+                            <p
+                                class="font-sans text-xs font-medium text-cd-ink-muted"
+                            >
+                                今日の状態
+                            </p>
                             <h2
-                                class="font-sans text-base font-semibold tracking-tight text-cd-ink"
+                                class="mt-1 font-sans text-base font-semibold tracking-tight text-cd-ink"
                             >
                                 食事の残り
                             </h2>
@@ -492,7 +500,7 @@ function historyDescription(log: ActivityLog): string {
                                     kcal
                                 </p>
                                 <div
-                                    class="mt-3 h-2 overflow-hidden rounded-full bg-cd-line/70"
+                                    class="mt-3 h-2 overflow-hidden rounded-full bg-[#EAE6F2]"
                                     role="progressbar"
                                     :aria-valuenow="kcalProgress"
                                     aria-valuemin="0"
@@ -504,19 +512,25 @@ function historyDescription(log: ActivityLog): string {
                                         :style="{ width: `${kcalProgress}%` }"
                                     />
                                 </div>
-                                <div
-                                    class="mt-4 grid grid-cols-3 gap-2"
-                                >
-                                    <div
-                                        class="rounded-xl bg-cd-cream/70 px-2 py-2 text-center"
-                                    >
+                                <div class="mt-4 grid grid-cols-3 gap-2.5">
+                                    <div class="min-w-0">
                                         <p
                                             class="font-sans text-[10px] text-cd-ink-muted"
                                         >
                                             たんぱく質
                                         </p>
+                                        <div
+                                            class="mt-1.5 h-1 overflow-hidden rounded-full bg-[#EAE6F2]"
+                                        >
+                                            <div
+                                                class="h-full rounded-full bg-primary/70"
+                                                :style="{
+                                                    width: `${Math.min(100, Math.round((Number(nutritionIntake.protein_g) / Math.max(1, Number(nutritionTarget.protein_g))) * 100))}%`,
+                                                }"
+                                            />
+                                        </div>
                                         <p
-                                            class="mt-0.5 font-sans text-xs font-semibold text-cd-ink"
+                                            class="mt-1 font-sans text-xs font-semibold text-cd-ink"
                                         >
                                             {{
                                                 Number(
@@ -529,16 +543,24 @@ function historyDescription(log: ActivityLog): string {
                                             }}g
                                         </p>
                                     </div>
-                                    <div
-                                        class="rounded-xl bg-cd-cream/70 px-2 py-2 text-center"
-                                    >
+                                    <div class="min-w-0">
                                         <p
                                             class="font-sans text-[10px] text-cd-ink-muted"
                                         >
                                             脂質
                                         </p>
+                                        <div
+                                            class="mt-1.5 h-1 overflow-hidden rounded-full bg-[#EAE6F2]"
+                                        >
+                                            <div
+                                                class="h-full rounded-full bg-primary/70"
+                                                :style="{
+                                                    width: `${Math.min(100, Math.round((Number(nutritionIntake.fat_g) / Math.max(1, Number(nutritionTarget.fat_g))) * 100))}%`,
+                                                }"
+                                            />
+                                        </div>
                                         <p
-                                            class="mt-0.5 font-sans text-xs font-semibold text-cd-ink"
+                                            class="mt-1 font-sans text-xs font-semibold text-cd-ink"
                                         >
                                             {{
                                                 Number(nutritionIntake.fat_g)
@@ -547,16 +569,24 @@ function historyDescription(log: ActivityLog): string {
                                             }}g
                                         </p>
                                     </div>
-                                    <div
-                                        class="rounded-xl bg-cd-cream/70 px-2 py-2 text-center"
-                                    >
+                                    <div class="min-w-0">
                                         <p
                                             class="font-sans text-[10px] text-cd-ink-muted"
                                         >
                                             炭水化物
                                         </p>
+                                        <div
+                                            class="mt-1.5 h-1 overflow-hidden rounded-full bg-[#EAE6F2]"
+                                        >
+                                            <div
+                                                class="h-full rounded-full bg-primary/70"
+                                                :style="{
+                                                    width: `${Math.min(100, Math.round((Number(nutritionIntake.carb_g) / Math.max(1, Number(nutritionTarget.carb_g))) * 100))}%`,
+                                                }"
+                                            />
+                                        </div>
                                         <p
-                                            class="mt-0.5 font-sans text-xs font-semibold text-cd-ink"
+                                            class="mt-1 font-sans text-xs font-semibold text-cd-ink"
                                         >
                                             {{
                                                 Number(nutritionIntake.carb_g)
@@ -576,23 +606,33 @@ function historyDescription(log: ActivityLog): string {
                                 </p>
                             </template>
 
-                            <div class="mt-4 flex flex-wrap gap-2">
+                            <div class="mt-4 flex flex-col gap-2">
                                 <Button
                                     type="button"
                                     size="sm"
-                                    class="font-sans"
+                                    class="w-full font-sans"
                                     as-child
                                 >
-                                    <Link href="/meals">食事を記録</Link>
+                                    <Link href="/meals">
+                                        <Utensils
+                                            :size="14"
+                                            :stroke-width="1.8"
+                                        />
+                                        食事を記録
+                                    </Link>
                                 </Button>
                                 <Button
                                     type="button"
                                     size="sm"
                                     variant="outline"
-                                    class="font-sans"
+                                    class="w-full font-sans"
                                     as-child
                                 >
                                     <Link href="/condition">
+                                        <Heart
+                                            :size="14"
+                                            :stroke-width="1.8"
+                                        />
                                         コンディションへ
                                     </Link>
                                 </Button>

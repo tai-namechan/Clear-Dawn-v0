@@ -5,8 +5,8 @@ import {
     Check,
     CirclePlay,
     Clock3,
-    Dumbbell,
     EllipsisVertical,
+    Footprints,
     HeartPulse,
     Music,
     NotebookPen,
@@ -83,24 +83,24 @@ const iconComponent = computed((): Component => {
     const category = props.plan.steps?.[0]?.routine_item?.category;
 
     if (purpose === 'strength' || purpose === 'power' || category === 'strength') {
-return Dumbbell;
-}
+        return Footprints;
+    }
 
     if (purpose === 'practice' || category === 'music') {
-return Music;
-}
+        return Music;
+    }
 
     if (purpose === 'study' || purpose === 'review' || category === 'study') {
-return BookOpen;
-}
+        return BookOpen;
+    }
 
     if (purpose === 'care' || category === 'care' || category === 'mobility') {
-return HeartPulse;
-}
+        return HeartPulse;
+    }
 
     if (purpose === 'prep' || purpose === 'movement') {
-return Sparkles;
-}
+        return Sparkles;
+    }
 
     return NotebookPen;
 });
@@ -126,15 +126,15 @@ return;
 
 <template>
     <li
-        class="group min-w-0 rounded-xl border border-cd-line/90 bg-white/70 px-3 py-3 transition-colors hover:border-cd-dawn-soft/40 hover:bg-white sm:px-4"
+        class="group min-w-0 rounded-2xl border border-cd-line bg-white px-3 py-3 sm:px-4"
     >
-        <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+        <div class="flex min-w-0 items-center gap-2.5 sm:gap-3">
             <div
-                class="flex size-10 shrink-0 items-center justify-center rounded-full bg-cd-dawn-soft/15 text-cd-dawn-soft"
+                class="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#F3F1F8] text-primary"
             >
                 <component
                     :is="iconComponent"
-                    :size="19"
+                    :size="20"
                     :stroke-width="1.6"
                 />
             </div>
@@ -177,7 +177,7 @@ return;
             </div>
 
             <div
-                class="flex shrink-0 items-center gap-1 self-center sm:gap-1.5"
+                class="flex shrink-0 items-center gap-1.5 self-center sm:gap-2"
             >
                 <div
                     v-if="durationMinutes"
@@ -191,13 +191,20 @@ return;
                     v-if="status === 'not_started'"
                     type="button"
                     size="sm"
+                    class="rounded-full px-3.5 font-sans"
                     :disabled="starting"
                     @click="startSession"
                 >
                     <CirclePlay :size="15" :stroke-width="1.7" />
                     {{ starting ? '開始中…' : primaryLabel }}
                 </Button>
-                <Button v-else type="button" size="sm" as-child>
+                <Button
+                    v-else
+                    type="button"
+                    size="sm"
+                    class="rounded-full px-3.5 font-sans"
+                    as-child
+                >
                     <Link :href="primaryHref">
                         <CirclePlay :size="15" :stroke-width="1.7" />
                         {{ primaryLabel }}
@@ -210,7 +217,7 @@ return;
                             type="button"
                             variant="ghost"
                             size="icon-sm"
-                            class="hidden text-cd-ink-muted sm:inline-flex"
+                            class="text-cd-ink-muted sm:inline-flex"
                             :aria-label="`${plan.title} のメニュー`"
                         >
                             <EllipsisVertical
