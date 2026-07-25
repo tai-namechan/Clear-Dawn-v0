@@ -5,7 +5,6 @@ import { computed, ref } from 'vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import RoutineItemForm from '@/components/forms/RoutineItemForm.vue';
-import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -148,10 +147,6 @@ async function deleteItem(item: RoutineItem): Promise<void> {
                         <Plus :size="16" :stroke-width="1.8" />
                         追加
                     </Button>
-                </div>
-
-                <div class="mt-5">
-                    <RoutinesHubTabs />
                 </div>
             </PageSectionCard>
 

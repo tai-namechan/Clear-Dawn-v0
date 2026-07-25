@@ -46,7 +46,13 @@ class RoutineController extends Controller
         UserTimezoneResolver $timezoneResolver,
     ): Response {
         $user = $request->user();
-        $date = Carbon::parse($timezoneResolver->todayDateString($user));
+        $today = $timezoneResolver->todayDateString($user);
+        $requestedDate = $request->query('date');
+        $date = Carbon::parse(
+            is_string($requestedDate) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $requestedDate) === 1
+                ? $requestedDate
+                : $today,
+        );
 
         $generateProgramDayPlans->handle($user, $date);
         $evaluateRules->handle($user, $date);

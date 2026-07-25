@@ -3,7 +3,6 @@ import { Head, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
-import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -140,9 +139,6 @@ const eventTypeOptions = Object.entries(activityLogEventTypeLabels) as Array<
                     subtitle="完了したルーティンとマトリクスの活動を振り返ります。"
                     align="left"
                 />
-                <div class="mt-5">
-                    <RoutinesHubTabs />
-                </div>
             </PageSectionCard>
 
             <PageSectionCard aria-label="フィルター" padding="sm">

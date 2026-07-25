@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
-    ArrowRight,
     BookOpen,
     CalendarPlus,
-    Check,
     ChevronDown,
-    CirclePlay,
     Dumbbell,
     Footprints,
     HeartPulse,
@@ -20,28 +17,24 @@ import {
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import type { Component } from 'vue';
-import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTabShell from '@/components/PageTabShell.vue';
 import PageViewTabs from '@/components/PageViewTabs.vue';
 import DailyCheckinPanel from '@/components/routine/DailyCheckinPanel.vue';
 import TodayOpsPrimary from '@/components/routine/TodayOpsPrimary.vue';
 import TodayPlanCard from '@/components/routine/TodayPlanCard.vue';
+import TodayProgressPanel from '@/components/routine/TodayProgressPanel.vue';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/apiFetch';
 import { activityLogEventTypeLabels } from '@/lib/routineConstants';
 import {
     displayDurationMinutes,
-    formatMinutesJa,
-    latestSession,
     planRunStatus,
-    primaryStepPurpose,
 } from '@/lib/todayPlanDisplay';
 import type {
     ActivityLog,
     Routine,
     RoutineItemCategory,
     RoutinePlan,
-    StepPurpose,
 } from '@/types/routine';
 import type { CheckinFormState, TodayOps } from '@/types/todayOps';
 
@@ -64,7 +57,6 @@ const viewTabs = [
 
 const activeTab = ref(props.tab);
 const applyingId = ref<string | null>(null);
-const starting = ref(false);
 const showCompleted = ref(false);
 const showCheckinEditor = ref(props.ops.checkin == null);
 const savingCheckin = ref(false);
@@ -109,51 +101,65 @@ const activePlans = computed(() =>
     props.plans.filter((plan) => planRunStatus(plan) !== 'completed'),
 );
 
-const primaryPlan = computed(
-    () => activePlans.value[0] ?? props.plans[0] ?? null,
-);
-
-const secondaryPlans = computed(() => {
-    if (!primaryPlan.value) {
-        return [] as RoutinePlan[];
-    }
-
-    const rest = props.plans.filter((plan) => plan.id !== primaryPlan.value?.id);
-
+const visiblePlans = computed(() => {
     if (showCompleted.value) {
-        return rest;
+        return [...activePlans.value, ...completedPlans.value];
     }
 
-    return rest.filter((plan) => planRunStatus(plan) !== 'completed');
+    return activePlans.value;
 });
 
-const primaryStatus = computed(() =>
-    primaryPlan.value ? planRunStatus(primaryPlan.value) : null,
+const completedCount = computed(() => completedPlans.value.length);
+const totalCount = computed(() => props.plans.length);
+
+const totalMinutes = computed(() =>
+    props.plans.reduce((sum, plan) => {
+        return sum + (displayDurationMinutes(plan) ?? 0);
+    }, 0),
 );
 
-const primarySession = computed(() =>
-    primaryPlan.value ? latestSession(primaryPlan.value) : null,
+const nutritionTarget = computed(
+    () =>
+        props.ops.nutrition?.profile ??
+        props.ops.nutrition?.fallback_goal ??
+        null,
+);
+const nutritionIntake = computed(
+    () =>
+        props.ops.nutrition?.intake ?? {
+            kcal: 0,
+            protein_g: 0,
+            fat_g: 0,
+            carb_g: 0,
+        },
 );
 
-const primaryStepCount = computed(
-    () => primaryPlan.value?.steps?.length ?? 0,
-);
-
-const primaryMinutes = computed(() =>
-    primaryPlan.value ? displayDurationMinutes(primaryPlan.value) : null,
-);
-
-const programBadge = computed(() => {
-    const ctx =
-        props.ops.program_context.find(
-            (item) => item.plan_id === primaryPlan.value?.id,
-        ) ?? props.ops.program_context[0];
-
-    if (!ctx?.week_number && !ctx?.day_code) {
+const remainingKcal = computed(() => {
+    if (!nutritionTarget.value) {
         return null;
     }
 
-    return `W${ctx.week_number ?? '-'} · ${ctx.day_code ?? ''}`;
+    return Math.max(
+        0,
+        Number(nutritionTarget.value.kcal) - Number(nutritionIntake.value.kcal),
+    );
+});
+
+const kcalProgress = computed(() => {
+    if (!nutritionTarget.value) {
+        return 0;
+    }
+
+    const target = Number(nutritionTarget.value.kcal);
+
+    if (target <= 0) {
+        return 0;
+    }
+
+    return Math.min(
+        100,
+        Math.round((Number(nutritionIntake.value.kcal) / target) * 100),
+    );
 });
 
 const checkinSummary = computed(() => {
@@ -168,30 +174,6 @@ const checkinSummary = computed(() => {
     }
 
     return 'チェックイン済';
-});
-
-const primaryCtaLabel = computed(() => {
-    if (primaryStatus.value === 'in_progress') {
-        return 'セッションを続ける';
-    }
-
-    if (primaryStatus.value === 'completed') {
-        return '結果を見る';
-    }
-
-    return 'セッションを開始';
-});
-
-const statusLabel = computed(() => {
-    if (primaryStatus.value === 'in_progress') {
-        return '進行中';
-    }
-
-    if (primaryStatus.value === 'completed') {
-        return '完了';
-    }
-
-    return '準備完了';
 });
 
 function categoryIcon(category: RoutineItemCategory | null | undefined): Component {
@@ -215,46 +197,8 @@ function categoryIcon(category: RoutineItemCategory | null | undefined): Compone
     }
 }
 
-function purposeIcon(purpose: StepPurpose | null): Component {
-    switch (purpose) {
-        case 'strength':
-        case 'power':
-            return Dumbbell;
-        case 'care':
-            return HeartPulse;
-        case 'practice':
-            return Music;
-        case 'study':
-        case 'review':
-            return BookOpen;
-        case 'movement':
-        case 'prep':
-            return Footprints;
-        default:
-            return NotebookPen;
-    }
-}
-
-const heroIcon = computed(() => {
-    if (!primaryPlan.value) {
-        return Dumbbell;
-    }
-
-    const category = primaryPlan.value.steps?.[0]?.routine_item?.category;
-    if (category) {
-        return categoryIcon(category);
-    }
-
-    const purpose = primaryStepPurpose(primaryPlan.value);
-    if (purpose && purpose !== 'other') {
-        return purposeIcon(purpose);
-    }
-
-    return Dumbbell;
-});
-
 function onTabChange(tab: string): void {
-    activeTab.value = tab;
+    activeTab.value = tab as 'today' | 'routines' | 'history';
     const query =
         tab === 'today'
             ? {}
@@ -288,36 +232,6 @@ async function saveCheckin(): Promise<void> {
         await router.reload({ only: ['ops', 'plans'] });
     } finally {
         savingCheckin.value = false;
-    }
-}
-
-async function startOrOpenPrimary(): Promise<void> {
-    if (!primaryPlan.value || starting.value) {
-        return;
-    }
-
-    if (primaryStatus.value === 'in_progress' && primarySession.value) {
-        router.visit(`/sessions/${primarySession.value.id}`);
-
-        return;
-    }
-
-    if (primaryStatus.value === 'completed') {
-        router.visit(`/plans/${primaryPlan.value.id}`);
-
-        return;
-    }
-
-    starting.value = true;
-
-    try {
-        const result = await apiFetch<{ session: { id: string } }>(
-            `/plans/${primaryPlan.value.id}/sessions`,
-            { method: 'POST' },
-        );
-        router.visit(`/sessions/${result.session.id}`);
-    } finally {
-        starting.value = false;
     }
 }
 
@@ -419,173 +333,395 @@ function historyDescription(log: ActivityLog): string {
                     />
                 </template>
 
-                <!-- 今日: 作戦 → セッション -->
+                <!-- 今日: セッション + 食事 → 作戦 → チェックイン -->
                 <div
                     v-show="activeTab === 'today'"
                     id="panel-today"
                     role="tabpanel"
                     aria-labelledby="tab-today"
-                    class="flex flex-col gap-6"
+                    class="flex flex-col gap-4"
                 >
-                    <TodayOpsPrimary :date="date" :ops="ops" />
-
                     <div
-                        v-if="primaryPlan"
-                        class="flex flex-col gap-6 lg:flex-row lg:items-stretch lg:justify-between"
-                        :class="
-                            ops.recommendations.length > 0 ||
-                            ops.program_context.some((c) => c.needs_choice)
-                                ? 'border-t border-cd-line pt-6'
-                                : undefined
-                        "
-                        aria-label="今日のメインセッション"
+                        class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.8fr)]"
                     >
-                        <div class="min-w-0 flex-1">
-                            <p
-                                v-if="programBadge"
-                                class="inline-flex rounded-full bg-primary/10 px-3 py-1 font-sans text-xs font-semibold text-primary"
+                        <section
+                            class="rounded-2xl border border-cd-line bg-cd-surface/70 p-4 shadow-sm md:p-5"
+                            aria-label="今日のセッション"
+                        >
+                            <div
+                                class="mb-4 flex flex-wrap items-start justify-between gap-3"
                             >
-                                {{ programBadge }}
-                            </p>
-                            <h2
-                                class="mt-3 font-sans text-2xl font-semibold tracking-tight text-cd-ink md:text-3xl"
-                            >
-                                {{ primaryPlan.title }}
-                            </h2>
-                            <p class="mt-2 font-sans text-sm text-cd-ink-muted">
-                                {{ primaryStepCount }} ステップ
-                                <template v-if="primaryMinutes">
-                                    · 約{{ formatMinutesJa(primaryMinutes) }}
-                                </template>
-                            </p>
-                            <p
-                                class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-cd-moss/15 px-2.5 py-1 font-sans text-xs font-medium text-cd-moss"
-                            >
-                                <Check :size="12" :stroke-width="2.4" />
-                                {{ statusLabel }}
-                            </p>
-
-                            <div class="mt-6 flex flex-wrap gap-2">
+                                <div>
+                                    <h2
+                                        class="font-sans text-base font-semibold tracking-tight text-cd-ink"
+                                    >
+                                        今日のセッション
+                                    </h2>
+                                    <p
+                                        class="mt-1 font-sans text-sm text-cd-ink-muted"
+                                    >
+                                        プログラム生成プランと手動プランをここから開始します。
+                                    </p>
+                                </div>
                                 <Button
                                     type="button"
-                                    class="font-sans tracking-[0.04em]"
-                                    :disabled="starting"
-                                    @click="startOrOpenPrimary"
+                                    variant="outline"
+                                    size="sm"
+                                    class="font-sans"
+                                    @click="openRoutinesTab"
                                 >
-                                    <CirclePlay
-                                        :size="16"
-                                        :stroke-width="1.7"
-                                    />
+                                    <Plus :size="14" :stroke-width="1.8" />
+                                    ルーティンから追加
+                                </Button>
+                            </div>
+
+                            <TodayProgressPanel
+                                :date="date"
+                                :completed-count="completedCount"
+                                :total-count="totalCount"
+                                :total-minutes="totalMinutes"
+                                class="mb-4"
+                            />
+
+                            <div
+                                v-if="visiblePlans.length > 0"
+                                class="flex flex-col gap-3"
+                            >
+                                <TodayPlanCard
+                                    v-for="plan in visiblePlans"
+                                    :key="plan.id"
+                                    :plan="plan"
+                                />
+                            </div>
+
+                            <div
+                                v-else
+                                class="rounded-2xl border border-dashed border-cd-line bg-cd-cream/40 px-4 py-8 text-center"
+                            >
+                                <p
+                                    class="font-sans text-sm font-medium text-cd-ink"
+                                >
+                                    今日のセッションはまだありません
+                                </p>
+                                <p
+                                    class="mt-1 font-sans text-sm text-cd-ink-muted"
+                                >
+                                    ルーティンを追加するか、プログラムからプランを生成してください。
+                                </p>
+                                <div
+                                    class="mt-4 flex flex-wrap justify-center gap-2"
+                                >
+                                    <Button
+                                        type="button"
+                                        class="font-sans"
+                                        @click="openRoutinesTab"
+                                    >
+                                        ルーティンを選ぶ
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        class="font-sans"
+                                        as-child
+                                    >
+                                        <Link href="/programs">
+                                            プログラムへ
+                                        </Link>
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <button
+                                v-if="completedCount > 0"
+                                type="button"
+                                class="mt-3 inline-flex items-center gap-1 font-sans text-xs font-medium text-cd-ink-muted transition-colors hover:text-cd-ink"
+                                @click="showCompleted = !showCompleted"
+                            >
+                                <ChevronDown
+                                    :size="14"
+                                    :stroke-width="1.8"
+                                    class="transition-transform"
+                                    :class="
+                                        showCompleted
+                                            ? 'rotate-180'
+                                            : undefined
+                                    "
+                                />
+                                {{
+                                    showCompleted
+                                        ? '完了を隠す'
+                                        : `完了したセッションを表示（${completedCount}）`
+                                }}
+                            </button>
+                        </section>
+
+                        <aside
+                            class="rounded-2xl border border-cd-line bg-cd-surface/70 p-4 shadow-sm md:p-5"
+                            aria-label="食事の残り"
+                        >
+                            <h2
+                                class="font-sans text-base font-semibold tracking-tight text-cd-ink"
+                            >
+                                食事の残り
+                            </h2>
+
+                            <template v-if="nutritionTarget">
+                                <p
+                                    class="mt-3 font-sans text-2xl font-semibold tracking-tight text-cd-ink"
+                                >
+                                    残り
                                     {{
-                                        starting
-                                            ? '開始中…'
-                                            : primaryCtaLabel
+                                        remainingKcal?.toLocaleString('ja-JP')
                                     }}
-                                    <ArrowRight
-                                        :size="16"
-                                        :stroke-width="1.6"
+                                    kcal
+                                </p>
+                                <p
+                                    class="mt-1 font-sans text-xs text-cd-ink-muted"
+                                >
+                                    {{
+                                        Number(
+                                            nutritionIntake.kcal,
+                                        ).toLocaleString('ja-JP')
+                                    }}
+                                    /
+                                    {{
+                                        Number(
+                                            nutritionTarget.kcal,
+                                        ).toLocaleString('ja-JP')
+                                    }}
+                                    kcal
+                                </p>
+                                <div
+                                    class="mt-3 h-2 overflow-hidden rounded-full bg-cd-line/70"
+                                    role="progressbar"
+                                    :aria-valuenow="kcalProgress"
+                                    aria-valuemin="0"
+                                    aria-valuemax="100"
+                                    aria-label="カロリー進捗"
+                                >
+                                    <div
+                                        class="h-full rounded-full bg-primary transition-[width] duration-300"
+                                        :style="{ width: `${kcalProgress}%` }"
                                     />
+                                </div>
+                                <div
+                                    class="mt-4 grid grid-cols-3 gap-2"
+                                >
+                                    <div
+                                        class="rounded-xl bg-cd-cream/70 px-2 py-2 text-center"
+                                    >
+                                        <p
+                                            class="font-sans text-[10px] text-cd-ink-muted"
+                                        >
+                                            たんぱく質
+                                        </p>
+                                        <p
+                                            class="mt-0.5 font-sans text-xs font-semibold text-cd-ink"
+                                        >
+                                            {{
+                                                Number(
+                                                    nutritionIntake.protein_g,
+                                                )
+                                            }}/{{
+                                                Number(
+                                                    nutritionTarget.protein_g,
+                                                )
+                                            }}g
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="rounded-xl bg-cd-cream/70 px-2 py-2 text-center"
+                                    >
+                                        <p
+                                            class="font-sans text-[10px] text-cd-ink-muted"
+                                        >
+                                            脂質
+                                        </p>
+                                        <p
+                                            class="mt-0.5 font-sans text-xs font-semibold text-cd-ink"
+                                        >
+                                            {{
+                                                Number(nutritionIntake.fat_g)
+                                            }}/{{
+                                                Number(nutritionTarget.fat_g)
+                                            }}g
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="rounded-xl bg-cd-cream/70 px-2 py-2 text-center"
+                                    >
+                                        <p
+                                            class="font-sans text-[10px] text-cd-ink-muted"
+                                        >
+                                            炭水化物
+                                        </p>
+                                        <p
+                                            class="mt-0.5 font-sans text-xs font-semibold text-cd-ink"
+                                        >
+                                            {{
+                                                Number(nutritionIntake.carb_g)
+                                            }}/{{
+                                                Number(nutritionTarget.carb_g)
+                                            }}g
+                                        </p>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <template v-else>
+                                <p
+                                    class="mt-3 font-sans text-sm text-cd-ink-muted"
+                                >
+                                    栄養目標が未設定です。コンディションで設定すると残りが表示されます。
+                                </p>
+                            </template>
+
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    class="font-sans"
+                                    as-child
+                                >
+                                    <Link href="/meals">食事を記録</Link>
                                 </Button>
                                 <Button
                                     type="button"
+                                    size="sm"
                                     variant="outline"
                                     class="font-sans"
                                     as-child
                                 >
-                                    <Link :href="`/plans/${primaryPlan.id}`">
-                                        プランを見る
+                                    <Link href="/condition">
+                                        コンディションへ
                                     </Link>
                                 </Button>
                             </div>
-                        </div>
-
-                        <div
-                            class="flex shrink-0 items-center justify-center lg:w-56"
-                            aria-hidden="true"
-                        >
-                            <div
-                                class="flex size-40 items-center justify-center rounded-full bg-primary/8 text-primary"
-                            >
-                                <component
-                                    :is="heroIcon"
-                                    :size="72"
-                                    :stroke-width="1.2"
-                                />
-                            </div>
-                        </div>
+                        </aside>
                     </div>
 
-                    <div
-                        v-else
-                        class="flex flex-col items-center gap-4 px-2 py-8 text-center"
-                        aria-label="今日のセッションがありません"
+                    <TodayOpsPrimary :date="date" :ops="ops" />
+
+                    <section
+                        class="rounded-2xl border border-cd-line bg-cd-surface/60 p-4"
+                        aria-label="今日のチェックイン"
                     >
                         <div
-                            class="flex size-20 items-center justify-center rounded-full bg-primary/8 text-primary"
+                            class="flex flex-wrap items-center justify-between gap-2"
                         >
-                            <Dumbbell :size="36" :stroke-width="1.4" />
-                        </div>
-                        <div class="space-y-2">
-                            <p
-                                class="font-sans text-base font-semibold text-cd-ink"
+                            <div>
+                                <h2
+                                    class="font-sans text-sm font-semibold text-cd-ink"
+                                >
+                                    今日のチェックイン
+                                </h2>
+                                <p
+                                    class="mt-0.5 font-sans text-xs text-cd-ink-muted"
+                                >
+                                    {{
+                                        checkinSummary ??
+                                        '未入力 · 状態を記録するとおすすめが精度を上げます'
+                                    }}
+                                </p>
+                            </div>
+                            <Button
+                                v-if="!showCheckinEditor"
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                class="font-sans"
+                                @click="showCheckinEditor = true"
                             >
-                                今日やるセッションはまだありません
-                            </p>
-                            <p
-                                class="max-w-sm font-sans text-sm text-cd-ink-muted"
-                            >
-                                ルーティンから選ぶか、新しく作って今日に追加できます。
-                            </p>
-                        </div>
-                        <div class="flex flex-wrap justify-center gap-2">
-                            <Button type="button" @click="openRoutinesTab">
-                                ルーティンから選ぶ
-                            </Button>
-                            <Button type="button" variant="outline" as-child>
-                                <Link href="/routines/create">
-                                    ルーティンを作る
-                                </Link>
+                                編集
                             </Button>
                         </div>
-                    </div>
+
+                        <DailyCheckinPanel
+                            v-if="showCheckinEditor"
+                            v-model="checkinForm"
+                            class="mt-3"
+                            :saving="savingCheckin"
+                            @save="saveCheckin"
+                        />
+                    </section>
                 </div>
 
-                <!-- ルーティン一覧（プライマリ） -->
+                <!-- ルーティン一覧 -->
                 <div
                     v-show="activeTab === 'routines'"
                     id="panel-routines"
                     role="tabpanel"
                     aria-labelledby="tab-routines"
-                    class="flex flex-col gap-4"
+                    class="flex flex-col gap-3"
                 >
-                    <div class="flex justify-end">
-                        <Button type="button" as-child>
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <p class="font-sans text-sm text-cd-ink-muted">
+                            保存したルーティンを今日のプランに追加できます。
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                class="font-sans"
+                                as-child
+                            >
+                                <Link href="/routine-items">
+                                    <NotebookPen
+                                        :size="14"
+                                        :stroke-width="1.8"
+                                    />
+                                    種目マスタ
+                                </Link>
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                class="font-sans"
+                                as-child
+                            >
+                                <Link href="/routines/create">
+                                    <Plus :size="14" :stroke-width="1.8" />
+                                    新規作成
+                                </Link>
+                            </Button>
+                        </div>
+                    </div>
+
+                    <div
+                        v-if="routines.length === 0"
+                        class="rounded-2xl border border-dashed border-cd-line bg-cd-cream/40 px-4 py-10 text-center"
+                    >
+                        <p class="font-sans text-sm font-medium text-cd-ink">
+                            ルーティンがまだありません
+                        </p>
+                        <p class="mt-1 font-sans text-sm text-cd-ink-muted">
+                            よくやる流れを保存して、今日のプランにすぐ追加できます。
+                        </p>
+                        <Button
+                            type="button"
+                            class="mt-4 font-sans"
+                            as-child
+                        >
                             <Link href="/routines/create">
-                                <Plus :size="16" :stroke-width="1.8" />
-                                ルーティンを作る
+                                最初のルーティンを作る
                             </Link>
                         </Button>
                     </div>
 
-                    <ul
-                        v-if="routines.length > 0"
-                        class="flex flex-col"
-                        aria-label="ルーティン一覧"
+                    <article
+                        v-for="routine in routines"
+                        :key="routine.id"
+                        class="rounded-2xl border border-cd-line bg-cd-surface/70 p-4 shadow-sm"
+                        :class="{ 'opacity-55': !routine.is_active }"
                     >
-                        <li
-                            v-for="routine in routines"
-                            :key="routine.id"
-                            class="border-b border-cd-line py-4 first:pt-0 last:border-b-0 last:pb-0"
-                            :class="{ 'opacity-55': !routine.is_active }"
+                        <div
+                            class="flex flex-wrap items-start justify-between gap-3"
                         >
-                            <div
-                                class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-                            >
-                                <div
-                                    class="flex min-w-0 flex-1 items-center gap-3"
-                                >
-                                    <div
-                                        class="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
                                     >
                                         <component
                                             :is="
@@ -593,229 +729,130 @@ function historyDescription(log: ActivityLog): string {
                                                     routine.primary_category,
                                                 )
                                             "
-                                            :size="20"
+                                            :size="18"
                                             :stroke-width="1.6"
                                         />
-                                    </div>
+                                    </span>
                                     <div class="min-w-0">
-                                        <Link
-                                            :href="`/routines/${routine.id}`"
-                                            class="truncate font-sans text-base font-semibold text-cd-ink hover:text-primary"
+                                        <h3
+                                            class="truncate font-sans text-base font-semibold text-cd-ink"
                                         >
                                             {{ routine.name }}
-                                        </Link>
+                                        </h3>
                                         <p
-                                            class="mt-0.5 font-sans text-sm text-cd-ink-muted"
+                                            class="mt-0.5 font-sans text-xs text-cd-ink-muted"
                                         >
                                             {{ routine.steps_count ?? 0 }}
                                             ステップ
                                         </p>
                                     </div>
                                 </div>
-
-                                <div class="flex shrink-0 flex-wrap gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        as-child
-                                    >
-                                        <Link
-                                            :href="`/routines/${routine.id}`"
-                                        >
-                                            <Pencil
-                                                :size="14"
-                                                :stroke-width="1.6"
-                                            />
-                                            編集
-                                        </Link>
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        :disabled="
-                                            applyingId === routine.id ||
-                                            (routine.steps_count ?? 0) < 1
-                                        "
-                                        @click="applyToToday(routine)"
-                                    >
-                                        <CalendarPlus
-                                            :size="14"
-                                            :stroke-width="1.6"
-                                        />
-                                        今日に追加
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        :aria-label="`${routine.name} を削除`"
-                                        @click="deleteRoutine(routine)"
-                                    >
-                                        <Trash2
-                                            :size="15"
-                                            :stroke-width="1.6"
-                                        />
-                                    </Button>
-                                </div>
+                                <p
+                                    v-if="routine.description"
+                                    class="mt-2 line-clamp-2 font-sans text-sm text-cd-ink-muted"
+                                >
+                                    {{ routine.description }}
+                                </p>
                             </div>
-                        </li>
-                    </ul>
 
-                    <div
-                        v-else
-                        class="flex flex-col items-center gap-4 py-10 text-center"
-                    >
-                        <div class="space-y-2">
-                            <p
-                                class="font-sans text-base font-semibold text-cd-ink"
-                            >
-                                まだルーティンがありません
-                            </p>
-                            <p
-                                class="max-w-sm font-sans text-sm text-cd-ink-muted"
-                            >
-                                繰り返し使うルーティンを作り、ステップを追加してから今日に追加します。
-                            </p>
+                            <div class="flex shrink-0 flex-wrap gap-2">
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    class="font-sans"
+                                    :disabled="
+                                        applyingId === routine.id ||
+                                        (routine.steps_count ?? 0) < 1
+                                    "
+                                    @click="applyToToday(routine)"
+                                >
+                                    <CalendarPlus
+                                        :size="14"
+                                        :stroke-width="1.8"
+                                    />
+                                    {{
+                                        applyingId === routine.id
+                                            ? '追加中…'
+                                            : '今日に追加'
+                                    }}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    class="font-sans"
+                                    as-child
+                                >
+                                    <Link :href="`/routines/${routine.id}`">
+                                        <Pencil
+                                            :size="14"
+                                            :stroke-width="1.8"
+                                        />
+                                        編集
+                                    </Link>
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    class="font-sans text-destructive"
+                                    :aria-label="`${routine.name} を削除`"
+                                    @click="deleteRoutine(routine)"
+                                >
+                                    <Trash2 :size="14" :stroke-width="1.8" />
+                                </Button>
+                            </div>
                         </div>
-                        <Button type="button" as-child>
-                            <Link href="/routines/create">
-                                <Plus :size="16" :stroke-width="1.8" />
-                                ルーティンを作る
-                            </Link>
-                        </Button>
-                    </div>
+                    </article>
                 </div>
 
-                <!-- 履歴（プライマリ） -->
+                <!-- 履歴 -->
                 <div
                     v-show="activeTab === 'history'"
                     id="panel-history"
                     role="tabpanel"
                     aria-labelledby="tab-history"
-                    class="flex flex-col gap-4"
+                    class="flex flex-col gap-3"
                 >
-                    <ul
-                        v-if="history.length > 0"
-                        class="flex flex-col"
-                        aria-label="最近の履歴"
+                    <p class="font-sans text-sm text-cd-ink-muted">
+                        最近のルーティン実行・マトリクス完了など。
+                    </p>
+
+                    <div
+                        v-if="history.length === 0"
+                        class="rounded-2xl border border-dashed border-cd-line bg-cd-cream/40 px-4 py-10 text-center"
                     >
-                        <li
-                            v-for="log in history"
-                            :key="log.id"
-                            class="border-b border-cd-line py-4 first:pt-0 last:border-b-0 last:pb-0"
+                        <p class="font-sans text-sm font-medium text-cd-ink">
+                            まだ履歴がありません
+                        </p>
+                        <p class="mt-1 font-sans text-sm text-cd-ink-muted">
+                            セッションを完了するとここに表示されます。
+                        </p>
+                    </div>
+
+                    <article
+                        v-for="log in history"
+                        :key="log.id"
+                        class="rounded-2xl border border-cd-line bg-cd-surface/70 px-4 py-3"
+                    >
+                        <div
+                            class="flex flex-wrap items-baseline justify-between gap-2"
                         >
-                            <p class="font-sans text-xs text-cd-ink-muted">
-                                {{ formatOccurredAt(log.occurred_at) }}
-                            </p>
                             <p
-                                class="mt-1 font-sans text-sm font-semibold text-cd-ink"
+                                class="font-sans text-sm font-medium text-cd-ink"
                             >
                                 {{ historyDescription(log) }}
                             </p>
-                        </li>
-                    </ul>
-                    <p
-                        v-else
-                        class="py-10 text-center font-sans text-sm text-cd-ink-muted"
-                    >
-                        履歴がまだありません。
-                    </p>
-
-                    <div class="flex justify-center">
-                        <Button type="button" variant="outline" as-child>
-                            <Link href="/history">履歴をすべて見る</Link>
-                        </Button>
-                    </div>
+                            <time
+                                class="shrink-0 font-sans text-xs text-cd-ink-muted"
+                                :datetime="log.occurred_at"
+                            >
+                                {{ formatOccurredAt(log.occurred_at) }}
+                            </time>
+                        </div>
+                    </article>
                 </div>
             </PageTabShell>
-
-            <!-- 今日（二次: チェックインは1つだけ + その他セッション） -->
-            <div
-                v-show="activeTab === 'today'"
-                class="flex flex-col gap-4"
-            >
-                <div
-                    v-if="ops.checkin && !showCheckinEditor"
-                    class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cd-line bg-cd-surface/80 px-4 py-3"
-                >
-                    <p
-                        class="inline-flex items-center gap-2 font-sans text-sm text-cd-moss"
-                    >
-                        <Check :size="16" :stroke-width="2" />
-                        {{ checkinSummary }}
-                    </p>
-                    <button
-                        type="button"
-                        class="inline-flex items-center gap-1 font-sans text-sm font-medium text-primary"
-                        @click="showCheckinEditor = true"
-                    >
-                        チェックインを変更
-                        <ChevronDown :size="14" :stroke-width="1.6" />
-                    </button>
-                </div>
-
-                <DailyCheckinPanel
-                    v-if="showCheckinEditor"
-                    v-model="checkinForm"
-                    :saving="savingCheckin"
-                    :has-existing="ops.checkin != null"
-                    compact
-                    @save="saveCheckin"
-                />
-
-                <PageSectionCard
-                    v-if="secondaryPlans.length > 0"
-                    padding="none"
-                    aria-label="その他の今日のセッション"
-                >
-                    <div
-                        class="flex items-center justify-between border-b border-cd-line px-4 py-3"
-                    >
-                        <p class="font-sans text-sm font-medium text-cd-ink">
-                            その他のセッション
-                        </p>
-                        <Button
-                            v-if="completedPlans.length > 0"
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            class="font-sans"
-                            @click="showCompleted = !showCompleted"
-                        >
-                            {{
-                                showCompleted
-                                    ? '完了を隠す'
-                                    : '完了も表示'
-                            }}
-                        </Button>
-                    </div>
-                    <ul class="flex flex-col gap-2 p-3 sm:p-4">
-                        <TodayPlanCard
-                            v-for="plan in secondaryPlans"
-                            :key="plan.id"
-                            :plan="plan"
-                        />
-                    </ul>
-                </PageSectionCard>
-
-                <p
-                    v-if="primaryPlan"
-                    class="px-1 font-sans text-sm text-cd-ink-muted"
-                >
-                    <button
-                        type="button"
-                        class="inline-flex items-center gap-1.5 text-primary underline-offset-2 hover:underline"
-                        @click="openRoutinesTab"
-                    >
-                        <Pencil :size="14" :stroke-width="1.6" />
-                        ルーティンを編集
-                    </button>
-                    <span class="ml-2"
-                        >テンプレートの追加・編集はこちらから。</span
-                    >
-                </p>
-            </div>
         </div>
     </div>
 </template>

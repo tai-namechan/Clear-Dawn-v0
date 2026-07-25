@@ -88,9 +88,19 @@ class PageTabShellContractTest extends TestCase
         $this->assertStringContainsString('#tabs', $routines);
         $this->assertStringContainsString('#actions', $routines);
         $this->assertStringContainsString(
+            'TodayProgressPanel',
+            $routines,
+            'Today tab prioritizes session progress after fold-in',
+        );
+        $this->assertStringContainsString(
             'TodayOpsPrimary',
             $routines,
             'Today tab owns ops after /today fold-in',
+        );
+        $this->assertStringContainsString(
+            'href="/programs"',
+            $routines,
+            'Programs entry stays in routines shell actions, not the sidebar',
         );
     }
 
