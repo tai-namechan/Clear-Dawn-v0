@@ -2,7 +2,6 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
     Activity,
-    ArrowLeft,
     ArrowRight,
     Check,
     ChevronDown,
@@ -12,15 +11,16 @@ import {
     Moon,
     Plus,
     Scale,
-    Sparkles,
 } from '@lucide/vue';
 import type { EChartsCoreOption } from 'echarts/core';
 import { computed, ref, watch } from 'vue';
 import type { Component } from 'vue';
-import BaseChart from '@/components/charts/BaseChart.vue';
+import ConditionSettingsPanel from '@/components/condition/ConditionSettingsPanel.vue';
+import ConditionTodayStatus from '@/components/condition/ConditionTodayStatus.vue';
+import ConditionTrendsPanel from '@/components/condition/ConditionTrendsPanel.vue';
 import DateNavigator from '@/components/DateNavigator.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
-import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
+import PageTabShell from '@/components/PageTabShell.vue';
 import PageViewTabs from '@/components/PageViewTabs.vue';
 import DailyCheckinPanel from '@/components/routine/DailyCheckinPanel.vue';
 import { Button } from '@/components/ui/button';
@@ -230,18 +230,6 @@ function deltaInfo(key: string): DeltaInfo | null {
         text: `${sign} ${abs}（前日比）`,
         tone: toneForDelta(key, diff),
     };
-}
-
-function toneClass(tone: DeltaTone): string {
-    if (tone === 'good') {
-        return 'text-cd-moss';
-    }
-
-    if (tone === 'bad') {
-        return 'text-cd-danger';
-    }
-
-    return 'text-cd-ink-muted';
 }
 
 const clamp = (value: number, min: number, max: number): number =>
@@ -541,34 +529,13 @@ async function saveAll(): Promise<void> {
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 md:gap-5">
-            <div class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
-                <PageSectionCard>
-                    <div class="flex flex-col gap-3">
-                        <Link
-                            :href="`/records?date=${date}`"
-                            class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
-                        >
-                            <ArrowLeft :size="16" :stroke-width="1.6" />
-                            パフォーマンス管理
-                        </Link>
-                        <PageTitleOrnament
-                            title="コンディション"
-                            subtitle="今日の入力と、過去の推移を分けて見ます"
-                            align="left"
-                        />
-                        <PageViewTabs
-                            v-model="activeTab"
-                            :tabs="viewTabs"
-                            aria-label="コンディション表示切替"
-                            class="mt-1"
-                        />
-                    </div>
-                </PageSectionCard>
-
-                <PageSectionCard
-                    padding="sm"
-                    class="flex items-center justify-center"
-                >
+            <PageTabShell
+                title="コンディション"
+                subtitle="今日の入力と、過去の推移を分けて見ます"
+                :back-href="`/records?date=${date}`"
+                back-label="パフォーマンス管理"
+            >
+                <template #aside>
                     <DateNavigator
                         :date="date"
                         route-url="/records/condition"
@@ -580,15 +547,40 @@ async function saveAll(): Promise<void> {
                             'checkin',
                         ]"
                     />
-                </PageSectionCard>
-            </div>
+                </template>
+                <template #tabs>
+                    <PageViewTabs
+                        v-model="activeTab"
+                        :tabs="viewTabs"
+                        aria-label="コンディション表示切替"
+                    />
+                </template>
 
-            <!-- 今日 -->
+                <ConditionTodayStatus
+                    v-show="activeTab === 'today'"
+                    id="panel-today"
+                    role="tabpanel"
+                    :overall="overall"
+                    :status-cards="statusCards"
+                />
+                <ConditionTrendsPanel
+                    v-show="activeTab === 'trends'"
+                    id="panel-trends"
+                    role="tabpanel"
+                    :has-chart-data="hasChartData"
+                    :chart-option="chartOption"
+                    :status-cards="statusCards"
+                />
+                <ConditionSettingsPanel
+                    v-show="activeTab === 'settings'"
+                    id="panel-settings"
+                    role="tabpanel"
+                />
+            </PageTabShell>
+
+            <!-- 今日（二次ブロック） -->
             <div
                 v-show="activeTab === 'today'"
-                id="panel-today"
-                role="tabpanel"
-                aria-labelledby="tab-today"
                 class="flex flex-col gap-4"
             >
                 <DailyCheckinPanel
@@ -608,64 +600,6 @@ async function saveAll(): Promise<void> {
                 >
                     {{ checkinMessage }}
                 </p>
-
-                <PageSectionCard aria-label="今日の状態">
-                    <div class="mb-3 flex items-center justify-between gap-2">
-                        <h2 class="font-sans text-base font-semibold text-cd-ink">
-                            今日の状態
-                        </h2>
-                        <p
-                            v-if="overall.score !== null"
-                            class="inline-flex items-center gap-1.5 font-sans text-xs text-cd-ink-muted"
-                        >
-                            <Sparkles :size="14" :stroke-width="1.6" class="text-primary" />
-                            総合 {{ overall.display }} / 100
-                            <span
-                                v-if="overall.delta"
-                                :class="toneClass(overall.delta.tone)"
-                            >
-                                {{ overall.delta.text }}
-                            </span>
-                        </p>
-                    </div>
-
-                    <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <li
-                            v-for="card in statusCards"
-                            :key="card.key"
-                            class="rounded-xl border border-cd-line bg-cd-surface p-4"
-                        >
-                            <div class="flex items-start justify-between gap-2">
-                                <p class="font-sans text-xs font-medium text-cd-ink-muted">
-                                    {{ card.label }}
-                                </p>
-                                <span
-                                    class="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary"
-                                >
-                                    <component
-                                        :is="card.icon"
-                                        :size="16"
-                                        :stroke-width="1.6"
-                                    />
-                                </span>
-                            </div>
-                            <p class="mt-3 font-sans text-2xl font-semibold text-cd-ink">
-                                {{ card.display }}
-                                <span
-                                    v-if="card.showUnit"
-                                    class="text-sm font-medium text-cd-ink-muted"
-                                >{{ card.unit }}</span>
-                            </p>
-                            <p
-                                v-if="card.delta"
-                                class="mt-1.5 font-sans text-xs font-medium"
-                                :class="toneClass(card.delta.tone)"
-                            >
-                                {{ card.delta.text }}
-                            </p>
-                        </li>
-                    </ul>
-                </PageSectionCard>
 
                 <PageSectionCard
                     padding="none"
@@ -971,87 +905,6 @@ async function saveAll(): Promise<void> {
                         → 作戦へ
                     </Link>
                 </div>
-            </div>
-
-            <!-- 推移 -->
-            <div
-                v-show="activeTab === 'trends'"
-                id="panel-trends"
-                role="tabpanel"
-                aria-labelledby="tab-trends"
-                class="flex flex-col gap-4"
-            >
-                <PageSectionCard aria-label="7日間の推移">
-                    <h2 class="mb-1 font-sans text-base font-semibold text-cd-ink">
-                        7日間の推移
-                    </h2>
-                    <p class="mb-4 font-sans text-xs text-cd-ink-muted">
-                        体重・睡眠・最高球速の変化を確認します
-                    </p>
-
-                    <div
-                        v-if="!hasChartData"
-                        class="rounded-xl border border-dashed border-cd-line px-4 py-12 text-center"
-                    >
-                        <p class="font-sans text-sm text-cd-ink-muted">
-                            まだ推移データがありません。「今日」タブで記録するとここにグラフが表示されます。
-                        </p>
-                    </div>
-                    <BaseChart v-else :option="chartOption" />
-                </PageSectionCard>
-
-                <div
-                    class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
-                    aria-label="前日比サマリ"
-                >
-                    <PageSectionCard
-                        v-for="card in statusCards"
-                        :key="`trend-${card.key}`"
-                        padding="none"
-                    >
-                        <div class="flex h-full flex-col justify-between gap-2 p-4">
-                            <p class="font-sans text-xs font-medium text-cd-ink-muted">
-                                {{ card.label }}
-                            </p>
-                            <p class="font-sans text-xl font-semibold text-cd-ink">
-                                {{ card.display }}
-                            </p>
-                            <p
-                                v-if="card.delta"
-                                class="font-sans text-xs font-medium"
-                                :class="toneClass(card.delta.tone)"
-                            >
-                                {{ card.delta.text }}
-                            </p>
-                        </div>
-                    </PageSectionCard>
-                </div>
-            </div>
-
-            <!-- 設定 -->
-            <div
-                v-show="activeTab === 'settings'"
-                id="panel-settings"
-                role="tabpanel"
-                aria-labelledby="tab-settings"
-                class="flex flex-col gap-4"
-            >
-                <PageSectionCard>
-                    <h2 class="font-sans text-base font-semibold text-cd-ink">
-                        表示の考え方
-                    </h2>
-                    <ul class="mt-3 space-y-2 font-sans text-sm text-cd-ink-muted">
-                        <li>・「今日」は入力専用。大きな空グラフは出しません</li>
-                        <li>・「推移」は分析専用。チャートと前日比だけを見ます</li>
-                        <li>・30秒チェックインは作戦カードの判断材料になります</li>
-                    </ul>
-                    <Link
-                        href="/today"
-                        class="mt-4 inline-flex font-sans text-sm font-medium text-primary underline-offset-2 hover:underline"
-                    >
-                        今日/作戦へ移動
-                    </Link>
-                </PageSectionCard>
             </div>
         </div>
     </div>

@@ -21,7 +21,7 @@ import {
 import { computed, ref, watch } from 'vue';
 import type { Component } from 'vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
-import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
+import PageTabShell from '@/components/PageTabShell.vue';
 import PageViewTabs from '@/components/PageViewTabs.vue';
 import TodayPlanCard from '@/components/routine/TodayPlanCard.vue';
 import { Button } from '@/components/ui/button';
@@ -353,17 +353,15 @@ function historyDescription(log: ActivityLog): string {
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4">
-            <PageSectionCard>
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                    <PageTitleOrnament
-                        title="ルーティン"
-                        subtitle="今日やるセッションを最初に。ルーティンと履歴はここから。"
-                        align="left"
-                    />
+            <PageTabShell
+                title="ルーティン"
+                subtitle="今日やるセッションを最初に。ルーティンと履歴はここから。"
+            >
+                <template #actions>
                     <Button
                         type="button"
                         variant="outline"
-                        class="mt-1 shrink-0 font-sans"
+                        class="shrink-0 font-sans"
                         as-child
                     >
                         <Link href="/programs">
@@ -371,31 +369,27 @@ function historyDescription(log: ActivityLog): string {
                             プログラム
                         </Link>
                     </Button>
-                </div>
-                <div class="mt-5">
+                </template>
+                <template #tabs>
                     <PageViewTabs
                         :model-value="activeTab"
                         :tabs="viewTabs"
                         aria-label="ルーティン表示切替"
                         @update:model-value="onTabChange"
                     />
-                </div>
-            </PageSectionCard>
+                </template>
 
-            <!-- 今日 -->
-            <div
-                v-show="activeTab === 'today'"
-                id="panel-today"
-                role="tabpanel"
-                aria-labelledby="tab-today"
-                class="flex flex-col gap-4"
-            >
-                <PageSectionCard
-                    v-if="primaryPlan"
-                    aria-label="今日のメインセッション"
+                <!-- 今日: メインセッション -->
+                <div
+                    v-show="activeTab === 'today'"
+                    id="panel-today"
+                    role="tabpanel"
+                    aria-labelledby="tab-today"
                 >
                     <div
+                        v-if="primaryPlan"
                         class="flex flex-col gap-6 lg:flex-row lg:items-stretch lg:justify-between"
+                        aria-label="今日のメインセッション"
                     >
                         <div class="min-w-0 flex-1">
                             <p
@@ -471,8 +465,227 @@ function historyDescription(log: ActivityLog): string {
                             </div>
                         </div>
                     </div>
-                </PageSectionCard>
 
+                    <div
+                        v-else
+                        class="flex flex-col items-center gap-4 px-2 py-8 text-center"
+                        aria-label="今日のセッションがありません"
+                    >
+                        <div
+                            class="flex size-20 items-center justify-center rounded-full bg-primary/8 text-primary"
+                        >
+                            <Dumbbell :size="36" :stroke-width="1.4" />
+                        </div>
+                        <div class="space-y-2">
+                            <p
+                                class="font-sans text-base font-semibold text-cd-ink"
+                            >
+                                今日やるセッションはまだありません
+                            </p>
+                            <p
+                                class="max-w-sm font-sans text-sm text-cd-ink-muted"
+                            >
+                                ルーティンから選ぶか、新しく作って今日に追加できます。
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap justify-center gap-2">
+                            <Button type="button" @click="openRoutinesTab">
+                                ルーティンから選ぶ
+                            </Button>
+                            <Button type="button" variant="outline" as-child>
+                                <Link href="/routines/create">
+                                    ルーティンを作る
+                                </Link>
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ルーティン一覧（プライマリ） -->
+                <div
+                    v-show="activeTab === 'routines'"
+                    id="panel-routines"
+                    role="tabpanel"
+                    aria-labelledby="tab-routines"
+                    class="flex flex-col gap-4"
+                >
+                    <div class="flex justify-end">
+                        <Button type="button" as-child>
+                            <Link href="/routines/create">
+                                <Plus :size="16" :stroke-width="1.8" />
+                                ルーティンを作る
+                            </Link>
+                        </Button>
+                    </div>
+
+                    <ul
+                        v-if="routines.length > 0"
+                        class="flex flex-col"
+                        aria-label="ルーティン一覧"
+                    >
+                        <li
+                            v-for="routine in routines"
+                            :key="routine.id"
+                            class="border-b border-cd-line py-4 first:pt-0 last:border-b-0 last:pb-0"
+                            :class="{ 'opacity-55': !routine.is_active }"
+                        >
+                            <div
+                                class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                            >
+                                <div
+                                    class="flex min-w-0 flex-1 items-center gap-3"
+                                >
+                                    <div
+                                        class="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                                    >
+                                        <component
+                                            :is="
+                                                categoryIcon(
+                                                    routine.primary_category,
+                                                )
+                                            "
+                                            :size="20"
+                                            :stroke-width="1.6"
+                                        />
+                                    </div>
+                                    <div class="min-w-0">
+                                        <Link
+                                            :href="`/routines/${routine.id}`"
+                                            class="truncate font-sans text-base font-semibold text-cd-ink hover:text-primary"
+                                        >
+                                            {{ routine.name }}
+                                        </Link>
+                                        <p
+                                            class="mt-0.5 font-sans text-sm text-cd-ink-muted"
+                                        >
+                                            {{ routine.steps_count ?? 0 }}
+                                            ステップ
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="flex shrink-0 flex-wrap gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        as-child
+                                    >
+                                        <Link
+                                            :href="`/routines/${routine.id}`"
+                                        >
+                                            <Pencil
+                                                :size="14"
+                                                :stroke-width="1.6"
+                                            />
+                                            編集
+                                        </Link>
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        :disabled="
+                                            applyingId === routine.id ||
+                                            (routine.steps_count ?? 0) < 1
+                                        "
+                                        @click="applyToToday(routine)"
+                                    >
+                                        <CalendarPlus
+                                            :size="14"
+                                            :stroke-width="1.6"
+                                        />
+                                        今日に追加
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        :aria-label="`${routine.name} を削除`"
+                                        @click="deleteRoutine(routine)"
+                                    >
+                                        <Trash2
+                                            :size="15"
+                                            :stroke-width="1.6"
+                                        />
+                                    </Button>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+
+                    <div
+                        v-else
+                        class="flex flex-col items-center gap-4 py-10 text-center"
+                    >
+                        <div class="space-y-2">
+                            <p
+                                class="font-sans text-base font-semibold text-cd-ink"
+                            >
+                                まだルーティンがありません
+                            </p>
+                            <p
+                                class="max-w-sm font-sans text-sm text-cd-ink-muted"
+                            >
+                                繰り返し使うルーティンを作り、ステップを追加してから今日に追加します。
+                            </p>
+                        </div>
+                        <Button type="button" as-child>
+                            <Link href="/routines/create">
+                                <Plus :size="16" :stroke-width="1.8" />
+                                ルーティンを作る
+                            </Link>
+                        </Button>
+                    </div>
+                </div>
+
+                <!-- 履歴（プライマリ） -->
+                <div
+                    v-show="activeTab === 'history'"
+                    id="panel-history"
+                    role="tabpanel"
+                    aria-labelledby="tab-history"
+                    class="flex flex-col gap-4"
+                >
+                    <ul
+                        v-if="history.length > 0"
+                        class="flex flex-col"
+                        aria-label="最近の履歴"
+                    >
+                        <li
+                            v-for="log in history"
+                            :key="log.id"
+                            class="border-b border-cd-line py-4 first:pt-0 last:border-b-0 last:pb-0"
+                        >
+                            <p class="font-sans text-xs text-cd-ink-muted">
+                                {{ formatOccurredAt(log.occurred_at) }}
+                            </p>
+                            <p
+                                class="mt-1 font-sans text-sm font-semibold text-cd-ink"
+                            >
+                                {{ historyDescription(log) }}
+                            </p>
+                        </li>
+                    </ul>
+                    <p
+                        v-else
+                        class="py-10 text-center font-sans text-sm text-cd-ink-muted"
+                    >
+                        履歴がまだありません。
+                    </p>
+
+                    <div class="flex justify-center">
+                        <Button type="button" variant="outline" as-child>
+                            <Link href="/history">履歴をすべて見る</Link>
+                        </Button>
+                    </div>
+                </div>
+            </PageTabShell>
+
+            <!-- 今日（二次ブロック） -->
+            <div
+                v-show="activeTab === 'today'"
+                class="flex flex-col gap-4"
+            >
                 <div
                     v-if="primaryPlan"
                     class="grid gap-4 md:grid-cols-2"
@@ -581,43 +794,6 @@ function historyDescription(log: ActivityLog): string {
                     </ul>
                 </PageSectionCard>
 
-                <PageSectionCard
-                    v-if="!primaryPlan"
-                    aria-label="今日のセッションがありません"
-                >
-                    <div
-                        class="flex flex-col items-center gap-4 px-2 py-12 text-center"
-                    >
-                        <div
-                            class="flex size-20 items-center justify-center rounded-full bg-primary/8 text-primary"
-                        >
-                            <Dumbbell :size="36" :stroke-width="1.4" />
-                        </div>
-                        <div class="space-y-2">
-                            <p
-                                class="font-sans text-base font-semibold text-cd-ink"
-                            >
-                                今日やるセッションはまだありません
-                            </p>
-                            <p
-                                class="max-w-sm font-sans text-sm text-cd-ink-muted"
-                            >
-                                ルーティンから選ぶか、新しく作って今日に追加できます。
-                            </p>
-                        </div>
-                        <div class="flex flex-wrap justify-center gap-2">
-                            <Button type="button" @click="openRoutinesTab">
-                                ルーティンから選ぶ
-                            </Button>
-                            <Button type="button" variant="outline" as-child>
-                                <Link href="/routines/create">
-                                    ルーティンを作る
-                                </Link>
-                            </Button>
-                        </div>
-                    </div>
-                </PageSectionCard>
-
                 <p
                     v-if="primaryPlan"
                     class="px-1 font-sans text-sm text-cd-ink-muted"
@@ -632,181 +808,6 @@ function historyDescription(log: ActivityLog): string {
                     </button>
                     <span class="ml-2">テンプレートの追加・編集はこちらから。</span>
                 </p>
-            </div>
-
-            <!-- ルーティン（テンプレ一覧） -->
-            <div
-                v-show="activeTab === 'routines'"
-                id="panel-routines"
-                role="tabpanel"
-                aria-labelledby="tab-routines"
-                class="flex flex-col gap-4"
-            >
-                <div class="flex justify-end">
-                    <Button type="button" as-child>
-                        <Link href="/routines/create">
-                            <Plus :size="16" :stroke-width="1.8" />
-                            ルーティンを作る
-                        </Link>
-                    </Button>
-                </div>
-
-                <PageSectionCard padding="none" aria-label="ルーティン一覧">
-                    <ul v-if="routines.length > 0" class="flex flex-col">
-                        <li
-                            v-for="routine in routines"
-                            :key="routine.id"
-                            class="border-b border-cd-line px-5 py-4 last:border-b-0"
-                            :class="{ 'opacity-55': !routine.is_active }"
-                        >
-                            <div
-                                class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
-                            >
-                                <div
-                                    class="flex min-w-0 flex-1 items-center gap-3"
-                                >
-                                    <div
-                                        class="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
-                                    >
-                                        <component
-                                            :is="
-                                                categoryIcon(
-                                                    routine.primary_category,
-                                                )
-                                            "
-                                            :size="20"
-                                            :stroke-width="1.6"
-                                        />
-                                    </div>
-                                    <div class="min-w-0">
-                                        <Link
-                                            :href="`/routines/${routine.id}`"
-                                            class="truncate font-sans text-base font-semibold text-cd-ink hover:text-primary"
-                                        >
-                                            {{ routine.name }}
-                                        </Link>
-                                        <p
-                                            class="mt-0.5 font-sans text-sm text-cd-ink-muted"
-                                        >
-                                            {{ routine.steps_count ?? 0 }}
-                                            ステップ
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div class="flex shrink-0 flex-wrap gap-2">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        as-child
-                                    >
-                                        <Link
-                                            :href="`/routines/${routine.id}`"
-                                        >
-                                            <Pencil
-                                                :size="14"
-                                                :stroke-width="1.6"
-                                            />
-                                            編集
-                                        </Link>
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        :disabled="
-                                            applyingId === routine.id ||
-                                            (routine.steps_count ?? 0) < 1
-                                        "
-                                        @click="applyToToday(routine)"
-                                    >
-                                        <CalendarPlus
-                                            :size="14"
-                                            :stroke-width="1.6"
-                                        />
-                                        今日に追加
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
-                                        :aria-label="`${routine.name} を削除`"
-                                        @click="deleteRoutine(routine)"
-                                    >
-                                        <Trash2
-                                            :size="15"
-                                            :stroke-width="1.6"
-                                        />
-                                    </Button>
-                                </div>
-                            </div>
-                        </li>
-                    </ul>
-
-                    <div
-                        v-else
-                        class="flex flex-col items-center gap-4 px-5 py-14 text-center"
-                    >
-                        <div class="space-y-2">
-                            <p
-                                class="font-sans text-base font-semibold text-cd-ink"
-                            >
-                                まだルーティンがありません
-                            </p>
-                            <p
-                                class="max-w-sm font-sans text-sm text-cd-ink-muted"
-                            >
-                                繰り返し使うルーティンを作り、ステップを追加してから今日に追加します。
-                            </p>
-                        </div>
-                        <Button type="button" as-child>
-                            <Link href="/routines/create">
-                                <Plus :size="16" :stroke-width="1.8" />
-                                ルーティンを作る
-                            </Link>
-                        </Button>
-                    </div>
-                </PageSectionCard>
-            </div>
-
-            <!-- 履歴 -->
-            <div
-                v-show="activeTab === 'history'"
-                id="panel-history"
-                role="tabpanel"
-                aria-labelledby="tab-history"
-                class="flex flex-col gap-4"
-            >
-                <PageSectionCard padding="none" aria-label="最近の履歴">
-                    <ul v-if="history.length > 0" class="flex flex-col">
-                        <li
-                            v-for="log in history"
-                            :key="log.id"
-                            class="border-b border-cd-line px-5 py-4 last:border-b-0"
-                        >
-                            <p class="font-sans text-xs text-cd-ink-muted">
-                                {{ formatOccurredAt(log.occurred_at) }}
-                            </p>
-                            <p
-                                class="mt-1 font-sans text-sm font-semibold text-cd-ink"
-                            >
-                                {{ historyDescription(log) }}
-                            </p>
-                        </li>
-                    </ul>
-                    <p
-                        v-else
-                        class="px-5 py-12 text-center font-sans text-sm text-cd-ink-muted"
-                    >
-                        履歴がまだありません。
-                    </p>
-                </PageSectionCard>
-
-                <div class="flex justify-center">
-                    <Button type="button" variant="outline" as-child>
-                        <Link href="/history">履歴をすべて見る</Link>
-                    </Button>
-                </div>
             </div>
         </div>
     </div>
