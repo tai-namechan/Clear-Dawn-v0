@@ -2,19 +2,19 @@
 export const PFC_COLORS = {
     p: {
         css: 'var(--cd-pfc-p)',
-        hex: '#29a35c',
+        hex: '#3F9A70',
         className: 'text-cd-pfc-p',
         bgClassName: 'bg-cd-pfc-p',
     },
     f: {
         css: 'var(--cd-pfc-f)',
-        hex: '#f58a2f',
+        hex: '#D58A38',
         className: 'text-cd-pfc-f',
         bgClassName: 'bg-cd-pfc-f',
     },
     c: {
         css: 'var(--cd-pfc-c)',
-        hex: '#2b8fef',
+        hex: '#3B82C4',
         className: 'text-cd-pfc-c',
         bgClassName: 'bg-cd-pfc-c',
     },

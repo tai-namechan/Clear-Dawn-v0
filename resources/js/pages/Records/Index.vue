@@ -24,6 +24,17 @@ import {
     metricLabel,
 } from '@/lib/metricLabels';
 import { PFC_COLORS } from '@/lib/pfcColors';
+import {
+    CHART_COLORS,
+    STRENGTH_SERIES_COLORS,
+    chartAxisLabel,
+    chartAxisLine,
+    chartLegend,
+    chartLineSeriesStyle,
+    chartSplitLine,
+    eachDateInclusive,
+    nutritionSeriesByDate,
+} from '@/lib/chartTheme';
 import type {
     DailyMetricEntry,
     NutritionChartPoint,
@@ -64,13 +75,7 @@ const metricIcons: Record<string, Component> = {
     pitch_speed_max: Gauge,
 };
 
-const chartColors = [
-    'var(--chart-1)',
-    'var(--chart-2)',
-    'var(--chart-3)',
-    'var(--chart-4)',
-    'var(--chart-5)',
-];
+const chartColors = [...STRENGTH_SERIES_COLORS];
 
 function metricValue(list: DailyMetricEntry[], key: string): number | null {
     const entry = list.find((item) => item.metric.key === key);
@@ -220,87 +225,107 @@ const hasStrengthChartData = computed(
     () => props.strengthChartPoints.length > 0,
 );
 
-const mealKcalChartOption = computed<EChartsCoreOption>(() => ({
-    grid: { left: 40, right: 12, top: 16, bottom: 24 },
-    tooltip: { trigger: 'axis' },
-    xAxis: {
-        type: 'category',
-        data: props.mealChartPoints.map((point) => point.date.slice(5)),
-        axisLabel: { color: '#5c5a6e', fontSize: 10 },
-        axisLine: { lineStyle: { color: '#cfc8d8' } },
-    },
-    yAxis: {
-        type: 'value',
-        axisLabel: { color: '#5c5a6e', fontSize: 10 },
-        splitLine: {
-            lineStyle: { color: '#cfc8d8', opacity: 0.45 },
-        },
-    },
-    series: [
-        {
-            name: 'kcal',
-            type: 'line',
-            smooth: true,
-            symbol: 'circle',
-            symbolSize: 6,
-            data: props.mealChartPoints.map((point) => point.kcal),
-            lineStyle: { color: '#5b5577', width: 2 },
-            itemStyle: { color: '#5b5577' },
-            areaStyle: { color: 'rgba(91, 85, 119, 0.12)' },
-        },
-    ],
-}));
+const mealKcalChartOption = computed<EChartsCoreOption>(() => {
+    const { dates, values } = nutritionSeriesByDate(
+        props.mealChartPoints,
+        props.chartFrom,
+        props.chartTo,
+        'kcal',
+    );
 
-const mealPfcChartOption = computed<EChartsCoreOption>(() => ({
-    grid: { left: 40, right: 12, top: 28, bottom: 24 },
-    tooltip: { trigger: 'axis' },
-    legend: {
-        top: 0,
-        textStyle: { color: '#5c5a6e', fontSize: 10 },
-    },
-    xAxis: {
-        type: 'category',
-        data: props.mealChartPoints.map((point) => point.date.slice(5)),
-        axisLabel: { color: '#5c5a6e', fontSize: 10 },
-        axisLine: { lineStyle: { color: '#cfc8d8' } },
-    },
-    yAxis: {
-        type: 'value',
-        axisLabel: { color: '#5c5a6e', fontSize: 10 },
-        splitLine: {
-            lineStyle: { color: '#cfc8d8', opacity: 0.45 },
+    return {
+        grid: { left: 40, right: 12, top: 16, bottom: 24 },
+        tooltip: { trigger: 'axis' },
+        xAxis: {
+            type: 'category',
+            data: dates.map((date) => date.slice(5)),
+            axisLabel: chartAxisLabel(10),
+            axisLine: chartAxisLine(),
         },
-    },
-    series: [
-        {
-            name: 'P',
-            type: 'bar',
-            stack: 'pfc',
-            barMaxWidth: 28,
-            data: props.mealChartPoints.map((point) => point.protein_g),
-            itemStyle: { color: PFC_COLORS.p.hex },
+        yAxis: {
+            type: 'value',
+            axisLabel: chartAxisLabel(10),
+            splitLine: chartSplitLine(),
         },
-        {
-            name: 'F',
-            type: 'bar',
-            stack: 'pfc',
-            barMaxWidth: 28,
-            data: props.mealChartPoints.map((point) => point.fat_g),
-            itemStyle: { color: PFC_COLORS.f.hex },
-        },
-        {
-            name: 'C',
-            type: 'bar',
-            stack: 'pfc',
-            barMaxWidth: 28,
-            data: props.mealChartPoints.map((point) => point.carb_g),
-            itemStyle: {
-                color: PFC_COLORS.c.hex,
-                borderRadius: [4, 4, 0, 0],
+        series: [
+            {
+                name: 'kcal',
+                type: 'line',
+                smooth: true,
+                ...chartLineSeriesStyle(CHART_COLORS.primary),
+                data: values,
+                areaStyle: { color: CHART_COLORS.primaryArea },
             },
+        ],
+    };
+});
+
+const mealPfcChartOption = computed<EChartsCoreOption>(() => {
+    const protein = nutritionSeriesByDate(
+        props.mealChartPoints,
+        props.chartFrom,
+        props.chartTo,
+        'protein_g',
+    );
+    const fat = nutritionSeriesByDate(
+        props.mealChartPoints,
+        props.chartFrom,
+        props.chartTo,
+        'fat_g',
+    );
+    const carb = nutritionSeriesByDate(
+        props.mealChartPoints,
+        props.chartFrom,
+        props.chartTo,
+        'carb_g',
+    );
+
+    return {
+        grid: { left: 40, right: 12, top: 28, bottom: 24 },
+        tooltip: { trigger: 'axis' },
+        legend: chartLegend(10),
+        xAxis: {
+            type: 'category',
+            data: protein.dates.map((date) => date.slice(5)),
+            axisLabel: chartAxisLabel(10),
+            axisLine: chartAxisLine(),
         },
-    ],
-}));
+        yAxis: {
+            type: 'value',
+            axisLabel: chartAxisLabel(10),
+            splitLine: chartSplitLine(),
+        },
+        series: [
+            {
+                name: 'P',
+                type: 'bar',
+                stack: 'pfc',
+                barMaxWidth: 28,
+                data: protein.values,
+                itemStyle: { color: PFC_COLORS.p.hex },
+            },
+            {
+                name: 'F',
+                type: 'bar',
+                stack: 'pfc',
+                barMaxWidth: 28,
+                data: fat.values,
+                itemStyle: { color: PFC_COLORS.f.hex },
+            },
+            {
+                name: 'C',
+                type: 'bar',
+                stack: 'pfc',
+                barMaxWidth: 28,
+                data: carb.values,
+                itemStyle: {
+                    color: PFC_COLORS.c.hex,
+                    borderRadius: [4, 4, 0, 0],
+                },
+            },
+        ],
+    };
+});
 
 const conditionChartOption = computed<EChartsCoreOption>(() => {
     const dates = Array.from(
@@ -323,50 +348,42 @@ const conditionChartOption = computed<EChartsCoreOption>(() => {
             name,
             type: 'line' as const,
             smooth: true,
-            symbol: 'circle',
-            symbolSize: 5,
+            ...chartLineSeriesStyle(color),
             data: dates.map((date) => map.get(date) ?? null),
-            lineStyle: { color, width: 2 },
-            itemStyle: { color },
         };
     };
 
     return {
         grid: { left: 40, right: 40, top: 28, bottom: 24 },
         tooltip: { trigger: 'axis' },
-        legend: {
-            top: 0,
-            textStyle: { color: '#5c5a6e', fontSize: 10 },
-        },
+        legend: chartLegend(10),
         xAxis: {
             type: 'category',
             data: dates.map((date) => date.slice(5)),
-            axisLabel: { color: '#5c5a6e', fontSize: 10 },
-            axisLine: { lineStyle: { color: '#cfc8d8' } },
+            axisLabel: chartAxisLabel(10),
+            axisLine: chartAxisLine(),
         },
         yAxis: [
             {
                 type: 'value',
                 name: 'kg',
-                axisLabel: { color: '#5c5a6e', fontSize: 10 },
-                splitLine: {
-                    lineStyle: { color: '#cfc8d8', opacity: 0.45 },
-                },
+                axisLabel: chartAxisLabel(10),
+                splitLine: chartSplitLine(),
             },
             {
                 type: 'value',
                 name: '分',
-                axisLabel: { color: '#5c5a6e', fontSize: 10 },
+                axisLabel: chartAxisLabel(10),
                 splitLine: { show: false },
             },
         ],
         series: [
             {
-                ...seriesFor('weight', '#5b5577', '体重'),
+                ...seriesFor('weight', CHART_COLORS.primary, '体重'),
                 yAxisIndex: 0,
             },
             {
-                ...seriesFor('sleep_minutes', '#2b8fef', '睡眠'),
+                ...seriesFor('sleep_minutes', CHART_COLORS.secondary, '睡眠'),
                 yAxisIndex: 1,
             },
         ],
@@ -380,37 +397,24 @@ const strengthItemNames = computed(() =>
 );
 
 const strengthDates = computed(() =>
-    [...new Set(props.strengthChartPoints.map((point) => point.date))].sort(),
+    eachDateInclusive(props.chartFrom, props.chartTo),
 );
 
 const strengthChartOption = computed<EChartsCoreOption>(() => ({
     grid: { left: 40, right: 12, top: 28, bottom: 24 },
-    legend: {
-        top: 0,
-        textStyle: { color: 'var(--cd-ink-muted)', fontSize: 10 },
-    },
+    legend: chartLegend(10),
     tooltip: { trigger: 'axis' },
     xAxis: {
         type: 'category',
         data: strengthDates.value.map((date) => date.slice(5)),
-        axisLabel: {
-            color: 'var(--cd-ink-muted)',
-            fontSize: 10,
-        },
-        axisLine: {
-            lineStyle: { color: 'var(--cd-line)' },
-        },
+        axisLabel: chartAxisLabel(10),
+        axisLine: chartAxisLine(),
     },
     yAxis: {
         type: 'value',
         name: 'kg',
-        axisLabel: {
-            color: 'var(--cd-ink-muted)',
-            fontSize: 10,
-        },
-        splitLine: {
-            lineStyle: { color: 'var(--cd-line)', opacity: 0.4 },
-        },
+        axisLabel: chartAxisLabel(10),
+        splitLine: chartSplitLine(),
     },
     series: strengthItemNames.value.map((itemName, index) => {
         const byDate = new Map(
@@ -424,21 +428,12 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
             name: itemName,
             type: 'line' as const,
             smooth: true,
-            symbol: 'circle',
-            symbolSize: 5,
-            connectNulls: false,
+            ...chartLineSeriesStyle(color),
             data: strengthDates.value.map((date) => {
                 const value = byDate.get(date);
 
                 return value != null ? Number(value) : null;
             }),
-            lineStyle: {
-                color,
-                width: 2,
-            },
-            itemStyle: {
-                color,
-            },
         };
     }),
 }));
@@ -480,17 +475,15 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                 <div
                     class="grid divide-y divide-cd-line sm:grid-cols-2 sm:divide-x md:grid-cols-3 xl:grid-cols-6 xl:divide-y-0"
                 >
-                    <div class="p-4">
-                        <div class="flex items-start justify-between gap-2">
-                            <p class="font-sans text-xs text-cd-ink-muted">
-                                摂取カロリー
-                            </p>
-                            <Flame
-                                class="text-primary"
-                                :size="16"
-                                :stroke-width="1.6"
-                            />
-                        </div>
+                    <div class="relative p-4 pr-12">
+                        <Flame
+                            class="pointer-events-none absolute top-[14px] right-4 text-cd-icon-primary opacity-90"
+                            :size="18"
+                            :stroke-width="1.6"
+                        />
+                        <p class="font-sans text-xs text-cd-ink-muted">
+                            摂取カロリー
+                        </p>
                         <p
                             class="mt-2 font-sans text-2xl font-semibold text-cd-ink"
                         >
@@ -572,19 +565,17 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                     <div
                         v-for="item in summaryMetrics"
                         :key="item.key"
-                        class="p-4"
+                        class="relative p-4 pr-12"
                     >
-                        <div class="flex items-start justify-between gap-2">
-                            <p class="font-sans text-xs text-cd-ink-muted">
-                                {{ item.label }}
-                            </p>
-                            <component
-                                :is="item.icon"
-                                class="text-primary"
-                                :size="16"
-                                :stroke-width="1.6"
-                            />
-                        </div>
+                        <component
+                            :is="item.icon"
+                            class="pointer-events-none absolute top-[14px] right-4 text-cd-icon-primary opacity-90"
+                            :size="18"
+                            :stroke-width="1.6"
+                        />
+                        <p class="font-sans text-xs text-cd-ink-muted">
+                            {{ item.label }}
+                        </p>
                         <p
                             class="mt-2 font-sans text-2xl font-semibold text-cd-ink"
                         >
@@ -615,10 +606,10 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                     <div class="flex flex-col gap-4">
                         <div class="flex items-start gap-3">
                             <div
-                                class="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary"
+                                class="flex size-10 shrink-0 items-center justify-center rounded-full bg-cd-icon-bg text-cd-icon-primary"
                             >
                                 <UtensilsCrossed
-                                    :size="18"
+                                    :size="20"
                                     :stroke-width="1.6"
                                 />
                             </div>
@@ -670,7 +661,10 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                         </p>
 
                         <Button as-child class="font-sans tracking-[0.06em]">
-                            <Link :href="`/meals?date=${date}`">
+                            <Link
+                                :href="`/meals?date=${date}`"
+                                class="inline-flex items-center gap-2"
+                            >
                                 食事を記録する
                                 <ArrowRight :size="16" :stroke-width="1.6" />
                             </Link>
@@ -682,9 +676,9 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                     <div class="flex flex-col gap-4">
                         <div class="flex items-start gap-3">
                             <div
-                                class="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary"
+                                class="flex size-10 shrink-0 items-center justify-center rounded-full bg-cd-icon-bg text-cd-icon-primary"
                             >
-                                <Activity :size="18" :stroke-width="1.6" />
+                                <Activity :size="20" :stroke-width="1.6" />
                             </div>
                             <div>
                                 <h2
@@ -749,7 +743,10 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                         </div>
 
                         <Button as-child class="font-sans tracking-[0.06em]">
-                            <Link :href="`/records/condition?date=${date}`">
+                            <Link
+                                :href="`/records/condition?date=${date}`"
+                                class="inline-flex items-center gap-2"
+                            >
                                 コンディションを記録する
                                 <ArrowRight :size="16" :stroke-width="1.6" />
                             </Link>

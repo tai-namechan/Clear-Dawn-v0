@@ -9,6 +9,13 @@ import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiFetch } from '@/lib/apiFetch';
+import {
+    CHART_COLORS,
+    chartAxisLabel,
+    chartAxisLine,
+    chartLineSeriesStyle,
+    chartSplitLine,
+} from '@/lib/chartTheme';
 import type { ChartPoint, Metric, MetricRecord } from '@/types/routine';
 
 type Period = 'week' | 'month' | '3months' | 'year' | null;
@@ -56,40 +63,22 @@ const chartOption = computed<EChartsCoreOption>(() => ({
     xAxis: {
         type: 'category',
         data: props.chartPoints.map((point) => point.date),
-        axisLabel: {
-            color: 'var(--cd-ink-muted)',
-            fontSize: 11,
-        },
-        axisLine: {
-            lineStyle: { color: 'var(--cd-line)' },
-        },
+        axisLabel: chartAxisLabel(11),
+        axisLine: chartAxisLine(),
     },
     yAxis: {
         type: 'value',
-        axisLabel: {
-            color: 'var(--cd-ink-muted)',
-            fontSize: 11,
-        },
-        splitLine: {
-            lineStyle: { color: 'var(--cd-line)', opacity: 0.4 },
-        },
+        axisLabel: chartAxisLabel(11),
+        splitLine: chartSplitLine(),
     },
     series: [
         {
             type: 'line',
             smooth: true,
-            symbol: 'circle',
-            symbolSize: 6,
+            ...chartLineSeriesStyle(CHART_COLORS.primary),
             data: props.chartPoints.map((point) => Number(point.value)),
-            lineStyle: {
-                color: 'var(--chart-1)',
-                width: 2,
-            },
-            itemStyle: {
-                color: 'var(--chart-1)',
-            },
             areaStyle: {
-                color: 'color-mix(in oklab, var(--chart-1) 12%, transparent)',
+                color: CHART_COLORS.primaryArea,
             },
         },
     ],

@@ -39,6 +39,9 @@ alwaysApply: true
    | サイドバー | `--sidebar-background` 等 | `bg-sidebar` 等 |
    | ダークモード | `.dark` 配下で上記を上書き | `dark:` 修飾子 |
    | ヨユウ / キオク accent | `--os-yoyu` / `--os-kioku` | `text-os-yoyu` / `text-os-kioku` |
+   | パフォーマンス icon | `--cd-icon-primary` / `--cd-icon-bg` 等 | `text-cd-icon-primary` / `bg-cd-icon-bg` |
+   | パフォーマンス chart | `--cd-chart-primary` / `--cd-chart-grid` 等 | `text-cd-chart-*` |
+   | PFC / 栄養素色 | `--cd-pfc-*` / `--cd-protein` 等 | `text-cd-pfc-p` / `text-cd-protein` |
 
    トークンを追加・変更したら `app.css` とこの一覧の両方を更新する。
 
