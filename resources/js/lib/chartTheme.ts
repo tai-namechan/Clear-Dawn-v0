@@ -65,10 +65,20 @@ export function chartSplitLine(): {
     };
 }
 
-export function chartLegend(fontSize = 10): Record<string, unknown> {
+export function chartLegend(
+    fontSize = 10,
+    options: {
+        top?: number | string;
+        bottom?: number | string;
+        left?: number | string;
+        right?: number | string;
+    } = {},
+): Record<string, unknown> {
+    const { top = 0, bottom, left, right = 0 } = options;
+
     return {
-        top: 0,
-        right: 0,
+        ...(bottom !== undefined ? { bottom } : { top }),
+        ...(left !== undefined ? { left } : { right }),
         icon: 'circle',
         itemWidth: 8,
         itemHeight: 8,

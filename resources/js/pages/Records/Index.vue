@@ -19,12 +19,6 @@ import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTabShell from '@/components/PageTabShell.vue';
 import { Button } from '@/components/ui/button';
 import {
-    formatSleepDelta,
-    formatSleepMinutes,
-    metricLabel,
-} from '@/lib/metricLabels';
-import { PFC_COLORS } from '@/lib/pfcColors';
-import {
     CHART_COLORS,
     STRENGTH_SERIES_COLORS,
     chartAxisLabel,
@@ -35,6 +29,12 @@ import {
     eachDateInclusive,
     nutritionSeriesByDate,
 } from '@/lib/chartTheme';
+import {
+    formatSleepDelta,
+    formatSleepMinutes,
+    metricLabel,
+} from '@/lib/metricLabels';
+import { PFC_COLORS } from '@/lib/pfcColors';
 import type {
     DailyMetricEntry,
     NutritionChartPoint,
@@ -336,27 +336,23 @@ const conditionChartOption = computed<EChartsCoreOption>(() => {
         ),
     ).sort();
 
-    const seriesFor = (key: string, color: string, name: string) => {
-        const map = new Map(
-            (props.conditionChartSeries[key] ?? []).map((point) => [
-                point.date,
-                Number(point.value),
-            ]),
-        );
-
-        return {
-            name,
-            type: 'line' as const,
-            smooth: true,
-            ...chartLineSeriesStyle(color),
-            data: dates.map((date) => map.get(date) ?? null),
-        };
-    };
+    const weightMap = new Map(
+        (props.conditionChartSeries.weight ?? []).map((point) => [
+            point.date,
+            Number(point.value),
+        ]),
+    );
+    const sleepHoursMap = new Map(
+        (props.conditionChartSeries.sleep_minutes ?? []).map((point) => [
+            point.date,
+            Math.round((Number(point.value) / 60) * 10) / 10,
+        ]),
+    );
 
     return {
-        grid: { left: 40, right: 40, top: 28, bottom: 24 },
+        grid: { left: 44, right: 44, top: 16, bottom: 48 },
         tooltip: { trigger: 'axis' },
-        legend: chartLegend(10),
+        legend: chartLegend(10, { bottom: 0, left: 'center' }),
         xAxis: {
             type: 'category',
             data: dates.map((date) => date.slice(5)),
@@ -366,25 +362,55 @@ const conditionChartOption = computed<EChartsCoreOption>(() => {
         yAxis: [
             {
                 type: 'value',
-                name: 'kg',
+                name: '体重 kg',
+                nameLocation: 'end',
+                nameGap: 10,
+                nameTextStyle: chartAxisLabel(10),
                 axisLabel: chartAxisLabel(10),
                 splitLine: chartSplitLine(),
+                scale: true,
             },
             {
                 type: 'value',
-                name: '分',
+                name: '睡眠 時間',
+                nameLocation: 'end',
+                nameGap: 10,
+                nameTextStyle: chartAxisLabel(10),
                 axisLabel: chartAxisLabel(10),
                 splitLine: { show: false },
+                min: 0,
+                max: (extent: { max: number }) =>
+                    Math.max(10, Math.ceil((extent.max || 0) + 1)),
             },
         ],
         series: [
             {
-                ...seriesFor('weight', CHART_COLORS.primary, '体重'),
+                name: '体重',
+                type: 'line' as const,
+                smooth: true,
                 yAxisIndex: 0,
+                ...chartLineSeriesStyle(CHART_COLORS.primary),
+                data: dates.map((date) => weightMap.get(date) ?? null),
+                tooltip: {
+                    valueFormatter: (value: unknown) =>
+                        value == null || value === ''
+                            ? '—'
+                            : `${value} kg`,
+                },
             },
             {
-                ...seriesFor('sleep_minutes', CHART_COLORS.secondary, '睡眠'),
+                name: '睡眠',
+                type: 'line' as const,
+                smooth: true,
                 yAxisIndex: 1,
+                ...chartLineSeriesStyle(CHART_COLORS.secondary),
+                data: dates.map((date) => sleepHoursMap.get(date) ?? null),
+                tooltip: {
+                    valueFormatter: (value: unknown) =>
+                        value == null || value === ''
+                            ? '—'
+                            : `${value} 時間`,
+                },
             },
         ],
     };
@@ -475,11 +501,11 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                 <div
                     class="grid divide-y divide-cd-line sm:grid-cols-2 sm:divide-x md:grid-cols-3 xl:grid-cols-6 xl:divide-y-0"
                 >
-                    <div class="relative p-4 pr-12">
+                    <div class="relative p-4 pr-14">
                         <Flame
-                            class="pointer-events-none absolute top-[14px] right-4 text-cd-icon-primary opacity-90"
-                            :size="18"
-                            :stroke-width="1.6"
+                            class="pointer-events-none absolute top-3 right-3 text-cd-icon-primary opacity-90"
+                            :size="28"
+                            :stroke-width="1.5"
                         />
                         <p class="font-sans text-xs text-cd-ink-muted">
                             摂取カロリー
@@ -565,13 +591,13 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                     <div
                         v-for="item in summaryMetrics"
                         :key="item.key"
-                        class="relative p-4 pr-12"
+                        class="relative p-4 pr-14"
                     >
                         <component
                             :is="item.icon"
-                            class="pointer-events-none absolute top-[14px] right-4 text-cd-icon-primary opacity-90"
-                            :size="18"
-                            :stroke-width="1.6"
+                            class="pointer-events-none absolute top-3 right-3 text-cd-icon-primary opacity-90"
+                            :size="28"
+                            :stroke-width="1.5"
                         />
                         <p class="font-sans text-xs text-cd-ink-muted">
                             {{ item.label }}
@@ -699,7 +725,7 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                             <BaseChart
                                 v-if="hasConditionChartData"
                                 :option="conditionChartOption"
-                                class="!h-44"
+                                class="!h-52"
                             />
                             <p
                                 v-else
