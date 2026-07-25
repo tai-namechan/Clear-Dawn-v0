@@ -31,11 +31,11 @@ return 0;
 </script>
 
 <template>
-    <aside class="cd-panel overflow-hidden">
+    <aside class="cd-panel min-w-0 overflow-hidden">
         <div
-            class="flex flex-col items-center gap-4 p-4 sm:flex-row sm:items-center sm:justify-between"
+            class="flex min-w-0 flex-col items-center gap-4 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4"
         >
-            <div class="flex w-full items-center justify-center gap-2 sm:w-auto">
+            <div class="flex w-full min-w-0 items-center justify-center gap-1 sm:w-auto sm:gap-2">
                 <Button
                     type="button"
                     variant="ghost"
@@ -45,7 +45,7 @@ return 0;
                 >
                     <ChevronLeft :size="16" :stroke-width="1.6" />
                 </Button>
-                <div class="min-w-[9rem] text-center">
+                <div class="min-w-0 flex-1 text-center sm:min-w-[9rem] sm:flex-none">
                     <p class="font-sans text-sm font-semibold text-cd-ink">
                         {{ formattedDate }}
                     </p>
@@ -75,9 +75,9 @@ return 0;
                 </Button>
             </div>
 
-            <div class="grid w-full grid-cols-3 gap-2 sm:max-w-xl sm:flex-1">
+            <div class="grid w-full min-w-0 grid-cols-3 gap-1.5 sm:max-w-xl sm:flex-1 sm:gap-2">
                 <div
-                    class="flex flex-col items-center rounded-xl bg-primary/10 px-3 py-2.5 text-center"
+                    class="flex min-w-0 flex-col items-center rounded-xl bg-primary/10 px-2 py-2.5 text-center sm:px-3"
                 >
                     <CheckCircle2
                         :size="15"
@@ -92,7 +92,7 @@ return 0;
                     <p class="font-sans text-[11px] text-cd-ink-muted">完了</p>
                 </div>
                 <div
-                    class="flex flex-col items-center rounded-xl bg-white/60 px-3 py-2.5 text-center"
+                    class="flex min-w-0 flex-col items-center rounded-xl bg-white/60 px-2 py-2.5 text-center sm:px-3"
                 >
                     <CalendarDays
                         :size="15"
@@ -107,7 +107,7 @@ return 0;
                     <p class="font-sans text-[11px] text-cd-ink-muted">進捗</p>
                 </div>
                 <div
-                    class="flex flex-col items-center rounded-xl bg-white/60 px-3 py-2.5 text-center"
+                    class="flex min-w-0 flex-col items-center rounded-xl bg-white/60 px-2 py-2.5 text-center sm:px-3"
                 >
                     <Clock3
                         :size="15"

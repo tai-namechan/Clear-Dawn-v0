@@ -126,9 +126,9 @@ return;
 
 <template>
     <li
-        class="group rounded-xl border border-cd-line/90 bg-white/70 px-3 py-3 transition-colors hover:border-cd-dawn-soft/40 hover:bg-white sm:px-4"
+        class="group min-w-0 rounded-xl border border-cd-line/90 bg-white/70 px-3 py-3 transition-colors hover:border-cd-dawn-soft/40 hover:bg-white sm:px-4"
     >
-        <div class="flex items-center gap-3">
+        <div class="flex min-w-0 items-center gap-2 sm:gap-3">
             <div
                 class="flex size-10 shrink-0 items-center justify-center rounded-full bg-cd-dawn-soft/15 text-cd-dawn-soft"
             >
@@ -139,16 +139,16 @@ return;
                 />
             </div>
 
-            <div class="min-w-0 flex-1">
+            <div class="min-w-0 flex-1 overflow-hidden">
                 <Link :href="`/plans/${plan.id}`" class="block min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex min-w-0 flex-wrap items-center gap-2">
                         <p
-                            class="truncate font-sans text-sm font-semibold text-cd-ink"
+                            class="min-w-0 truncate font-sans text-sm font-semibold text-cd-ink"
                         >
                             {{ plan.title }}
                         </p>
                         <span
-                            class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-sans text-[0.68rem] font-medium"
+                            class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-sans text-[0.68rem] font-medium"
                             :class="statusMeta[status].className"
                         >
                             <Check
@@ -167,7 +167,7 @@ return;
                 </Link>
                 <div
                     v-if="durationMinutes || clockRange"
-                    class="mt-1.5 flex items-center gap-3 font-sans text-[11px] text-cd-ink-muted md:hidden"
+                    class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 font-sans text-[11px] text-cd-ink-muted md:hidden"
                 >
                     <span v-if="durationMinutes"
                         >予定 {{ formatMinutesJa(durationMinutes) }}</span
@@ -177,61 +177,63 @@ return;
             </div>
 
             <div
-                v-if="durationMinutes"
-                class="hidden shrink-0 items-center gap-1.5 font-sans text-xs text-cd-ink-muted md:flex"
+                class="flex shrink-0 items-center gap-1 self-center sm:gap-1.5"
             >
-                <Clock3 :size="14" :stroke-width="1.6" />
-                {{ formatMinutesJa(durationMinutes) }}
-            </div>
+                <div
+                    v-if="durationMinutes"
+                    class="hidden items-center gap-1.5 font-sans text-xs text-cd-ink-muted md:flex"
+                >
+                    <Clock3 :size="14" :stroke-width="1.6" />
+                    {{ formatMinutesJa(durationMinutes) }}
+                </div>
 
-            <Button
-                v-if="status === 'not_started'"
-                type="button"
-                size="sm"
-                class="shrink-0 self-center"
-                :disabled="starting"
-                @click="startSession"
-            >
-                <CirclePlay :size="15" :stroke-width="1.7" />
-                {{ starting ? '開始中…' : primaryLabel }}
-            </Button>
-            <Button
-                v-else
-                type="button"
-                size="sm"
-                class="shrink-0 self-center"
-                as-child
-            >
-                <Link :href="primaryHref">
+                <Button
+                    v-if="status === 'not_started'"
+                    type="button"
+                    size="sm"
+                    :disabled="starting"
+                    @click="startSession"
+                >
                     <CirclePlay :size="15" :stroke-width="1.7" />
-                    {{ primaryLabel }}
-                </Link>
-            </Button>
+                    {{ starting ? '開始中…' : primaryLabel }}
+                </Button>
+                <Button v-else type="button" size="sm" as-child>
+                    <Link :href="primaryHref">
+                        <CirclePlay :size="15" :stroke-width="1.7" />
+                        {{ primaryLabel }}
+                    </Link>
+                </Button>
 
-            <DropdownMenu>
-                <DropdownMenuTrigger as-child>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        class="hidden shrink-0 self-center text-cd-ink-muted sm:inline-flex"
-                        :aria-label="`${plan.title} のメニュー`"
-                    >
-                        <EllipsisVertical :size="16" :stroke-width="1.6" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" class="min-w-40">
-                    <DropdownMenuItem as-child>
-                        <Link :href="`/plans/${plan.id}`">プラン詳細</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                        v-if="status === 'in_progress'"
-                        as-child
-                    >
-                        <Link :href="primaryHref">実行を続ける</Link>
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+                <DropdownMenu>
+                    <DropdownMenuTrigger as-child>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            class="hidden text-cd-ink-muted sm:inline-flex"
+                            :aria-label="`${plan.title} のメニュー`"
+                        >
+                            <EllipsisVertical
+                                :size="16"
+                                :stroke-width="1.6"
+                            />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" class="min-w-40">
+                        <DropdownMenuItem as-child>
+                            <Link :href="`/plans/${plan.id}`"
+                                >プラン詳細</Link
+                            >
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            v-if="status === 'in_progress'"
+                            as-child
+                        >
+                            <Link :href="primaryHref">実行を続ける</Link>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
         </div>
     </li>
 </template>

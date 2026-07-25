@@ -345,7 +345,7 @@ function historyDescription(log: ActivityLog): string {
                         class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(16rem,0.8fr)]"
                     >
                         <section
-                            class="rounded-2xl border border-cd-line bg-cd-surface/70 p-4 shadow-sm md:p-5"
+                            class="min-w-0 rounded-2xl border border-cd-line bg-cd-surface/70 p-4 shadow-sm md:p-5"
                             aria-label="今日のセッション"
                         >
                             <div
@@ -385,7 +385,7 @@ function historyDescription(log: ActivityLog): string {
 
                             <div
                                 v-if="visiblePlans.length > 0"
-                                class="flex flex-col gap-3"
+                                class="flex min-w-0 flex-col gap-3"
                             >
                                 <TodayPlanCard
                                     v-for="plan in visiblePlans"
@@ -456,7 +456,7 @@ function historyDescription(log: ActivityLog): string {
                         </section>
 
                         <aside
-                            class="rounded-2xl border border-cd-line bg-cd-surface/70 p-4 shadow-sm md:p-5"
+                            class="min-w-0 rounded-2xl border border-cd-line bg-cd-surface/70 p-4 shadow-sm md:p-5"
                             aria-label="食事の残り"
                         >
                             <h2

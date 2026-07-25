@@ -132,6 +132,38 @@ class RoutinesHubTabsContractTest extends TestCase
         );
     }
 
+    public function test_routines_today_grid_children_can_shrink_on_narrow_viewports(): void
+    {
+        $index = $this->pageSource('resources/js/pages/Routines/Index.vue');
+        $planCard = $this->pageSource(
+            'resources/js/components/routine/TodayPlanCard.vue',
+        );
+        $progress = $this->pageSource(
+            'resources/js/components/routine/TodayProgressPanel.vue',
+        );
+
+        $this->assertStringContainsString(
+            'min-w-0 rounded-2xl border border-cd-line bg-cd-surface/70 p-4 shadow-sm md:p-5',
+            $index,
+            'Session and meal grid children must allow shrinking below content intrinsic width',
+        );
+        $this->assertStringContainsString(
+            'class="group min-w-0 rounded-xl',
+            $planCard,
+            'Plan cards must shrink so CTA buttons stay inside the viewport',
+        );
+        $this->assertStringContainsString(
+            'flex min-w-0 items-center gap-2',
+            $planCard,
+            'Plan card row must participate in min-width shrinking',
+        );
+        $this->assertStringContainsString(
+            'cd-panel min-w-0 overflow-hidden',
+            $progress,
+            'Progress panel must not force horizontal overflow on narrow screens',
+        );
+    }
+
     public function test_today_ops_primary_skips_checkin_nudge_cards(): void
     {
         $source = $this->pageSource(
