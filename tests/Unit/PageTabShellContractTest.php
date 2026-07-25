@@ -98,6 +98,16 @@ class PageTabShellContractTest extends TestCase
             'Today tab owns ops after /today fold-in',
         );
         $this->assertStringContainsString(
+            '/records/condition',
+            $routines,
+            'Condition CTA must use the records.condition path, not /condition',
+        );
+        $this->assertStringNotContainsString(
+            'href="/condition"',
+            $routines,
+            'Broken /condition path must not remain',
+        );
+        $this->assertStringContainsString(
             'href="/programs"',
             $routines,
             'Programs entry stays in routines shell actions, not the sidebar',

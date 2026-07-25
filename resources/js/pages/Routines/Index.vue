@@ -500,7 +500,7 @@ function historyDescription(log: ActivityLog): string {
                                     kcal
                                 </p>
                                 <div
-                                    class="mt-3 h-2 overflow-hidden rounded-full bg-[#EAE6F2]"
+                                    class="mt-3 h-3.5 overflow-hidden rounded-full bg-[#EAE6F2]"
                                     role="progressbar"
                                     :aria-valuenow="kcalProgress"
                                     aria-valuemin="0"
@@ -520,7 +520,7 @@ function historyDescription(log: ActivityLog): string {
                                             たんぱく質
                                         </p>
                                         <div
-                                            class="mt-1.5 h-1 overflow-hidden rounded-full bg-[#EAE6F2]"
+                                            class="mt-1.5 h-2 overflow-hidden rounded-full bg-[#EAE6F2]"
                                         >
                                             <div
                                                 class="h-full rounded-full bg-primary/70"
@@ -550,7 +550,7 @@ function historyDescription(log: ActivityLog): string {
                                             脂質
                                         </p>
                                         <div
-                                            class="mt-1.5 h-1 overflow-hidden rounded-full bg-[#EAE6F2]"
+                                            class="mt-1.5 h-2 overflow-hidden rounded-full bg-[#EAE6F2]"
                                         >
                                             <div
                                                 class="h-full rounded-full bg-primary/70"
@@ -576,7 +576,7 @@ function historyDescription(log: ActivityLog): string {
                                             炭水化物
                                         </p>
                                         <div
-                                            class="mt-1.5 h-1 overflow-hidden rounded-full bg-[#EAE6F2]"
+                                            class="mt-1.5 h-2 overflow-hidden rounded-full bg-[#EAE6F2]"
                                         >
                                             <div
                                                 class="h-full rounded-full bg-primary/70"
@@ -628,7 +628,9 @@ function historyDescription(log: ActivityLog): string {
                                     class="w-full font-sans"
                                     as-child
                                 >
-                                    <Link href="/condition">
+                                    <Link
+                                        :href="`/records/condition?date=${date}`"
+                                    >
                                         <Heart
                                             :size="14"
                                             :stroke-width="1.8"

@@ -74,7 +74,7 @@ return '結果';
 
 const statusMeta: Record<TodayPlanRunStatus, { label: string; className: string }> = {
     completed: { label: '完了', className: 'bg-cd-moss/15 text-cd-moss' },
-    in_progress: { label: '進行中', className: 'bg-cd-sunrise/15 text-cd-sunrise' },
+    in_progress: { label: '進行中', className: 'bg-cd-moss text-white' },
     not_started: { label: '未開始', className: 'bg-muted text-cd-ink-muted' },
 };
 

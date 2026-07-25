@@ -7,14 +7,12 @@ import {
     Cookie,
     Copy,
     Leaf,
-    Pencil,
     Plus,
     ScanBarcode,
     Search,
     Star,
     Store,
     Sun,
-    Trash2,
     Utensils,
 } from '@lucide/vue';
 import type { EChartsCoreOption } from 'echarts/core';
@@ -851,16 +849,16 @@ function applyChartFilter(): void {
                         v-for="action in quickActions"
                         :key="action.key"
                         type="button"
-                        class="group flex items-center gap-3 rounded-2xl border border-cd-line bg-white px-4 py-3.5 text-left shadow-sm transition-colors hover:border-primary/35 hover:bg-[#F8F6FC]"
+                        class="group flex items-center gap-3.5 rounded-2xl border border-cd-line bg-white px-4 py-5 text-left shadow-sm transition-colors hover:border-primary/35 hover:bg-[#F8F6FC]"
                         :disabled="action.key === 'copy' && saving"
                         @click="action.run()"
                     >
                         <span
-                            class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#F3F1F8] text-primary"
+                            class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#F3F1F8] text-primary"
                         >
                             <component
                                 :is="action.icon"
-                                :size="18"
+                                :size="22"
                                 :stroke-width="1.7"
                             />
                         </span>
@@ -1010,39 +1008,33 @@ function applyChartFilter(): void {
                                         >
                                             <Button
                                                 type="button"
-                                                size="icon"
+                                                size="sm"
                                                 variant="ghost"
+                                                class="h-auto px-2 py-1 font-sans text-xs font-medium text-cd-ink-muted hover:text-cd-ink"
                                                 :aria-label="`${entry.name} をコピー`"
                                                 @click="openCopyEntry(entry)"
                                             >
-                                                <Copy
-                                                    :size="14"
-                                                    :stroke-width="1.6"
-                                                />
+                                                コピー
                                             </Button>
                                             <Button
                                                 type="button"
-                                                size="icon"
+                                                size="sm"
                                                 variant="ghost"
+                                                class="h-auto px-2 py-1 font-sans text-xs font-medium text-cd-ink-muted hover:text-cd-ink"
                                                 :aria-label="`${entry.name} を編集`"
                                                 @click="openEditEntry(entry)"
                                             >
-                                                <Pencil
-                                                    :size="14"
-                                                    :stroke-width="1.6"
-                                                />
+                                                編集
                                             </Button>
                                             <Button
                                                 type="button"
-                                                size="icon"
+                                                size="sm"
                                                 variant="ghost"
+                                                class="h-auto px-2 py-1 font-sans text-xs font-medium text-cd-ink-muted hover:text-destructive"
                                                 :aria-label="`${entry.name} を削除`"
                                                 @click="deleteEntry(entry)"
                                             >
-                                                <Trash2
-                                                    :size="14"
-                                                    :stroke-width="1.6"
-                                                />
+                                                削除
                                             </Button>
                                         </div>
                                     </td>
