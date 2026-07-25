@@ -25,6 +25,15 @@ class FoodItemResource extends JsonResource
             'fat_g' => (string) $this->fat_g,
             'carb_g' => (string) $this->carb_g,
             'source' => $this->source,
+            'brand' => $this->brand,
+            'nutrition_basis' => $this->nutrition_basis,
+            'basis_amount' => $this->basis_amount !== null ? (string) $this->basis_amount : null,
+            'basis_unit' => $this->basis_unit,
+            'package_amount' => $this->package_amount !== null ? (string) $this->package_amount : null,
+            'package_unit' => $this->package_unit,
+            'is_favorite' => (bool) $this->is_favorite,
+            'confirmation_status' => $this->confirmation_status,
+            'confirmed_at' => $this->confirmed_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }

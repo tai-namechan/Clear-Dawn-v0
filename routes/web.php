@@ -177,7 +177,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('meals.copy-previous-day');
     Route::get('meals/foods', [FoodItemController::class, 'index'])->name('meals.foods.index');
     Route::post('meals/foods', [FoodItemController::class, 'store'])->name('meals.foods.store');
+    Route::post('meals/foods/manual', [FoodItemController::class, 'storeManual'])->name('meals.foods.manual.store');
     Route::patch('meals/foods/{foodItem}', [FoodItemController::class, 'update'])->name('meals.foods.update');
+    Route::patch('meals/foods/{foodItem}/favorite', [FoodItemController::class, 'toggleFavorite'])
+        ->name('meals.foods.favorite');
     Route::delete('meals/foods/{foodItem}', [FoodItemController::class, 'destroy'])->name('meals.foods.destroy');
     Route::post('meals/barcode-lookup', [FoodBarcodeLookupController::class, 'store'])
         ->middleware('throttle:20,1')
@@ -197,6 +200,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:10,1')
         ->name('meals.menu-estimate.store');
     Route::put('meals/goals', [NutritionGoalController::class, 'upsert'])->name('meals.goals.upsert');
+    Route::post('meals/{mealEntry}/copy', [MealEntryController::class, 'copy'])->name('meals.copy');
     Route::patch('meals/{mealEntry}', [MealEntryController::class, 'update'])->name('meals.update');
     Route::delete('meals/{mealEntry}', [MealEntryController::class, 'destroy'])->name('meals.destroy');
 });

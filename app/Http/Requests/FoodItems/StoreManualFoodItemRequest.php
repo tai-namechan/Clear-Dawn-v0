@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\FoodLookups;
+namespace App\Http\Requests\FoodItems;
 
 use App\Enums\MealType;
 use App\Enums\NutritionBasis;
@@ -9,7 +9,11 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class ConfirmFoodLookupRequest extends FormRequest
+/**
+ * OFF未検出後の手入力登録、または「今回だけ直接入力」。
+ * save_mode=food_only|food_and_meal|one_off
+ */
+class StoreManualFoodItemRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -17,18 +21,18 @@ class ConfirmFoodLookupRequest extends FormRequest
     }
 
     /**
-     * 既存 food_items と同じ境界（StoreFoodItemRequest 準拠）。
-     * add_to_meal=true のとき食事記録用フィールドを必須にする。
-     *
      * @return array<string, mixed>
      */
     public function rules(): array
     {
-        $addToMeal = $this->boolean('add_to_meal');
+        $saveMode = (string) $this->input('save_mode', 'food_only');
+        $needsMeal = in_array($saveMode, ['food_and_meal', 'one_off'], true);
+        $needsFood = in_array($saveMode, ['food_only', 'food_and_meal'], true);
 
         return [
+            'save_mode' => ['required', Rule::in(['food_only', 'food_and_meal', 'one_off'])],
             'name' => ['required', 'string', 'max:100'],
-            'serving_label' => ['required', 'string', 'max:50'],
+            'serving_label' => [$needsFood ? 'required' : 'nullable', 'string', 'max:50'],
             'kcal' => ['required', 'numeric', 'min:0', 'max:9999'],
             'protein_g' => ['required', 'numeric', 'min:0', 'max:999'],
             'fat_g' => ['required', 'numeric', 'min:0', 'max:999'],
@@ -40,10 +44,9 @@ class ConfirmFoodLookupRequest extends FormRequest
             'basis_unit' => ['nullable', 'string', 'max:16'],
             'package_amount' => ['nullable', 'numeric', 'min:0', 'max:9999'],
             'package_unit' => ['nullable', 'string', 'max:16'],
-            'add_to_meal' => ['sometimes', 'boolean'],
-            'eaten_on' => [$addToMeal ? 'required' : 'nullable', 'date'],
-            'meal_type' => [$addToMeal ? 'required' : 'nullable', Rule::in(MealType::values())],
-            'quantity' => [$addToMeal ? 'required' : 'nullable', 'numeric', 'min:0.1', 'max:100'],
+            'eaten_on' => [$needsMeal ? 'required' : 'nullable', 'date'],
+            'meal_type' => [$needsMeal ? 'required' : 'nullable', Rule::in(MealType::values())],
+            'quantity' => [$needsMeal ? 'required' : 'nullable', 'numeric', 'min:0.1', 'max:100'],
             'note' => ['nullable', 'string', 'max:500'],
         ];
     }

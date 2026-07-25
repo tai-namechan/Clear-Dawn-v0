@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\FoodConfirmationStatus;
+use App\Enums\NutritionBasis;
 use App\Models\FoodItem;
 use App\Models\FoodLookupRequest;
 use App\Models\User;
@@ -20,16 +22,34 @@ class ConfirmFoodLookupService
     ) {}
 
     /**
-     * @param  array{name: string, serving_label: string, kcal: float|int|string, protein_g: float|int|string, fat_g: float|int|string, carb_g: float|int|string, barcode?: string|null}  $attributes
+     * @param  array{
+     *     name: string,
+     *     serving_label: string,
+     *     kcal: float|int|string,
+     *     protein_g: float|int|string,
+     *     fat_g: float|int|string,
+     *     carb_g: float|int|string,
+     *     barcode?: string|null,
+     *     brand?: string|null,
+     *     nutrition_basis?: string|null,
+     *     basis_amount?: float|int|string|null,
+     *     basis_unit?: string|null,
+     *     package_amount?: float|int|string|null,
+     *     package_unit?: string|null
+     * }  $attributes
      */
     public function handle(User $user, FoodLookupRequest $lookup, array $attributes): FoodItem
     {
         return DB::transaction(function () use ($user, $lookup, $attributes): FoodItem {
             [$barcode, $barcodeType] = $this->resolveBarcode($lookup, $attributes);
             [$storeName, $menuName] = $this->resolveMenuKey($lookup);
+            $result = is_array($lookup->result) ? $lookup->result : [];
 
             /** @var FoodItem|null $existing */
             $existing = $this->findExisting($user, $barcode, $storeName, $menuName);
+
+            $nutritionBasis = $this->resolveNutritionBasis($attributes, $result);
+            $brand = $this->resolveBrand($attributes, $result);
 
             $values = [
                 'name' => $attributes['name'],
@@ -43,6 +63,14 @@ class ConfirmFoodLookupService
                 'barcode_type' => $barcodeType,
                 'store_name' => $storeName,
                 'menu_name' => $menuName,
+                'brand' => $brand,
+                'nutrition_basis' => $nutritionBasis?->value,
+                'basis_amount' => $attributes['basis_amount'] ?? null,
+                'basis_unit' => $attributes['basis_unit'] ?? null,
+                'package_amount' => $attributes['package_amount'] ?? null,
+                'package_unit' => $attributes['package_unit'] ?? null,
+                'confirmation_status' => FoodConfirmationStatus::UserConfirmed->value,
+                'confirmed_at' => now(),
             ];
 
             if ($existing !== null) {
@@ -123,5 +151,55 @@ class ConfirmFoodLookupService
         }
 
         return [$lookup->barcode, $lookup->barcode_type];
+    }
+
+    /**
+     * @param  array{brand?: string|null}  $attributes
+     * @param  array<string, mixed>  $result
+     */
+    private function resolveBrand(array $attributes, array $result): ?string
+    {
+        $brand = $attributes['brand'] ?? null;
+
+        if (is_string($brand) && trim($brand) !== '') {
+            return mb_substr(trim($brand), 0, 100);
+        }
+
+        $fromResult = $result['brands'] ?? null;
+
+        if (is_string($fromResult) && trim($fromResult) !== '') {
+            return mb_substr(trim($fromResult), 0, 100);
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array{nutrition_basis?: string|null}  $attributes
+     * @param  array<string, mixed>  $result
+     */
+    private function resolveNutritionBasis(array $attributes, array $result): ?NutritionBasis
+    {
+        $raw = $attributes['nutrition_basis'] ?? null;
+
+        if (is_string($raw) && $raw !== '') {
+            return NutritionBasis::tryFrom($raw);
+        }
+
+        $per = $result['per'] ?? null;
+
+        if ($per === 'serving') {
+            return NutritionBasis::Serving;
+        }
+
+        if ($per === '100g') {
+            return NutritionBasis::Per100g;
+        }
+
+        if ($per === 'package') {
+            return NutritionBasis::Package;
+        }
+
+        return null;
     }
 }
