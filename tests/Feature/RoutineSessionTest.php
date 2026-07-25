@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Enums\ActivityLogEventType;
 use App\Enums\RoutinePlanStatus;
 use App\Enums\RoutineSessionStatus;
+use App\Enums\RoutineSessionStepStatus;
 use App\Models\ActivityLog;
+use App\Models\RoutineBlockLog;
 use App\Models\RoutineItem;
 use App\Models\RoutinePlan;
 use App\Models\RoutinePlanStep;
@@ -232,6 +234,108 @@ class RoutineSessionTest extends TestCase
             'amount_value' => 10,
             'amount_unit' => 'reps',
         ])->assertForbidden();
+    }
+
+    public function test_deleting_a_block_log_renumbers_remaining_sets(): void
+    {
+        $user = User::factory()->create();
+        ['plan' => $plan] = $this->readyPlanWithStep($user);
+
+        $this->actingAs($user)->postJson(route('routine-sessions.start', $plan))->assertOk();
+        $sessionStep = RoutineSessionStep::query()->firstOrFail();
+
+        $this->actingAs($user)->postJson(route('routine-block-logs.store', $sessionStep), [
+            'amount_value' => 10,
+            'amount_unit' => 'reps',
+        ])->assertOk();
+        $this->actingAs($user)->postJson(route('routine-block-logs.store', $sessionStep), [
+            'amount_value' => 8,
+            'amount_unit' => 'reps',
+        ])->assertOk();
+        $this->actingAs($user)->postJson(route('routine-block-logs.store', $sessionStep), [
+            'amount_value' => 6,
+            'amount_unit' => 'reps',
+        ])->assertOk();
+
+        $firstLog = RoutineBlockLog::query()
+            ->where('routine_session_step_id', $sessionStep->id)
+            ->where('block_number', 1)
+            ->firstOrFail();
+
+        $this->actingAs($user)
+            ->deleteJson(route('routine-block-logs.destroy', $firstLog))
+            ->assertOk()
+            ->assertJsonPath('deleted', true);
+
+        $this->assertSame(2, $sessionStep->fresh()->blockLogs()->count());
+        $this->assertSame(
+            [1, 2],
+            $sessionStep->fresh()->blockLogs()->orderBy('block_number')->pluck('block_number')->all(),
+        );
+        $this->assertSame(
+            [8.0, 6.0],
+            $sessionStep->fresh()->blockLogs()->orderBy('block_number')->pluck('amount_value')->map(fn ($value) => (float) $value)->all(),
+        );
+    }
+
+    public function test_block_logs_cannot_be_deleted_after_session_completes(): void
+    {
+        $user = User::factory()->create();
+        ['plan' => $plan] = $this->readyPlanWithStep($user);
+
+        $this->actingAs($user)->postJson(route('routine-sessions.start', $plan))->assertOk();
+        $session = RoutineSession::query()->firstOrFail();
+        $sessionStep = $session->steps()->firstOrFail();
+
+        $this->actingAs($user)->postJson(route('routine-block-logs.store', $sessionStep), [
+            'amount_value' => 10,
+            'amount_unit' => 'reps',
+        ])->assertOk();
+
+        $blockLog = RoutineBlockLog::query()->firstOrFail();
+
+        $this->actingAs($user)->postJson(route('routine-sessions.complete', $session))->assertOk();
+
+        $this->actingAs($user)
+            ->deleteJson(route('routine-block-logs.destroy', $blockLog))
+            ->assertForbidden();
+    }
+
+    public function test_completed_or_skipped_step_can_be_reopened_to_pending(): void
+    {
+        $user = User::factory()->create();
+        ['plan' => $plan] = $this->readyPlanWithStep($user);
+
+        $this->actingAs($user)->postJson(route('routine-sessions.start', $plan))->assertOk();
+        $session = RoutineSession::query()->firstOrFail();
+        $sessionStep = $session->steps()->firstOrFail();
+
+        $this->actingAs($user)
+            ->patchJson(route('routine-session-steps.update', [$session, $sessionStep]), [
+                'status' => RoutineSessionStepStatus::Completed->value,
+            ])
+            ->assertOk()
+            ->assertJsonPath('step.status', RoutineSessionStepStatus::Completed->value);
+
+        $this->actingAs($user)
+            ->patchJson(route('routine-session-steps.update', [$session, $sessionStep]), [
+                'status' => RoutineSessionStepStatus::Pending->value,
+            ])
+            ->assertOk()
+            ->assertJsonPath('step.status', RoutineSessionStepStatus::Pending->value);
+
+        $this->actingAs($user)
+            ->patchJson(route('routine-session-steps.update', [$session, $sessionStep]), [
+                'status' => RoutineSessionStepStatus::Skipped->value,
+            ])
+            ->assertOk();
+
+        $this->actingAs($user)
+            ->patchJson(route('routine-session-steps.update', [$session, $sessionStep]), [
+                'status' => RoutineSessionStepStatus::Pending->value,
+            ])
+            ->assertOk()
+            ->assertJsonPath('step.status', RoutineSessionStepStatus::Pending->value);
     }
 
     public function test_completing_a_session_creates_an_activity_log(): void

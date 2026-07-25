@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\RoutineSessionStatus;
 use App\Models\RoutineBlockLog;
 use App\Models\RoutineSession;
 use App\Models\User;
@@ -23,6 +24,7 @@ class RoutineBlockLogPolicy
         /** @var RoutineSession $session */
         $session = $blockLog->routineSessionStep->routineSession;
 
-        return $session->user_id === $user->id;
+        return $session->user_id === $user->id
+            && $session->status === RoutineSessionStatus::InProgress;
     }
 }

@@ -37,6 +37,7 @@ const emit = defineEmits<{
             load_unit?: string | null;
         },
     ];
+    unlog: [blockLogId: string];
 }>();
 
 const draftLoad = ref('');
@@ -122,6 +123,20 @@ function submitActiveBlock(): void {
     }
 
     emit('log', payload);
+}
+
+function unlogBlock(blockNumber: number): void {
+    if (props.logging) {
+        return;
+    }
+
+    const log = logsByNumber.value.get(blockNumber);
+
+    if (!log) {
+        return;
+    }
+
+    emit('unlog', log.id);
 }
 
 function rowState(blockNumber: number): 'done' | 'active' | 'upcoming' {
@@ -227,12 +242,16 @@ function rowState(blockNumber: number): 'done' | 'active' | 'upcoming' {
                                 }}
                             </td>
                             <td class="px-3 py-2.5 text-center">
-                                <span
-                                    class="inline-flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground"
-                                    aria-label="完了"
+                                <button
+                                    type="button"
+                                    class="inline-flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground transition-opacity hover:opacity-80 disabled:opacity-50"
+                                    :disabled="logging"
+                                    aria-label="このセットの記録を取り消す"
+                                    title="チェックを外す"
+                                    @click="unlogBlock(blockNumber)"
                                 >
                                     ✓
-                                </span>
+                                </button>
                             </td>
                         </template>
 
