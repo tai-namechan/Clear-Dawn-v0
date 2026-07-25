@@ -2,15 +2,21 @@
 import { Head, router } from '@inertiajs/vue3';
 import {
     Camera,
+    ChevronRight,
+    Coffee,
+    Cookie,
     Copy,
+    Leaf,
     Pencil,
     Plus,
-    ScanLine,
+    ScanBarcode,
     Search,
     Store,
+    Sun,
     Trash2,
-    UtensilsCrossed,
+    Utensils,
 } from '@lucide/vue';
+import type { Component } from 'vue';
 import type { EChartsCoreOption } from 'echarts/core';
 import { computed, ref, watch } from 'vue';
 import BarcodeLookupModal from '@/components/BarcodeLookupModal.vue';
@@ -169,6 +175,40 @@ const kcalAchievement = computed(() => {
 
     return Math.round((props.totals.kcal / target) * 100);
 });
+
+const goalAmounts = computed(() => {
+    if (!props.goal) {
+        return null;
+    }
+
+    return {
+        protein_g: Number(props.goal.protein_g),
+        fat_g: Number(props.goal.fat_g),
+        carb_g: Number(props.goal.carb_g),
+    };
+});
+
+const mealTypeMeta: Record<
+    MealSection['meal_type'],
+    { icon: Component; className: string }
+> = {
+    breakfast: {
+        icon: Coffee,
+        className: 'bg-amber-50 text-amber-600',
+    },
+    lunch: {
+        icon: Sun,
+        className: 'bg-sky-50 text-sky-600',
+    },
+    snack: {
+        icon: Cookie,
+        className: 'bg-violet-50 text-violet-600',
+    },
+    dinner: {
+        icon: Leaf,
+        className: 'bg-emerald-50 text-emerald-600',
+    },
+};
 
 const kcalChartOption = computed<EChartsCoreOption>(() => ({
     grid: { left: 48, right: 24, top: 24, bottom: 32 },
@@ -400,6 +440,51 @@ async function copyPreviousDay(): Promise<void> {
     }
 }
 
+const quickActions = [
+    {
+        key: 'usual',
+        title: 'いつもの食事',
+        description: 'よく食べるメニューから選ぶ',
+        icon: Utensils,
+        run: openUsualMeals,
+    },
+    {
+        key: 'barcode',
+        title: 'バーコード',
+        description: 'スキャンして食品を登録',
+        icon: ScanBarcode,
+        run: openBarcodeScanner,
+    },
+    {
+        key: 'photo',
+        title: '料理の写真',
+        description: '撮影・選択からAIが栄養推定',
+        icon: Camera,
+        run: openPhotoEstimate,
+    },
+    {
+        key: 'menu',
+        title: '外食メニュー',
+        description: '店舗とメニュー名で栄養推定',
+        icon: Store,
+        run: openMenuEstimate,
+    },
+    {
+        key: 'search',
+        title: '食品を検索',
+        description: '食品名やマイ食品から探す',
+        icon: Search,
+        run: openQuickFoodSearch,
+    },
+    {
+        key: 'copy',
+        title: '昨日からコピー',
+        description: '前日の食事をまとめて追加',
+        icon: Copy,
+        run: copyPreviousDay,
+    },
+] as const;
+
 function openEditEntry(entry: MealEntry): void {
     editingEntry.value = entry;
     entryMealType.value = entry.meal_type;
@@ -569,6 +654,7 @@ function applyChartFilter(): void {
                     :totals-kcal="totals.kcal"
                     :goal-kcal="goal ? Number(goal.kcal) : null"
                     :kcal-achievement="kcalAchievement"
+                    :goal-amounts="goalAmounts"
                     :next-food-hint="nextFoodHint"
                     @set-goal="
                         activeTab = 'settings';
@@ -616,72 +702,51 @@ function applyChartFilter(): void {
             >
                 <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     <button
+                        v-for="action in quickActions"
+                        :key="action.key"
                         type="button"
-                        class="rounded-2xl border border-cd-line bg-cd-surface px-4 py-4 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
-                        @click="openUsualMeals"
+                        class="group flex items-center gap-3 rounded-2xl border border-cd-line bg-white px-4 py-3.5 text-left shadow-sm transition-colors hover:border-primary/35 hover:bg-[#F8F6FC]"
+                        :disabled="action.key === 'copy' && saving"
+                        @click="action.run()"
                     >
-                        <UtensilsCrossed :size="18" :stroke-width="1.6" class="text-primary" />
-                        <p class="mt-3 font-sans text-sm font-semibold text-cd-ink">いつもの食事</p>
-                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">よく食べるメニューから選ぶ</p>
-                    </button>
-                    <button
-                        type="button"
-                        class="rounded-2xl border border-cd-line bg-cd-surface px-4 py-4 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
-                        @click="openBarcodeScanner"
-                    >
-                        <ScanLine :size="18" :stroke-width="1.6" class="text-primary" />
-                        <p class="mt-3 font-sans text-sm font-semibold text-cd-ink">バーコード</p>
-                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">スキャンして食品を登録</p>
-                    </button>
-                    <button
-                        type="button"
-                        class="rounded-2xl border border-cd-line bg-cd-surface px-4 py-4 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
-                        @click="openPhotoEstimate"
-                    >
-                        <Camera :size="18" :stroke-width="1.6" class="text-primary" />
-                        <p class="mt-3 font-sans text-sm font-semibold text-cd-ink">料理の写真</p>
-                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">撮影・選択からAIが栄養推定</p>
-                    </button>
-                    <button
-                        type="button"
-                        class="rounded-2xl border border-cd-line bg-cd-surface px-4 py-4 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
-                        @click="openMenuEstimate"
-                    >
-                        <Store :size="18" :stroke-width="1.6" class="text-primary" />
-                        <p class="mt-3 font-sans text-sm font-semibold text-cd-ink">外食メニュー</p>
-                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">店名とメニュー名で栄養推定</p>
-                    </button>
-                    <button
-                        type="button"
-                        class="rounded-2xl border border-cd-line bg-cd-surface px-4 py-4 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
-                        @click="openQuickFoodSearch"
-                    >
-                        <Search :size="18" :stroke-width="1.6" class="text-primary" />
-                        <p class="mt-3 font-sans text-sm font-semibold text-cd-ink">食品を検索</p>
-                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">食品名やマイ食品から探す</p>
-                    </button>
-                    <button
-                        type="button"
-                        class="rounded-2xl border border-cd-line bg-cd-surface px-4 py-4 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-primary/5"
-                        :disabled="saving"
-                        @click="copyPreviousDay"
-                    >
-                        <Copy :size="18" :stroke-width="1.6" class="text-primary" />
-                        <p class="mt-3 font-sans text-sm font-semibold text-cd-ink">昨日からコピー</p>
-                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">前日の食事をまとめて追加</p>
+                        <span
+                            class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#F3F1F8] text-primary"
+                        >
+                            <component
+                                :is="action.icon"
+                                :size="18"
+                                :stroke-width="1.7"
+                            />
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span
+                                class="block font-sans text-sm font-semibold text-cd-ink"
+                            >
+                                {{ action.title }}
+                            </span>
+                            <span
+                                class="mt-0.5 block font-sans text-xs text-cd-ink-muted"
+                            >
+                                {{ action.description }}
+                            </span>
+                        </span>
+                        <ChevronRight
+                            :size="16"
+                            :stroke-width="1.7"
+                            class="shrink-0 text-cd-ink-muted/70 transition-colors group-hover:text-primary"
+                        />
                     </button>
                 </div>
 
                 <PageSectionCard padding="none" aria-label="今日の食事記録">
-                    <div class="flex items-center justify-between gap-3 border-b border-cd-line px-5 py-4">
-                        <div>
-                            <h2 class="font-sans text-base font-semibold text-cd-ink">
-                                今日の食事記録
-                            </h2>
-                            <p class="mt-0.5 font-sans text-xs text-cd-ink-muted">
-                                記録済みだけを一覧表示します
-                            </p>
-                        </div>
+                    <div
+                        class="flex items-center justify-between gap-3 border-b border-cd-line px-5 py-4"
+                    >
+                        <h2
+                            class="font-sans text-base font-semibold text-cd-ink"
+                        >
+                            今日の食事記録
+                        </h2>
                         <Button
                             type="button"
                             size="sm"
@@ -693,54 +758,171 @@ function applyChartFilter(): void {
                         </Button>
                     </div>
 
-                    <ul v-if="recordedEntries.length > 0" class="divide-y divide-cd-line">
-                        <li
-                            v-for="entry in recordedEntries"
-                            :key="entry.id"
-                            class="flex items-start justify-between gap-3 px-5 py-4"
-                        >
-                            <div class="min-w-0">
-                                <p class="font-sans text-xs font-medium text-primary">
-                                    {{ entry.sectionLabel }}
-                                </p>
-                                <p class="mt-1 font-sans text-sm font-semibold text-cd-ink">
-                                    {{ entry.name }}
-                                    <span class="font-normal text-cd-ink-muted">
-                                        × {{ formatNum(entry.quantity) }}
-                                    </span>
-                                </p>
-                                <p class="mt-1 font-sans text-xs">
-                                    <span class="text-cd-pfc-p">P {{ formatNum(entry.protein_g) }}g</span>
-                                    ·
-                                    <span class="text-cd-pfc-f">F {{ formatNum(entry.fat_g) }}g</span>
-                                    ·
-                                    <span class="text-cd-pfc-c">C {{ formatNum(entry.carb_g) }}g</span>
-                                    ·
-                                    <span class="text-cd-ink-muted">{{ formatNum(entry.kcal) }} kcal</span>
-                                </p>
-                            </div>
-                            <div class="flex shrink-0 gap-1">
-                                <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    :aria-label="`${entry.name} を編集`"
-                                    @click="openEditEntry(entry)"
+                    <div
+                        v-if="recordedEntries.length > 0"
+                        class="overflow-x-auto"
+                    >
+                        <table class="w-full min-w-[40rem] border-collapse text-left">
+                            <thead>
+                                <tr
+                                    class="border-b border-cd-line bg-[#FAFAFC] font-sans text-[11px] font-medium text-cd-ink-muted"
                                 >
-                                    <Pencil :size="14" :stroke-width="1.6" />
-                                </Button>
-                                <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    :aria-label="`${entry.name} を削除`"
-                                    @click="deleteEntry(entry)"
+                                    <th class="px-5 py-3 font-medium">食事</th>
+                                    <th class="px-3 py-3 font-medium">
+                                        メニュー・食品
+                                    </th>
+                                    <th
+                                        class="px-3 py-3 text-right font-medium"
+                                    >
+                                        エネルギー (kcal)
+                                    </th>
+                                    <th
+                                        class="px-3 py-3 text-right font-medium"
+                                    >
+                                        P (g)
+                                    </th>
+                                    <th
+                                        class="px-3 py-3 text-right font-medium"
+                                    >
+                                        F (g)
+                                    </th>
+                                    <th
+                                        class="px-3 py-3 text-right font-medium"
+                                    >
+                                        C (g)
+                                    </th>
+                                    <th
+                                        class="px-5 py-3 text-right font-medium"
+                                    >
+                                        操作
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr
+                                    v-for="entry in recordedEntries"
+                                    :key="entry.id"
+                                    class="border-b border-cd-line/80"
                                 >
-                                    <Trash2 :size="14" :stroke-width="1.6" />
-                                </Button>
-                            </div>
-                        </li>
-                    </ul>
+                                    <td class="px-5 py-3.5">
+                                        <span
+                                            class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink"
+                                        >
+                                            <span
+                                                class="flex size-7 items-center justify-center rounded-full"
+                                                :class="
+                                                    mealTypeMeta[entry.meal_type]
+                                                        .className
+                                                "
+                                            >
+                                                <component
+                                                    :is="
+                                                        mealTypeMeta[
+                                                            entry.meal_type
+                                                        ].icon
+                                                    "
+                                                    :size="13"
+                                                    :stroke-width="1.8"
+                                                />
+                                            </span>
+                                            {{ entry.sectionLabel }}
+                                        </span>
+                                    </td>
+                                    <td
+                                        class="max-w-[16rem] truncate px-3 py-3.5 font-sans text-sm text-cd-ink"
+                                    >
+                                        {{ entry.name }}
+                                        <span
+                                            class="text-cd-ink-muted"
+                                        >
+                                            × {{ formatNum(entry.quantity) }}
+                                        </span>
+                                    </td>
+                                    <td
+                                        class="px-3 py-3.5 text-right font-sans text-sm text-cd-ink"
+                                    >
+                                        {{ formatNum(entry.kcal) }}
+                                    </td>
+                                    <td
+                                        class="px-3 py-3.5 text-right font-sans text-sm text-cd-ink"
+                                    >
+                                        {{ formatNum(entry.protein_g) }}
+                                    </td>
+                                    <td
+                                        class="px-3 py-3.5 text-right font-sans text-sm text-cd-ink"
+                                    >
+                                        {{ formatNum(entry.fat_g) }}
+                                    </td>
+                                    <td
+                                        class="px-3 py-3.5 text-right font-sans text-sm text-cd-ink"
+                                    >
+                                        {{ formatNum(entry.carb_g) }}
+                                    </td>
+                                    <td class="px-5 py-3.5">
+                                        <div
+                                            class="flex justify-end gap-1"
+                                        >
+                                            <Button
+                                                type="button"
+                                                size="icon"
+                                                variant="ghost"
+                                                :aria-label="`${entry.name} を編集`"
+                                                @click="openEditEntry(entry)"
+                                            >
+                                                <Pencil
+                                                    :size="14"
+                                                    :stroke-width="1.6"
+                                                />
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                size="icon"
+                                                variant="ghost"
+                                                :aria-label="`${entry.name} を削除`"
+                                                @click="deleteEntry(entry)"
+                                            >
+                                                <Trash2
+                                                    :size="14"
+                                                    :stroke-width="1.6"
+                                                />
+                                            </Button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr class="bg-[#FAFAFC]">
+                                    <td
+                                        colspan="2"
+                                        class="px-5 py-3.5 font-sans text-sm font-semibold text-cd-ink"
+                                    >
+                                        合計
+                                    </td>
+                                    <td
+                                        class="px-3 py-3.5 text-right font-sans text-sm font-semibold text-cd-ink"
+                                    >
+                                        {{ formatNum(totals.kcal) }}
+                                    </td>
+                                    <td
+                                        class="px-3 py-3.5 text-right font-sans text-sm font-semibold text-cd-ink"
+                                    >
+                                        {{ formatNum(totals.protein_g) }}
+                                    </td>
+                                    <td
+                                        class="px-3 py-3.5 text-right font-sans text-sm font-semibold text-cd-ink"
+                                    >
+                                        {{ formatNum(totals.fat_g) }}
+                                    </td>
+                                    <td
+                                        class="px-3 py-3.5 text-right font-sans text-sm font-semibold text-cd-ink"
+                                    >
+                                        {{ formatNum(totals.carb_g) }}
+                                    </td>
+                                    <td class="px-5 py-3.5" />
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
 
                     <div
                         v-else

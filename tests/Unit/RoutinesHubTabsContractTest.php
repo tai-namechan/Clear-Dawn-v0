@@ -143,12 +143,12 @@ class RoutinesHubTabsContractTest extends TestCase
         );
 
         $this->assertStringContainsString(
-            'min-w-0 rounded-2xl border border-cd-line bg-cd-surface/70 p-4 shadow-sm md:p-5',
+            'min-w-0 rounded-2xl border border-cd-line bg-white p-4 shadow-sm md:p-5',
             $index,
             'Session and meal grid children must allow shrinking below content intrinsic width',
         );
         $this->assertStringContainsString(
-            'class="group min-w-0 rounded-xl',
+            'class="group min-w-0 rounded-2xl',
             $planCard,
             'Plan cards must shrink so CTA buttons stay inside the viewport',
         );
@@ -158,7 +158,7 @@ class RoutinesHubTabsContractTest extends TestCase
             'Plan card row must participate in min-width shrinking',
         );
         $this->assertStringContainsString(
-            'cd-panel min-w-0 overflow-hidden',
+            'min-w-0 overflow-hidden rounded-2xl',
             $progress,
             'Progress panel must not force horizontal overflow on narrow screens',
         );
