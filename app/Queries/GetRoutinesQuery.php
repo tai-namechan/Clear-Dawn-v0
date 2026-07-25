@@ -16,7 +16,10 @@ class GetRoutinesQuery
         return Routine::query()
             ->where('user_id', $user->id)
             ->when($activeOnly, fn ($query) => $query->where('is_active', true))
-            ->with('lifeArea')
+            ->with([
+                'lifeArea',
+                'routineSteps' => fn ($query) => $query->orderBy('sort_order')->with('routineItem'),
+            ])
             ->withCount('routineSteps')
             ->orderBy('sort_order')
             ->get();

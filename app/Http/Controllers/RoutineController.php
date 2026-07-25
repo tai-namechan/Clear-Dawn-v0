@@ -2,36 +2,65 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Yoyu\Support\UserTimezoneResolver;
 use App\Enums\VideoStatus;
 use App\Http\Requests\Routines\StoreRoutineRequest;
 use App\Http\Requests\Routines\UpdateRoutineRequest;
+use App\Http\Resources\ActivityLogResource;
 use App\Http\Resources\LifeAreaResource;
 use App\Http\Resources\RoutineEditorResource;
 use App\Http\Resources\RoutineItemResource;
+use App\Http\Resources\RoutinePlanResource;
 use App\Http\Resources\RoutineResource;
 use App\Http\Resources\VideoResource;
 use App\Models\Routine;
 use App\Models\Video;
+use App\Queries\GetActivityHistoryQuery;
 use App\Queries\GetRoutineEditorQuery;
 use App\Queries\GetRoutineItemsQuery;
 use App\Queries\GetRoutinesQuery;
+use App\Queries\GetTodayOpsQuery;
+use App\Queries\GetTodayQuery;
 use App\Services\CreateRoutineService;
 use App\Services\DeleteRoutineService;
 use App\Services\UpdateRoutineService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class RoutineController extends Controller
 {
-    public function index(Request $request, GetRoutinesQuery $query): Response
-    {
-        $routines = $query->handle($request->user());
+    public function index(
+        Request $request,
+        GetRoutinesQuery $query,
+        GetTodayQuery $todayQuery,
+        GetTodayOpsQuery $opsQuery,
+        GetActivityHistoryQuery $historyQuery,
+        UserTimezoneResolver $timezoneResolver,
+    ): Response {
+        $user = $request->user();
+        $date = Carbon::parse($timezoneResolver->todayDateString($user));
+        $routines = $query->handle($user);
+        $plans = $todayQuery->handle($user, $date);
+        $ops = $opsQuery->handle($user, $date);
+        $history = $historyQuery->handle($user, [], 8);
+
+        $tab = match ($request->query('tab')) {
+            'menu', 'routines' => 'routines',
+            'history' => 'history',
+            default => 'today',
+        };
 
         return Inertia::render('Routines/Index', [
+            'date' => $date->toDateString(),
+            'tab' => $tab,
+            'plans' => RoutinePlanResource::collection($plans)->resolve(),
             'routines' => RoutineResource::collection($routines)->resolve(),
+            'ops' => $ops,
+            'history' => ActivityLogResource::collection($history->items())->resolve(),
         ]);
     }
 

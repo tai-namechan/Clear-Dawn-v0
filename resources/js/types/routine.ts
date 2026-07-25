@@ -102,6 +102,7 @@ export type Routine = {
     sort_order: number;
     life_area_id: string | null;
     steps_count?: number;
+    primary_category?: RoutineItemCategory | null;
     created_at: string | null;
 };
 
