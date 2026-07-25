@@ -668,7 +668,7 @@ function historyDescription(log: ActivityLog): string {
                                 v-if="!showCheckinEditor"
                                 type="button"
                                 size="sm"
-                                variant="outline"
+                                variant="warning"
                                 class="font-sans"
                                 @click="showCheckinEditor = true"
                             >
