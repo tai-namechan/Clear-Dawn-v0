@@ -120,6 +120,32 @@ class PageTabShellContractTest extends TestCase
         );
     }
 
+    public function test_records_hub_puts_compact_calendar_in_shell_header(): void
+    {
+        $source = $this->pageSource('resources/js/pages/Records/Index.vue');
+
+        $this->assertStringContainsString(
+            'PageTabShell',
+            $source,
+            'Records hub must render through PageTabShell',
+        );
+        $this->assertStringContainsString(
+            '#calendar',
+            $source,
+            'Records hub must place the date control in the shell calendar slot',
+        );
+        $this->assertStringContainsString(
+            'compact',
+            $source,
+            'Records hub must use the compact date control in the header',
+        );
+        $this->assertStringNotContainsString(
+            'lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]',
+            $source,
+            'Records hub must not keep the date switcher as a separate side card',
+        );
+    }
+
     private function shellSource(): string
     {
         return $this->pageSource('resources/js/components/PageTabShell.vue');
