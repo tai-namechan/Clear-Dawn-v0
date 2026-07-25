@@ -38,7 +38,7 @@ const todayIso = [
 
 <template>
     <header
-        class="cd-app-header flex min-h-16 shrink-0 items-center justify-between gap-2 px-4 py-3 transition-[width,height] ease-linear landscape-compact:min-h-12 landscape-compact:py-2 md:px-6 md:py-4 landscape-compact:md:py-2"
+        class="cd-app-header sticky top-0 z-30 flex min-h-16 shrink-0 items-center justify-between gap-2 px-4 py-3 transition-[width,height] ease-linear landscape-compact:min-h-12 landscape-compact:py-2 md:static md:z-auto md:px-6 md:py-4 landscape-compact:md:py-2"
     >
         <div class="flex min-w-0 flex-1 items-center gap-3 md:gap-4">
             <SidebarTrigger class="shrink-0 text-cd-ink-muted hover:bg-muted/40 hover:text-[var(--cd-header-text)] max-md:hover:bg-white/10" />
