@@ -14,4 +14,12 @@ class MatrixCellPolicy
     {
         return $matrixCell->user_id === $user->id;
     }
+
+    /**
+     * 自分のセル内項目のみ並び替えできる。
+     */
+    public function reorderItems(User $user, MatrixCell $matrixCell): bool
+    {
+        return $matrixCell->user_id === $user->id;
+    }
 }

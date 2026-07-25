@@ -42,6 +42,7 @@ class MatrixCellItemTest extends TestCase
         $item = MatrixCellItem::factory()->create(['matrix_cell_id' => $cell->id]);
 
         $this->post(route('matrix-cell-items.store', $cell))->assertRedirect(route('login'));
+        $this->patch(route('matrix-cell-items.reorder', $cell))->assertRedirect(route('login'));
         $this->patch(route('matrix-cell-items.update', $item))->assertRedirect(route('login'));
         $this->patch(route('matrix-cell-items.toggle', $item))->assertRedirect(route('login'));
         $this->delete(route('matrix-cell-items.destroy', $item))->assertRedirect(route('login'));
@@ -95,6 +96,69 @@ class MatrixCellItemTest extends TestCase
         ])->assertForbidden();
 
         $this->assertDatabaseMissing('matrix_cell_items', ['title' => '不正な項目']);
+    }
+
+    public function test_user_can_reorder_items_in_their_own_cell(): void
+    {
+        $user = User::factory()->create();
+        $cell = $this->createCellFor($user);
+        $first = MatrixCellItem::factory()->create([
+            'matrix_cell_id' => $cell->id,
+            'title' => '開放弦からもう一度',
+            'sort_order' => 1,
+        ]);
+        $second = MatrixCellItem::factory()->create([
+            'matrix_cell_id' => $cell->id,
+            'title' => '譜読み、教本を読む',
+            'sort_order' => 2,
+        ]);
+        $third = MatrixCellItem::factory()->create([
+            'matrix_cell_id' => $cell->id,
+            'title' => 'ゆっくり練習',
+            'sort_order' => 3,
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('matrix-cell-items.reorder', $cell), [
+                'ordered_ids' => [$third->id, $first->id, $second->id],
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+
+        $this->assertSame(1, $third->refresh()->sort_order);
+        $this->assertSame(2, $first->refresh()->sort_order);
+        $this->assertSame(3, $second->refresh()->sort_order);
+    }
+
+    public function test_reorder_does_not_affect_another_users_or_other_cell_items(): void
+    {
+        $user = User::factory()->create();
+        $cell = $this->createCellFor($user);
+        $own = MatrixCellItem::factory()->create([
+            'matrix_cell_id' => $cell->id,
+            'sort_order' => 1,
+        ]);
+
+        $otherCell = $this->createCellFor(User::factory()->create());
+        $otherItem = MatrixCellItem::factory()->create([
+            'matrix_cell_id' => $otherCell->id,
+            'sort_order' => 5,
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('matrix-cell-items.reorder', $otherCell), [
+                'ordered_ids' => [$otherItem->id],
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($user)
+            ->patch(route('matrix-cell-items.reorder', $cell), [
+                'ordered_ids' => [$otherItem->id, $own->id],
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(5, $otherItem->refresh()->sort_order);
+        $this->assertSame(2, $own->refresh()->sort_order);
     }
 
     public function test_item_title_is_validated()

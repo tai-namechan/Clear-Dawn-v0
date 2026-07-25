@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Matrix\ReorderMatrixCellItemsRequest;
 use App\Http\Requests\Matrix\StoreMatrixCellItemRequest;
 use App\Http\Requests\Matrix\UpdateMatrixCellItemRequest;
 use App\Models\MatrixCell;
 use App\Models\MatrixCellItem;
 use App\Services\AddMatrixCellItemService;
 use App\Services\DeleteMatrixCellItemService;
+use App\Services\ReorderMatrixCellItemsService;
 use App\Services\ToggleMatrixCellItemCompletionService;
 use App\Services\UpdateMatrixCellItemService;
 use Illuminate\Http\RedirectResponse;
@@ -28,6 +30,24 @@ class MatrixCellItemController extends Controller
         $validated = $request->validated();
 
         $service->handle($matrixCell, $validated['title'], $validated['memo'] ?? null);
+
+        return back();
+    }
+
+    /**
+     * セル内項目を並び替える（sort_order はサーバー側で採番）。
+     */
+    public function reorder(
+        ReorderMatrixCellItemsRequest $request,
+        MatrixCell $matrixCell,
+        ReorderMatrixCellItemsService $service,
+    ): RedirectResponse {
+        Gate::authorize('reorderItems', $matrixCell);
+
+        /** @var list<string> $orderedIds */
+        $orderedIds = $request->validated()['ordered_ids'];
+
+        $service->handle($matrixCell, $orderedIds);
 
         return back();
     }
