@@ -221,7 +221,7 @@
     --cd-ink-pen: hsl(228 36% 13%); /* ballpoint ink: deep blue-black */
     --cd-ink-muted: hsl(232 14% 34%); /* secondary text — readable, not washed out */
     --cd-line: hsl(260 12% 80%); /* hairline borders */
-    --cd-surface: hsl(40 50% 99%); /* warmer opaque paper card surface */
+    --cd-surface: #ffffff; /* opaque white card surface */
     --cd-primary: #5b5577;
     --cd-primary-strong: #49435f;
     --cd-primary-subtle: #efecf5;
@@ -417,7 +417,7 @@
 
     /* Routine / registration screens: solid readable surface (not frosted). */
     .cd-panel {
-        background-color: #fffcf8;
+        background-color: #ffffff;
         border: 1px solid var(--cd-line);
         border-radius: 1rem;
         box-shadow:
@@ -427,7 +427,7 @@
     }
 
     .cd-panel-muted {
-        background-color: hsl(40 30% 97%);
+        background-color: #ffffff;
         border: 1px solid var(--cd-line);
         border-radius: 0.75rem;
         color: var(--cd-ink);

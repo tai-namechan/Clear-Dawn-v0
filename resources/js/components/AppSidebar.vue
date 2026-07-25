@@ -45,7 +45,6 @@ const navItems: CdNavItem[] = [
         title: '目標',
         icon: Target,
         href: '/goals',
-        matchPrefix: true,
     },
     { title: '動画', icon: Clapperboard, href: '/videos' },
     { title: '設定', icon: Settings, href: editProfile() },
@@ -90,9 +89,6 @@ function isNavActive(item: CdNavItem): boolean {
                     alt=""
                     class="absolute top-28 right-4 w-20 -scale-x-100 landscape-compact:top-16 landscape-compact:w-12"
                 />
-                <div
-                    class="cd-mask-violin cd-sidebar-decor-gold absolute bottom-14 left-1/2 h-56 w-40 -translate-x-1/2 rotate-12 landscape-compact:bottom-6 landscape-compact:h-32 landscape-compact:w-24"
-                />
             </div>
 
             <SidebarHeader class="relative z-10 items-center">
@@ -122,7 +118,7 @@ function isNavActive(item: CdNavItem): boolean {
             >
                 <nav
                     aria-label="メインメニュー"
-                    class="mt-8 flex flex-col items-center gap-5 group-data-[collapsible=icon]:mt-8 group-data-[collapsible=icon]:gap-5 landscape-compact:mt-10 landscape-compact:gap-2"
+                    class="mt-8 flex w-full flex-col gap-1 px-1.5 group-data-[collapsible=icon]:mt-8 group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:gap-3 group-data-[collapsible=icon]:px-0 landscape-compact:mt-6 landscape-compact:gap-0.5"
                 >
                     <template v-for="item in navItems" :key="item.title">
                         <Link
@@ -130,17 +126,17 @@ function isNavActive(item: CdNavItem): boolean {
                             :aria-current="
                                 isNavActive(item) ? 'page' : undefined
                             "
-                            class="cd-sidebar-nav-link flex w-24 flex-col items-center justify-center gap-2 rounded-2xl px-3 py-3 transition-colors group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-2 landscape-compact:w-20 landscape-compact:gap-1 landscape-compact:rounded-xl landscape-compact:px-2 landscape-compact:py-1.5"
+                            class="cd-sidebar-nav-link flex w-full flex-row items-center gap-2 rounded-xl px-2 py-2 transition-colors group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-2 landscape-compact:gap-1.5 landscape-compact:rounded-lg landscape-compact:px-1.5 landscape-compact:py-1.5"
                             :class="{ 'is-active': isNavActive(item) }"
                         >
                             <component
                                 :is="item.icon"
-                                :size="26"
-                                :stroke-width="1.4"
-                                class="landscape-compact:size-5"
+                                :size="16"
+                                :stroke-width="1.5"
+                                class="shrink-0 landscape-compact:size-3.5"
                             />
                             <span
-                                class="font-serif text-xs tracking-[0.2em] whitespace-nowrap group-data-[collapsible=icon]:hidden landscape-compact:text-[0.65rem] landscape-compact:tracking-[0.12em]"
+                                class="min-w-0 flex-1 truncate text-left font-serif text-[0.62rem] leading-none tracking-[0.04em] whitespace-nowrap group-data-[collapsible=icon]:hidden landscape-compact:text-[0.58rem] landscape-compact:tracking-[0.02em]"
                             >
                                 {{ item.title }}
                             </span>
@@ -150,7 +146,7 @@ function isNavActive(item: CdNavItem): boolean {
             </SidebarContent>
 
             <SidebarFooter
-                class="relative z-10 min-h-20 pb-6 landscape-compact:min-h-8 landscape-compact:pb-2"
+                class="relative z-10 min-h-8 pb-4 landscape-compact:min-h-4 landscape-compact:pb-2"
                 aria-hidden="true"
             />
         </div>
