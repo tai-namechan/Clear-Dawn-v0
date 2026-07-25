@@ -77,6 +77,8 @@ class RoutineTest extends TestCase
                 ->component('Routines/Index')
                 ->where('tab', 'today')
                 ->has('plans')
+                ->has('ops')
+                ->has('history')
                 ->has('routines', 1)
                 ->where('routines.0.name', '自分のルーティン')
             );
@@ -131,6 +133,22 @@ class RoutineTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Routines/Index')
                 ->where('tab', 'menu')
+                ->has('ops')
+                ->has('history')
+            );
+    }
+
+    public function test_index_accepts_history_tab_query(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('routines.index', ['tab' => 'history']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Routines/Index')
+                ->where('tab', 'history')
+                ->has('history')
             );
     }
 

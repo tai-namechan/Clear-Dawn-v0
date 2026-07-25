@@ -24,6 +24,9 @@ class RoutineResource extends JsonResource
             'sort_order' => $this->sort_order,
             'life_area_id' => $this->life_area_id,
             'steps_count' => $this->whenCounted('routineSteps'),
+            'primary_category' => $this->relationLoaded('routineSteps')
+                ? $this->routineSteps->first()?->routineItem?->category?->value
+                : null,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
