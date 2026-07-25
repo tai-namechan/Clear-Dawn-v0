@@ -192,14 +192,20 @@ async function saveStep(payload: StepEditorPayload): Promise<void> {
 }
 
 async function deleteStep(step: RoutinePlanStep): Promise<void> {
-    if (!confirm('このステップを削除しますか？')) {
-        return;
-    }
-
     await apiFetch(`/plans/${props.plan.id}/steps/${step.id}`, {
         method: 'DELETE',
     });
+    showAddStepModal.value = false;
+    editingStep.value = null;
     router.reload({ only: ['plan'] });
+}
+
+async function deleteEditingStep(): Promise<void> {
+    if (!editingStep.value) {
+        return;
+    }
+
+    await deleteStep(editingStep.value);
 }
 
 async function deletePlan(): Promise<void> {
@@ -227,7 +233,7 @@ function stepPurposeKey(step: RoutinePlanStep) {
     <div
         class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6"
     >
-        <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4">
+        <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4">
             <PageSectionCard>
                 <div class="flex flex-col gap-4">
                     <Link
@@ -269,15 +275,6 @@ function stepPurposeKey(step: RoutinePlanStep) {
                                 <CirclePlay :size="16" :stroke-width="1.6" />
                                 開始
                             </Button>
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant="destructive"
-                                aria-label="実行プランを削除"
-                                @click="deletePlan"
-                            >
-                                削除
-                            </Button>
                         </div>
                     </div>
                 </div>
@@ -291,7 +288,16 @@ function stepPurposeKey(step: RoutinePlanStep) {
                         maxlength="100"
                     />
                     <Input v-model="note" placeholder="メモ（任意）" />
-                    <div class="flex justify-end">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            aria-label="実行プランを削除"
+                            @click="deletePlan"
+                        >
+                            削除
+                        </Button>
                         <Button
                             type="button"
                             size="sm"
@@ -391,17 +397,6 @@ function stepPurposeKey(step: RoutinePlanStep) {
                         >
                             編集
                         </Button>
-                        <Button
-                            v-if="canEditSteps"
-                            type="button"
-                            size="sm"
-                            variant="destructive"
-                            class="h-7 px-2 text-xs"
-                            aria-label="ステップを削除"
-                            @click="deleteStep(step)"
-                        >
-                            削除
-                        </Button>
                     </template>
                 </ReorderableList>
 
@@ -427,6 +422,7 @@ function stepPurposeKey(step: RoutinePlanStep) {
         :editing-step="editingStep"
         @update:open="onStepDialogOpen"
         @submit="saveStep"
+        @delete="deleteEditingStep"
         @items-changed="loadRoutineItems"
     />
 </template>

@@ -255,15 +255,6 @@ async function applyToToday(routine: Routine): Promise<void> {
     }
 }
 
-async function deleteRoutine(routine: Routine): Promise<void> {
-    if (!confirm(`「${routine.name}」を削除しますか？`)) {
-        return;
-    }
-
-    await apiFetch(`/routines/${routine.id}`, { method: 'DELETE' });
-    router.reload({ only: ['routines'] });
-}
-
 function formatOccurredAt(iso: string): string {
     return new Date(iso).toLocaleString('ja-JP', {
         month: 'short',
@@ -826,16 +817,6 @@ function historyDescription(log: ActivityLog): string {
                                     <Link :href="`/routines/${routine.id}`">
                                         編集
                                     </Link>
-                                </Button>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="destructive"
-                                    class="font-sans"
-                                    :aria-label="`${routine.name} を削除`"
-                                    @click="deleteRoutine(routine)"
-                                >
-                                    削除
                                 </Button>
                             </div>
                         </div>

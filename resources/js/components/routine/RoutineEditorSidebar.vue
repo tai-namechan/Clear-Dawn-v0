@@ -25,9 +25,11 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     'apply-to-today': [];
     'edit-basics': [];
+    delete: [];
 }>();
 
 const stepCount = computed(() => props.routine.steps?.length ?? 0);
+const canDelete = computed(() => props.routine.id !== null);
 </script>
 
 <template>
@@ -97,6 +99,15 @@ const stepCount = computed(() => props.routine.steps?.length ?? 0);
                 >
                     <Pencil :size="15" :stroke-width="1.6" />
                     基本情報を編集
+                </Button>
+                <Button
+                    v-if="canDelete"
+                    type="button"
+                    variant="destructive"
+                    class="w-full justify-start"
+                    @click="emit('delete')"
+                >
+                    削除
                 </Button>
                 <Button type="button" variant="ghost" class="w-full justify-between" as-child>
                     <Link href="/history">

@@ -60,6 +60,11 @@ const showAmount = computed(
         props.trackingType === 'duration' ||
         props.trackingType === 'distance',
 );
+const amountStep = computed(() =>
+    props.trackingType === 'duration' || props.trackingType === 'distance'
+        ? '0.1'
+        : '1',
+);
 
 watch(
     () => [props.defaultLoad, props.defaultAmount, props.completedLogs.length],
@@ -182,7 +187,7 @@ function submitBlock(): void {
                             <Input
                                 v-model="blockAmount"
                                 type="number"
-                                step="0.1"
+                                :step="amountStep"
                                 class="h-8"
                                 :disabled="logging"
                             />

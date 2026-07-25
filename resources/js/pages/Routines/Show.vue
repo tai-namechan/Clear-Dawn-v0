@@ -5,7 +5,6 @@ import {
     CalendarDays,
     Pencil,
     Plus,
-    Trash2,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import RoutineBasicsForm from '@/components/forms/RoutineBasicsForm.vue';
@@ -342,14 +341,33 @@ async function deleteStep(step: RoutineStep): Promise<void> {
         return;
     }
 
-    if (!confirm('このステップを削除しますか？')) {
-        return;
-    }
-
     await apiFetch(`/routines/${props.routine.id}/steps/${step.id}`, {
         method: 'DELETE',
     });
+    showAddStepModal.value = false;
+    editingStep.value = null;
     router.reload({ only: ['routine'] });
+}
+
+async function deleteEditingStep(): Promise<void> {
+    if (!editingStep.value) {
+        return;
+    }
+
+    await deleteStep(editingStep.value);
+}
+
+async function deleteRoutine(): Promise<void> {
+    if (!props.routine.id) {
+        return;
+    }
+
+    if (!confirm(`「${formName.value || props.routine.name}」を削除しますか？`)) {
+        return;
+    }
+
+    await apiFetch(`/routines/${props.routine.id}`, { method: 'DELETE' });
+    router.visit('/routines');
 }
 
 function stepPurpose(step: RoutineStep): string {
@@ -580,16 +598,6 @@ function stepPurposeKey(step: RoutineStep) {
                                 >
                                     編集
                                 </Button>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="destructive"
-                                    class="h-7 px-2 text-xs"
-                                    aria-label="ステップを削除"
-                                    @click="deleteStep(step)"
-                                >
-                                    削除
-                                </Button>
                             </template>
                         </ReorderableList>
 
@@ -616,6 +624,7 @@ function stepPurposeKey(step: RoutineStep) {
                     :duration-label="formatDurationSeconds(totalDurationSeconds)"
                     @apply-to-today="applyToToday"
                     @edit-basics="showBasics = true"
+                    @delete="deleteRoutine"
                 />
             </div>
         </div>
@@ -631,6 +640,7 @@ function stepPurposeKey(step: RoutineStep) {
         :editing-step="editingStep"
         @update:open="onStepDialogOpen"
         @submit="addStep"
+        @delete="deleteEditingStep"
         @items-changed="loadRoutineItems"
     />
 </template>
