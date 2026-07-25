@@ -303,7 +303,7 @@ const metrics = computed((): MetricChip[] => {
     <div
         class="flex min-h-0 flex-1 flex-col rounded-xl p-4 pb-28 md:px-6 md:pb-28 lg:pb-6"
     >
-        <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4">
+        <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4">
             <PageSectionCard>
                 <div class="flex flex-col gap-4">
                     <Link
@@ -448,83 +448,73 @@ const metrics = computed((): MetricChip[] => {
                     class="cd-panel flex flex-col"
                 >
                     <div class="border-b border-cd-line/60 px-5 py-5">
-                        <div
-                            class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-                        >
-                            <div class="min-w-0">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <h2
-                                        class="font-sans text-xl font-semibold tracking-tight text-cd-ink md:text-2xl"
-                                    >
-                                        {{ currentStep.item_name }}
-                                    </h2>
-                                    <span
-                                        class="inline-flex rounded-full border px-2 py-0.5 font-sans text-xs"
-                                        :class="
-                                            purposeChipClasses(
-                                                stepPurposeKey(currentStep),
-                                            )
-                                        "
-                                    >
-                                        {{
-                                            stepPurposeLabels[
-                                                stepPurposeKey(currentStep)
-                                            ]
-                                        }}
-                                    </span>
-                                    <span
-                                        v-if="trackingType"
-                                        class="inline-flex rounded-full border border-cd-line/70 px-2 py-0.5 font-sans text-xs text-cd-ink-muted"
-                                    >
-                                        {{
-                                            trackingTypeLabels[trackingType]
-                                        }}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div
-                                v-if="metrics.length"
-                                class="flex flex-wrap gap-4 sm:justify-end"
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2
+                                class="font-sans text-xl font-semibold tracking-tight text-cd-ink md:text-2xl"
                             >
-                                <div
-                                    v-for="metric in metrics"
-                                    :key="metric.label"
-                                    class="flex items-center gap-2"
+                                {{ currentStep.item_name }}
+                            </h2>
+                            <span
+                                class="inline-flex shrink-0 rounded-full border px-2 py-0.5 font-sans text-xs font-medium"
+                                :class="
+                                    purposeChipClasses(
+                                        stepPurposeKey(currentStep),
+                                    )
+                                "
+                            >
+                                {{
+                                    stepPurposeLabels[
+                                        stepPurposeKey(currentStep)
+                                    ]
+                                }}
+                            </span>
+                            <span
+                                v-if="trackingType"
+                                class="inline-flex shrink-0 rounded-full border border-cd-line/70 px-2 py-0.5 font-sans text-xs text-cd-ink-muted"
+                            >
+                                {{ trackingTypeLabels[trackingType] }}
+                            </span>
+                        </div>
+
+                        <div
+                            v-if="metrics.length"
+                            class="mt-4 flex flex-nowrap items-center gap-5 overflow-x-auto"
+                        >
+                            <div
+                                v-for="metric in metrics"
+                                :key="metric.label"
+                                class="flex shrink-0 items-center gap-2 whitespace-nowrap"
+                            >
+                                <span
+                                    class="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-cd-icon-bg text-cd-icon-primary"
                                 >
-                                    <span
-                                        class="inline-flex size-8 items-center justify-center rounded-lg bg-cd-icon-bg text-cd-icon-primary"
+                                    <Hash
+                                        v-if="metric.icon === 'hash'"
+                                        :size="16"
+                                        :stroke-width="1.6"
+                                    />
+                                    <Layers3
+                                        v-else-if="metric.icon === 'layers'"
+                                        :size="16"
+                                        :stroke-width="1.6"
+                                    />
+                                    <Clock3
+                                        v-else
+                                        :size="16"
+                                        :stroke-width="1.6"
+                                    />
+                                </span>
+                                <div class="min-w-0">
+                                    <p
+                                        class="font-sans text-[11px] leading-none text-cd-ink-muted"
                                     >
-                                        <Hash
-                                            v-if="metric.icon === 'hash'"
-                                            :size="16"
-                                            :stroke-width="1.6"
-                                        />
-                                        <Layers3
-                                            v-else-if="
-                                                metric.icon === 'layers'
-                                            "
-                                            :size="16"
-                                            :stroke-width="1.6"
-                                        />
-                                        <Clock3
-                                            v-else
-                                            :size="16"
-                                            :stroke-width="1.6"
-                                        />
-                                    </span>
-                                    <div>
-                                        <p
-                                            class="font-sans text-[11px] text-cd-ink-muted"
-                                        >
-                                            {{ metric.label }}
-                                        </p>
-                                        <p
-                                            class="font-sans text-sm font-medium text-cd-ink"
-                                        >
-                                            {{ metric.value }}
-                                        </p>
-                                    </div>
+                                        {{ metric.label }}
+                                    </p>
+                                    <p
+                                        class="mt-1 font-sans text-sm font-medium leading-none text-cd-ink"
+                                    >
+                                        {{ metric.value }}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -635,12 +625,13 @@ const metrics = computed((): MetricChip[] => {
                                 "
                                 @click="goToStep(index)"
                             >
-                                <CircleCheck
+                                <span
                                     v-if="step.status === 'completed'"
-                                    :size="18"
-                                    :stroke-width="1.6"
-                                    class="mt-0.5 shrink-0 text-primary"
-                                />
+                                    class="mt-0.5 inline-flex size-[18px] shrink-0 items-center justify-center rounded-full bg-cd-moss text-white"
+                                    aria-label="完了"
+                                >
+                                    <Check :size="11" :stroke-width="2.8" />
+                                </span>
                                 <SkipForward
                                     v-else-if="step.status === 'skipped'"
                                     :size="18"

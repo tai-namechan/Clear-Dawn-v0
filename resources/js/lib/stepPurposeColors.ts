@@ -5,50 +5,52 @@ export type StepPurposeColorClasses = {
     chart: string;
 };
 
-/** StepPurpose → チャートトークン系 Tailwind クラス */
+/** StepPurpose → チャートトークン系 Tailwind クラス（chip は塗りつぶし白文字） */
 export const stepPurposeColorClasses: Record<
     StepPurpose,
     StepPurposeColorClasses
 > = {
     prep: {
-        chip: 'border-chart-1/30 bg-chart-1/10 text-chart-1',
+        chip: 'border-transparent bg-chart-1 text-white',
         chart: 'text-chart-1',
     },
     movement: {
-        chip: 'border-chart-2/30 bg-chart-2/10 text-chart-2',
+        chip: 'border-transparent bg-chart-2 text-white',
         chart: 'text-chart-2',
     },
     power: {
-        chip: 'border-chart-3/30 bg-chart-3/10 text-chart-3',
+        chip: 'border-transparent bg-chart-3 text-white',
         chart: 'text-chart-3',
     },
     strength: {
-        chip: 'border-chart-4/30 bg-chart-4/10 text-chart-4',
+        chip: 'border-transparent bg-primary text-white',
         chart: 'text-chart-4',
     },
     care: {
-        chip: 'border-chart-5/30 bg-chart-5/10 text-chart-5',
+        chip: 'border-transparent bg-chart-5 text-white',
         chart: 'text-chart-5',
     },
     practice: {
-        chip: 'border-primary/30 bg-primary/10 text-primary',
+        chip: 'border-transparent bg-primary text-white',
         chart: 'text-primary',
     },
     study: {
-        chip: 'border-chart-2/30 bg-chart-2/10 text-chart-2',
+        chip: 'border-transparent bg-chart-2 text-white',
         chart: 'text-chart-2',
     },
     review: {
-        chip: 'border-chart-3/30 bg-chart-3/10 text-chart-3',
+        chip: 'border-transparent bg-chart-3 text-white',
         chart: 'text-chart-3',
     },
     other: {
-        chip: 'border-cd-line bg-muted text-cd-ink-muted',
+        chip: 'border-transparent bg-cd-ink-muted text-white',
         chart: 'text-cd-ink-muted',
     },
 };
 
 export function purposeChipClasses(purpose: StepPurpose): string {
-    return stepPurposeColorClasses[purpose]?.chip
-        ?? stepPurposeColorClasses.other.chip;
+    return (
+        stepPurposeColorClasses[purpose]?.chip ??
+        stepPurposeColorClasses.other.chip
+    );
 }
