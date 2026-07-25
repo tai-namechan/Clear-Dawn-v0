@@ -225,6 +225,17 @@ const hasStrengthChartData = computed(
     () => props.strengthChartPoints.length > 0,
 );
 
+/**
+ * Shared plot box for meal / condition mini-charts so left and right cards
+ * line up in the lg:grid-cols-2 layout. Bottom room is for legends.
+ */
+const RECORDS_MINI_GRID = {
+    left: 40,
+    right: 36,
+    top: 10,
+    bottom: 48,
+} as const;
+
 const mealKcalChartOption = computed<EChartsCoreOption>(() => {
     const { dates, values } = nutritionSeriesByDate(
         props.mealChartPoints,
@@ -234,7 +245,7 @@ const mealKcalChartOption = computed<EChartsCoreOption>(() => {
     );
 
     return {
-        grid: { left: 40, right: 12, top: 16, bottom: 24 },
+        grid: { ...RECORDS_MINI_GRID },
         tooltip: { trigger: 'axis' },
         xAxis: {
             type: 'category',
@@ -281,9 +292,9 @@ const mealPfcChartOption = computed<EChartsCoreOption>(() => {
     );
 
     return {
-        grid: { left: 40, right: 12, top: 28, bottom: 24 },
+        grid: { ...RECORDS_MINI_GRID },
         tooltip: { trigger: 'axis' },
-        legend: chartLegend(10),
+        legend: chartLegend(10, { bottom: 0, left: 'center' }),
         xAxis: {
             type: 'category',
             data: protein.dates.map((date) => date.slice(5)),
@@ -351,7 +362,7 @@ const conditionChartOption = computed<EChartsCoreOption>(() => {
 
     return {
         // Mini chart: keep axis names off the plot — legend + tooltip carry units.
-        grid: { left: 40, right: 36, top: 12, bottom: 48 },
+        grid: { ...RECORDS_MINI_GRID },
         tooltip: { trigger: 'axis' },
         legend: chartLegend(10, { bottom: 0, left: 'center' }),
         xAxis: {
@@ -421,7 +432,8 @@ const strengthDates = computed(() =>
 
 const strengthChartOption = computed<EChartsCoreOption>(() => ({
     // Long item names sit in the bottom legend so they do not cover the plot.
-    grid: { left: 40, right: 12, top: 12, bottom: 56 },
+    // Axis name "kg" is omitted — it collides with tick labels in this height.
+    grid: { ...RECORDS_MINI_GRID },
     legend: chartLegend(10, { bottom: 0, left: 'center' }),
     tooltip: { trigger: 'axis' },
     xAxis: {
@@ -432,9 +444,6 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
     },
     yAxis: {
         type: 'value',
-        name: 'kg',
-        nameGap: 8,
-        nameTextStyle: chartAxisLabel(10),
         axisLabel: chartAxisLabel(10),
         splitLine: chartSplitLine(),
     },
@@ -456,6 +465,10 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
 
                 return value != null ? Number(value) : null;
             }),
+            tooltip: {
+                valueFormatter: (value: unknown) =>
+                    value == null || value === '' ? '—' : `${value} kg`,
+            },
         };
     }),
 }));
@@ -653,22 +666,30 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                             aria-label="食事の直近7日推移"
                         >
                             <div>
-                                <p
-                                    class="mb-1 font-sans text-xs text-cd-ink-muted"
+                                <div
+                                    class="mb-1 flex min-h-7 items-center"
                                 >
-                                    エネルギー (kcal)
-                                </p>
+                                    <p
+                                        class="font-sans text-xs text-cd-ink-muted"
+                                    >
+                                        エネルギー (kcal)
+                                    </p>
+                                </div>
                                 <BaseChart
                                     :option="mealKcalChartOption"
                                     class="!h-40"
                                 />
                             </div>
                             <div>
-                                <p
-                                    class="mb-1 font-sans text-xs text-cd-ink-muted"
+                                <div
+                                    class="mb-1 flex min-h-7 items-center"
                                 >
-                                    PFC (g)
-                                </p>
+                                    <p
+                                        class="font-sans text-xs text-cd-ink-muted"
+                                    >
+                                        PFC (g)
+                                    </p>
+                                </div>
                                 <BaseChart
                                     :option="mealPfcChartOption"
                                     class="!h-40"
@@ -714,54 +735,67 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                             </div>
                         </div>
 
-                        <div aria-label="体重・睡眠の直近7日推移">
-                            <p class="mb-1 font-sans text-xs text-cd-ink-muted">
-                                体重・睡眠（7日）
-                            </p>
-                            <BaseChart
-                                v-if="hasConditionChartData"
-                                :option="conditionChartOption"
-                                class="!h-52"
-                            />
-                            <p
-                                v-else
-                                class="rounded-xl border border-dashed border-cd-line px-3 py-6 text-center font-sans text-sm text-cd-ink-muted"
-                            >
-                                まだ推移データがありません。コンディションを記録するとここにグラフが表示されます。
-                            </p>
-                        </div>
-
-                        <div aria-label="筋力ミニチャート">
-                            <div
-                                class="mb-1 flex items-center justify-between gap-2"
-                            >
-                                <p class="font-sans text-xs text-cd-ink-muted">
-                                    筋力チャート（7日）
-                                </p>
-                                <Button
-                                    as-child
-                                    variant="outline"
-                                    size="sm"
-                                    class="font-sans"
+                        <div
+                            class="grid gap-3"
+                            aria-label="コンディションの直近7日推移"
+                        >
+                            <div aria-label="体重・睡眠の直近7日推移">
+                                <div
+                                    class="mb-1 flex min-h-7 items-center"
                                 >
-                                    <Link
-                                        href="/records/strength?period=3months"
+                                    <p
+                                        class="font-sans text-xs text-cd-ink-muted"
                                     >
-                                        詳細
-                                    </Link>
-                                </Button>
+                                        体重・睡眠（7日）
+                                    </p>
+                                </div>
+                                <BaseChart
+                                    v-if="hasConditionChartData"
+                                    :option="conditionChartOption"
+                                    class="!h-40"
+                                />
+                                <p
+                                    v-else
+                                    class="flex !h-40 items-center justify-center rounded-xl border border-dashed border-cd-line px-3 text-center font-sans text-sm text-cd-ink-muted"
+                                >
+                                    まだ推移データがありません。コンディションを記録するとここにグラフが表示されます。
+                                </p>
                             </div>
-                            <BaseChart
-                                v-if="hasStrengthChartData"
-                                :option="strengthChartOption"
-                                class="!h-48"
-                            />
-                            <p
-                                v-else
-                                class="rounded-xl border border-dashed border-cd-line px-3 py-6 text-center font-sans text-sm text-cd-ink-muted"
-                            >
-                                この期間に完了した筋力セッションがありません。
-                            </p>
+
+                            <div aria-label="筋力ミニチャート">
+                                <div
+                                    class="mb-1 flex min-h-7 items-center justify-between gap-2"
+                                >
+                                    <p
+                                        class="font-sans text-xs text-cd-ink-muted"
+                                    >
+                                        筋力チャート（7日）
+                                    </p>
+                                    <Button
+                                        as-child
+                                        variant="outline"
+                                        size="sm"
+                                        class="h-7 font-sans"
+                                    >
+                                        <Link
+                                            href="/records/strength?period=3months"
+                                        >
+                                            詳細
+                                        </Link>
+                                    </Button>
+                                </div>
+                                <BaseChart
+                                    v-if="hasStrengthChartData"
+                                    :option="strengthChartOption"
+                                    class="!h-40"
+                                />
+                                <p
+                                    v-else
+                                    class="flex !h-40 items-center justify-center rounded-xl border border-dashed border-cd-line px-3 text-center font-sans text-sm text-cd-ink-muted"
+                                >
+                                    この期間に完了した筋力セッションがありません。
+                                </p>
+                            </div>
                         </div>
 
                         <Button as-child class="font-sans tracking-[0.06em]">

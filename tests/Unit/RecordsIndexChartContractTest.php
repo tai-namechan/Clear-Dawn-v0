@@ -5,19 +5,34 @@ namespace Tests\Unit;
 use Tests\TestCase;
 
 /**
- * Prove Records index mini-charts keep legends off the plot so
- * weight/sleep/strength series labels stay readable on narrow cards.
+ * Prove Records index mini-charts share one plot box and keep legends /
+ * axis names off the plot so meal and condition cards stay aligned.
  */
 class RecordsIndexChartContractTest extends TestCase
 {
-    public function test_condition_and_strength_mini_charts_keep_legends_at_bottom(): void
+    public function test_records_mini_charts_share_grid_and_keep_labels_clear(): void
     {
         $source = $this->componentSource('resources/js/pages/Records/Index.vue');
 
         $this->assertStringContainsString(
-            "legend: chartLegend(10, { bottom: 0, left: 'center' })",
+            'const RECORDS_MINI_GRID',
             $source,
-            'Condition and strength mini-charts must pin legends to the bottom',
+            'Meal and condition mini-charts must share one grid constant for alignment',
+        );
+        $this->assertSame(
+            4,
+            substr_count($source, 'grid: { ...RECORDS_MINI_GRID }'),
+            'All four Records mini-charts should use RECORDS_MINI_GRID',
+        );
+        $this->assertSame(
+            4,
+            substr_count($source, 'class="!h-40"'),
+            'All four Records mini-charts should share the same height',
+        );
+        $this->assertSame(
+            3,
+            substr_count($source, "chartLegend(10, { bottom: 0, left: 'center' })"),
+            'PFC / condition / strength legends must sit at the bottom',
         );
         $this->assertStringNotContainsString(
             "name: '体重 kg'",
@@ -29,10 +44,10 @@ class RecordsIndexChartContractTest extends TestCase
             $source,
             'Axis names crowd the compact condition chart; units belong in tooltip/legend',
         );
-        $this->assertSame(
-            2,
-            substr_count($source, "chartLegend(10, { bottom: 0, left: 'center' })"),
-            'Both condition and strength mini-charts should use a bottom-centered legend',
+        $this->assertStringNotContainsString(
+            "name: 'kg'",
+            $source,
+            'Strength mini-chart must not place a kg axis name over tick labels',
         );
     }
 
