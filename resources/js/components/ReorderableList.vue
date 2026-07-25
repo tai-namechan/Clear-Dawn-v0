@@ -201,58 +201,56 @@ function setContainerRef(element: Element | ComponentPublicInstance | null) {
             :data-id="item.id"
         >
             <div class="flex items-center justify-between gap-3">
-                <div class="flex min-w-0 flex-1 items-center gap-3">
-                    <button
+                <div class="flex min-w-0 flex-1 items-center gap-2">
+                    <div
                         v-if="!disabled"
-                        type="button"
-                        class="reorder-handle inline-flex shrink-0 cursor-grab touch-none rounded-sm p-1 text-cd-ink-muted transition-colors hover:text-cd-ink active:cursor-grabbing"
-                        :aria-label="
-                            labelFor(item)
-                                ? `${labelFor(item)} をドラッグして並べ替え`
-                                : 'ドラッグして並べ替え'
-                        "
+                        class="flex shrink-0 items-center gap-0.5"
                     >
-                        <GripVertical :size="16" :stroke-width="1.6" />
-                    </button>
+                        <button
+                            type="button"
+                            class="reorder-handle inline-flex shrink-0 cursor-grab touch-none rounded-sm p-1 text-cd-ink-muted transition-colors hover:text-cd-ink active:cursor-grabbing"
+                            :aria-label="
+                                labelFor(item)
+                                    ? `${labelFor(item)} をドラッグして並べ替え`
+                                    : 'ドラッグして並べ替え'
+                            "
+                        >
+                            <GripVertical :size="16" :stroke-width="1.6" />
+                        </button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            :disabled="index === 0"
+                            :aria-label="
+                                labelFor(item)
+                                    ? `${labelFor(item)} を上へ`
+                                    : '上へ移動'
+                            "
+                            @click="move(index, -1)"
+                        >
+                            <ArrowUp :size="15" :stroke-width="1.6" />
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            :disabled="index === displayItems.length - 1"
+                            :aria-label="
+                                labelFor(item)
+                                    ? `${labelFor(item)} を下へ`
+                                    : '下へ移動'
+                            "
+                            @click="move(index, 1)"
+                        >
+                            <ArrowDown :size="15" :stroke-width="1.6" />
+                        </Button>
+                    </div>
                     <div class="min-w-0 flex-1">
                         <slot name="row" :item="item" :index="index" />
                     </div>
                 </div>
-                <div
-                    v-if="!disabled"
-                    class="flex shrink-0 items-center gap-1"
-                >
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        :disabled="index === 0"
-                        :aria-label="
-                            labelFor(item)
-                                ? `${labelFor(item)} を上へ`
-                                : '上へ移動'
-                        "
-                        @click="move(index, -1)"
-                    >
-                        <ArrowUp :size="15" :stroke-width="1.6" />
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        :disabled="index === displayItems.length - 1"
-                        :aria-label="
-                            labelFor(item)
-                                ? `${labelFor(item)} を下へ`
-                                : '下へ移動'
-                        "
-                        @click="move(index, 1)"
-                    >
-                        <ArrowDown :size="15" :stroke-width="1.6" />
-                    </Button>
-                    <slot name="actions" :item="item" :index="index" />
-                </div>
-                <div v-else class="flex shrink-0 items-center gap-1">
+                <div class="flex shrink-0 items-center gap-1">
                     <slot name="actions" :item="item" :index="index" />
                 </div>
             </div>
