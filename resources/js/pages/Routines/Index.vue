@@ -10,11 +10,9 @@ import {
     HeartPulse,
     Music,
     NotebookPen,
-    Pencil,
     Plus,
     Sparkles,
     Target,
-    Trash2,
     Utensils,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
@@ -670,7 +668,7 @@ function historyDescription(log: ActivityLog): string {
                                 v-if="!showCheckinEditor"
                                 type="button"
                                 size="sm"
-                                variant="outline"
+                                variant="warning"
                                 class="font-sans"
                                 @click="showCheckinEditor = true"
                             >
@@ -821,27 +819,23 @@ function historyDescription(log: ActivityLog): string {
                                 <Button
                                     type="button"
                                     size="sm"
-                                    variant="outline"
+                                    variant="warning"
                                     class="font-sans"
                                     as-child
                                 >
                                     <Link :href="`/routines/${routine.id}`">
-                                        <Pencil
-                                            :size="14"
-                                            :stroke-width="1.8"
-                                        />
                                         編集
                                     </Link>
                                 </Button>
                                 <Button
                                     type="button"
                                     size="sm"
-                                    variant="outline"
-                                    class="font-sans text-destructive"
+                                    variant="destructive"
+                                    class="font-sans"
                                     :aria-label="`${routine.name} を削除`"
                                     @click="deleteRoutine(routine)"
                                 >
-                                    <Trash2 :size="14" :stroke-width="1.8" />
+                                    削除
                                 </Button>
                             </div>
                         </div>

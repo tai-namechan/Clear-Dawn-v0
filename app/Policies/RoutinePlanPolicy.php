@@ -19,11 +19,13 @@ class RoutinePlanPolicy
     }
 
     /**
-     * ステップの追加・更新・削除・並び替えは draft プランのみ。
+     * ステップの追加・更新・削除・並び替えは、アーカイブ前の所有プランで可。
+     * ready でも動画紐付けや当日調整ができる（実行中セッションのスナップショットは不変）。
      */
     public function updateSteps(User $user, RoutinePlan $plan): bool
     {
-        return $this->owns($user, $plan) && $plan->status === RoutinePlanStatus::Draft;
+        return $this->owns($user, $plan)
+            && $plan->status !== RoutinePlanStatus::Archived;
     }
 
     /**

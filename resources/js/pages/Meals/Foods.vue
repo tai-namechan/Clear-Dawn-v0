@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ArrowLeft, Pencil, Plus, Star, Trash2 } from '@lucide/vue';
+import { ArrowLeft, Plus, Star } from '@lucide/vue';
 import { ref } from 'vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
@@ -217,10 +217,10 @@ async function toggleFavorite(food: FoodItem): Promise<void> {
                                 {{ formatNum(food.carb_g) }}
                             </p>
                         </div>
-                        <div class="flex shrink-0 gap-1">
+                        <div class="flex shrink-0 flex-wrap gap-1.5">
                             <Button
                                 type="button"
-                                size="icon"
+                                size="icon-sm"
                                 variant="ghost"
                                 :aria-label="`${food.name} のお気に入りを切替`"
                                 @click="toggleFavorite(food)"
@@ -234,21 +234,23 @@ async function toggleFavorite(food: FoodItem): Promise<void> {
                             </Button>
                             <Button
                                 type="button"
-                                size="icon"
-                                variant="ghost"
+                                size="sm"
+                                variant="warning"
+                                class="h-7 px-2.5 text-xs"
                                 :aria-label="`${food.name} を編集`"
                                 @click="openEdit(food)"
                             >
-                                <Pencil :size="14" :stroke-width="1.6" />
+                                編集
                             </Button>
                             <Button
                                 type="button"
-                                size="icon"
-                                variant="ghost"
+                                size="sm"
+                                variant="destructive"
+                                class="h-7 px-2.5 text-xs"
                                 :aria-label="`${food.name} を削除`"
                                 @click="deleteFood(food)"
                             >
-                                <Trash2 :size="14" :stroke-width="1.6" />
+                                削除
                             </Button>
                         </div>
                     </li>

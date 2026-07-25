@@ -274,15 +274,34 @@ export function formatVideoDuration(seconds: number | null): string {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
+/**
+ * Decimal cast 由来の "6.00" を "6" に整え、表示用の末尾ゼロを落とす。
+ */
+export function formatQuantityDisplay(
+    value: string | number | null | undefined,
+): string | null {
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+
+    const numeric = Number(value);
+
+    if (!Number.isFinite(numeric)) {
+        return String(value);
+    }
+
+    return String(numeric);
+}
+
 export function formatLoadTarget(
     load: string | number | null | undefined,
     unit: string | null | undefined,
 ): string | null {
-    if (load === null || load === undefined || load === '') {
+    const text = formatQuantityDisplay(load);
+
+    if (text === null) {
         return null;
     }
-
-    const text = String(load);
 
     return unit ? `${text}${unit}` : text;
 }
@@ -291,11 +310,11 @@ export function formatAmountTarget(
     amount: string | number | null | undefined,
     unit: string | null | undefined,
 ): string | null {
-    if (amount === null || amount === undefined || amount === '') {
+    const text = formatQuantityDisplay(amount);
+
+    if (text === null) {
         return null;
     }
-
-    const text = String(amount);
 
     return unit ? `${text}${unit}` : text;
 }
