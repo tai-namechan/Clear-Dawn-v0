@@ -279,6 +279,16 @@ export type FoodItem = {
     protein_g: string;
     fat_g: string;
     carb_g: string;
+    source?: string | null;
+    brand?: string | null;
+    nutrition_basis?: 'serving' | '100g' | 'package' | null;
+    basis_amount?: string | null;
+    basis_unit?: string | null;
+    package_amount?: string | null;
+    package_unit?: string | null;
+    is_favorite?: boolean;
+    confirmation_status?: string | null;
+    confirmed_at?: string | null;
     updated_at?: string | null;
 };
 

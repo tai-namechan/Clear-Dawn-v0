@@ -8,7 +8,9 @@ use App\Http\Requests\FoodLookups\ConfirmFoodLookupRequest;
 use App\Http\Requests\FoodLookups\StoreFoodBarcodeLookupRequest;
 use App\Http\Requests\FoodLookups\StoreFoodLabelImageRequest;
 use App\Http\Resources\FoodItemResource;
+use App\Http\Resources\MealEntryResource;
 use App\Models\FoodLookupRequest;
+use App\Services\ConfirmFoodLookupAndCreateMealService;
 use App\Services\ConfirmFoodLookupService;
 use App\Services\StartFoodBarcodeLookupService;
 use App\Services\StartFoodLabelOcrService;
@@ -108,7 +110,8 @@ class FoodBarcodeLookupController extends Controller
     public function confirm(
         ConfirmFoodLookupRequest $request,
         string $lookupId,
-        ConfirmFoodLookupService $service,
+        ConfirmFoodLookupService $confirmService,
+        ConfirmFoodLookupAndCreateMealService $confirmAndCreateMealService,
     ): JsonResponse {
         $lookup = FoodLookupRequest::query()
             ->where('user_id', $request->user()->id)
@@ -116,10 +119,20 @@ class FoodBarcodeLookupController extends Controller
             ->where('status', FoodLookupStatus::Found)
             ->firstOrFail();
 
-        /** @var array{name: string, serving_label: string, kcal: float|int|string, protein_g: float|int|string, fat_g: float|int|string, carb_g: float|int|string} $validated */
+        /** @var array<string, mixed> $validated */
         $validated = $request->validated();
 
-        $food = $service->handle($request->user(), $lookup, $validated);
+        if ($request->boolean('add_to_meal')) {
+            $result = $confirmAndCreateMealService->handle($request->user(), $lookup, $validated);
+
+            return response()->json([
+                'food' => FoodItemResource::make($result['food'])->resolve(),
+                'entry' => MealEntryResource::make($result['entry'])->resolve(),
+                'created' => $result['created'],
+            ], $result['created'] ? 201 : 200);
+        }
+
+        $food = $confirmService->handle($request->user(), $lookup, $validated);
 
         return response()->json([
             'food' => FoodItemResource::make($food)->resolve(),

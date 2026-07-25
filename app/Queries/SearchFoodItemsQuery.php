@@ -11,7 +11,8 @@ class SearchFoodItemsQuery
     public const int Limit = 20;
 
     /**
-     * user スコープ + name 部分一致 + limit 20 + 更新日降順。
+     * user スコープ + name 部分一致 + limit 20。
+     * お気に入りを上位にし、同率は更新日降順。
      *
      * @return Collection<int, FoodItem>
      */
@@ -23,6 +24,7 @@ class SearchFoodItemsQuery
                 $query !== null && trim($query) !== '',
                 fn ($builder) => $builder->where('name', 'like', '%'.trim($query).'%'),
             )
+            ->orderByDesc('is_favorite')
             ->orderByDesc('updated_at')
             ->limit(self::Limit)
             ->get();

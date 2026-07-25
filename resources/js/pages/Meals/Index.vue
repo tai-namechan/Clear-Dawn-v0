@@ -11,6 +11,8 @@ import {
     Pencil,
     Plus,
     ScanBarcode,
+    Search,
+    Star,
     Store,
     Sun,
     Trash2,
@@ -88,6 +90,10 @@ const goalForm = ref({
 
 const foodQuery = ref('');
 const foodResults = ref<FoodItem[]>([]);
+const usualFavorites = ref<FoodItem[]>([]);
+const usualRecent = ref<FoodItem[]>([]);
+const usualFrequent = ref<FoodItem[]>([]);
+const showUsualSections = ref(false);
 const selectedFood = ref<FoodItem | null>(null);
 const entryForm = ref({
     name: '',
@@ -99,10 +105,39 @@ const entryForm = ref({
     note: '',
     register_as_food: false,
 });
+const showCopyModal = ref(false);
+const copyingEntry = ref<MealEntry | null>(null);
+const copyForm = ref({
+    eaten_on: '',
+    meal_type: 'breakfast' as MealSection['meal_type'],
+    quantity: '1',
+});
 
 const showBarcodeModal = ref(false);
 const showRestaurantModal = ref(false);
 const restaurantInitialStep = ref<'photo_capture' | 'menu_input' | undefined>(undefined);
+
+const entryPreview = computed(() => {
+    const q = Number(entryForm.value.quantity) || 0;
+    const baseKcal = Number(
+        selectedFood.value?.kcal ?? entryForm.value.kcal ?? 0,
+    );
+    const baseP = Number(
+        selectedFood.value?.protein_g ?? entryForm.value.protein_g ?? 0,
+    );
+    const baseF = Number(selectedFood.value?.fat_g ?? entryForm.value.fat_g ?? 0);
+    const baseC = Number(
+        selectedFood.value?.carb_g ?? entryForm.value.carb_g ?? 0,
+    );
+
+    return {
+        label: selectedFood.value?.serving_label || '1サービング',
+        kcal: Math.round(baseKcal * q * 10) / 10,
+        protein_g: Math.round(baseP * q * 10) / 10,
+        fat_g: Math.round(baseF * q * 10) / 10,
+        carb_g: Math.round(baseC * q * 10) / 10,
+    };
+});
 
 const filterFrom = ref(props.from);
 const filterTo = ref(props.to);
@@ -342,6 +377,10 @@ function resetEntryForm(): void {
     selectedFood.value = null;
     foodQuery.value = '';
     foodResults.value = [];
+    usualFavorites.value = [];
+    usualRecent.value = [];
+    usualFrequent.value = [];
+    showUsualSections.value = false;
     entryTab.value = 'food';
     entryForm.value = {
         name: '',
@@ -372,11 +411,15 @@ function openAddEntry(mealType?: MealSection['meal_type']): void {
 function openQuickFoodSearch(): void {
     openAddEntry();
     entryTab.value = 'food';
+    showUsualSections.value = false;
+    void searchFoods('');
 }
 
 function openUsualMeals(): void {
     openAddEntry();
     entryTab.value = 'food';
+    showUsualSections.value = true;
+    void loadUsualFoods();
 }
 
 function openBarcodeScanner(): void {
@@ -403,9 +446,16 @@ function onBarcodeRegistered(food: FoodItem): void {
     router.reload({ only: ['sections', 'totals', 'chartPoints', 'goal'] });
 }
 
+function onMealAdded(payload: { food: FoodItem | null; entry: MealEntry }): void {
+    const name = payload.entry.name;
+    message.value = `「${name}」を食事に追加しました。`;
+    router.reload({ only: ['sections', 'totals', 'chartPoints', 'goal'] });
+}
+
 function onBarcodeHit(food: FoodItem): void {
     selectFood(food);
     entryMealType.value = nextMealType();
+    showUsualSections.value = false;
     showEntryModal.value = true;
 }
 
@@ -444,36 +494,36 @@ const quickActions = [
     {
         key: 'usual',
         title: 'いつもの食事',
-        description: 'よく食べるメニューから選ぶ',
+        description: 'お気に入り・最近・よく使う',
         icon: Utensils,
         run: openUsualMeals,
     },
     {
         key: 'barcode',
         title: 'バーコード',
-        description: 'スキャンして食品を登録',
+        description: '市販商品を初回でも検索',
         icon: ScanBarcode,
         run: openBarcodeScanner,
     },
     {
         key: 'photo',
         title: '料理の写真',
-        description: '撮影・選択からAIが栄養推定',
+        description: '料理をAI推定',
         icon: Camera,
         run: openPhotoEstimate,
     },
     {
         key: 'menu',
         title: '外食メニュー',
-        description: '店舗とメニュー名で栄養推定',
+        description: '店名とメニュー名から推定',
         icon: Store,
         run: openMenuEstimate,
     },
     {
         key: 'search',
-        title: '食品を検索',
-        description: '食品名やマイ食品から探す',
-        icon: House,
+        title: 'マイ食品を検索',
+        description: '登録済みの食品から探す',
+        icon: Search,
         run: openQuickFoodSearch,
     },
     {
@@ -525,8 +575,28 @@ async function searchFoods(query: string): Promise<void> {
             `/meals/foods?${params.toString()}`,
         );
         foodResults.value = data.foods;
+        if (query.trim() !== '') {
+            showUsualSections.value = false;
+        }
     } catch {
         foodResults.value = [];
+    }
+}
+
+async function loadUsualFoods(): Promise<void> {
+    try {
+        const data = await apiFetch<{
+            favorites: FoodItem[];
+            recent: FoodItem[];
+            frequent: FoodItem[];
+        }>('/meals/foods?group=usual');
+        usualFavorites.value = data.favorites;
+        usualRecent.value = data.recent;
+        usualFrequent.value = data.frequent;
+    } catch {
+        usualFavorites.value = [];
+        usualRecent.value = [];
+        usualFrequent.value = [];
     }
 }
 
@@ -537,6 +607,83 @@ function selectFood(food: FoodItem): void {
     entryForm.value.protein_g = food.protein_g;
     entryForm.value.fat_g = food.fat_g;
     entryForm.value.carb_g = food.carb_g;
+}
+
+async function toggleFavorite(food: FoodItem, event: Event): Promise<void> {
+    event.stopPropagation();
+    const next = !(food.is_favorite ?? false);
+
+    try {
+        const data = await apiFetch<{ food: FoodItem }>(
+            `/meals/foods/${food.id}/favorite`,
+            {
+                method: 'PATCH',
+                body: JSON.stringify({ is_favorite: next }),
+            },
+        );
+
+        const apply = (list: FoodItem[]): FoodItem[] =>
+            list.map((item) =>
+                item.id === data.food.id
+                    ? { ...item, is_favorite: data.food.is_favorite }
+                    : item,
+            );
+
+        foodResults.value = apply(foodResults.value);
+        usualFavorites.value = apply(usualFavorites.value);
+        usualRecent.value = apply(usualRecent.value);
+        usualFrequent.value = apply(usualFrequent.value);
+
+        if (selectedFood.value?.id === data.food.id) {
+            selectedFood.value = {
+                ...selectedFood.value,
+                is_favorite: data.food.is_favorite,
+            };
+        }
+
+        if (showUsualSections.value) {
+            void loadUsualFoods();
+        }
+    } catch {
+        message.value = 'お気に入りの更新に失敗しました。';
+    }
+}
+
+function openCopyEntry(entry: MealEntry): void {
+    copyingEntry.value = entry;
+    copyForm.value = {
+        eaten_on: props.date,
+        meal_type: entry.meal_type,
+        quantity: entry.quantity,
+    };
+    showCopyModal.value = true;
+}
+
+async function copyEntry(): Promise<void> {
+    if (!copyingEntry.value) {
+        return;
+    }
+
+    saving.value = true;
+    message.value = null;
+
+    try {
+        await apiFetch(`/meals/${copyingEntry.value.id}/copy`, {
+            method: 'POST',
+            body: JSON.stringify({
+                eaten_on: copyForm.value.eaten_on,
+                meal_type: copyForm.value.meal_type,
+                quantity: Number(copyForm.value.quantity),
+            }),
+        });
+        showCopyModal.value = false;
+        message.value = `「${copyingEntry.value.name}」をコピーしました。`;
+        router.reload({ only: ['sections', 'totals', 'chartPoints', 'goal'] });
+    } catch {
+        message.value = 'コピーに失敗しました。';
+    } finally {
+        saving.value = false;
+    }
 }
 
 async function saveEntry(): Promise<void> {
@@ -866,6 +1013,18 @@ function applyChartFilter(): void {
                                                 type="button"
                                                 size="icon"
                                                 variant="ghost"
+                                                :aria-label="`${entry.name} をコピー`"
+                                                @click="openCopyEntry(entry)"
+                                            >
+                                                <Copy
+                                                    :size="14"
+                                                    :stroke-width="1.6"
+                                                />
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                size="icon"
+                                                variant="ghost"
                                                 :aria-label="`${entry.name} を編集`"
                                                 @click="openEditEntry(entry)"
                                             >
@@ -1001,15 +1160,21 @@ function applyChartFilter(): void {
 
     <BarcodeLookupModal
         v-model:open="showBarcodeModal"
+        :date="date"
+        :default-meal-type="nextMealType()"
         @food-registered="onBarcodeRegistered"
         @food-hit="onBarcodeHit"
+        @meal-added="onMealAdded"
     />
 
     <RestaurantLookupModal
         v-model:open="showRestaurantModal"
+        :date="date"
+        :default-meal-type="nextMealType()"
         :initial-step="restaurantInitialStep"
         @food-registered="onRestaurantRegistered"
         @food-hit="onBarcodeHit"
+        @meal-added="onMealAdded"
     />
 
     <Dialog :open="showEntryModal" @update:open="(v) => (showEntryModal = v)">
@@ -1019,7 +1184,7 @@ function applyChartFilter(): void {
                     {{ editingEntry ? '食事を編集' : '食事を追加' }}
                 </DialogTitle>
                 <DialogDescription class="font-sans text-sm text-cd-ink-muted">
-                    マイ食品から選ぶか、直接入力できます。数量はサービング倍率です。
+                    登録済みの食品から探すか、直接入力できます。数量はサービング倍率です。
                 </DialogDescription>
             </DialogHeader>
 
@@ -1062,29 +1227,173 @@ function applyChartFilter(): void {
 
             <div v-if="entryTab === 'food'" class="flex flex-col gap-3">
                 <div class="flex flex-col gap-1">
-                    <Label class="font-sans text-xs">検索</Label>
+                    <Label class="font-sans text-xs">マイ食品を検索</Label>
                     <Input
                         :model-value="foodQuery"
                         type="text"
-                        placeholder="食品名"
+                        placeholder="登録済みの食品から探す"
                         @update:model-value="onFoodQueryInput"
                     />
                 </div>
-                <ul class="max-h-40 overflow-y-auto rounded-lg border border-cd-line">
+
+                <div
+                    v-if="showUsualSections && foodQuery.trim() === ''"
+                    class="max-h-56 space-y-3 overflow-y-auto"
+                >
+                    <div v-if="usualFavorites.length > 0">
+                        <p class="mb-1 font-sans text-xs font-semibold text-cd-ink-muted">
+                            お気に入り
+                        </p>
+                        <ul class="rounded-lg border border-cd-line">
+                            <li
+                                v-for="food in usualFavorites"
+                                :key="`fav-${food.id}`"
+                                class="flex cursor-pointer items-center gap-2 border-b border-cd-line px-3 py-2 last:border-b-0 hover:bg-muted/40"
+                                :class="selectedFood?.id === food.id ? 'bg-primary/5' : ''"
+                                @click="selectFood(food)"
+                            >
+                                <div class="min-w-0 flex-1">
+                                    <p class="font-sans text-sm font-medium text-cd-ink">
+                                        {{ food.name }}
+                                    </p>
+                                    <p class="font-sans text-xs text-cd-ink-muted">
+                                        {{ food.serving_label }} ·
+                                        {{ formatNum(food.kcal) }} kcal · P
+                                        {{ formatNum(food.protein_g) }} / F
+                                        {{ formatNum(food.fat_g) }} / C
+                                        {{ formatNum(food.carb_g) }}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    class="shrink-0 text-primary"
+                                    :aria-label="`${food.name} のお気に入りを切替`"
+                                    @click="toggleFavorite(food, $event)"
+                                >
+                                    <Star
+                                        :size="16"
+                                        :fill="food.is_favorite ? 'currentColor' : 'none'"
+                                    />
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div v-if="usualRecent.length > 0">
+                        <p class="mb-1 font-sans text-xs font-semibold text-cd-ink-muted">
+                            最近使った
+                        </p>
+                        <ul class="rounded-lg border border-cd-line">
+                            <li
+                                v-for="food in usualRecent"
+                                :key="`recent-${food.id}`"
+                                class="flex cursor-pointer items-center gap-2 border-b border-cd-line px-3 py-2 last:border-b-0 hover:bg-muted/40"
+                                :class="selectedFood?.id === food.id ? 'bg-primary/5' : ''"
+                                @click="selectFood(food)"
+                            >
+                                <div class="min-w-0 flex-1">
+                                    <p class="font-sans text-sm font-medium text-cd-ink">
+                                        {{ food.name }}
+                                    </p>
+                                    <p class="font-sans text-xs text-cd-ink-muted">
+                                        {{ food.serving_label }} ·
+                                        {{ formatNum(food.kcal) }} kcal
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    class="shrink-0 text-primary"
+                                    :aria-label="`${food.name} のお気に入りを切替`"
+                                    @click="toggleFavorite(food, $event)"
+                                >
+                                    <Star
+                                        :size="16"
+                                        :fill="food.is_favorite ? 'currentColor' : 'none'"
+                                    />
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    <div v-if="usualFrequent.length > 0">
+                        <p class="mb-1 font-sans text-xs font-semibold text-cd-ink-muted">
+                            よく使う
+                        </p>
+                        <ul class="rounded-lg border border-cd-line">
+                            <li
+                                v-for="food in usualFrequent"
+                                :key="`freq-${food.id}`"
+                                class="flex cursor-pointer items-center gap-2 border-b border-cd-line px-3 py-2 last:border-b-0 hover:bg-muted/40"
+                                :class="selectedFood?.id === food.id ? 'bg-primary/5' : ''"
+                                @click="selectFood(food)"
+                            >
+                                <div class="min-w-0 flex-1">
+                                    <p class="font-sans text-sm font-medium text-cd-ink">
+                                        {{ food.name }}
+                                    </p>
+                                    <p class="font-sans text-xs text-cd-ink-muted">
+                                        {{ food.serving_label }} ·
+                                        {{ formatNum(food.kcal) }} kcal
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    class="shrink-0 text-primary"
+                                    :aria-label="`${food.name} のお気に入りを切替`"
+                                    @click="toggleFavorite(food, $event)"
+                                >
+                                    <Star
+                                        :size="16"
+                                        :fill="food.is_favorite ? 'currentColor' : 'none'"
+                                    />
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                    <p
+                        v-if="
+                            usualFavorites.length === 0 &&
+                            usualRecent.length === 0 &&
+                            usualFrequent.length === 0
+                        "
+                        class="px-1 py-3 font-sans text-sm text-cd-ink-muted"
+                    >
+                        まだいつもの食事がありません。バーコードや検索から追加してください。
+                    </p>
+                </div>
+
+                <ul
+                    v-else
+                    class="max-h-40 overflow-y-auto rounded-lg border border-cd-line"
+                >
                     <li
                         v-for="food in foodResults"
                         :key="food.id"
-                        class="cursor-pointer border-b border-cd-line px-3 py-2 last:border-b-0 hover:bg-muted/40"
+                        class="flex cursor-pointer items-center gap-2 border-b border-cd-line px-3 py-2 last:border-b-0 hover:bg-muted/40"
                         :class="selectedFood?.id === food.id ? 'bg-primary/5' : ''"
                         @click="selectFood(food)"
                     >
-                        <p class="font-sans text-sm font-medium text-cd-ink">
-                            {{ food.name }}
-                        </p>
-                        <p class="font-sans text-xs text-cd-ink-muted">
-                            {{ food.serving_label }} ·
-                            {{ formatNum(food.kcal) }} kcal
-                        </p>
+                        <div class="min-w-0 flex-1">
+                            <p class="font-sans text-sm font-medium text-cd-ink">
+                                {{ food.name }}
+                            </p>
+                            <p class="font-sans text-xs text-cd-ink-muted">
+                                {{ food.serving_label }} ·
+                                {{ formatNum(food.kcal) }} kcal · P
+                                {{ formatNum(food.protein_g) }} / F
+                                {{ formatNum(food.fat_g) }} / C
+                                {{ formatNum(food.carb_g) }}
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            class="shrink-0 text-primary"
+                            :aria-label="`${food.name} のお気に入りを切替`"
+                            @click="toggleFavorite(food, $event)"
+                        >
+                            <Star
+                                :size="16"
+                                :fill="food.is_favorite ? 'currentColor' : 'none'"
+                            />
+                        </button>
                     </li>
                     <li
                         v-if="foodResults.length === 0"
@@ -1154,10 +1463,22 @@ function applyChartFilter(): void {
                         max="100"
                         step="0.1"
                     />
+                    <p class="font-sans text-[11px] text-cd-ink-muted">
+                        {{ entryPreview.label }} × {{ entryForm.quantity }}
+                    </p>
                 </div>
                 <div class="flex flex-col gap-1">
                     <Label class="font-sans text-xs">メモ</Label>
                     <Input v-model="entryForm.note" type="text" maxlength="500" />
+                </div>
+                <div
+                    class="col-span-2 rounded-lg bg-muted/40 px-3 py-2 font-sans text-xs text-cd-ink-muted"
+                >
+                    記録予定:
+                    {{ formatNum(entryPreview.kcal) }} kcal · P
+                    {{ formatNum(entryPreview.protein_g) }}g · F
+                    {{ formatNum(entryPreview.fat_g) }}g · C
+                    {{ formatNum(entryPreview.carb_g) }}g
                 </div>
             </div>
 
@@ -1182,6 +1503,66 @@ function applyChartFilter(): void {
                     @click="saveEntry"
                 >
                     保存
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+
+    <Dialog :open="showCopyModal" @update:open="(v) => (showCopyModal = v)">
+        <DialogContent class="bg-cd-surface sm:max-w-md">
+            <DialogHeader>
+                <DialogTitle class="font-sans">食事をコピー</DialogTitle>
+                <DialogDescription class="font-sans text-sm text-cd-ink-muted">
+                    「{{ copyingEntry?.name }}」を指定日・区分へコピーします。元の記録は変更されません。
+                </DialogDescription>
+            </DialogHeader>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="col-span-2 flex flex-col gap-1">
+                    <Label class="font-sans text-xs">コピー先の日付</Label>
+                    <Input v-model="copyForm.eaten_on" type="date" />
+                </div>
+                <div class="flex flex-col gap-1">
+                    <Label class="font-sans text-xs">食事区分</Label>
+                    <select
+                        v-model="copyForm.meal_type"
+                        class="rounded-md border border-input bg-transparent px-3 py-2 font-sans text-sm"
+                    >
+                        <option
+                            v-for="section in sections"
+                            :key="section.meal_type"
+                            :value="section.meal_type"
+                        >
+                            {{ section.label }}
+                        </option>
+                    </select>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <Label class="font-sans text-xs">数量</Label>
+                    <Input
+                        v-model="copyForm.quantity"
+                        type="number"
+                        min="0.1"
+                        max="100"
+                        step="0.1"
+                    />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button
+                    type="button"
+                    variant="outline"
+                    class="font-sans"
+                    @click="showCopyModal = false"
+                >
+                    キャンセル
+                </Button>
+                <Button
+                    type="button"
+                    class="font-sans"
+                    :disabled="saving || !copyingEntry"
+                    @click="copyEntry"
+                >
+                    コピー
                 </Button>
             </DialogFooter>
         </DialogContent>

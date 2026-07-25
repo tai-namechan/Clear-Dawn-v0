@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { downscaleLabelImage } from '@/composables/useLabelImageCapture';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
-import type { FoodItem } from '@/types/routine';
+import type { FoodItem, MealEntry, MealSection } from '@/types/routine';
 
 type Step = 'choose' | 'photo_capture' | 'menu_input' | 'polling' | 'confirm';
 
@@ -31,15 +31,20 @@ interface LookupResult {
 interface Props {
     open: boolean;
     initialStep?: 'photo_capture' | 'menu_input';
+    date: string;
+    defaultMealType?: MealSection['meal_type'];
 }
 
 interface Emits {
     (e: 'update:open', value: boolean): void;
     (e: 'food-registered', food: FoodItem): void;
     (e: 'food-hit', food: FoodItem): void;
+    (e: 'meal-added', payload: { food: FoodItem | null; entry: MealEntry }): void;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    defaultMealType: 'breakfast',
+});
 const emit = defineEmits<Emits>();
 
 const step = ref<Step>('choose');
@@ -68,9 +73,27 @@ const confirmForm = ref({
     protein_g: '',
     fat_g: '',
     carb_g: '',
+    meal_type: 'breakfast' as MealSection['meal_type'],
+    quantity: '1',
+    note: '',
 });
 
 const showDetails = ref(false);
+
+const previewTotals = computed(() => {
+    const q = Number(confirmForm.value.quantity) || 0;
+    const kcal = Number(confirmForm.value.kcal) || 0;
+    const p = Number(confirmForm.value.protein_g) || 0;
+    const f = Number(confirmForm.value.fat_g) || 0;
+    const c = Number(confirmForm.value.carb_g) || 0;
+
+    return {
+        kcal: Math.round(kcal * q * 10) / 10,
+        protein_g: Math.round(p * q * 10) / 10,
+        fat_g: Math.round(f * q * 10) / 10,
+        carb_g: Math.round(c * q * 10) / 10,
+    };
+});
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -159,6 +182,9 @@ function reset(): void {
         protein_g: '',
         fat_g: '',
         carb_g: '',
+        meal_type: props.defaultMealType,
+        quantity: '1',
+        note: '',
     };
 }
 
@@ -373,6 +399,9 @@ function prefillConfirmForm(result: LookupResult): void {
         protein_g: result.protein_g != null ? String(result.protein_g) : '',
         fat_g: result.fat_g != null ? String(result.fat_g) : '',
         carb_g: result.carb_g != null ? String(result.carb_g) : '',
+        meal_type: props.defaultMealType,
+        quantity: '1',
+        note: '',
     };
 }
 
@@ -393,7 +422,7 @@ function formatNum(value: string | number): string {
     });
 }
 
-async function confirmAndSave(): Promise<void> {
+async function confirmAndSave(addToMeal: boolean): Promise<void> {
     if (!lookupId.value || !canConfirm.value) {
         return;
     }
@@ -402,22 +431,37 @@ async function confirmAndSave(): Promise<void> {
     errorMessage.value = null;
 
     try {
-        const data = await apiFetch<{ food: FoodItem }>(
+        const body: Record<string, unknown> = {
+            name: confirmForm.value.name.trim(),
+            serving_label: confirmForm.value.serving_label.trim(),
+            kcal: Number(confirmForm.value.kcal),
+            protein_g: Number(confirmForm.value.protein_g),
+            fat_g: Number(confirmForm.value.fat_g),
+            carb_g: Number(confirmForm.value.carb_g),
+            nutrition_basis: 'serving',
+            add_to_meal: addToMeal,
+        };
+
+        if (addToMeal) {
+            body.eaten_on = props.date;
+            body.meal_type = confirmForm.value.meal_type;
+            body.quantity = Number(confirmForm.value.quantity);
+            body.note = confirmForm.value.note.trim() || null;
+        }
+
+        const data = await apiFetch<{ food: FoodItem; entry?: MealEntry }>(
             `/meals/barcode-lookup/${lookupId.value}/confirm`,
             {
                 method: 'POST',
-                body: JSON.stringify({
-                    name: confirmForm.value.name.trim(),
-                    serving_label: confirmForm.value.serving_label.trim(),
-                    kcal: Number(confirmForm.value.kcal),
-                    protein_g: Number(confirmForm.value.protein_g),
-                    fat_g: Number(confirmForm.value.fat_g),
-                    carb_g: Number(confirmForm.value.carb_g),
-                }),
+                body: JSON.stringify(body),
             },
         );
 
-        emit('food-registered', data.food);
+        if (addToMeal && data.entry) {
+            emit('meal-added', { food: data.food, entry: data.entry });
+        } else {
+            emit('food-registered', data.food);
+        }
         close();
     } catch (e) {
         if (e instanceof ApiError && e.status === 422) {
@@ -826,25 +870,74 @@ async function confirmAndSave(): Promise<void> {
                     {{ errorMessage }}
                 </p>
 
+                <div class="grid grid-cols-2 gap-3 px-5 pt-3">
+                    <div class="flex flex-col gap-1">
+                        <Label class="font-sans text-xs">食事区分</Label>
+                        <select
+                            v-model="confirmForm.meal_type"
+                            class="rounded-md border border-input bg-transparent px-3 py-2 font-sans text-sm"
+                        >
+                            <option value="breakfast">朝食</option>
+                            <option value="lunch">昼食</option>
+                            <option value="dinner">夕食</option>
+                            <option value="snack">間食</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <Label class="font-sans text-xs">数量</Label>
+                        <Input
+                            v-model="confirmForm.quantity"
+                            type="number"
+                            min="0.1"
+                            max="100"
+                            step="0.1"
+                        />
+                        <p class="font-sans text-[11px] text-cd-ink-muted">
+                            {{ confirmForm.serving_label || '1人前' }} ×
+                            {{ confirmForm.quantity }}
+                        </p>
+                    </div>
+                    <div
+                        class="col-span-2 rounded-lg bg-muted/40 px-3 py-2 font-sans text-xs text-cd-ink-muted"
+                    >
+                        記録予定:
+                        {{ formatNum(previewTotals.kcal) }} kcal · P
+                        {{ formatNum(previewTotals.protein_g) }}g · F
+                        {{ formatNum(previewTotals.fat_g) }}g · C
+                        {{ formatNum(previewTotals.carb_g) }}g
+                    </div>
+                </div>
+
                 <!-- Actions -->
-                <div class="flex gap-2 p-5">
+                <div class="flex flex-col gap-2 p-5">
+                    <div class="flex gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            :aria-label="'やり直す'"
+                            @click="retryEstimate"
+                        >
+                            <RotateCcw :size="16" :stroke-width="1.6" />
+                        </Button>
+                        <Button
+                            type="button"
+                            class="flex-1 font-sans"
+                            :disabled="saving || !canConfirm"
+                            @click="confirmAndSave(true)"
+                        >
+                            <Loader2 v-if="saving" :size="14" class="animate-spin" />
+                            保存して食事に追加
+                        </Button>
+                    </div>
                     <Button
                         type="button"
                         variant="outline"
-                        size="icon"
-                        :aria-label="'やり直す'"
-                        @click="retryEstimate"
-                    >
-                        <RotateCcw :size="16" :stroke-width="1.6" />
-                    </Button>
-                    <Button
-                        type="button"
-                        class="flex-1 font-sans"
+                        class="w-full font-sans"
                         :disabled="saving || !canConfirm"
-                        @click="confirmAndSave"
+                        @click="confirmAndSave(false)"
                     >
-                        <Loader2 v-if="saving" :size="14" class="animate-spin" />
-                        マイ食品に保存
+                        マイ食品にだけ保存
                     </Button>
                 </div>
             </div>

@@ -3,12 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\FoodItems\StoreFoodItemRequest;
+use App\Http\Requests\FoodItems\StoreManualFoodItemRequest;
+use App\Http\Requests\FoodItems\ToggleFoodItemFavoriteRequest;
 use App\Http\Requests\FoodItems\UpdateFoodItemRequest;
 use App\Http\Resources\FoodItemResource;
+use App\Http\Resources\MealEntryResource;
 use App\Models\FoodItem;
+use App\Queries\GetUsualFoodItemsQuery;
 use App\Queries\SearchFoodItemsQuery;
 use App\Services\CreateFoodItemService;
+use App\Services\CreateManualFoodAndMealService;
 use App\Services\DeleteFoodItemService;
+use App\Services\ToggleFoodItemFavoriteService;
 use App\Services\UpdateFoodItemService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,21 +24,71 @@ use Inertia\Response;
 
 class FoodItemController extends Controller
 {
-    public function index(Request $request, SearchFoodItemsQuery $query): Response|JsonResponse
-    {
+    public function index(
+        Request $request,
+        SearchFoodItemsQuery $query,
+        GetUsualFoodItemsQuery $usualQuery,
+    ): Response|JsonResponse {
         $search = $request->string('query')->toString();
-        $items = $query->handle($request->user(), $search !== '' ? $search : null);
+        $group = $request->string('group')->toString();
 
         // JSON list for meal entry modal search (avoids Inertia asset-version 409)
         if ($request->wantsJson() && ! $request->headers->has('X-Inertia')) {
+            if ($group === 'usual') {
+                $usual = $usualQuery->handle($request->user());
+
+                return response()->json([
+                    'favorites' => FoodItemResource::collection($usual['favorites'])->resolve(),
+                    'recent' => FoodItemResource::collection($usual['recent'])->resolve(),
+                    'frequent' => FoodItemResource::collection($usual['frequent'])->resolve(),
+                ]);
+            }
+
+            $items = $query->handle($request->user(), $search !== '' ? $search : null);
+
             return response()->json([
                 'foods' => FoodItemResource::collection($items)->resolve(),
             ]);
         }
 
+        $items = $query->handle($request->user(), $search !== '' ? $search : null);
+
         return Inertia::render('Meals/Foods', [
             'foods' => FoodItemResource::collection($items)->resolve(),
             'query' => $search,
+        ]);
+    }
+
+    public function storeManual(
+        StoreManualFoodItemRequest $request,
+        CreateManualFoodAndMealService $service,
+    ): JsonResponse {
+        /** @var array<string, mixed> $validated */
+        $validated = $request->validated();
+
+        $result = $service->handle($request->user(), $validated);
+
+        return response()->json([
+            'food' => $result['food'] !== null
+                ? FoodItemResource::make($result['food'])->resolve()
+                : null,
+            'entry' => $result['entry'] !== null
+                ? MealEntryResource::make($result['entry'])->resolve()
+                : null,
+        ], 201);
+    }
+
+    public function toggleFavorite(
+        ToggleFoodItemFavoriteRequest $request,
+        FoodItem $foodItem,
+        ToggleFoodItemFavoriteService $service,
+    ): JsonResponse {
+        Gate::authorize('update', $foodItem);
+
+        $food = $service->handle($foodItem, $request->boolean('is_favorite'));
+
+        return response()->json([
+            'food' => FoodItemResource::make($food)->resolve(),
         ]);
     }
 
