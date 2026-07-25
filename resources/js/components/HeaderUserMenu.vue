@@ -15,10 +15,13 @@ import type { User } from '@/types';
 interface Props {
     /** AppSidebarHeader 等、狭いヘッダー行向けのコンパクト表示 */
     compact?: boolean;
+    /** モバイルの primary ヘッダー上で文字色を反転する */
+    primaryOnMobile?: boolean;
 }
 
 withDefaults(defineProps<Props>(), {
     compact: false,
+    primaryOnMobile: false,
 });
 
 const page = usePage();
@@ -36,8 +39,13 @@ const showAvatar = computed(
             <button
                 type="button"
                 data-test="header-user-menu-button"
-                class="group flex shrink-0 items-center rounded-md px-2 py-1.5 transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                :class="compact ? 'gap-2' : 'gap-2.5'"
+                class="group flex shrink-0 items-center rounded-md px-2 py-1.5 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                :class="[
+                    compact ? 'gap-2' : 'gap-2.5',
+                    primaryOnMobile
+                        ? 'hover:bg-muted/50 max-md:hover:bg-primary-foreground/10'
+                        : 'hover:bg-muted/50',
+                ]"
             >
                 <Avatar
                     class="overflow-hidden rounded-lg"
@@ -50,18 +58,33 @@ const showAvatar = computed(
                     />
                     <AvatarFallback
                         class="rounded-lg bg-muted font-medium text-cd-ink"
+                        :class="
+                            primaryOnMobile
+                                ? 'max-md:bg-primary-foreground/15 max-md:text-primary-foreground'
+                                : undefined
+                        "
                     >
                         {{ getInitials(user.name) }}
                     </AvatarFallback>
                 </Avatar>
                 <span
                     class="max-w-[10rem] truncate font-serif tracking-[0.06em] text-cd-ink"
-                    :class="compact ? 'text-sm' : 'text-base'"
+                    :class="[
+                        compact ? 'text-sm' : 'text-base',
+                        primaryOnMobile
+                            ? 'max-md:text-primary-foreground'
+                            : undefined,
+                    ]"
                 >
                     {{ user.name }}
                 </span>
                 <ChevronsUpDown
                     class="size-4 shrink-0 text-cd-ink-muted opacity-70 transition-opacity group-hover:opacity-100"
+                    :class="
+                        primaryOnMobile
+                            ? 'max-md:text-primary-foreground/80'
+                            : undefined
+                    "
                     aria-hidden="true"
                 />
             </button>

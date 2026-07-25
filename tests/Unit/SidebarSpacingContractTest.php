@@ -61,12 +61,27 @@ class SidebarSpacingContractTest extends TestCase
             $source,
             'Negative trigger margin pulls Clear Dawn title too close to the toggle',
         );
+        $this->assertStringContainsString(
+            'max-md:bg-primary',
+            $source,
+            'Mobile Clear Dawn header must use primary (same token as CTA buttons)',
+        );
+        $this->assertStringContainsString(
+            'max-md:text-primary-foreground',
+            $source,
+            'Mobile Clear Dawn header title/trigger must stay readable on primary',
+        );
     }
 
     public function test_clear_dawn_sidebar_keeps_top_breathing_room(): void
     {
         $source = $this->componentSource('resources/js/components/AppSidebar.vue');
 
+        $this->assertStringContainsString(
+            'cd-sidebar-panel',
+            $source,
+            'Mobile SheetContent is teleported; panel marker lets CSS apply the CD gradient',
+        );
         $this->assertStringContainsString(
             'mx-auto mt-8 flex items-baseline',
             $source,
@@ -104,6 +119,17 @@ class SidebarSpacingContractTest extends TestCase
         );
     }
 
+    public function test_clear_dawn_sidebar_css_covers_teleported_mobile_sheet(): void
+    {
+        $source = $this->componentSource('resources/css/app.css');
+
+        $this->assertStringContainsString(
+            "[data-sidebar='sidebar'][data-mobile='true']:has(.cd-sidebar-panel)",
+            $source,
+            'CD sidebar gradient must target the teleported mobile SheetContent',
+        );
+    }
+
     #[DataProvider('requiredComponentPaths')]
     public function test_spacing_contract_targets_exist(string $relativePath): void
     {
@@ -121,6 +147,7 @@ class SidebarSpacingContractTest extends TestCase
             'os sidebar' => ['resources/js/components/os/OsSidebar.vue'],
             'clear dawn header' => ['resources/js/components/AppSidebarHeader.vue'],
             'clear dawn sidebar' => ['resources/js/components/AppSidebar.vue'],
+            'clear dawn sidebar css' => ['resources/css/app.css'],
         ];
     }
 
