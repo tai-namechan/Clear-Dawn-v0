@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import {
     Camera,
     Copy,
@@ -15,11 +15,13 @@ import type { EChartsCoreOption } from 'echarts/core';
 import { computed, ref, watch } from 'vue';
 import BarcodeLookupModal from '@/components/BarcodeLookupModal.vue';
 import RestaurantLookupModal from '@/components/RestaurantLookupModal.vue';
-import BaseChart from '@/components/charts/BaseChart.vue';
 import DateNavigator from '@/components/DateNavigator.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
-import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
+import PageTabShell from '@/components/PageTabShell.vue';
 import PageViewTabs from '@/components/PageViewTabs.vue';
+import MealsSettingsPanel from '@/components/meals/MealsSettingsPanel.vue';
+import MealsTodayHero from '@/components/meals/MealsTodayHero.vue';
+import MealsTrendsPanel from '@/components/meals/MealsTrendsPanel.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -531,34 +533,15 @@ function applyChartFilter(): void {
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 md:gap-5">
-            <div class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
-                <PageSectionCard>
-                    <div class="flex flex-col gap-3">
-                        <Link
-                            :href="`/records?date=${date}`"
-                            class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
-                        >
-                            ← パフォーマンス管理
-                        </Link>
-                        <PageTitleOrnament
-                            title="食事記録"
-                            subtitle="残り摂取と次の一手を先に、記録は下で"
-                            align="left"
-                        />
-                        <PageViewTabs
-                            v-model="activeTab"
-                            :tabs="viewTabs"
-                            aria-label="食事記録表示切替"
-                            class="mt-1"
-                        />
-                    </div>
-                </PageSectionCard>
-
-                <PageSectionCard
-                    padding="sm"
-                    class="flex items-center justify-center"
-                >
+            <PageTabShell
+                title="食事記録"
+                subtitle="残り摂取と次の一手を先に、記録は下で"
+                :back-href="`/records?date=${date}`"
+                back-label="パフォーマンス管理"
+            >
+                <template #calendar>
                     <DateNavigator
+                        compact
                         :date="date"
                         route-url="/meals"
                         :reload-only="[
@@ -569,8 +552,48 @@ function applyChartFilter(): void {
                             'chartPoints',
                         ]"
                     />
-                </PageSectionCard>
-            </div>
+                </template>
+                <template #tabs>
+                    <PageViewTabs
+                        v-model="activeTab"
+                        :tabs="viewTabs"
+                        aria-label="食事記録表示切替"
+                    />
+                </template>
+
+                <MealsTodayHero
+                    v-show="activeTab === 'today'"
+                    id="panel-today"
+                    role="tabpanel"
+                    :remaining="remaining"
+                    :totals-kcal="totals.kcal"
+                    :goal-kcal="goal ? Number(goal.kcal) : null"
+                    :kcal-achievement="kcalAchievement"
+                    :next-food-hint="nextFoodHint"
+                    @set-goal="
+                        activeTab = 'settings';
+                        openGoalModal();
+                    "
+                />
+                <MealsTrendsPanel
+                    v-show="activeTab === 'trends'"
+                    id="panel-trends"
+                    role="tabpanel"
+                    v-model:filter-from="filterFrom"
+                    v-model:filter-to="filterTo"
+                    :has-chart-data="hasChartData"
+                    :kcal-chart-option="kcalChartOption"
+                    :pfc-chart-option="pfcChartOption"
+                    @apply="applyChartFilter"
+                />
+                <MealsSettingsPanel
+                    v-show="activeTab === 'settings'"
+                    id="panel-settings"
+                    role="tabpanel"
+                    :goal="goal"
+                    @edit-goal="openGoalModal"
+                />
+            </PageTabShell>
 
             <p
                 v-if="message"
@@ -586,91 +609,11 @@ function applyChartFilter(): void {
                 {{ message }}
             </p>
 
-            <!-- 今日 -->
+            <!-- 今日（二次ブロック） -->
             <div
                 v-show="activeTab === 'today'"
-                id="panel-today"
-                role="tabpanel"
                 class="flex flex-col gap-4"
             >
-                <PageSectionCard aria-label="残りの摂取目安">
-                    <div class="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
-                        <div>
-                            <p class="font-sans text-xs font-medium text-cd-ink-muted">
-                                残りの摂取目安
-                            </p>
-                            <template v-if="remaining">
-                                <p class="mt-2 font-sans text-3xl font-bold tracking-tight text-cd-ink">
-                                    あと {{ formatNum(remaining.kcal) }}
-                                    <span class="text-lg font-semibold text-cd-ink-muted">kcal</span>
-                                </p>
-                                <p class="mt-2 font-sans text-sm text-cd-ink-muted">
-                                    目標達成に向けて、あとこれだけ摂れます。
-                                </p>
-                                <p
-                                    v-if="kcalAchievement !== null"
-                                    class="mt-1 font-sans text-xs text-cd-ink-muted"
-                                >
-                                    現在 {{ formatNum(totals.kcal) }} /
-                                    {{ formatNum(goal!.kcal) }} kcal（{{ kcalAchievement }}%）
-                                </p>
-                            </template>
-                            <template v-else>
-                                <p class="mt-2 font-sans text-xl font-semibold text-cd-ink">
-                                    目標未設定
-                                </p>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    class="mt-3 font-sans"
-                                    @click="
-                                        activeTab = 'settings';
-                                        openGoalModal();
-                                    "
-                                >
-                                    目標を設定
-                                </Button>
-                            </template>
-                        </div>
-
-                        <div>
-                            <p class="font-sans text-xs font-medium text-cd-ink-muted">
-                                残りの PFC
-                            </p>
-                            <div
-                                v-if="remaining"
-                                class="mt-3 grid grid-cols-3 gap-2"
-                            >
-                                <div class="rounded-xl bg-cd-pfc-p/15 px-3 py-3 text-center">
-                                    <p class="font-sans text-[11px] font-medium text-cd-pfc-p">P</p>
-                                    <p class="mt-1 font-sans text-lg font-bold text-cd-ink">
-                                        +{{ formatNum(remaining.protein_g) }}
-                                        <span class="text-xs font-medium">g</span>
-                                    </p>
-                                </div>
-                                <div class="rounded-xl bg-cd-pfc-f/15 px-3 py-3 text-center">
-                                    <p class="font-sans text-[11px] font-medium text-cd-pfc-f">F</p>
-                                    <p class="mt-1 font-sans text-lg font-bold text-cd-ink">
-                                        +{{ formatNum(remaining.fat_g) }}
-                                        <span class="text-xs font-medium">g</span>
-                                    </p>
-                                </div>
-                                <div class="rounded-xl bg-cd-pfc-c/15 px-3 py-3 text-center">
-                                    <p class="font-sans text-[11px] font-medium text-cd-pfc-c">C</p>
-                                    <p class="mt-1 font-sans text-lg font-bold text-cd-ink">
-                                        +{{ formatNum(remaining.carb_g) }}
-                                        <span class="text-xs font-medium">g</span>
-                                    </p>
-                                </div>
-                            </div>
-                            <p class="mt-3 font-sans text-sm leading-relaxed text-cd-ink">
-                                <span class="text-xs font-medium text-cd-ink-muted">次に摂るとよいもの</span><br>
-                                {{ nextFoodHint }}
-                            </p>
-                        </div>
-                    </div>
-                </PageSectionCard>
-
                 <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     <button
                         type="button"
@@ -807,118 +750,6 @@ function applyChartFilter(): void {
                             まだ食事は記録されていません。上のクイック操作か「食事を追加」から始めましょう。
                         </p>
                     </div>
-                </PageSectionCard>
-            </div>
-
-            <!-- 推移 -->
-            <div
-                v-show="activeTab === 'trends'"
-                id="panel-trends"
-                role="tabpanel"
-                class="flex flex-col gap-4"
-            >
-                <PageSectionCard aria-label="推移">
-                    <div class="flex flex-col gap-4">
-                        <div
-                            class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
-                        >
-                            <PageTitleOrnament
-                                title="推移"
-                                subtitle="期間内の日別合計を表示します。"
-                                align="left"
-                            />
-
-                            <div class="flex flex-wrap items-end gap-3">
-                                <div class="flex flex-col gap-1">
-                                    <Label class="font-sans text-xs">開始</Label>
-                                    <Input v-model="filterFrom" type="date" />
-                                </div>
-                                <div class="flex flex-col gap-1">
-                                    <Label class="font-sans text-xs">終了</Label>
-                                    <Input v-model="filterTo" type="date" />
-                                </div>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    class="font-sans"
-                                    @click="applyChartFilter"
-                                >
-                                    反映
-                                </Button>
-                            </div>
-                        </div>
-
-                        <div
-                            v-if="!hasChartData"
-                            class="rounded-xl border border-dashed border-cd-line px-4 py-10 text-center"
-                        >
-                            <p class="font-sans text-sm text-cd-ink-muted">
-                                この期間の食事記録がまだありません。記録すると推移グラフが表示されます。
-                            </p>
-                        </div>
-
-                        <div v-else class="grid gap-6 lg:grid-cols-2">
-                            <div>
-                                <h3 class="mb-2 font-sans text-sm font-semibold text-cd-ink">
-                                    エネルギー（kcal）
-                                </h3>
-                                <BaseChart :option="kcalChartOption" />
-                            </div>
-                            <div>
-                                <h3 class="mb-2 font-sans text-sm font-semibold text-cd-ink">
-                                    PFC（g）
-                                </h3>
-                                <BaseChart :option="pfcChartOption" />
-                            </div>
-                        </div>
-                    </div>
-                </PageSectionCard>
-            </div>
-
-            <!-- 設定 -->
-            <div
-                v-show="activeTab === 'settings'"
-                id="panel-settings"
-                role="tabpanel"
-                class="flex flex-col gap-4"
-            >
-                <PageSectionCard>
-                    <div class="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                            <h2 class="font-sans text-base font-semibold text-cd-ink">
-                                栄養目標
-                            </h2>
-                            <p class="mt-1 font-sans text-sm text-cd-ink-muted">
-                                1 日あたりの目標値。残り kcal / PFC の基準になります。
-                            </p>
-                            <p
-                                v-if="goal"
-                                class="mt-3 font-sans text-sm text-cd-ink"
-                            >
-                                現在: {{ formatNum(goal.kcal) }} kcal /
-                                P {{ formatNum(goal.protein_g) }}g /
-                                F {{ formatNum(goal.fat_g) }}g /
-                                C {{ formatNum(goal.carb_g) }}g
-                            </p>
-                            <p v-else class="mt-3 font-sans text-sm text-cd-ink-muted">
-                                まだ目標がありません。
-                            </p>
-                        </div>
-                        <Button
-                            type="button"
-                            class="font-sans"
-                            @click="openGoalModal"
-                        >
-                            目標を設定
-                        </Button>
-                    </div>
-                    <Link
-                        href="/meals/foods"
-                        class="mt-5 inline-flex items-center gap-2 font-sans text-sm font-medium text-primary underline-offset-2 hover:underline"
-                    >
-                        <UtensilsCrossed :size="14" :stroke-width="1.6" />
-                        マイ食品を管理
-                    </Link>
                 </PageSectionCard>
             </div>
         </div>

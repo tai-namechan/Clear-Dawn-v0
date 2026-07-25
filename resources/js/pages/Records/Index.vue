@@ -16,7 +16,7 @@ import type { Component } from 'vue';
 import BaseChart from '@/components/charts/BaseChart.vue';
 import DateNavigator from '@/components/DateNavigator.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
-import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
+import PageTabShell from '@/components/PageTabShell.vue';
 import { Button } from '@/components/ui/button';
 import {
     formatSleepDelta,
@@ -451,22 +451,13 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
         <div
             class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 md:gap-5"
         >
-            <div
-                class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]"
+            <PageTabShell
+                title="パフォーマンス管理"
+                subtitle="食事とコンディションを、すぐ記録して、すぐ振り返る"
             >
-                <PageSectionCard>
-                    <PageTitleOrnament
-                        title="パフォーマンス管理"
-                        subtitle="食事とコンディションを、すぐ記録して、すぐ振り返る"
-                        align="left"
-                    />
-                </PageSectionCard>
-
-                <PageSectionCard
-                    padding="sm"
-                    class="flex items-center justify-center"
-                >
+                <template #calendar>
                     <DateNavigator
+                        compact
                         :date="date"
                         route-url="/records"
                         :reload-only="[
@@ -482,8 +473,8 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                             'date',
                         ]"
                     />
-                </PageSectionCard>
-            </div>
+                </template>
+            </PageTabShell>
 
             <PageSectionCard padding="none" aria-label="本日のサマリ">
                 <div
