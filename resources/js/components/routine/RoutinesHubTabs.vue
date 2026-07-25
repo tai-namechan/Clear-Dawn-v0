@@ -9,13 +9,10 @@ type HubTab = {
 };
 
 /**
- * ハブ導線:
- * プログラム → ルーティン（実行・作戦・チェックイン含む） → 履歴
- *
- * 「今日/作戦」は /routines の今日タブへ巻き取り済み。
+ * ルーティン領域の横導線: 実行ハブ ↔ 履歴。
+ * プログラム一覧はサイドバー / ルーティン画面ヘッダーから辿る（ハブタブには置かない）。
  */
 const tabs: HubTab[] = [
-    { label: 'プログラム', href: '/programs', matchPrefix: true },
     { label: 'ルーティン', href: '/routines', matchPrefix: true },
     { label: '履歴', href: '/history' },
 ];

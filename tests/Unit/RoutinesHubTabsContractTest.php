@@ -10,11 +10,11 @@ use Tests\TestCase;
  */
 class RoutinesHubTabsContractTest extends TestCase
 {
-    public function test_hub_tabs_keep_existing_urls_without_today_ops(): void
+    public function test_hub_tabs_keep_routines_and_history_only(): void
     {
         $source = $this->componentSource();
 
-        foreach (['/programs', '/routines', '/history'] as $href) {
+        foreach (['/routines', '/history'] as $href) {
             $this->assertStringContainsString(
                 "href: '{$href}'",
                 $source,
@@ -26,6 +26,11 @@ class RoutinesHubTabsContractTest extends TestCase
             "href: '/today'",
             $source,
             '今日/作戦 was folded into /routines today tab',
+        );
+        $this->assertStringNotContainsString(
+            "href: '/programs'",
+            $source,
+            'Programs list stays reachable via sidebar/header, not hub tabs',
         );
     }
 
@@ -89,14 +94,19 @@ class RoutinesHubTabsContractTest extends TestCase
         );
     }
 
-    public function test_programs_index_includes_hub_tabs(): void
+    public function test_programs_index_is_standalone_without_hub_tabs(): void
     {
         $source = $this->pageSource('resources/js/pages/Programs/Index.vue');
 
-        $this->assertStringContainsString(
+        $this->assertStringNotContainsString(
             'RoutinesHubTabs',
             $source,
-            'Programs index is a hub destination and must show the same underline hub tabs',
+            'Programs list is a sidebar destination and does not need routines hub tabs',
+        );
+        $this->assertStringContainsString(
+            'プログラム一覧',
+            $source,
+            'Programs list screen itself remains',
         );
     }
 
