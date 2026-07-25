@@ -98,6 +98,12 @@ const isSessionFinished = computed(
         props.session.status === 'aborted',
 );
 
+const canReopenCurrentStep = computed(
+    () =>
+        currentStep.value?.status === 'completed' ||
+        currentStep.value?.status === 'skipped',
+);
+
 function goToStep(index: number): void {
     if (index >= 0 && index < steps.value.length) {
         currentIndex.value = index;
@@ -157,6 +163,20 @@ async function logBlock(payload: {
     }
 }
 
+async function unlogBlock(blockLogId: string): Promise<void> {
+    logging.value = true;
+
+    try {
+        await apiFetch(`/blocks/${blockLogId}`, {
+            method: 'DELETE',
+        });
+
+        router.reload({ only: ['session'] });
+    } finally {
+        logging.value = false;
+    }
+}
+
 function advanceToNextPending(): void {
     const nextPending = steps.value.findIndex(
         (step) => step.status === 'pending',
@@ -207,6 +227,26 @@ async function skipStep(): Promise<void> {
             advanceToNextPending();
         },
     });
+}
+
+async function reopenStep(): Promise<void> {
+    if (
+        !currentStep.value ||
+        (currentStep.value.status !== 'completed' &&
+            currentStep.value.status !== 'skipped')
+    ) {
+        return;
+    }
+
+    await apiFetch(
+        `/sessions/${props.session.id}/steps/${currentStep.value.id}`,
+        {
+            method: 'PATCH',
+            body: JSON.stringify({ status: 'pending' }),
+        },
+    );
+
+    router.reload({ only: ['session'] });
 }
 
 async function completeSession(): Promise<void> {
@@ -584,8 +624,9 @@ const metrics = computed((): MetricChip[] => {
                             :amount-unit="currentStep.amount_unit"
                             :default-load="currentStep.target_load"
                             :default-amount="currentStep.target_amount"
-                            :logging="logging"
+                            :logging="logging || isSessionFinished"
                             @log="logBlock"
+                            @unlog="unlogBlock"
                         />
                     </div>
                 </section>
@@ -683,6 +724,28 @@ const metrics = computed((): MetricChip[] => {
                         class="hidden flex-col gap-2 border-t border-cd-line p-3 lg:flex"
                     >
                         <Button
+                            v-if="canReopenCurrentStep"
+                            type="button"
+                            variant="outline"
+                            class="w-full"
+                            @click="reopenStep"
+                        >
+                            未完了に戻す
+                        </Button>
+                        <Button
+                            v-else-if="!allStepsResolved"
+                            type="button"
+                            class="w-full"
+                            :disabled="
+                                !currentStep ||
+                                currentStep.status !== 'pending'
+                            "
+                            @click="completeStep"
+                        >
+                            <Check :size="16" :stroke-width="1.8" />
+                            完了して次へ
+                        </Button>
+                        <Button
                             v-if="allStepsResolved"
                             type="button"
                             class="w-full"
@@ -695,19 +758,6 @@ const metrics = computed((): MetricChip[] => {
                                     ? '完了処理中…'
                                     : '実行を完了する'
                             }}
-                        </Button>
-                        <Button
-                            v-else
-                            type="button"
-                            class="w-full"
-                            :disabled="
-                                !currentStep ||
-                                currentStep.status !== 'pending'
-                            "
-                            @click="completeStep"
-                        >
-                            <Check :size="16" :stroke-width="1.8" />
-                            完了して次へ
                         </Button>
 
                         <Button
@@ -743,50 +793,70 @@ const metrics = computed((): MetricChip[] => {
             v-if="!isSessionFinished"
             class="fixed inset-x-4 bottom-4 z-40 rounded-2xl border border-cd-line bg-[#fffcf8]/95 p-2 shadow-xl backdrop-blur lg:hidden"
         >
-            <div class="grid grid-cols-[1fr_auto_auto] gap-2">
+            <div class="flex flex-col gap-2">
+                <div class="grid grid-cols-[1fr_auto_auto] gap-2">
+                    <Button
+                        v-if="allStepsResolved"
+                        type="button"
+                        :disabled="completing"
+                        @click="completeSession"
+                    >
+                        <Check :size="16" :stroke-width="1.8" />
+                        {{ completing ? '完了処理中…' : '実行を完了' }}
+                    </Button>
+                    <Button
+                        v-else-if="canReopenCurrentStep"
+                        type="button"
+                        variant="outline"
+                        @click="reopenStep"
+                    >
+                        未完了に戻す
+                    </Button>
+                    <Button
+                        v-else
+                        type="button"
+                        :disabled="
+                            !currentStep || currentStep.status !== 'pending'
+                        "
+                        @click="completeStep"
+                    >
+                        <Check :size="16" :stroke-width="1.8" />
+                        完了して次へ
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        aria-label="このステップをスキップ"
+                        :disabled="
+                            !currentStep ||
+                            currentStep.status !== 'pending' ||
+                            allStepsResolved
+                        "
+                        @click="skipStep"
+                    >
+                        <SkipForward :size="16" :stroke-width="1.8" />
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="実行を中断"
+                        :disabled="completing"
+                        @click="abortSession"
+                    >
+                        <CircleStop :size="16" :stroke-width="1.8" />
+                    </Button>
+                </div>
                 <Button
-                    v-if="allStepsResolved"
-                    type="button"
-                    :disabled="completing"
-                    @click="completeSession"
-                >
-                    <Check :size="16" :stroke-width="1.8" />
-                    {{ completing ? '完了処理中…' : '実行を完了' }}
-                </Button>
-                <Button
-                    v-else
-                    type="button"
-                    :disabled="
-                        !currentStep || currentStep.status !== 'pending'
-                    "
-                    @click="completeStep"
-                >
-                    <Check :size="16" :stroke-width="1.8" />
-                    完了して次へ
-                </Button>
-                <Button
+                    v-if="allStepsResolved && canReopenCurrentStep"
                     type="button"
                     variant="outline"
-                    size="icon"
-                    aria-label="このステップをスキップ"
-                    :disabled="
-                        !currentStep ||
-                        currentStep.status !== 'pending' ||
-                        allStepsResolved
-                    "
-                    @click="skipStep"
+                    size="sm"
+                    class="w-full"
+                    @click="reopenStep"
                 >
-                    <SkipForward :size="16" :stroke-width="1.8" />
-                </Button>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-label="実行を中断"
-                    :disabled="completing"
-                    @click="abortSession"
-                >
-                    <CircleStop :size="16" :stroke-width="1.8" />
+                    このステップを未完了に戻す
                 </Button>
             </div>
         </div>
