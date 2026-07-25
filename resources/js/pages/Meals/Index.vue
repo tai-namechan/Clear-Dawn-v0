@@ -6,7 +6,6 @@ import {
     Coffee,
     Cookie,
     Copy,
-    House,
     Leaf,
     Pencil,
     Plus,
