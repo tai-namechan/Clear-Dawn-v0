@@ -350,7 +350,8 @@ const conditionChartOption = computed<EChartsCoreOption>(() => {
     );
 
     return {
-        grid: { left: 44, right: 44, top: 16, bottom: 48 },
+        // Mini chart: keep axis names off the plot — legend + tooltip carry units.
+        grid: { left: 40, right: 36, top: 12, bottom: 48 },
         tooltip: { trigger: 'axis' },
         legend: chartLegend(10, { bottom: 0, left: 'center' }),
         xAxis: {
@@ -362,20 +363,12 @@ const conditionChartOption = computed<EChartsCoreOption>(() => {
         yAxis: [
             {
                 type: 'value',
-                name: '体重 kg',
-                nameLocation: 'end',
-                nameGap: 10,
-                nameTextStyle: chartAxisLabel(10),
                 axisLabel: chartAxisLabel(10),
                 splitLine: chartSplitLine(),
                 scale: true,
             },
             {
                 type: 'value',
-                name: '睡眠 時間',
-                nameLocation: 'end',
-                nameGap: 10,
-                nameTextStyle: chartAxisLabel(10),
                 axisLabel: chartAxisLabel(10),
                 splitLine: { show: false },
                 min: 0,
@@ -427,8 +420,9 @@ const strengthDates = computed(() =>
 );
 
 const strengthChartOption = computed<EChartsCoreOption>(() => ({
-    grid: { left: 40, right: 12, top: 28, bottom: 24 },
-    legend: chartLegend(10),
+    // Long item names sit in the bottom legend so they do not cover the plot.
+    grid: { left: 40, right: 12, top: 12, bottom: 56 },
+    legend: chartLegend(10, { bottom: 0, left: 'center' }),
     tooltip: { trigger: 'axis' },
     xAxis: {
         type: 'category',
@@ -439,6 +433,8 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
     yAxis: {
         type: 'value',
         name: 'kg',
+        nameGap: 8,
+        nameTextStyle: chartAxisLabel(10),
         axisLabel: chartAxisLabel(10),
         splitLine: chartSplitLine(),
     },
@@ -758,7 +754,7 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                             <BaseChart
                                 v-if="hasStrengthChartData"
                                 :option="strengthChartOption"
-                                class="!h-40"
+                                class="!h-48"
                             />
                             <p
                                 v-else

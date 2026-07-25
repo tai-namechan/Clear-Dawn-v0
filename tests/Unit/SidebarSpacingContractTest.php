@@ -64,12 +64,12 @@ class SidebarSpacingContractTest extends TestCase
         $this->assertStringContainsString(
             'cd-app-header',
             $source,
-            'Clear Dawn header must use the shared chrome class for dawn sidebar-matching fill',
+            'Clear Dawn header must use the shared chrome class',
         );
         $this->assertStringContainsString(
             'cd-app-header-title',
             $source,
-            'Clear Dawn title uses the shared header title class for contrast on dawn chrome',
+            'Clear Dawn title uses the shared header title class',
         );
         $this->assertStringNotContainsString(
             'max-md:bg-primary',
@@ -79,7 +79,7 @@ class SidebarSpacingContractTest extends TestCase
         $this->assertStringNotContainsString(
             'max-md:text-primary-foreground',
             $source,
-            'Mobile Clear Dawn header title/trigger stay on shared dawn chrome tokens',
+            'Mobile Clear Dawn header title/trigger stay on shared chrome tokens',
         );
     }
 
@@ -159,14 +159,19 @@ class SidebarSpacingContractTest extends TestCase
             'Sidebar gradient starts from dawn-deep',
         );
         $this->assertStringContainsString(
-            '--cd-header-bg: linear-gradient(',
+            '--cd-header-bg: rgba(255, 255, 255, 0.68)',
             $source,
-            'Header uses the same dawn gradient family as the sidebar',
+            'Desktop header uses translucent white over marble',
+        );
+        $this->assertStringContainsString(
+            '@media (max-width: 767px)',
+            $source,
+            'Mobile header switches to dawn palette below md',
         );
         $this->assertStringContainsString(
             '--cd-header-text: var(--cd-sidebar-text)',
             $source,
-            'Header text tokens match sidebar text for contrast on dawn chrome',
+            'Mobile header text tokens match sidebar text for contrast on dawn chrome',
         );
         $this->assertStringContainsString(
             '.cd-app-header',
