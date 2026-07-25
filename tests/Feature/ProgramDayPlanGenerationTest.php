@@ -7,12 +7,16 @@ use App\Enums\RoutinePlanStatus;
 use App\Models\PersonalProfileEntry;
 use App\Models\Program;
 use App\Models\ProgramChoiceOption;
+use App\Models\ProgramDayStep;
 use App\Models\ProgramDayTemplate;
 use App\Models\ProgramPhase;
+use App\Models\ProgramStepItem;
 use App\Models\ProgramVersion;
 use App\Models\ProgramWeek;
+use App\Models\RoutineItem;
 use App\Models\RoutinePlan;
 use App\Models\User;
+use App\Models\Video;
 use App\Services\GenerateProgramDayPlansService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -103,6 +107,62 @@ class ProgramDayPlanGenerationTest extends TestCase
         // 翌日は次の sequential DAY に進む
         $nextPlans = $service->handle($user, Carbon::parse('2026-07-22'));
         $this->assertSame($dayB->id, $nextPlans->first()->program_day_template_id);
+    }
+
+    public function test_generation_snapshots_routine_item_default_video(): void
+    {
+        $user = User::factory()->create();
+        $program = Program::factory()->for($user)->create();
+        $version = ProgramVersion::factory()->for($program)->create([
+            'starts_on' => '2026-07-20',
+            'ends_on' => '2026-08-20',
+        ]);
+        $phase = ProgramPhase::factory()->for($version, 'version')->create();
+        ProgramWeek::factory()->create([
+            'program_version_id' => $version->id,
+            'program_phase_id' => $phase->id,
+            'starts_on' => '2026-07-20',
+        ]);
+
+        $day = ProgramDayTemplate::factory()->create([
+            'program_version_id' => $version->id,
+            'code' => 'DAY-V',
+            'fixed_weekday' => 2, // Tuesday
+            'sort_order' => 1,
+        ]);
+        $dayStep = ProgramDayStep::factory()->create([
+            'program_day_template_id' => $day->id,
+            'sort_order' => 1,
+        ]);
+
+        $routineItem = RoutineItem::factory()->create([
+            'user_id' => $user->id,
+            'name' => 'WGS',
+        ]);
+        $video = Video::factory()->ready()->create([
+            'user_id' => $user->id,
+            'routine_item_id' => $routineItem->id,
+            'title' => 'WGSフォーム確認',
+        ]);
+        $routineItem->update(['default_video_id' => $video->id]);
+
+        ProgramStepItem::factory()->create([
+            'program_day_step_id' => $dayStep->id,
+            'routine_item_id' => $routineItem->id,
+            'sort_order' => 1,
+            'sets' => 3,
+            'reps' => 10,
+        ]);
+
+        $plans = app(GenerateProgramDayPlansService::class)
+            ->handle($user, Carbon::parse('2026-07-21'));
+
+        $this->assertCount(1, $plans);
+        $this->assertDatabaseHas('routine_plan_steps', [
+            'routine_plan_id' => $plans->first()->id,
+            'routine_item_id' => $routineItem->id,
+            'video_id' => $video->id,
+        ]);
     }
 
     public function test_choice_day_starts_as_draft_until_option_selected(): void

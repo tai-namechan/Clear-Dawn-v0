@@ -6,6 +6,9 @@ import {
     Circle,
     CircleCheck,
     CircleStop,
+    Clock3,
+    Hash,
+    Layers3,
     SkipForward,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
@@ -89,10 +92,6 @@ const planHref = computed(
     () => `/plans/${props.session.routine_plan_id}`,
 );
 
-const planTitle = computed(
-    () => props.session.routine_plan?.title ?? 'ルーティン実行',
-);
-
 const isSessionFinished = computed(
     () =>
         props.session.status === 'completed' ||
@@ -147,13 +146,10 @@ async function logBlock(payload: {
     logging.value = true;
 
     try {
-        await apiFetch(
-            `/session-steps/${currentStep.value.id}/blocks`,
-            {
-                method: 'POST',
-                body: JSON.stringify(payload),
-            },
-        );
+        await apiFetch(`/session-steps/${currentStep.value.id}/blocks`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
 
         router.reload({ only: ['session'] });
     } finally {
@@ -246,19 +242,13 @@ function stepPurposeKey(step: RoutineSessionStep) {
     );
 }
 
-function metricValue(
-    label: string,
-    value: string | number | null | undefined,
-): { label: string; value: string } {
-    return {
-        label,
-        value: value !== null && value !== undefined && value !== ''
-            ? String(value)
-            : '—',
-    };
-}
+type MetricChip = {
+    label: string;
+    value: string;
+    icon: 'hash' | 'layers' | 'clock';
+};
 
-const metrics = computed(() => {
+const metrics = computed((): MetricChip[] => {
     const step = currentStep.value;
 
     if (!step) {
@@ -266,40 +256,53 @@ const metrics = computed(() => {
     }
 
     const type = trackingType.value;
-    const items = [
-        metricValue(
-            '回数',
-            type === 'reps' || type === 'weight_reps' || type === 'count'
-                ? formatAmountTarget(step.target_amount, step.amount_unit)
-                : null,
-        ),
-        metricValue(
-            '時間',
-            type === 'duration' && step.target_amount
-                ? formatDurationSeconds(Number(step.target_amount))
-                : null,
-        ),
-        metricValue(
-            'セット',
-            step.target_blocks
-                ? `${step.target_blocks}${step.routine_item?.category === 'strength' ? 'セット' : 'ブロック'}`
-                : null,
-        ),
-        metricValue(
-            'インターバル',
-            step.rest_seconds ? `${step.rest_seconds}秒` : null,
-        ),
+    const items: Array<MetricChip | null> = [
+        type === 'reps' || type === 'weight_reps' || type === 'count'
+            ? {
+                  label: '回数',
+                  value:
+                      formatAmountTarget(step.target_amount, step.amount_unit) ??
+                      '—',
+                  icon: 'hash',
+              }
+            : null,
+        type === 'duration' && step.target_amount
+            ? {
+                  label: '時間',
+                  value: formatDurationSeconds(Number(step.target_amount)),
+                  icon: 'clock',
+              }
+            : null,
+        step.target_blocks
+            ? {
+                  label: 'セット',
+                  value: `${step.target_blocks}${
+                      step.routine_item?.category === 'strength'
+                          ? 'セット'
+                          : 'ブロック'
+                  }`,
+                  icon: 'layers',
+              }
+            : null,
+        step.rest_seconds
+            ? {
+                  label: '休憩',
+                  value: `${step.rest_seconds}秒`,
+                  icon: 'clock',
+              }
+            : null,
     ];
 
-    return items.filter((item) => item.value !== '—');
+    return items.filter((item): item is MetricChip => item !== null);
 });
-
 </script>
 
 <template>
-    <Head :title="planTitle" />
+    <Head title="ルーティン実行" />
 
-    <div class="flex min-h-0 flex-1 flex-col rounded-xl p-4 pb-28 md:px-6 md:pb-28 lg:pb-6">
+    <div
+        class="flex min-h-0 flex-1 flex-col rounded-xl p-4 pb-28 md:px-6 md:pb-28 lg:pb-6"
+    >
         <div class="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4">
             <PageSectionCard>
                 <div class="flex flex-col gap-4">
@@ -318,7 +321,7 @@ const metrics = computed(() => {
                             <h1
                                 class="font-sans text-2xl font-semibold tracking-tight text-cd-ink md:text-3xl"
                             >
-                                {{ planTitle }}
+                                ルーティン実行
                             </h1>
                             <p
                                 v-if="allStepsResolved"
@@ -369,449 +372,432 @@ const metrics = computed(() => {
             <div
                 class="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px]"
             >
-                    <section
-                        v-if="allStepsResolved && !isSessionFinished"
-                        aria-label="実行のまとめ"
-                        class="cd-panel flex flex-col px-5 py-8"
-                    >
-                        <div class="mx-auto max-w-md text-center">
-                            <CircleCheck
-                                :size="40"
-                                :stroke-width="1.5"
-                                class="mx-auto text-cd-moss"
-                            />
-                            <h2
-                                class="mt-4 font-sans text-xl font-semibold text-cd-ink"
+                <section
+                    v-if="allStepsResolved && !isSessionFinished"
+                    aria-label="実行のまとめ"
+                    class="cd-panel flex flex-col px-5 py-8"
+                >
+                    <div class="mx-auto max-w-md text-center">
+                        <CircleCheck
+                            :size="40"
+                            :stroke-width="1.5"
+                            class="mx-auto text-cd-moss"
+                        />
+                        <h2
+                            class="mt-4 font-sans text-xl font-semibold text-cd-ink"
+                        >
+                            すべてのステップが終わりました
+                        </h2>
+                        <p class="mt-2 font-sans text-sm text-cd-ink-muted">
+                            完了 {{ completedCount }} /
+                            {{ steps.length }}
+                            <span
+                                v-if="resolvedCount - completedCount > 0"
+                                class="before:mx-1.5 before:content-['·']"
                             >
-                                すべてのステップが終わりました
-                            </h2>
-                            <p
-                                class="mt-2 font-sans text-sm text-cd-ink-muted"
-                            >
-                                完了 {{ completedCount }} /
-                                {{ steps.length }}
-                                <span
-                                    v-if="
-                                        resolvedCount - completedCount > 0
-                                    "
-                                    class="before:mx-1.5 before:content-['·']"
-                                >
-                                    スキップ
-                                    {{ resolvedCount - completedCount }}
-                                </span>
-                            </p>
-                            <p
-                                class="mt-3 font-sans text-sm text-cd-ink-muted"
-                            >
-                                「実行を完了する」を押すと今日/作戦へ戻ります。履歴にも残ります。
-                            </p>
-                            <Button
-                                type="button"
-                                class="mt-6"
-                                :disabled="completing"
-                                @click="completeSession"
-                            >
-                                <Check :size="16" :stroke-width="1.8" />
-                                {{
-                                    completing
-                                        ? '完了処理中…'
-                                        : '実行を完了する'
-                                }}
-                            </Button>
-                        </div>
-                    </section>
+                                スキップ
+                                {{ resolvedCount - completedCount }}
+                            </span>
+                        </p>
+                        <p class="mt-3 font-sans text-sm text-cd-ink-muted">
+                            「実行を完了する」を押すと今日/作戦へ戻ります。履歴にも残ります。
+                        </p>
+                        <Button
+                            type="button"
+                            class="mt-6"
+                            :disabled="completing"
+                            @click="completeSession"
+                        >
+                            <Check :size="16" :stroke-width="1.8" />
+                            {{
+                                completing
+                                    ? '完了処理中…'
+                                    : '実行を完了する'
+                            }}
+                        </Button>
+                    </div>
+                </section>
 
-                    <section
-                        v-else-if="isSessionFinished"
-                        aria-label="実行済み"
-                        class="cd-panel flex flex-col px-5 py-8"
-                    >
-                        <div class="mx-auto max-w-md text-center">
-                            <h2
-                                class="font-sans text-xl font-semibold text-cd-ink"
-                            >
-                                {{
-                                    session.status === 'completed'
-                                        ? 'この実行は完了済みです'
-                                        : 'この実行は中断されました'
-                                }}
-                            </h2>
-                            <p
-                                class="mt-2 font-sans text-sm text-cd-ink-muted"
-                            >
-                                今日/作戦画面から、別の予定を開始できます。
-                            </p>
-                            <Button type="button" class="mt-6" as-child>
-                                <Link href="/today">今日/作戦へ戻る</Link>
-                            </Button>
-                        </div>
-                    </section>
+                <section
+                    v-else-if="isSessionFinished"
+                    aria-label="実行済み"
+                    class="cd-panel flex flex-col px-5 py-8"
+                >
+                    <div class="mx-auto max-w-md text-center">
+                        <h2
+                            class="font-sans text-xl font-semibold text-cd-ink"
+                        >
+                            {{
+                                session.status === 'completed'
+                                    ? 'この実行は完了済みです'
+                                    : 'この実行は中断されました'
+                            }}
+                        </h2>
+                        <p class="mt-2 font-sans text-sm text-cd-ink-muted">
+                            今日/作戦画面から、別の予定を開始できます。
+                        </p>
+                        <Button type="button" class="mt-6" as-child>
+                            <Link href="/today">今日/作戦へ戻る</Link>
+                        </Button>
+                    </div>
+                </section>
 
-                    <section
-                        v-else-if="currentStep"
-                        aria-label="現在のステップ"
-                        class="cd-panel flex flex-col"
-                    >
-                        <div class="border-b border-cd-line/60 px-5 py-5">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span
-                                    class="inline-flex rounded-full border px-2 py-0.5 font-sans text-xs"
-                                    :class="
-                                        purposeChipClasses(
-                                            stepPurposeKey(currentStep),
-                                        )
-                                    "
-                                >
-                                    {{
-                                        stepPurposeLabels[
-                                            stepPurposeKey(currentStep)
-                                        ]
-                                    }}
-                                </span>
-                                <span
-                                    v-if="trackingType"
-                                    class="font-sans text-xs text-cd-ink-muted"
-                                >
-                                    {{ trackingTypeLabels[trackingType] }}
-                                </span>
+                <section
+                    v-else-if="currentStep"
+                    aria-label="現在のステップ"
+                    class="cd-panel flex flex-col"
+                >
+                    <div class="border-b border-cd-line/60 px-5 py-5">
+                        <div
+                            class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+                        >
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h2
+                                        class="font-sans text-xl font-semibold tracking-tight text-cd-ink md:text-2xl"
+                                    >
+                                        {{ currentStep.item_name }}
+                                    </h2>
+                                    <span
+                                        class="inline-flex rounded-full border px-2 py-0.5 font-sans text-xs"
+                                        :class="
+                                            purposeChipClasses(
+                                                stepPurposeKey(currentStep),
+                                            )
+                                        "
+                                    >
+                                        {{
+                                            stepPurposeLabels[
+                                                stepPurposeKey(currentStep)
+                                            ]
+                                        }}
+                                    </span>
+                                    <span
+                                        v-if="trackingType"
+                                        class="inline-flex rounded-full border border-cd-line/70 px-2 py-0.5 font-sans text-xs text-cd-ink-muted"
+                                    >
+                                        {{
+                                            trackingTypeLabels[trackingType]
+                                        }}
+                                    </span>
+                                </div>
                             </div>
-
-                            <h2
-                                class="mt-3 font-sans text-xl font-semibold tracking-tight text-cd-ink md:text-2xl"
-                            >
-                                {{ currentStep.item_name }}
-                            </h2>
 
                             <div
                                 v-if="metrics.length"
-                                class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4"
+                                class="flex flex-wrap gap-4 sm:justify-end"
                             >
                                 <div
                                     v-for="metric in metrics"
                                     :key="metric.label"
-                                    class="rounded-xl border border-cd-line/60 bg-white/40 px-3 py-2"
+                                    class="flex items-center gap-2"
                                 >
-                                    <p
-                                        class="font-sans text-[11px] tracking-[0.08em] text-cd-ink-muted"
+                                    <span
+                                        class="inline-flex size-8 items-center justify-center rounded-lg bg-cd-icon-bg text-cd-icon-primary"
                                     >
-                                        {{ metric.label }}
-                                    </p>
-                                    <p
-                                        class="mt-1 font-sans text-sm font-medium text-cd-ink"
-                                    >
-                                        {{ metric.value }}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="px-5 py-5">
-                            <div
-                                class="grid gap-4"
-                                :class="
-                                    currentStep.video || playbackLoading
-                                        ? 'lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] lg:items-start'
-                                        : ''
-                                "
-                            >
-                                <div
-                                    v-if="currentStep.video || playbackLoading"
-                                    class="min-w-0 space-y-3"
-                                >
-                                    <div
-                                        class="overflow-hidden rounded-2xl border border-cd-line bg-[#14131A] shadow-sm"
-                                    >
-                                        <div
-                                            v-if="playbackLoading"
-                                            class="flex aspect-video max-h-[min(52vh,28rem)] items-center justify-center font-sans text-sm text-white/70"
-                                        >
-                                            動画を読み込み中…
-                                        </div>
-                                        <video
-                                            v-else-if="playbackUrl"
-                                            :src="playbackUrl"
-                                            class="aspect-video max-h-[min(52vh,28rem)] w-full bg-black object-contain"
-                                            controls
-                                            playsinline
+                                        <Hash
+                                            v-if="metric.icon === 'hash'"
+                                            :size="16"
+                                            :stroke-width="1.6"
                                         />
-                                        <div
-                                            v-else
-                                            class="flex aspect-video max-h-[min(52vh,28rem)] items-center justify-center bg-[#1C1A24] px-6 text-center font-sans text-sm text-white/70"
-                                        >
-                                            {{
-                                                currentStep.video
-                                                    ? '動画の準備ができていません'
-                                                    : 'このステップには動画がありません'
-                                            }}
-                                        </div>
-                                    </div>
-
-                                    <div
-                                        v-if="
-                                            currentStep.memo ||
-                                            currentStep.video?.description
-                                        "
-                                        class="rounded-xl border border-cd-line/60 bg-white/60 p-4"
-                                    >
-                                        <p
-                                            class="mb-2 font-sans text-xs tracking-[0.08em] text-cd-ink-muted"
-                                        >
-                                            ポイント
-                                        </p>
-                                        <p
-                                            v-if="currentStep.memo"
-                                            class="font-sans text-sm leading-relaxed text-cd-ink"
-                                        >
-                                            {{ currentStep.memo }}
-                                        </p>
-                                        <p
+                                        <Layers3
                                             v-else-if="
-                                                currentStep.video?.description
+                                                metric.icon === 'layers'
                                             "
-                                            class="font-sans text-sm leading-relaxed text-cd-ink"
-                                        >
-                                            {{ currentStep.video.description }}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div class="min-w-0 space-y-4">
-                                    <div
-                                        v-if="
-                                            !(
-                                                currentStep.video ||
-                                                playbackLoading
-                                            ) && currentStep.memo
-                                        "
-                                        class="rounded-xl border border-cd-line/60 bg-white/40 p-4"
-                                    >
+                                            :size="16"
+                                            :stroke-width="1.6"
+                                        />
+                                        <Clock3
+                                            v-else
+                                            :size="16"
+                                            :stroke-width="1.6"
+                                        />
+                                    </span>
+                                    <div>
                                         <p
-                                            class="mb-2 font-sans text-xs tracking-[0.08em] text-cd-ink-muted"
+                                            class="font-sans text-[11px] text-cd-ink-muted"
                                         >
-                                            ポイント
+                                            {{ metric.label }}
                                         </p>
                                         <p
-                                            class="font-sans text-sm leading-relaxed text-cd-ink"
+                                            class="font-sans text-sm font-medium text-cd-ink"
                                         >
-                                            {{ currentStep.memo }}
+                                            {{ metric.value }}
                                         </p>
                                     </div>
-
-                                    <SessionBlockLogger
-                                        v-if="trackingType && currentStep"
-                                        :tracking-type="trackingType"
-                                        :target-blocks="targetBlocks"
-                                        :completed-logs="
-                                            currentStep.block_logs ?? []
-                                        "
-                                        :load-unit="currentStep.load_unit"
-                                        :amount-unit="currentStep.amount_unit"
-                                        :default-load="currentStep.target_load"
-                                        :default-amount="
-                                            currentStep.target_amount
-                                        "
-                                        :logging="logging"
-                                        @log="logBlock"
-                                    />
                                 </div>
                             </div>
                         </div>
-                    </section>
+                    </div>
 
-                    <section
-                        v-else
-                        aria-label="ステップなし"
-                        class="cd-panel flex flex-col px-5 py-8 text-center"
-                    >
-                        <p class="font-sans text-sm text-cd-ink-muted">
-                            表示できるステップがありません。
-                        </p>
-                    </section>
-
-                    <aside
-                        aria-label="ステップ一覧と操作"
-                        class="cd-panel flex flex-col lg:sticky lg:top-4 lg:self-start"
-                    >
+                    <div class="space-y-4 px-5 py-5">
                         <div
-                            class="border-b border-cd-line px-4 py-3 font-sans text-sm font-semibold text-cd-ink"
+                            class="overflow-hidden rounded-2xl border border-cd-line bg-[#14131A] shadow-sm"
                         >
-                            ステップ一覧（{{ steps.length }}）
-                        </div>
-
-                        <ul class="max-h-[min(50vh,420px)] overflow-y-auto">
-                            <li
-                                v-for="(step, index) in steps"
-                                :key="step.id"
+                            <div
+                                v-if="playbackLoading"
+                                class="flex aspect-video max-h-[min(42vh,22rem)] items-center justify-center font-sans text-sm text-white/70"
                             >
-                                <button
-                                    type="button"
-                                    class="flex w-full items-start gap-3 border-b border-cd-line/40 px-4 py-3 text-left transition-colors last:border-b-0"
-                                    :class="
-                                        index === currentIndex
-                                            ? 'bg-primary/8'
-                                            : 'hover:bg-white/50'
-                                    "
-                                    @click="goToStep(index)"
-                                >
-                                    <CircleCheck
-                                        v-if="step.status === 'completed'"
-                                        :size="18"
-                                        :stroke-width="1.6"
-                                        class="mt-0.5 shrink-0 text-cd-moss"
-                                    />
-                                    <SkipForward
-                                        v-else-if="step.status === 'skipped'"
-                                        :size="18"
-                                        :stroke-width="1.6"
-                                        class="mt-0.5 shrink-0 text-cd-ink-muted"
-                                    />
-                                    <Circle
-                                        v-else-if="index === currentIndex"
-                                        :size="18"
-                                        :stroke-width="1.6"
-                                        class="mt-0.5 shrink-0 text-primary"
-                                    />
-                                    <Circle
-                                        v-else
-                                        :size="18"
-                                        :stroke-width="1.6"
-                                        class="mt-0.5 shrink-0 text-cd-ink-muted/50"
-                                    />
-
-                                    <div class="min-w-0 flex-1">
-                                        <p
-                                            class="font-sans text-sm"
-                                            :class="
-                                                index === currentIndex
-                                                    ? 'text-cd-ink'
-                                                    : 'text-cd-ink-muted'
-                                            "
-                                        >
-                                            {{ step.item_name }}
-                                        </p>
-                                        <p
-                                            class="mt-0.5 font-sans text-xs text-cd-ink-muted"
-                                        >
-                                            {{ formatStepTarget(step) }}
-                                        </p>
-                                    </div>
-                                </button>
-                            </li>
-                        </ul>
-
-                        <div
-                            v-if="!isSessionFinished"
-                            class="hidden flex-col gap-2 border-t border-cd-line p-3 lg:flex"
-                        >
-                            <Button
-                                v-if="allStepsResolved"
-                                type="button"
-                                class="w-full"
-                                :disabled="completing"
-                                @click="completeSession"
-                            >
-                                <Check :size="16" :stroke-width="1.8" />
-                                {{
-                                    completing
-                                        ? '完了処理中…'
-                                        : '実行を完了する'
-                                }}
-                            </Button>
-                            <Button
+                                動画を読み込み中…
+                            </div>
+                            <video
+                                v-else-if="playbackUrl"
+                                :src="playbackUrl"
+                                class="aspect-video max-h-[min(42vh,22rem)] w-full bg-black object-contain"
+                                controls
+                                playsinline
+                            />
+                            <div
                                 v-else
-                                type="button"
-                                class="w-full"
-                                :disabled="
-                                    !currentStep ||
-                                    currentStep.status !== 'pending'
-                                "
-                                @click="completeStep"
+                                class="flex aspect-video max-h-[min(42vh,22rem)] items-center justify-center bg-[#1C1A24] px-6 text-center font-sans text-sm text-white/70"
                             >
-                                <Check :size="16" :stroke-width="1.8" />
-                                完了して次へ
-                            </Button>
-
-                            <div class="grid grid-cols-2 gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    class="w-full"
-                                    :disabled="
-                                        !currentStep ||
-                                        currentStep.status !== 'pending' ||
-                                        allStepsResolved
-                                    "
-                                    @click="skipStep"
-                                >
-                                    <SkipForward
-                                        :size="16"
-                                        :stroke-width="1.8"
-                                    />
-                                    スキップ
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    class="w-full"
-                                    :disabled="completing"
-                                    @click="abortSession"
-                                >
-                                    <CircleStop
-                                        :size="16"
-                                        :stroke-width="1.8"
-                                    />
-                                    中断
-                                </Button>
+                                {{
+                                    currentStep.video
+                                        ? '動画の準備ができていません'
+                                        : 'このステップには動画がありません'
+                                }}
                             </div>
                         </div>
-                    </aside>
-                </div>
-            </div>
 
-            <div
-                v-if="!isSessionFinished"
-                class="fixed inset-x-4 bottom-4 z-40 rounded-2xl border border-cd-line bg-[#fffcf8]/95 p-2 shadow-xl backdrop-blur lg:hidden"
-            >
-                <div class="grid grid-cols-[1fr_auto_auto] gap-2">
-                    <Button
-                        v-if="allStepsResolved"
-                        type="button"
-                        :disabled="completing"
-                        @click="completeSession"
+                        <div
+                            v-if="
+                                currentStep.memo ||
+                                currentStep.video?.description
+                            "
+                            class="rounded-xl border border-cd-line/60 bg-white/60 p-4"
+                        >
+                            <p
+                                class="mb-2 font-sans text-xs tracking-[0.08em] text-cd-ink-muted"
+                            >
+                                ポイント
+                            </p>
+                            <p
+                                v-if="currentStep.memo"
+                                class="font-sans text-sm leading-relaxed text-cd-ink"
+                            >
+                                {{ currentStep.memo }}
+                            </p>
+                            <p
+                                v-else-if="currentStep.video?.description"
+                                class="font-sans text-sm leading-relaxed text-cd-ink"
+                            >
+                                {{ currentStep.video.description }}
+                            </p>
+                        </div>
+
+                        <SessionBlockLogger
+                            v-if="trackingType && currentStep"
+                            :tracking-type="trackingType"
+                            :target-blocks="targetBlocks"
+                            :completed-logs="currentStep.block_logs ?? []"
+                            :load-unit="currentStep.load_unit"
+                            :amount-unit="currentStep.amount_unit"
+                            :default-load="currentStep.target_load"
+                            :default-amount="currentStep.target_amount"
+                            :logging="logging"
+                            @log="logBlock"
+                        />
+                    </div>
+                </section>
+
+                <section
+                    v-else
+                    aria-label="ステップなし"
+                    class="cd-panel flex flex-col px-5 py-8 text-center"
+                >
+                    <p class="font-sans text-sm text-cd-ink-muted">
+                        表示できるステップがありません。
+                    </p>
+                </section>
+
+                <aside
+                    aria-label="ステップ一覧と操作"
+                    class="cd-panel flex flex-col lg:sticky lg:top-4 lg:self-start"
+                >
+                    <div
+                        class="border-b border-cd-line px-4 py-3 font-sans text-sm font-semibold text-cd-ink"
                     >
-                        <Check :size="16" :stroke-width="1.8" />
-                        {{ completing ? '完了処理中…' : '実行を完了' }}
-                    </Button>
-                    <Button
-                        v-else
-                        type="button"
-                        :disabled="!currentStep || currentStep.status !== 'pending'"
-                        @click="completeStep"
+                        ステップ一覧（{{ steps.length }}）
+                    </div>
+
+                    <ul class="max-h-[min(50vh,420px)] overflow-y-auto">
+                        <li
+                            v-for="(step, index) in steps"
+                            :key="step.id"
+                        >
+                            <button
+                                type="button"
+                                class="flex w-full items-start gap-3 border-b border-cd-line/40 px-4 py-3 text-left transition-colors last:border-b-0"
+                                :class="
+                                    index === currentIndex
+                                        ? 'bg-primary/10'
+                                        : 'hover:bg-white/50'
+                                "
+                                @click="goToStep(index)"
+                            >
+                                <CircleCheck
+                                    v-if="step.status === 'completed'"
+                                    :size="18"
+                                    :stroke-width="1.6"
+                                    class="mt-0.5 shrink-0 text-primary"
+                                />
+                                <SkipForward
+                                    v-else-if="step.status === 'skipped'"
+                                    :size="18"
+                                    :stroke-width="1.6"
+                                    class="mt-0.5 shrink-0 text-cd-ink-muted"
+                                />
+                                <Circle
+                                    v-else-if="index === currentIndex"
+                                    :size="18"
+                                    :stroke-width="1.6"
+                                    class="mt-0.5 shrink-0 fill-primary text-primary"
+                                />
+                                <Circle
+                                    v-else
+                                    :size="18"
+                                    :stroke-width="1.6"
+                                    class="mt-0.5 shrink-0 text-cd-ink-muted/50"
+                                />
+
+                                <div class="min-w-0 flex-1">
+                                    <p
+                                        class="font-sans text-sm"
+                                        :class="
+                                            index === currentIndex
+                                                ? 'font-medium text-cd-ink'
+                                                : 'text-cd-ink-muted'
+                                        "
+                                    >
+                                        {{ step.item_name }}
+                                    </p>
+                                    <p
+                                        class="mt-0.5 font-sans text-xs text-cd-ink-muted"
+                                    >
+                                        {{ formatStepTarget(step) }}
+                                    </p>
+                                </div>
+
+                                <span
+                                    class="mt-0.5 shrink-0 font-sans text-xs text-cd-ink-muted"
+                                >
+                                    {{ index + 1 }}
+                                </span>
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div
+                        v-if="!isSessionFinished"
+                        class="hidden flex-col gap-2 border-t border-cd-line p-3 lg:flex"
                     >
-                        <Check :size="16" :stroke-width="1.8" />
-                        完了して次へ
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        aria-label="このステップをスキップ"
-                        :disabled="!currentStep || currentStep.status !== 'pending' || allStepsResolved"
-                        @click="skipStep"
-                    >
-                        <SkipForward :size="16" :stroke-width="1.8" />
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="実行を中断"
-                        :disabled="completing"
-                        @click="abortSession"
-                    >
-                        <CircleStop :size="16" :stroke-width="1.8" />
-                    </Button>
-                </div>
+                        <Button
+                            v-if="allStepsResolved"
+                            type="button"
+                            class="w-full"
+                            :disabled="completing"
+                            @click="completeSession"
+                        >
+                            <Check :size="16" :stroke-width="1.8" />
+                            {{
+                                completing
+                                    ? '完了処理中…'
+                                    : '実行を完了する'
+                            }}
+                        </Button>
+                        <Button
+                            v-else
+                            type="button"
+                            class="w-full"
+                            :disabled="
+                                !currentStep ||
+                                currentStep.status !== 'pending'
+                            "
+                            @click="completeStep"
+                        >
+                            <Check :size="16" :stroke-width="1.8" />
+                            完了して次へ
+                        </Button>
+
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="w-full"
+                            :disabled="
+                                !currentStep ||
+                                currentStep.status !== 'pending' ||
+                                allStepsResolved
+                            "
+                            @click="skipStep"
+                        >
+                            <SkipForward :size="16" :stroke-width="1.8" />
+                            スキップ
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            class="w-full"
+                            :disabled="completing"
+                            @click="abortSession"
+                        >
+                            <CircleStop :size="16" :stroke-width="1.8" />
+                            中断
+                        </Button>
+                    </div>
+                </aside>
             </div>
         </div>
+
+        <div
+            v-if="!isSessionFinished"
+            class="fixed inset-x-4 bottom-4 z-40 rounded-2xl border border-cd-line bg-[#fffcf8]/95 p-2 shadow-xl backdrop-blur lg:hidden"
+        >
+            <div class="grid grid-cols-[1fr_auto_auto] gap-2">
+                <Button
+                    v-if="allStepsResolved"
+                    type="button"
+                    :disabled="completing"
+                    @click="completeSession"
+                >
+                    <Check :size="16" :stroke-width="1.8" />
+                    {{ completing ? '完了処理中…' : '実行を完了' }}
+                </Button>
+                <Button
+                    v-else
+                    type="button"
+                    :disabled="
+                        !currentStep || currentStep.status !== 'pending'
+                    "
+                    @click="completeStep"
+                >
+                    <Check :size="16" :stroke-width="1.8" />
+                    完了して次へ
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="このステップをスキップ"
+                    :disabled="
+                        !currentStep ||
+                        currentStep.status !== 'pending' ||
+                        allStepsResolved
+                    "
+                    @click="skipStep"
+                >
+                    <SkipForward :size="16" :stroke-width="1.8" />
+                </Button>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="実行を中断"
+                    :disabled="completing"
+                    @click="abortSession"
+                >
+                    <CircleStop :size="16" :stroke-width="1.8" />
+                </Button>
+            </div>
+        </div>
+    </div>
 </template>
