@@ -763,7 +763,7 @@ function applyChartFilter(): void {
     <Head title="食事記録" />
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
-        <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 md:gap-5">
+        <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 md:gap-5">
             <PageTabShell
                 title="食事記録"
                 subtitle="残り摂取と次の一手を先に、記録は下で"
