@@ -133,11 +133,11 @@ function isNavActive(item: CdNavItem): boolean {
                             <component
                                 :is="item.icon"
                                 :size="26"
-                                :stroke-width="1.4"
+                                :stroke-width="2.2"
                                 class="landscape-compact:size-5"
                             />
                             <span
-                                class="font-serif text-xs tracking-[0.2em] whitespace-nowrap group-data-[collapsible=icon]:hidden landscape-compact:text-[0.65rem] landscape-compact:tracking-[0.12em]"
+                                class="font-serif text-xs font-semibold tracking-[0.2em] whitespace-nowrap group-data-[collapsible=icon]:hidden landscape-compact:text-[0.65rem] landscape-compact:tracking-[0.12em]"
                             >
                                 {{ item.title }}
                             </span>
