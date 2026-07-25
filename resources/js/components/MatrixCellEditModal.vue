@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { Form, router } from '@inertiajs/vue3';
 import { Check, GripVertical, Pencil, Plus, Trash2 } from '@lucide/vue';
-import { ref, watch } from 'vue';
+import Sortable from 'sortablejs';
+import {
+    computed,
+    nextTick,
+    onBeforeUnmount,
+    ref,
+    watch,
+} from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,14 +39,126 @@ const emit = defineEmits<{
 
 const editingItemId = ref<string | null>(null);
 const showAddForm = ref(false);
+const listRef = ref<HTMLElement | null>(null);
+const localItems = ref<MatrixCellItem[]>([]);
+
+const reorderUrl = computed(() =>
+    props.cell ? `/matrix-cells/${props.cell.id}/items/reorder` : '',
+);
+
+const isReorderDisabled = computed(
+    () =>
+        editingItemId.value !== null ||
+        showAddForm.value ||
+        localItems.value.length < 2,
+);
+
+let sortable: Sortable | null = null;
 
 watch(
     () => props.open,
-    () => {
+    (open) => {
         editingItemId.value = null;
         showAddForm.value = false;
+
+        if (!open) {
+            destroySortable();
+        }
     },
 );
+
+watch(
+    () => props.cell?.items,
+    (items) => {
+        localItems.value = items ? [...items] : [];
+        void nextTick(() => {
+            syncSortable();
+        });
+    },
+    { deep: true, immediate: true },
+);
+
+watch(
+    () => [props.open, isReorderDisabled.value] as const,
+    () => {
+        void nextTick(() => {
+            syncSortable();
+        });
+    },
+);
+
+function syncSortable(): void {
+    if (
+        !props.open ||
+        !listRef.value ||
+        isReorderDisabled.value ||
+        reorderUrl.value === ''
+    ) {
+        destroySortable();
+
+        return;
+    }
+
+    if (sortable) {
+        sortable.option('disabled', false);
+
+        return;
+    }
+
+    sortable = Sortable.create(listRef.value, {
+        animation: 180,
+        handle: '.reorder-handle',
+        draggable: '.reorderable-item',
+        ghostClass: 'reorderable-ghost',
+        chosenClass: 'reorderable-chosen',
+        dragClass: 'reorderable-drag',
+        // Dialog の transform 配下でもドラッグできるよう fallback を使う
+        forceFallback: true,
+        fallbackOnBody: true,
+        swapThreshold: 0.65,
+        onEnd(event) {
+            if (
+                event.oldIndex == null ||
+                event.newIndex == null ||
+                event.oldIndex === event.newIndex
+            ) {
+                return;
+            }
+
+            const ids = localItems.value.map((item) => item.id);
+            const [moved] = ids.splice(event.oldIndex, 1);
+            ids.splice(event.newIndex, 0, moved);
+
+            const byId = new Map(
+                localItems.value.map((item) => [item.id, item]),
+            );
+            const reordered = ids
+                .map((id) => byId.get(id))
+                .filter((item): item is MatrixCellItem => item != null);
+
+            if (reordered.length !== localItems.value.length) {
+                return;
+            }
+
+            localItems.value = reordered;
+
+            router.patch(
+                reorderUrl.value,
+                { ordered_ids: ids },
+                { preserveScroll: true },
+            );
+        },
+    });
+}
+
+function destroySortable(): void {
+    sortable?.destroy();
+    sortable = null;
+}
+
+onBeforeUnmount(() => {
+    destroySortable();
+});
 
 function toggleCompletion(item: MatrixCellItem): void {
     router.patch(toggle.url(item.id), {}, { preserveScroll: true });
@@ -73,13 +192,15 @@ function deleteItem(itemId: string): void {
             </DialogHeader>
 
             <ul
-                v-if="cell && cell.items.length > 0"
-                class="flex flex-col gap-2"
+                v-if="localItems.length > 0"
+                ref="listRef"
+                class="reorderable-list flex flex-col gap-2"
             >
                 <li
-                    v-for="item in cell.items"
+                    v-for="item in localItems"
                     :key="item.id"
-                    class="rounded-lg border border-cd-line/70 bg-white/70 px-3 py-3"
+                    class="reorderable-item rounded-lg border border-cd-line/70 bg-white/70 px-3 py-3"
+                    :data-id="item.id"
                 >
                     <Form
                         v-if="editingItemId === item.id"
@@ -126,12 +247,19 @@ function deleteItem(itemId: string): void {
                     </Form>
 
                     <div v-else class="flex items-start gap-2">
-                        <span
-                            aria-hidden="true"
-                            class="mt-0.5 shrink-0 cursor-grab text-cd-ink-muted/40"
+                        <button
+                            type="button"
+                            class="reorder-handle mt-0.5 inline-flex shrink-0 cursor-grab touch-none rounded-sm p-0.5 text-cd-ink-muted/50 transition-colors hover:text-cd-ink-muted active:cursor-grabbing"
+                            :class="
+                                isReorderDisabled
+                                    ? 'pointer-events-none opacity-40'
+                                    : ''
+                            "
+                            :aria-label="`${item.title} をドラッグして並べ替え`"
+                            :disabled="isReorderDisabled"
                         >
                             <GripVertical :size="16" :stroke-width="1.6" />
-                        </span>
+                        </button>
                         <div class="min-w-0 flex-1">
                             <p
                                 class="text-[17px] leading-relaxed md:text-lg"
@@ -265,3 +393,18 @@ function deleteItem(itemId: string): void {
         </DialogContent>
     </Dialog>
 </template>
+
+<style scoped>
+.reorderable-ghost {
+    opacity: 0.45;
+    background-color: color-mix(in oklab, var(--muted) 70%, transparent);
+}
+
+.reorderable-chosen {
+    background-color: color-mix(in oklab, var(--muted) 35%, transparent);
+}
+
+.reorderable-drag {
+    opacity: 1;
+}
+</style>
