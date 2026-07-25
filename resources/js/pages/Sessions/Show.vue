@@ -580,6 +580,7 @@ const metrics = computed((): MetricChip[] => {
                                 class="rounded-xl border border-cd-line/70 bg-white/80 p-3 shadow-sm"
                             >
                                 <SessionBlockLogger
+                                    :key="currentStep.id"
                                     :tracking-type="trackingType"
                                     :target-blocks="targetBlocks"
                                     :completed-logs="
