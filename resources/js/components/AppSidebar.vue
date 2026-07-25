@@ -73,25 +73,25 @@ function isNavActive(item: CdNavItem): boolean {
         >
             <div
                 aria-hidden="true"
-                class="pointer-events-none absolute inset-0 overflow-hidden group-data-[collapsible=icon]:hidden"
+                class="cd-sidebar-decor pointer-events-none absolute inset-0 overflow-hidden group-data-[collapsible=icon]:hidden"
             >
                 <img
                     src="/images/decorations/stars-soft.png"
                     alt=""
-                    class="absolute inset-x-0 top-0 w-full opacity-45"
+                    class="absolute inset-x-0 top-0 w-full"
                 />
                 <img
                     src="/images/decorations/stars-soft.png"
                     alt=""
-                    class="absolute inset-x-0 top-64 w-full rotate-180 opacity-25"
+                    class="absolute inset-x-0 top-64 w-full rotate-180"
                 />
                 <img
                     src="/images/decorations/moon-glow.png"
                     alt=""
-                    class="absolute top-28 right-4 w-20 -scale-x-100 opacity-90 landscape-compact:top-16 landscape-compact:w-12"
+                    class="absolute top-28 right-4 w-20 -scale-x-100 landscape-compact:top-16 landscape-compact:w-12"
                 />
                 <div
-                    class="cd-mask-violin absolute bottom-14 left-1/2 h-56 w-40 -translate-x-1/2 rotate-12 text-cd-gilt/80 landscape-compact:bottom-6 landscape-compact:h-32 landscape-compact:w-24"
+                    class="cd-mask-violin cd-sidebar-decor-gold absolute bottom-14 left-1/2 h-56 w-40 -translate-x-1/2 rotate-12 landscape-compact:bottom-6 landscape-compact:h-32 landscape-compact:w-24"
                 />
             </div>
 
@@ -99,7 +99,7 @@ function isNavActive(item: CdNavItem): boolean {
                 <Link
                     :href="dashboard()"
                     aria-label="Clear Dawn ダッシュボード"
-                    class="mx-auto mt-8 flex items-baseline font-serif text-white group-data-[collapsible=icon]:mt-1 landscape-compact:mt-4"
+                    class="cd-sidebar-brand mx-auto mt-8 flex items-baseline font-serif group-data-[collapsible=icon]:mt-1 landscape-compact:mt-4"
                 >
                     <span
                         class="text-6xl leading-none group-data-[collapsible=icon]:text-2xl landscape-compact:text-4xl"
@@ -111,7 +111,7 @@ function isNavActive(item: CdNavItem): boolean {
                     >
                 </Link>
                 <span
-                    class="mt-3 font-serif text-[0.7rem] tracking-[0.32em] text-white/70 group-data-[collapsible=icon]:hidden landscape-compact:mt-2 landscape-compact:tracking-[0.24em]"
+                    class="cd-sidebar-wordmark mt-3 font-serif text-[0.7rem] tracking-[0.32em] group-data-[collapsible=icon]:hidden landscape-compact:mt-2 landscape-compact:tracking-[0.24em]"
                 >
                     Clear Dawn
                 </span>
@@ -130,12 +130,8 @@ function isNavActive(item: CdNavItem): boolean {
                             :aria-current="
                                 isNavActive(item) ? 'page' : undefined
                             "
-                            class="flex w-24 flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-3 transition-colors group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-2 landscape-compact:w-20 landscape-compact:gap-1 landscape-compact:rounded-xl landscape-compact:px-2 landscape-compact:py-1.5"
-                            :class="
-                                isNavActive(item)
-                                    ? 'border-white/15 bg-white/10 text-white'
-                                    : 'border-transparent text-white/80 hover:bg-white/5 hover:text-white'
-                            "
+                            class="cd-sidebar-nav-link flex w-24 flex-col items-center justify-center gap-2 rounded-2xl px-3 py-3 transition-colors group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-2 landscape-compact:w-20 landscape-compact:gap-1 landscape-compact:rounded-xl landscape-compact:px-2 landscape-compact:py-1.5"
+                            :class="{ 'is-active': isNavActive(item) }"
                         >
                             <component
                                 :is="item.icon"
