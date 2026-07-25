@@ -4,25 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Domain\Yoyu\Support\UserTimezoneResolver;
 use App\Http\Requests\Today\ShowTodayRequest;
-use App\Http\Resources\RoutinePlanResource;
-use App\Queries\GetTodayOpsQuery;
-use App\Queries\GetTodayQuery;
 use App\Services\EvaluateRulesForDayService;
 use App\Services\GenerateProgramDayPlansService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class TodayController extends Controller
 {
+    /**
+     * 旧「今日/作戦」画面。作戦・チェックインは /routines 今日タブへ巻き取り済み。
+     * ブックマーク互換のためリダイレクトする（プラン生成・ルール評価は Routines 側でも実行）。
+     */
     public function index(
         ShowTodayRequest $request,
-        GetTodayQuery $query,
-        GetTodayOpsQuery $opsQuery,
         GenerateProgramDayPlansService $generateProgramDayPlans,
         EvaluateRulesForDayService $evaluateRules,
         UserTimezoneResolver $timezoneResolver,
-    ): Response {
+    ): RedirectResponse {
         $user = $request->user();
         $today = $timezoneResolver->todayDateString($user);
         $targetDate = Carbon::parse($request->validated('date') ?? $today);
@@ -30,13 +28,6 @@ class TodayController extends Controller
         $generateProgramDayPlans->handle($user, $targetDate);
         $evaluateRules->handle($user, $targetDate);
 
-        $plans = $query->handle($user, $targetDate);
-        $ops = $opsQuery->handle($user, $targetDate);
-
-        return Inertia::render('Today/Index', [
-            'date' => $targetDate->toDateString(),
-            'plans' => RoutinePlanResource::collection($plans)->resolve(),
-            'ops' => $ops,
-        ]);
+        return redirect()->route('routines.index');
     }
 }

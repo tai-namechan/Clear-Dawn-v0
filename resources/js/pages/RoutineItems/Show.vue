@@ -3,7 +3,6 @@ import { Head, Link } from '@inertiajs/vue3';
 import { ArrowLeft } from '@lucide/vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
-import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
 import {
     routineItemCategoryLabels,
     trackingTypeLabels,
@@ -41,8 +40,6 @@ defineProps<Props>();
                         "
                         align="left"
                     />
-
-                    <RoutinesHubTabs />
                 </div>
             </PageSectionCard>
 

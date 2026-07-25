@@ -154,16 +154,24 @@ class ProgramDayPlanGenerationTest extends TestCase
         $user = User::factory()->create();
         $this->artisan('cleardawn:install-program', ['userId' => $user->id])->assertSuccessful();
 
+        Carbon::setTestNow(Carbon::parse('2026-07-21 12:00:00', 'Asia/Tokyo'));
+
         $this->actingAs($user)
             ->get(route('today.index', ['date' => '2026-07-21']))
+            ->assertRedirect(route('routines.index'));
+
+        $this->actingAs($user)
+            ->get(route('routines.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->component('Today/Index')
+                ->component('Routines/Index')
                 ->has('ops.program_context')
                 ->has('ops.recommendations')
                 ->has('plans', 1));
 
         $this->assertSame(1, RoutinePlan::query()->where('user_id', $user->id)->count());
         $this->assertTrue(Program::query()->where('user_id', $user->id)->exists());
+
+        Carbon::setTestNow();
     }
 }

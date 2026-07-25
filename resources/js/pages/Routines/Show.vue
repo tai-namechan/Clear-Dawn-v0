@@ -13,7 +13,6 @@ import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import ReorderableList from '@/components/ReorderableList.vue';
 import RoutineEditorSidebar from '@/components/routine/RoutineEditorSidebar.vue';
-import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
 import StepEditorDialog from '@/components/routine/StepEditorDialog.vue';
 import type { StepEditorPayload } from '@/components/routine/StepEditorDialog.vue';
 import { Button } from '@/components/ui/button';
@@ -219,8 +218,8 @@ function onStepDialogOpen(open: boolean): void {
 }
 
 /**
- * 一覧の「今日/作戦」と同じく、今日のプランを作成してから /today へ進む。
- * 遷移だけの Link だと登録されず空の今日/作戦画面になる。
+ * 今日のプランを作成してから /routines 今日タブへ進む。
+ * 遷移だけの Link だと登録されず空の今日画面になる。
  */
 async function applyToToday(): Promise<void> {
     if (!props.routine.id || steps.value.length < 1 || applyingToToday.value) {
@@ -239,10 +238,10 @@ async function applyToToday(): Promise<void> {
             }),
         });
 
-        router.visit('/today');
+        router.visit('/routines');
     } catch {
         formError.value =
-            '今日/作戦への登録に失敗しました。もう一度お試しください。';
+            '今日への登録に失敗しました。もう一度お試しください。';
     } finally {
         applyingToToday.value = false;
     }
@@ -444,8 +443,6 @@ function stepPurposeKey(step: RoutineStep) {
                             {{ label }}
                         </li>
                     </ol>
-
-                    <RoutinesHubTabs />
                 </div>
             </PageSectionCard>
 

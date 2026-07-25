@@ -3,7 +3,6 @@ import { Head, Link } from '@inertiajs/vue3';
 import { CalendarRange, ChevronRight, Dumbbell } from '@lucide/vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
-import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
 import { roadmap, show } from '@/routes/programs';
 import type { ProgramSummary } from '@/types/program';
 
@@ -27,14 +26,17 @@ const statusLabels: Record<string, string> = {
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
             <PageSectionCard>
+                <Link
+                    href="/routines"
+                    class="mb-3 inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"
+                >
+                    ← ルーティン
+                </Link>
                 <PageTitleOrnament
                     title="プログラム"
                     subtitle="トレーニングプログラムを実行可能なデータとして管理し、日次プランを生成する上位層です。"
                     align="left"
                 />
-                <div class="mt-5">
-                    <RoutinesHubTabs />
-                </div>
             </PageSectionCard>
 
             <PageSectionCard padding="none" aria-label="プログラム一覧">

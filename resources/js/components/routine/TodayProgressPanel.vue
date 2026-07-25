@@ -17,8 +17,8 @@ const dateRef = computed(() => props.date);
 
 const { formattedDate, isToday, shiftDate, goToday } = useDateNavigation({
     date: dateRef,
-    routeUrl: '/today',
-    reloadOnly: ['plans', 'date'],
+    routeUrl: '/routines',
+    reloadOnly: ['plans', 'ops', 'date'],
 });
 
 const completionRate = computed(() => {

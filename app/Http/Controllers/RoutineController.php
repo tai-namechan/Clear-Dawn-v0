@@ -23,6 +23,8 @@ use App\Queries\GetTodayOpsQuery;
 use App\Queries\GetTodayQuery;
 use App\Services\CreateRoutineService;
 use App\Services\DeleteRoutineService;
+use App\Services\EvaluateRulesForDayService;
+use App\Services\GenerateProgramDayPlansService;
 use App\Services\UpdateRoutineService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,10 +41,22 @@ class RoutineController extends Controller
         GetTodayQuery $todayQuery,
         GetTodayOpsQuery $opsQuery,
         GetActivityHistoryQuery $historyQuery,
+        GenerateProgramDayPlansService $generateProgramDayPlans,
+        EvaluateRulesForDayService $evaluateRules,
         UserTimezoneResolver $timezoneResolver,
     ): Response {
         $user = $request->user();
-        $date = Carbon::parse($timezoneResolver->todayDateString($user));
+        $today = $timezoneResolver->todayDateString($user);
+        $requestedDate = $request->query('date');
+        $date = Carbon::parse(
+            is_string($requestedDate) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $requestedDate) === 1
+                ? $requestedDate
+                : $today,
+        );
+
+        $generateProgramDayPlans->handle($user, $date);
+        $evaluateRules->handle($user, $date);
+
         $routines = $query->handle($user);
         $plans = $todayQuery->handle($user, $date);
         $ops = $opsQuery->handle($user, $date);
