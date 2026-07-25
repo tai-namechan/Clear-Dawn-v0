@@ -67,6 +67,16 @@ class SidebarSpacingContractTest extends TestCase
             'Clear Dawn header must use the shared chrome class',
         );
         $this->assertStringContainsString(
+            'sticky top-0 z-30',
+            $source,
+            'Mobile header stays pinned while AppContent scrolls',
+        );
+        $this->assertStringContainsString(
+            'md:static',
+            $source,
+            'Desktop header returns to normal document flow',
+        );
+        $this->assertStringContainsString(
             'cd-app-header-title',
             $source,
             'Clear Dawn title uses the shared header title class',

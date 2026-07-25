@@ -82,7 +82,7 @@ const titleClass = computed(() => {
             :class="shellBg"
         >
             <header
-                class="flex min-h-16 shrink-0 items-center justify-between gap-2 border-b border-os-line/80 px-4 py-3 transition-[width,height] ease-linear md:px-6 md:py-4"
+                class="sticky top-0 z-30 flex min-h-16 shrink-0 items-center justify-between gap-2 border-b border-os-line/80 px-4 py-3 transition-[width,height] ease-linear md:static md:z-auto md:px-6 md:py-4"
                 :class="headerBg"
             >
                 <div class="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
