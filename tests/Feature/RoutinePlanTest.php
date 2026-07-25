@@ -211,7 +211,7 @@ class RoutinePlanTest extends TestCase
             ->assertJsonPath('plan.status', RoutinePlanStatus::Draft->value);
     }
 
-    public function test_user_cannot_add_a_step_to_a_ready_plan(): void
+    public function test_user_can_add_a_step_to_a_ready_plan(): void
     {
         $user = User::factory()->create();
         $plan = RoutinePlan::factory()->ready()->create(['user_id' => $user->id]);
@@ -223,16 +223,53 @@ class RoutinePlanTest extends TestCase
                 'purpose' => 'strength',
                 'target_blocks' => 1,
             ])
-            ->assertForbidden();
+            ->assertOk();
+
+        $this->assertDatabaseHas('routine_plan_steps', [
+            'routine_plan_id' => $plan->id,
+            'routine_item_id' => $routineItem->id,
+        ]);
     }
 
-    public function test_user_cannot_update_a_step_on_a_ready_plan(): void
+    public function test_user_can_update_a_step_on_a_ready_plan_including_video(): void
     {
         $user = User::factory()->create();
         $plan = RoutinePlan::factory()->ready()->create(['user_id' => $user->id]);
         $step = RoutinePlanStep::factory()->forPlan($plan)->create([
             'target_amount' => 10,
             'amount_unit' => 'reps',
+            'video_id' => null,
+        ]);
+        $video = Video::factory()->ready()->create([
+            'user_id' => $user->id,
+            'routine_item_id' => $step->routine_item_id,
+        ]);
+
+        $this->actingAs($user)
+            ->patchJson(route('routine-plan-steps.update', [$plan, $step]), [
+                'target_amount' => 20,
+                'video_id' => $video->id,
+            ])
+            ->assertOk()
+            ->assertJsonPath('step.target_amount', '20.00')
+            ->assertJsonPath('step.video_id', $video->id);
+
+        $this->assertDatabaseHas('routine_plan_steps', [
+            'id' => $step->id,
+            'target_amount' => 20,
+            'video_id' => $video->id,
+        ]);
+    }
+
+    public function test_user_cannot_update_steps_on_an_archived_plan(): void
+    {
+        $user = User::factory()->create();
+        $plan = RoutinePlan::factory()->create([
+            'user_id' => $user->id,
+            'status' => RoutinePlanStatus::Archived,
+        ]);
+        $step = RoutinePlanStep::factory()->forPlan($plan)->create([
+            'target_amount' => 10,
         ]);
 
         $this->actingAs($user)

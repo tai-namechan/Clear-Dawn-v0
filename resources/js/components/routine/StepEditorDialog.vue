@@ -48,6 +48,7 @@ import { purposeChipClasses } from '@/lib/stepPurposeColors';
 import type {
     RoutineItem,
     RoutineItemCategory,
+    RoutinePlanStep,
     RoutineStep,
     StepPurpose,
     TrackingType,
@@ -87,7 +88,7 @@ interface Props {
     videos?: Video[];
     saving?: boolean;
     /** When set, dialog edits an existing step (video attach etc.). */
-    editingStep?: RoutineStep | null;
+    editingStep?: RoutineStep | RoutinePlanStep | null;
     /** Parent can push server-side field errors after submit fails */
     serverErrors?: FieldErrors | null;
 }

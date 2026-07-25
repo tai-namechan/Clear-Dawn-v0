@@ -6,6 +6,7 @@ import {
     formatBlockLog,
     formatLoadTarget,
     formatAmountTarget,
+    formatQuantityDisplay,
 } from '@/lib/routineConstants';
 import type { RoutineBlockLog, TrackingType } from '@/types/routine';
 
@@ -63,8 +64,8 @@ const showAmount = computed(
 watch(
     () => [props.defaultLoad, props.defaultAmount, props.completedLogs.length],
     () => {
-        blockLoad.value = props.defaultLoad ?? '';
-        blockAmount.value = props.defaultAmount ?? '';
+        blockLoad.value = formatQuantityDisplay(props.defaultLoad) ?? '';
+        blockAmount.value = formatQuantityDisplay(props.defaultAmount) ?? '';
     },
     { immediate: true },
 );

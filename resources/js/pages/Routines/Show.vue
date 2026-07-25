@@ -570,11 +570,25 @@ function stepPurposeKey(step: RoutineStep) {
                                 </div>
                             </template>
                             <template #actions="{ item: step }">
-                                <Button type="button" variant="ghost" size="icon-sm" aria-label="ステップを編集" @click="openEditStep(step)">
-                                    <Pencil :size="14" :stroke-width="1.6" />
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="warning"
+                                    class="h-7 px-2 text-xs"
+                                    aria-label="ステップを編集"
+                                    @click="openEditStep(step)"
+                                >
+                                    編集
                                 </Button>
-                                <Button type="button" variant="ghost" size="icon-sm" aria-label="ステップを削除" @click="deleteStep(step)">
-                                    <Trash2 :size="14" :stroke-width="1.6" />
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="destructive"
+                                    class="h-7 px-2 text-xs"
+                                    aria-label="ステップを削除"
+                                    @click="deleteStep(step)"
+                                >
+                                    削除
                                 </Button>
                             </template>
                         </ReorderableList>

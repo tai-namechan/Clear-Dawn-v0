@@ -1004,13 +1004,13 @@ function applyChartFilter(): void {
                                     </td>
                                     <td class="px-5 py-3.5">
                                         <div
-                                            class="flex justify-end gap-1"
+                                            class="flex justify-end gap-1.5"
                                         >
                                             <Button
                                                 type="button"
                                                 size="sm"
-                                                variant="ghost"
-                                                class="h-auto px-2 py-1 font-sans text-xs font-medium text-cd-ink-muted hover:text-cd-ink"
+                                                variant="outline"
+                                                class="h-7 px-2.5 text-xs"
                                                 :aria-label="`${entry.name} をコピー`"
                                                 @click="openCopyEntry(entry)"
                                             >
@@ -1019,8 +1019,8 @@ function applyChartFilter(): void {
                                             <Button
                                                 type="button"
                                                 size="sm"
-                                                variant="ghost"
-                                                class="h-auto px-2 py-1 font-sans text-xs font-medium text-cd-ink-muted hover:text-cd-ink"
+                                                variant="warning"
+                                                class="h-7 px-2.5 text-xs"
                                                 :aria-label="`${entry.name} を編集`"
                                                 @click="openEditEntry(entry)"
                                             >
@@ -1029,8 +1029,8 @@ function applyChartFilter(): void {
                                             <Button
                                                 type="button"
                                                 size="sm"
-                                                variant="ghost"
-                                                class="h-auto px-2 py-1 font-sans text-xs font-medium text-cd-ink-muted hover:text-destructive"
+                                                variant="destructive"
+                                                class="h-7 px-2.5 text-xs"
                                                 :aria-label="`${entry.name} を削除`"
                                                 @click="deleteEntry(entry)"
                                             >

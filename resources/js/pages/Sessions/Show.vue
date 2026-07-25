@@ -14,6 +14,7 @@ import SessionBlockLogger from '@/components/routine/SessionBlockLogger.vue';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/apiFetch';
 import {
+    formatAmountTarget,
     formatDurationSeconds,
     formatStepTarget,
     resolveStepPurpose,
@@ -269,9 +270,7 @@ const metrics = computed(() => {
         metricValue(
             '回数',
             type === 'reps' || type === 'weight_reps' || type === 'count'
-                ? step.target_amount
-                    ? `${step.target_amount}${step.amount_unit ?? ''}`
-                    : null
+                ? formatAmountTarget(step.target_amount, step.amount_unit)
                 : null,
         ),
         metricValue(
@@ -508,74 +507,113 @@ const metrics = computed(() => {
 
                         <div class="px-5 py-5">
                             <div
-                                v-if="currentStep.video || playbackLoading"
-                                class="overflow-hidden rounded-2xl border border-cd-line/60 bg-black/5"
+                                class="grid gap-4"
+                                :class="
+                                    currentStep.video || playbackLoading
+                                        ? 'lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] lg:items-start'
+                                        : ''
+                                "
                             >
                                 <div
-                                    v-if="playbackLoading"
-                                    class="flex aspect-video items-center justify-center font-sans text-sm text-cd-ink-muted"
+                                    v-if="currentStep.video || playbackLoading"
+                                    class="min-w-0 space-y-3"
                                 >
-                                    動画を読み込み中…
-                                </div>
-                                <video
-                                    v-else-if="playbackUrl"
-                                    :src="playbackUrl"
-                                    class="aspect-video w-full bg-black object-contain"
-                                    controls
-                                    playsinline
-                                />
-                                <div
-                                    v-else
-                                    class="flex aspect-video items-center justify-center bg-muted/40 px-6 text-center font-sans text-sm text-cd-ink-muted"
-                                >
-                                    {{
-                                        currentStep.video
-                                            ? '動画の準備ができていません'
-                                            : 'このステップには動画がありません'
-                                    }}
-                                </div>
-                            </div>
+                                    <div
+                                        class="overflow-hidden rounded-2xl border border-cd-line bg-[#14131A] shadow-sm"
+                                    >
+                                        <div
+                                            v-if="playbackLoading"
+                                            class="flex aspect-video max-h-[min(52vh,28rem)] items-center justify-center font-sans text-sm text-white/70"
+                                        >
+                                            動画を読み込み中…
+                                        </div>
+                                        <video
+                                            v-else-if="playbackUrl"
+                                            :src="playbackUrl"
+                                            class="aspect-video max-h-[min(52vh,28rem)] w-full bg-black object-contain"
+                                            controls
+                                            playsinline
+                                        />
+                                        <div
+                                            v-else
+                                            class="flex aspect-video max-h-[min(52vh,28rem)] items-center justify-center bg-[#1C1A24] px-6 text-center font-sans text-sm text-white/70"
+                                        >
+                                            {{
+                                                currentStep.video
+                                                    ? '動画の準備ができていません'
+                                                    : 'このステップには動画がありません'
+                                            }}
+                                        </div>
+                                    </div>
 
-                            <div
-                                v-if="currentStep.memo || currentStep.video?.description"
-                                class="mt-4 rounded-xl border border-cd-line/60 bg-white/40 p-4"
-                            >
-                                <p
-                                    class="mb-2 font-sans text-xs tracking-[0.08em] text-cd-ink-muted"
-                                >
-                                    ポイント
-                                </p>
-                                <p
-                                    v-if="currentStep.memo"
-                                    class="font-sans text-sm leading-relaxed text-cd-ink"
-                                >
-                                    {{ currentStep.memo }}
-                                </p>
-                                <p
-                                    v-else-if="currentStep.video?.description"
-                                    class="font-sans text-sm leading-relaxed text-cd-ink"
-                                >
-                                    {{ currentStep.video.description }}
-                                </p>
-                            </div>
+                                    <div
+                                        v-if="
+                                            currentStep.memo ||
+                                            currentStep.video?.description
+                                        "
+                                        class="rounded-xl border border-cd-line/60 bg-white/60 p-4"
+                                    >
+                                        <p
+                                            class="mb-2 font-sans text-xs tracking-[0.08em] text-cd-ink-muted"
+                                        >
+                                            ポイント
+                                        </p>
+                                        <p
+                                            v-if="currentStep.memo"
+                                            class="font-sans text-sm leading-relaxed text-cd-ink"
+                                        >
+                                            {{ currentStep.memo }}
+                                        </p>
+                                        <p
+                                            v-else-if="
+                                                currentStep.video?.description
+                                            "
+                                            class="font-sans text-sm leading-relaxed text-cd-ink"
+                                        >
+                                            {{ currentStep.video.description }}
+                                        </p>
+                                    </div>
+                                </div>
 
-                            <div class="mt-4">
-                                <SessionBlockLogger
-                                    v-if="trackingType && currentStep"
-                                    :tracking-type="trackingType"
-                                    :target-blocks="targetBlocks"
-                                    :completed-logs="
-                                        currentStep.block_logs ?? []
-                                    "
-                                    :load-unit="currentStep.load_unit"
-                                    :amount-unit="currentStep.amount_unit"
-                                    :default-load="currentStep.target_load"
-                                    :default-amount="
-                                        currentStep.target_amount
-                                    "
-                                    :logging="logging"
-                                    @log="logBlock"
-                                />
+                                <div class="min-w-0 space-y-4">
+                                    <div
+                                        v-if="
+                                            !(
+                                                currentStep.video ||
+                                                playbackLoading
+                                            ) && currentStep.memo
+                                        "
+                                        class="rounded-xl border border-cd-line/60 bg-white/40 p-4"
+                                    >
+                                        <p
+                                            class="mb-2 font-sans text-xs tracking-[0.08em] text-cd-ink-muted"
+                                        >
+                                            ポイント
+                                        </p>
+                                        <p
+                                            class="font-sans text-sm leading-relaxed text-cd-ink"
+                                        >
+                                            {{ currentStep.memo }}
+                                        </p>
+                                    </div>
+
+                                    <SessionBlockLogger
+                                        v-if="trackingType && currentStep"
+                                        :tracking-type="trackingType"
+                                        :target-blocks="targetBlocks"
+                                        :completed-logs="
+                                            currentStep.block_logs ?? []
+                                        "
+                                        :load-unit="currentStep.load_unit"
+                                        :amount-unit="currentStep.amount_unit"
+                                        :default-load="currentStep.target_load"
+                                        :default-amount="
+                                            currentStep.target_amount
+                                        "
+                                        :logging="logging"
+                                        @log="logBlock"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </section>

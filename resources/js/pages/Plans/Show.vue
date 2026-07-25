@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ArrowLeft, CirclePlay, Plus, Trash2 } from '@lucide/vue';
+import { ArrowLeft, CirclePlay, Plus } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
@@ -44,6 +44,7 @@ const note = ref(props.plan.note ?? '');
 const saving = ref(false);
 const starting = ref(false);
 const showAddStepModal = ref(false);
+const editingStep = ref<RoutinePlanStep | null>(null);
 const routineItems = ref<RoutineItem[]>([...props.routineItems]);
 const stepEditorRef = ref<{
     applyApiErrors: (error: unknown) => void;
@@ -58,6 +59,8 @@ watch(
 );
 
 const steps = computed(() => ensureArray(props.plan.steps));
+
+const canEditSteps = computed(() => props.plan.status !== 'archived');
 
 const canStart = computed(
     () =>
@@ -115,6 +118,12 @@ async function loadRoutineItems(): Promise<void> {
 }
 
 async function openAddStep(): Promise<void> {
+    if (!canEditSteps.value) {
+        return;
+    }
+
+    editingStep.value = null;
+
     if (routineItems.value.length === 0) {
         await loadRoutineItems();
     } else {
@@ -124,17 +133,52 @@ async function openAddStep(): Promise<void> {
     showAddStepModal.value = true;
 }
 
-async function addStep(payload: StepEditorPayload): Promise<void> {
+async function openEditStep(step: RoutinePlanStep): Promise<void> {
+    if (!canEditSteps.value) {
+        return;
+    }
+
+    editingStep.value = step;
+
+    if (routineItems.value.length === 0) {
+        await loadRoutineItems();
+    } else {
+        void loadRoutineItems();
+    }
+
+    showAddStepModal.value = true;
+}
+
+function onStepDialogOpen(open: boolean): void {
+    showAddStepModal.value = open;
+
+    if (!open) {
+        editingStep.value = null;
+    }
+}
+
+async function saveStep(payload: StepEditorPayload): Promise<void> {
     saving.value = true;
     stepEditorRef.value?.clearFieldErrors();
 
     try {
-        await apiFetch(`/plans/${props.plan.id}/steps`, {
-            method: 'POST',
-            body: JSON.stringify(payload),
-        });
+        if (editingStep.value) {
+            await apiFetch(
+                `/plans/${props.plan.id}/steps/${editingStep.value.id}`,
+                {
+                    method: 'PATCH',
+                    body: JSON.stringify(payload),
+                },
+            );
+        } else {
+            await apiFetch(`/plans/${props.plan.id}/steps`, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            });
+        }
 
         showAddStepModal.value = false;
+        editingStep.value = null;
         router.reload({ only: ['plan', 'routineItems'] });
     } catch (error) {
         stepEditorRef.value?.applyApiErrors(error);
@@ -227,12 +271,12 @@ function stepPurposeKey(step: RoutinePlanStep) {
                             </Button>
                             <Button
                                 type="button"
-                                variant="ghost"
-                                size="icon"
+                                size="sm"
+                                variant="destructive"
                                 aria-label="実行プランを削除"
                                 @click="deletePlan"
                             >
-                                <Trash2 :size="16" :stroke-width="1.6" />
+                                削除
                             </Button>
                         </div>
                     </div>
@@ -267,9 +311,14 @@ function stepPurposeKey(step: RoutinePlanStep) {
                     <h2 class="font-sans text-base font-semibold text-cd-ink">
                         ステップ
                     </h2>
-                    <Button type="button" size="sm" @click="openAddStep">
+                    <Button
+                        v-if="canEditSteps"
+                        type="button"
+                        size="sm"
+                        @click="openAddStep"
+                    >
                         <Plus :size="14" :stroke-width="1.8" />
-                        追加
+                        ステップを追加
                     </Button>
                 </div>
 
@@ -277,6 +326,7 @@ function stepPurposeKey(step: RoutinePlanStep) {
                     v-if="steps.length"
                     :items="steps"
                     :reorder-url="`/plans/${plan.id}/steps/reorder`"
+                    :disabled="!canEditSteps"
                     :item-label="
                         (step) => step.display_name || step.routine_item?.name
                     "
@@ -321,17 +371,36 @@ function stepPurposeKey(step: RoutinePlanStep) {
                                         : ''
                                 }}
                             </span>
+                            <span
+                                v-if="step.video"
+                                class="before:mx-1.5 before:content-['·']"
+                            >
+                                動画: {{ step.video.title }}
+                            </span>
                         </p>
                     </template>
                     <template #actions="{ item: step }">
                         <Button
+                            v-if="canEditSteps"
                             type="button"
-                            variant="ghost"
-                            size="icon-sm"
+                            size="sm"
+                            variant="warning"
+                            class="h-7 px-2 text-xs"
+                            aria-label="ステップを編集"
+                            @click="openEditStep(step)"
+                        >
+                            編集
+                        </Button>
+                        <Button
+                            v-if="canEditSteps"
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            class="h-7 px-2 text-xs"
                             aria-label="ステップを削除"
                             @click="deleteStep(step)"
                         >
-                            <Trash2 :size="14" :stroke-width="1.6" />
+                            削除
                         </Button>
                     </template>
                 </ReorderableList>
@@ -351,11 +420,13 @@ function stepPurposeKey(step: RoutinePlanStep) {
 
     <StepEditorDialog
         ref="stepEditorRef"
-        v-model:open="showAddStepModal"
+        :open="showAddStepModal"
         :routine-items="routineItems"
         :videos="videos"
         :saving="saving"
-        @submit="addStep"
+        :editing-step="editingStep"
+        @update:open="onStepDialogOpen"
+        @submit="saveStep"
         @items-changed="loadRoutineItems"
     />
 </template>

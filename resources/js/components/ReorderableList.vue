@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends ReorderableItem">
-import { ArrowDown, ArrowUp, GripVertical } from '@lucide/vue';
+import { GripVertical } from '@lucide/vue';
 import Sortable from 'sortablejs';
 import {
     computed,
@@ -153,8 +153,9 @@ function setContainerRef(element: Element | ComponentPublicInstance | null) {
                     </button>
                     <Button
                         type="button"
-                        variant="ghost"
-                        size="icon-sm"
+                        variant="outline"
+                        size="sm"
+                        class="h-7 px-2 text-xs"
                         :disabled="index === 0"
                         :aria-label="
                             labelFor(item)
@@ -163,12 +164,13 @@ function setContainerRef(element: Element | ComponentPublicInstance | null) {
                         "
                         @click="move(index, -1)"
                     >
-                        <ArrowUp :size="15" :stroke-width="1.6" />
+                        上へ
                     </Button>
                     <Button
                         type="button"
-                        variant="ghost"
-                        size="icon-sm"
+                        variant="outline"
+                        size="sm"
+                        class="h-7 px-2 text-xs"
                         :disabled="index === displayItems.length - 1"
                         :aria-label="
                             labelFor(item)
@@ -177,7 +179,7 @@ function setContainerRef(element: Element | ComponentPublicInstance | null) {
                         "
                         @click="move(index, 1)"
                     >
-                        <ArrowDown :size="15" :stroke-width="1.6" />
+                        下へ
                     </Button>
                     <slot name="actions" :item="item" :index="index" />
                 </div>
@@ -220,12 +222,13 @@ function setContainerRef(element: Element | ComponentPublicInstance | null) {
                 </div>
                 <div
                     v-if="!disabled"
-                    class="flex shrink-0 items-center gap-1"
+                    class="flex shrink-0 flex-wrap items-center justify-end gap-1"
                 >
                     <Button
                         type="button"
-                        variant="ghost"
-                        size="icon"
+                        variant="outline"
+                        size="sm"
+                        class="h-7 px-2 text-xs"
                         :disabled="index === 0"
                         :aria-label="
                             labelFor(item)
@@ -234,12 +237,13 @@ function setContainerRef(element: Element | ComponentPublicInstance | null) {
                         "
                         @click="move(index, -1)"
                     >
-                        <ArrowUp :size="15" :stroke-width="1.6" />
+                        上へ
                     </Button>
                     <Button
                         type="button"
-                        variant="ghost"
-                        size="icon"
+                        variant="outline"
+                        size="sm"
+                        class="h-7 px-2 text-xs"
                         :disabled="index === displayItems.length - 1"
                         :aria-label="
                             labelFor(item)
@@ -248,7 +252,7 @@ function setContainerRef(element: Element | ComponentPublicInstance | null) {
                         "
                         @click="move(index, 1)"
                     >
-                        <ArrowDown :size="15" :stroke-width="1.6" />
+                        下へ
                     </Button>
                     <slot name="actions" :item="item" :index="index" />
                 </div>
