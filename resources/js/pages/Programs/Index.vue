@@ -3,6 +3,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import { CalendarRange, ChevronRight, Dumbbell } from '@lucide/vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
+import RoutinesHubTabs from '@/components/routine/RoutinesHubTabs.vue';
 import { roadmap, show } from '@/routes/programs';
 import type { ProgramSummary } from '@/types/program';
 
@@ -31,6 +32,9 @@ const statusLabels: Record<string, string> = {
                     subtitle="トレーニングプログラムを実行可能なデータとして管理し、日次プランを生成する上位層です。"
                     align="left"
                 />
+                <div class="mt-5">
+                    <RoutinesHubTabs />
+                </div>
             </PageSectionCard>
 
             <PageSectionCard padding="none" aria-label="プログラム一覧">
