@@ -219,6 +219,35 @@ class RoutineSessionTest extends TestCase
         ])->assertOk()->assertJsonPath('block_log.block_number', 2);
     }
 
+    public function test_user_can_record_more_block_logs_than_target_blocks(): void
+    {
+        $user = User::factory()->create();
+        $routineItem = RoutineItem::factory()->create([
+            'user_id' => $user->id,
+            'name' => 'ベンチプレス',
+        ]);
+        $plan = RoutinePlan::factory()->ready()->create(['user_id' => $user->id]);
+        RoutinePlanStep::factory()->forPlan($plan)->create([
+            'routine_item_id' => $routineItem->id,
+            'sort_order' => 1,
+            'target_blocks' => 2,
+        ]);
+
+        $this->actingAs($user)->postJson(route('routine-sessions.start', $plan))->assertOk();
+
+        $sessionStep = RoutineSessionStep::query()->firstOrFail();
+        $this->assertSame(2, $sessionStep->target_blocks);
+
+        foreach ([1, 2, 3] as $expectedNumber) {
+            $this->actingAs($user)->postJson(route('routine-block-logs.store', $sessionStep), [
+                'amount_value' => 10,
+                'amount_unit' => 'reps',
+            ])->assertOk()->assertJsonPath('block_log.block_number', $expectedNumber);
+        }
+
+        $this->assertDatabaseCount('routine_block_logs', 3);
+    }
+
     public function test_block_logs_can_only_be_recorded_while_session_is_in_progress(): void
     {
         $user = User::factory()->create();
