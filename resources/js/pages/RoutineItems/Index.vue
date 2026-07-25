@@ -130,7 +130,7 @@ async function deleteItem(item: RoutineItem): Promise<void> {
     <div
         class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6"
     >
-        <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
+        <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4">
             <PageSectionCard>
                 <div class="flex items-start justify-between gap-4">
                     <PageTitleOrnament
@@ -161,31 +161,33 @@ async function deleteItem(item: RoutineItem): Promise<void> {
                 >
                     {{ group.label }}
                 </h2>
-                <ul class="flex flex-col">
+                <ul
+                    class="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4"
+                >
                     <li
                         v-for="item in group.items"
                         :key="item.id"
-                        class="flex items-center justify-between gap-3 border-b border-cd-line px-5 py-4 last:border-b-0"
+                        class="flex min-w-0 flex-col gap-3 rounded-xl border border-cd-line/80 bg-white/50 p-4"
                         :class="{ 'opacity-55': !item.is_active }"
                     >
                         <div class="min-w-0 flex-1">
                             <Link
                                 :href="`/routine-items/${item.id}`"
-                                class="group flex items-center gap-1"
+                                class="group flex items-start gap-1"
                             >
                                 <p
-                                    class="truncate font-sans text-base font-semibold text-cd-ink group-hover:text-primary"
+                                    class="min-w-0 flex-1 break-words font-sans text-base font-semibold text-cd-ink group-hover:text-primary"
                                 >
                                     {{ item.name }}
                                 </p>
                                 <ChevronRight
                                     :size="16"
                                     :stroke-width="1.6"
-                                    class="shrink-0 text-cd-ink-muted opacity-0 transition-opacity group-hover:opacity-100"
+                                    class="mt-0.5 shrink-0 text-cd-ink-muted opacity-0 transition-opacity group-hover:opacity-100"
                                 />
                             </Link>
                             <p
-                                class="mt-0.5 font-sans text-xs text-cd-ink-muted"
+                                class="mt-1 font-sans text-xs text-cd-ink-muted"
                             >
                                 {{ trackingTypeLabels[item.tracking_type] }}
                                 <span
@@ -197,7 +199,7 @@ async function deleteItem(item: RoutineItem): Promise<void> {
                             </p>
                         </div>
 
-                        <div class="flex shrink-0 items-center gap-1">
+                        <div class="flex shrink-0 items-center justify-end gap-1">
                             <Button
                                 type="button"
                                 variant="ghost"
