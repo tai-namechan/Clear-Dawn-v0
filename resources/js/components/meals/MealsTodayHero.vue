@@ -56,16 +56,12 @@ const ringStyle = computed(() => ({
         aria-label="残りの摂取目安"
     >
         <section
-            class="rounded-2xl border border-cd-line bg-white p-5 shadow-sm"
+            class="rounded-2xl border border-cd-line bg-white p-5 shadow-sm md:p-6"
         >
-            <p class="font-sans text-xs font-medium text-cd-ink-muted">
-                残りの摂取目安
-            </p>
-
             <template v-if="remaining">
-                <div class="mt-4 flex items-center gap-5">
+                <div class="flex items-center gap-5 md:gap-6">
                     <div
-                        class="flex size-[5.5rem] shrink-0 items-center justify-center rounded-full p-[6px]"
+                        class="flex size-[7.25rem] shrink-0 items-center justify-center rounded-full p-[7px] sm:size-[8rem]"
                         :style="ringStyle"
                         role="img"
                         :aria-label="`達成率 ${ringPercent}%`"
@@ -74,21 +70,26 @@ const ringStyle = computed(() => ({
                             class="flex size-full flex-col items-center justify-center rounded-full bg-white"
                         >
                             <span
-                                class="font-sans text-lg font-bold leading-none text-cd-ink"
+                                class="font-sans text-2xl font-bold leading-none text-cd-ink"
                             >
                                 {{ ringPercent }}%
                             </span>
                             <span
-                                class="mt-1 font-sans text-[10px] text-cd-ink-muted"
+                                class="mt-1.5 font-sans text-xs text-cd-ink-muted"
                             >
                                 達成率
                             </span>
                         </div>
                     </div>
 
-                    <div class="min-w-0">
+                    <div class="min-w-0 flex-1">
                         <p
-                            class="font-sans text-2xl font-bold tracking-tight text-cd-ink md:text-3xl"
+                            class="font-sans text-xs font-medium text-cd-ink-muted"
+                        >
+                            残りの摂取目安
+                        </p>
+                        <p
+                            class="mt-1.5 font-sans text-3xl font-bold tracking-tight text-cd-ink md:text-[2rem]"
                         >
                             あと {{ formatNum(remaining.kcal) }}
                             <span
@@ -96,22 +97,44 @@ const ringStyle = computed(() => ({
                                 >kcal</span
                             >
                         </p>
-                        <p class="mt-2 font-sans text-sm text-cd-ink-muted">
+                        <p
+                            class="mt-2 font-sans text-sm leading-relaxed text-cd-ink-muted"
+                        >
                             目標達成に向けて、あとこれだけ摂れます。
                         </p>
-                        <p
-                            v-if="goalKcal !== null"
-                            class="mt-2 font-sans text-xs text-cd-ink-muted"
-                        >
-                            {{ formatNum(totalsKcal) }} /
-                            {{ formatNum(goalKcal) }} kcal（{{
-                                ringPercent
-                            }}%）
-                        </p>
+
+                        <template v-if="goalKcal !== null">
+                            <div
+                                class="mt-4 h-2 overflow-hidden rounded-full bg-[#EAE6F2]"
+                                role="progressbar"
+                                :aria-valuenow="ringPercent"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                                aria-label="カロリー達成率"
+                            >
+                                <div
+                                    class="h-full rounded-full bg-primary/70 transition-[width] duration-300"
+                                    :style="{ width: `${ringPercent}%` }"
+                                />
+                            </div>
+                            <p
+                                class="mt-2 font-sans text-xs text-cd-ink-muted"
+                            >
+                                {{ formatNum(totalsKcal) }} /
+                                {{ formatNum(goalKcal) }} kcal（{{
+                                    ringPercent
+                                }}%）
+                            </p>
+                        </template>
                     </div>
                 </div>
             </template>
             <template v-else>
+                <p
+                    class="font-sans text-xs font-medium text-cd-ink-muted"
+                >
+                    残りの摂取目安
+                </p>
                 <p class="mt-3 font-sans text-xl font-semibold text-cd-ink">
                     目標未設定
                 </p>
@@ -127,7 +150,7 @@ const ringStyle = computed(() => ({
         </section>
 
         <section
-            class="rounded-2xl border border-cd-line bg-white p-5 shadow-sm"
+            class="rounded-2xl border border-cd-line bg-white p-5 shadow-sm md:p-6"
         >
             <p class="font-sans text-xs font-medium text-cd-ink-muted">
                 残りの PFC
