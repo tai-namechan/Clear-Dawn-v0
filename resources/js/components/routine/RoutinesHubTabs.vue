@@ -6,12 +6,14 @@ type HubTab = {
     label: string;
     href: string;
     matchPrefix?: boolean;
-    primary?: boolean;
 };
 
 /**
  * ハブ導線:
  * プログラムを確認 → ルーティン（実行） → 今日/作戦 → 履歴
+ *
+ * 見た目は PageViewTabs と同じ下線タブ。URL / ページ遷移は従来どおり
+ *（Inertia Link。同一ページ内パネル切替ではない）。
  *
  * 実施項目（ステップで使う部品の整理画面）は主導線外。
  * ルーティン編集の「ステップを追加」から作るのが基本。
@@ -19,7 +21,7 @@ type HubTab = {
  */
 const tabs: HubTab[] = [
     { label: 'プログラム', href: '/programs', matchPrefix: true },
-    { label: 'ルーティン', href: '/routines', matchPrefix: true, primary: true },
+    { label: 'ルーティン', href: '/routines', matchPrefix: true },
     { label: '今日/作戦', href: '/today', matchPrefix: true },
     { label: '履歴', href: '/history' },
 ];
@@ -43,22 +45,28 @@ function isActive(tab: HubTab): boolean {
 </script>
 
 <template>
-    <nav aria-label="ルーティンハブ" class="flex flex-wrap gap-2">
+    <nav
+        aria-label="ルーティンハブ"
+        class="flex w-full gap-0.5 overflow-x-auto border-b border-cd-line [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
         <Link
             v-for="tab in tabs"
             :key="tab.href"
             :href="tab.href"
             :aria-current="isActive(tab) ? 'page' : undefined"
-            class="rounded-full border px-4 py-1.5 font-sans text-sm font-medium transition-colors"
+            class="relative -mb-px min-w-0 flex-1 px-1.5 py-2.5 text-center font-sans text-xs whitespace-nowrap transition-colors sm:flex-none sm:px-4 sm:text-sm"
             :class="
                 isActive(tab)
-                    ? tab.primary
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-primary/40 bg-primary/10 text-primary'
-                    : 'border-cd-line bg-white text-cd-ink-muted hover:border-primary/30 hover:bg-primary-hover hover:text-primary'
+                    ? 'bg-primary/8 font-semibold text-primary'
+                    : 'font-medium text-cd-ink-muted hover:text-cd-ink'
             "
         >
             {{ tab.label }}
+            <span
+                v-if="isActive(tab)"
+                class="absolute inset-x-1 bottom-0 h-0.5 rounded-full bg-primary sm:inset-x-2"
+                aria-hidden="true"
+            />
         </Link>
     </nav>
 </template>
