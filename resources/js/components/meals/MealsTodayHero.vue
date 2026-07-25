@@ -61,7 +61,7 @@ const ringStyle = computed(() => ({
             <template v-if="remaining">
                 <div class="flex items-center gap-5 md:gap-6">
                     <div
-                        class="flex size-[7.25rem] shrink-0 items-center justify-center rounded-full p-[7px] sm:size-[8rem]"
+                        class="flex size-[7.25rem] shrink-0 items-center justify-center rounded-full p-[12px] sm:size-[8rem]"
                         :style="ringStyle"
                         role="img"
                         :aria-label="`達成率 ${ringPercent}%`"
@@ -105,7 +105,7 @@ const ringStyle = computed(() => ({
 
                         <template v-if="goalKcal !== null">
                             <div
-                                class="mt-4 h-2 overflow-hidden rounded-full bg-[#EAE6F2]"
+                                class="mt-4 h-3.5 overflow-hidden rounded-full bg-[#EAE6F2]"
                                 role="progressbar"
                                 :aria-valuenow="ringPercent"
                                 aria-valuemin="0"
