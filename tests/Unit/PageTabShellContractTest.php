@@ -26,6 +26,11 @@ class PageTabShellContractTest extends TestCase
             $source,
             'Shell owns the shared page title ornament',
         );
+        $this->assertStringContainsString(
+            'justify-center md:justify-end',
+            $source,
+            'Calendar must be centered on mobile and right-aligned from md up',
+        );
         $this->assertStringNotContainsString(
             'lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]',
             $source,

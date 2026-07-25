@@ -52,10 +52,20 @@ const hasBody = computed(() => Boolean(slots.default));
 
                 <div
                     v-if="hasHeaderRight"
-                    class="flex shrink-0 flex-wrap items-center justify-end gap-2 md:pt-1"
+                    class="flex flex-col gap-2 md:flex-row md:items-center md:justify-end md:pt-1"
                 >
-                    <slot name="calendar" />
-                    <slot name="actions" />
+                    <div
+                        v-if="$slots.calendar"
+                        class="flex justify-center md:justify-end"
+                    >
+                        <slot name="calendar" />
+                    </div>
+                    <div
+                        v-if="$slots.actions"
+                        class="flex flex-wrap items-center justify-end gap-2"
+                    >
+                        <slot name="actions" />
+                    </div>
                 </div>
             </div>
 
