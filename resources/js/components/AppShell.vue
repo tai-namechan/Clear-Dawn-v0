@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
+import CloseMobileSidebarOnNavigate from '@/components/CloseMobileSidebarOnNavigate.vue';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import type { AppVariant } from '@/types';
 
@@ -19,6 +20,7 @@ const isOpen = usePage().props.sidebarOpen;
         <slot />
     </div>
     <SidebarProvider v-else :default-open="isOpen">
+        <CloseMobileSidebarOnNavigate />
         <slot />
     </SidebarProvider>
 </template>

@@ -200,11 +200,11 @@ function setContainerRef(element: Element | ComponentPublicInstance | null) {
             :class="resolveItemClass(item)"
             :data-id="item.id"
         >
-            <div class="flex items-center justify-between gap-3">
-                <div class="flex min-w-0 flex-1 items-center gap-2">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                <div class="flex min-w-0 flex-1 items-start gap-2">
                     <div
                         v-if="!disabled"
-                        class="flex shrink-0 items-center gap-0.5"
+                        class="flex shrink-0 flex-col items-center gap-0.5 sm:flex-row sm:items-center"
                     >
                         <button
                             type="button"
@@ -217,40 +217,44 @@ function setContainerRef(element: Element | ComponentPublicInstance | null) {
                         >
                             <GripVertical :size="16" :stroke-width="1.6" />
                         </button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            :disabled="index === 0"
-                            :aria-label="
-                                labelFor(item)
-                                    ? `${labelFor(item)} を上へ`
-                                    : '上へ移動'
-                            "
-                            @click="move(index, -1)"
-                        >
-                            <ArrowUp :size="15" :stroke-width="1.6" />
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            :disabled="index === displayItems.length - 1"
-                            :aria-label="
-                                labelFor(item)
-                                    ? `${labelFor(item)} を下へ`
-                                    : '下へ移動'
-                            "
-                            @click="move(index, 1)"
-                        >
-                            <ArrowDown :size="15" :stroke-width="1.6" />
-                        </Button>
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:gap-0.5">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                class="size-7 sm:size-8"
+                                :disabled="index === 0"
+                                :aria-label="
+                                    labelFor(item)
+                                        ? `${labelFor(item)} を上へ`
+                                        : '上へ移動'
+                                "
+                                @click="move(index, -1)"
+                            >
+                                <ArrowUp :size="15" :stroke-width="1.6" />
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-sm"
+                                class="size-7 sm:size-8"
+                                :disabled="index === displayItems.length - 1"
+                                :aria-label="
+                                    labelFor(item)
+                                        ? `${labelFor(item)} を下へ`
+                                        : '下へ移動'
+                                "
+                                @click="move(index, 1)"
+                            >
+                                <ArrowDown :size="15" :stroke-width="1.6" />
+                            </Button>
+                        </div>
                     </div>
                     <div class="min-w-0 flex-1">
                         <slot name="row" :item="item" :index="index" />
                     </div>
                 </div>
-                <div class="flex shrink-0 items-center gap-1">
+                <div class="flex shrink-0 items-center justify-end gap-1 self-end sm:self-center">
                     <slot name="actions" :item="item" :index="index" />
                 </div>
             </div>

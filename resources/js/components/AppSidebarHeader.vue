@@ -41,7 +41,7 @@ const todayIso = [
         class="cd-app-header flex min-h-16 shrink-0 items-center justify-between gap-2 px-4 py-3 transition-[width,height] ease-linear landscape-compact:min-h-12 landscape-compact:py-2 md:px-6 md:py-4 landscape-compact:md:py-2"
     >
         <div class="flex min-w-0 flex-1 items-center gap-3 md:gap-4">
-            <SidebarTrigger class="shrink-0 text-cd-ink-muted hover:bg-muted/40 hover:text-cd-ink" />
+            <SidebarTrigger class="shrink-0 text-cd-ink-muted hover:bg-white/10 hover:text-[var(--cd-header-text)]" />
             <h1
                 class="cd-app-header-title truncate font-serif text-[2rem] leading-none font-normal tracking-[0.16em] landscape-compact:text-[1.5rem] landscape-compact:tracking-[0.12em] md:text-[2.5rem] landscape-compact:md:text-[1.65rem]"
             >
@@ -60,7 +60,7 @@ const todayIso = [
             >
                 <time
                     :datetime="todayIso"
-                    class="cursor-default font-serif text-base tracking-[0.12em] text-[var(--cd-text-primary)] lining-nums select-none landscape-compact:text-sm"
+                    class="cursor-default font-serif text-base tracking-[0.12em] text-[var(--cd-header-text)] lining-nums select-none landscape-compact:text-sm"
                 >
                     {{ today }}
                 </time>
@@ -73,12 +73,12 @@ const todayIso = [
                 <Link
                     :href="lifeAreasIndex()"
                     aria-label="領域管理"
-                    class="group inline-flex items-center gap-1.5 font-serif text-base tracking-[0.12em] text-[var(--cd-text-primary)] transition-colors hover:text-[var(--cd-primary-strong)] landscape-compact:text-sm"
+                    class="group inline-flex items-center gap-1.5 font-serif text-base tracking-[0.12em] text-[var(--cd-header-text)] transition-colors hover:text-white landscape-compact:text-sm"
                 >
                     <SlidersHorizontal
                         :size="16"
                         :stroke-width="1.6"
-                        class="text-[var(--cd-primary)] opacity-80 transition-opacity group-hover:opacity-100"
+                        class="text-[var(--cd-header-text)] opacity-80 transition-opacity group-hover:opacity-100"
                         aria-hidden="true"
                     />
                     <span class="underline-offset-4 group-hover:underline">

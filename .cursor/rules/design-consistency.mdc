@@ -37,6 +37,7 @@ alwaysApply: true
    | ボーダー / 入力 / リング | `--border` / `--input` / `--ring` | `border-border` / `ring-ring` |
    | 角丸 | `--radius` | `rounded-lg` 等 |
    | サイドバー | `--sidebar-background` 等 | `bg-sidebar` 等 |
+   | アプリヘッダー | `--cd-header-bg` / `--cd-header-text` / `--cd-header-border` | `.cd-app-header` |
    | ダークモード | `.dark` 配下で上記を上書き | `dark:` 修飾子 |
    | ヨユウ / キオク accent | `--os-yoyu` / `--os-kioku` | `text-os-yoyu` / `text-os-kioku` |
    | パフォーマンス icon | `--cd-icon-primary` / `--cd-icon-bg` 等 | `text-cd-icon-primary` / `bg-cd-icon-bg` |

@@ -499,7 +499,7 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
 
             <PageSectionCard padding="none" aria-label="本日のサマリ">
                 <div
-                    class="grid divide-y divide-cd-line sm:grid-cols-2 sm:divide-x md:grid-cols-3 xl:grid-cols-6 xl:divide-y-0"
+                    class="grid grid-cols-2 divide-x divide-y divide-cd-line md:grid-cols-3 xl:grid-cols-6 xl:divide-y-0"
                 >
                     <div class="relative p-4 pr-14">
                         <Flame

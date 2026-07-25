@@ -57,16 +57,16 @@ const statusClasses = goalStatusBadgeClasses;
                     <li v-for="goal in goals" :key="goal.id" class="px-5 py-4">
                         <Link
                             :href="show(goal.id)"
-                            class="group flex items-center gap-3"
+                            class="group flex min-w-0 flex-wrap items-start gap-x-3 gap-y-1.5 sm:flex-nowrap sm:items-center"
                         >
                             <Target
                                 :size="18"
                                 :stroke-width="1.6"
-                                class="shrink-0 text-primary"
+                                class="mt-0.5 shrink-0 text-primary sm:mt-0"
                                 aria-hidden="true"
                             />
                             <span
-                                class="min-w-0 truncate font-sans text-base font-semibold text-cd-ink group-hover:text-primary"
+                                class="min-w-0 flex-1 break-words whitespace-normal font-sans text-base font-semibold text-cd-ink group-hover:text-primary"
                             >
                                 {{ goal.name }}
                             </span>
@@ -85,7 +85,7 @@ const statusClasses = goalStatusBadgeClasses;
                             <ChevronRight
                                 :size="16"
                                 :stroke-width="1.6"
-                                class="ml-auto shrink-0 text-cd-ink-muted"
+                                class="ml-auto hidden shrink-0 text-cd-ink-muted sm:block"
                                 aria-hidden="true"
                             />
                         </Link>
@@ -97,10 +97,10 @@ const statusClasses = goalStatusBadgeClasses;
                             <li v-for="child in goal.children" :key="child.id">
                                 <Link
                                     :href="show(child.id)"
-                                    class="group flex items-center gap-2 py-1"
+                                    class="group flex min-w-0 flex-wrap items-start gap-x-2 gap-y-1 py-1 sm:flex-nowrap sm:items-center"
                                 >
                                     <span
-                                        class="min-w-0 truncate font-sans text-sm text-cd-ink group-hover:text-primary"
+                                        class="min-w-0 flex-1 break-words whitespace-normal font-sans text-sm text-cd-ink group-hover:text-primary"
                                     >
                                         {{ child.name }}
                                     </span>

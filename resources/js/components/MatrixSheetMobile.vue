@@ -58,29 +58,47 @@ function openEditor(rowIndex: number): void {
 
         <template v-else>
             <div
-                class="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                class="sticky top-0 z-10 -mx-1 border-b border-cd-matrix-line/60 bg-cd-matrix-surface/95 px-1 pt-1 pb-2 backdrop-blur-sm"
                 role="tablist"
                 aria-label="領域"
             >
-                <button
-                    v-for="(area, areaIndex) in areas"
-                    :key="area.id"
-                    type="button"
-                    role="tab"
-                    :aria-selected="areaIndex === selectedAreaIndex"
-                    class="shrink-0 rounded-full border px-3.5 py-1.5 font-serif text-sm tracking-[0.08em] transition-colors"
-                    :class="
-                        areaIndex === selectedAreaIndex
-                            ? 'border-cd-matrix-line bg-cd-matrix-row-header text-cd-ink'
-                            : 'border-cd-matrix-column-header bg-cd-matrix-column-header text-cd-matrix-header-foreground'
-                    "
-                    @click="selectArea(areaIndex)"
+                <div
+                    class="flex gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
-                    {{ area.name }}
-                </button>
+                    <button
+                        v-for="(area, areaIndex) in areas"
+                        :key="area.id"
+                        type="button"
+                        role="tab"
+                        :aria-selected="areaIndex === selectedAreaIndex"
+                        class="relative min-w-0 shrink-0 grow basis-0 rounded-t-lg px-3 py-2.5 font-serif text-sm tracking-[0.08em] transition-colors"
+                        :class="
+                            areaIndex === selectedAreaIndex
+                                ? 'bg-cd-matrix-surface text-cd-ink'
+                                : 'bg-transparent text-cd-ink-muted'
+                        "
+                        @click="selectArea(areaIndex)"
+                    >
+                        <span class="block truncate">{{ area.name }}</span>
+                        <span
+                            aria-hidden="true"
+                            class="absolute inset-x-2 bottom-0 h-0.5 rounded-full transition-colors"
+                            :class="
+                                areaIndex === selectedAreaIndex
+                                    ? 'bg-cd-matrix-accent'
+                                    : 'bg-transparent'
+                            "
+                        />
+                    </button>
+                </div>
             </div>
 
-            <div v-if="selectedArea" class="flex flex-col gap-3">
+            <div
+                v-if="selectedArea"
+                class="flex flex-col gap-3"
+                role="tabpanel"
+                :aria-label="selectedArea.name"
+            >
                 <article
                     v-for="(row, rowIndex) in rows"
                     :key="row.key"

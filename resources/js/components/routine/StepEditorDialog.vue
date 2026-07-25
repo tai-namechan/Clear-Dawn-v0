@@ -741,7 +741,7 @@ defineExpose({
 <template>
     <Dialog :open="open" @update:open="(v) => emit('update:open', v)">
         <DialogContent
-            class="flex max-h-[92vh] flex-col overflow-hidden bg-[#fffcf8] sm:max-w-5xl"
+            class="flex max-h-[92vh] w-[calc(100%-1.5rem)] max-w-[calc(100%-1.5rem)] flex-col overflow-hidden bg-[#fffcf8] sm:max-w-5xl"
         >
             <DialogHeader>
                 <DialogTitle class="font-sans text-lg font-semibold text-cd-ink">
@@ -757,9 +757,9 @@ defineExpose({
             </DialogHeader>
 
             <div
-                class="grid min-h-0 flex-1 gap-5 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_240px]"
+                class="grid min-h-0 min-w-0 flex-1 gap-5 overflow-x-hidden overflow-y-auto lg:grid-cols-[minmax(0,1fr)_240px]"
             >
-                <div class="flex flex-col gap-3">
+                <div class="flex min-w-0 flex-col gap-3">
                     <div v-if="!isEditing" class="flex flex-wrap gap-2">
                         <Button
                             type="button"
@@ -1060,7 +1060,7 @@ defineExpose({
                             <span class="cd-step-section__num">5</span>
                             セット内容
                         </div>
-                        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                             <div class="space-y-1.5">
                                 <Label class="text-xs text-cd-ink-muted">
                                     セット数
