@@ -562,15 +562,41 @@ const metrics = computed((): MetricChip[] => {
                     </div>
 
                     <div class="space-y-4 px-5 py-5">
-                        <SessionExerciseVideo
-                            :src="playbackUrl"
-                            :loading="playbackLoading"
-                            :empty-label="
-                                currentStep.video
-                                    ? '動画の準備ができていません'
-                                    : 'このステップには動画がありません'
-                            "
-                        />
+                        <div
+                            class="grid items-start gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(15rem,0.85fr)]"
+                        >
+                            <SessionExerciseVideo
+                                :src="playbackUrl"
+                                :loading="playbackLoading"
+                                :empty-label="
+                                    currentStep.video
+                                        ? '動画の準備ができていません'
+                                        : 'このステップには動画がありません'
+                                "
+                            />
+
+                            <div
+                                v-if="trackingType && currentStep"
+                                class="rounded-xl border border-cd-line/70 bg-white/80 p-3 shadow-sm"
+                            >
+                                <SessionBlockLogger
+                                    :tracking-type="trackingType"
+                                    :target-blocks="targetBlocks"
+                                    :completed-logs="
+                                        currentStep.block_logs ?? []
+                                    "
+                                    :load-unit="currentStep.load_unit"
+                                    :amount-unit="currentStep.amount_unit"
+                                    :default-load="currentStep.target_load"
+                                    :default-amount="
+                                        currentStep.target_amount
+                                    "
+                                    :logging="logging || isSessionFinished"
+                                    @log="logBlock"
+                                    @unlog="unlogBlock"
+                                />
+                            </div>
+                        </div>
 
                         <div
                             v-if="
@@ -597,21 +623,6 @@ const metrics = computed((): MetricChip[] => {
                                 {{ currentStep.video.description }}
                             </p>
                         </div>
-
-                        <SessionBlockLogger
-                            v-if="trackingType && currentStep"
-                            class="lg:hidden"
-                            :tracking-type="trackingType"
-                            :target-blocks="targetBlocks"
-                            :completed-logs="currentStep.block_logs ?? []"
-                            :load-unit="currentStep.load_unit"
-                            :amount-unit="currentStep.amount_unit"
-                            :default-load="currentStep.target_load"
-                            :default-amount="currentStep.target_amount"
-                            :logging="logging || isSessionFinished"
-                            @log="logBlock"
-                            @unlog="unlogBlock"
-                        />
                     </div>
                 </section>
 
@@ -701,33 +712,6 @@ const metrics = computed((): MetricChip[] => {
                                     {{ index + 1 }}
                                 </span>
                             </button>
-
-                            <div
-                                v-if="
-                                    index === currentIndex &&
-                                    trackingType &&
-                                    currentStep &&
-                                    !isSessionFinished
-                                "
-                                class="hidden border-t border-cd-line/40 bg-white/70 px-3 py-3 lg:block"
-                            >
-                                <SessionBlockLogger
-                                    :tracking-type="trackingType"
-                                    :target-blocks="targetBlocks"
-                                    :completed-logs="
-                                        currentStep.block_logs ?? []
-                                    "
-                                    :load-unit="currentStep.load_unit"
-                                    :amount-unit="currentStep.amount_unit"
-                                    :default-load="currentStep.target_load"
-                                    :default-amount="
-                                        currentStep.target_amount
-                                    "
-                                    :logging="logging"
-                                    @log="logBlock"
-                                    @unlog="unlogBlock"
-                                />
-                            </div>
                         </li>
                     </ul>
 
