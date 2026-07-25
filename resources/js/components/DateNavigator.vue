@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { CalendarDays, ChevronLeft, ChevronRight } from '@lucide/vue';
-import { computed } from 'vue';
-import { useDateNavigation } from '@/composables/useDateNavigation';
+import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
+import { useDateNavigation } from '@/composables/useDateNavigation';
 
 interface Props {
     date: string;
@@ -20,12 +20,35 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const dateRef = computed(() => props.date);
+const dateInputRef = ref<HTMLInputElement | null>(null);
 
-const { formattedDate, isToday, shiftDate, goToday } = useDateNavigation({
-    date: dateRef,
-    routeUrl: props.routeUrl,
-    reloadOnly: props.reloadOnly,
-});
+const { formattedDate, isToday, shiftDate, goToday, goToDate } =
+    useDateNavigation({
+        date: dateRef,
+        routeUrl: props.routeUrl,
+        reloadOnly: props.reloadOnly,
+    });
+
+function openDatePicker(): void {
+    const input = dateInputRef.value;
+
+    if (!input) {
+        return;
+    }
+
+    if (typeof input.showPicker === 'function') {
+        input.showPicker();
+
+        return;
+    }
+
+    input.click();
+}
+
+function onDatePicked(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    goToDate(value);
+}
 </script>
 
 <template>
@@ -46,28 +69,39 @@ const { formattedDate, isToday, shiftDate, goToday } = useDateNavigation({
             <ChevronLeft :size="16" :stroke-width="1.6" />
         </Button>
 
-        <div class="flex min-w-0 items-center gap-1.5 px-1">
-            <CalendarDays
-                :size="16"
-                :stroke-width="1.6"
-                class="shrink-0 text-cd-ink-muted"
-                aria-hidden="true"
-            />
-            <div class="min-w-0 text-left">
+        <div class="flex min-w-0 flex-col items-center px-1 text-center">
+            <div class="inline-flex items-center gap-1.5">
+                <button
+                    type="button"
+                    class="inline-flex shrink-0 items-center justify-center rounded-md p-1 text-cd-ink-muted transition-colors hover:bg-muted hover:text-cd-ink"
+                    aria-label="日付を選択"
+                    @click="openDatePicker"
+                >
+                    <CalendarDays :size="16" :stroke-width="1.6" />
+                </button>
                 <p
                     class="font-sans text-sm font-semibold tracking-tight text-cd-ink whitespace-nowrap"
                 >
                     {{ formattedDate }}
                 </p>
-                <button
-                    v-if="!isToday"
-                    type="button"
-                    class="font-sans text-[11px] font-medium text-primary underline-offset-2 hover:underline"
-                    @click="goToday"
-                >
-                    今日に戻る
-                </button>
             </div>
+            <button
+                v-if="!isToday"
+                type="button"
+                class="font-sans text-[11px] font-medium text-primary underline-offset-2 hover:underline"
+                @click="goToday"
+            >
+                今日に戻る
+            </button>
+            <input
+                ref="dateInputRef"
+                type="date"
+                class="sr-only"
+                :value="date"
+                tabindex="-1"
+                aria-hidden="true"
+                @change="onDatePicked"
+            />
         </div>
 
         <Button
@@ -100,11 +134,21 @@ const { formattedDate, isToday, shiftDate, goToday } = useDateNavigation({
                 </Button>
 
                 <div class="min-w-0 text-center">
-                    <p
-                        class="font-sans text-base font-semibold tracking-tight text-cd-ink md:text-lg"
-                    >
-                        {{ formattedDate }}
-                    </p>
+                    <div class="inline-flex items-center gap-1.5">
+                        <button
+                            type="button"
+                            class="inline-flex shrink-0 items-center justify-center rounded-md p-1 text-cd-ink-muted transition-colors hover:bg-muted hover:text-cd-ink"
+                            aria-label="日付を選択"
+                            @click="openDatePicker"
+                        >
+                            <CalendarDays :size="16" :stroke-width="1.6" />
+                        </button>
+                        <p
+                            class="font-sans text-base font-semibold tracking-tight text-cd-ink md:text-lg"
+                        >
+                            {{ formattedDate }}
+                        </p>
+                    </div>
                     <button
                         v-if="!isToday"
                         type="button"
@@ -144,11 +188,21 @@ const { formattedDate, isToday, shiftDate, goToday } = useDateNavigation({
                 </Button>
 
                 <div class="min-w-0 text-center">
-                    <p
-                        class="font-sans text-base font-semibold tracking-tight text-cd-ink md:text-lg"
-                    >
-                        {{ formattedDate }}
-                    </p>
+                    <div class="inline-flex items-center gap-1.5">
+                        <button
+                            type="button"
+                            class="inline-flex shrink-0 items-center justify-center rounded-md p-1 text-cd-ink-muted transition-colors hover:bg-muted hover:text-cd-ink"
+                            aria-label="日付を選択"
+                            @click="openDatePicker"
+                        >
+                            <CalendarDays :size="16" :stroke-width="1.6" />
+                        </button>
+                        <p
+                            class="font-sans text-base font-semibold tracking-tight text-cd-ink md:text-lg"
+                        >
+                            {{ formattedDate }}
+                        </p>
+                    </div>
                     <button
                         v-if="!isToday"
                         type="button"
@@ -176,5 +230,15 @@ const { formattedDate, isToday, shiftDate, goToday } = useDateNavigation({
                 </Button>
             </div>
         </template>
+
+        <input
+            ref="dateInputRef"
+            type="date"
+            class="sr-only"
+            :value="date"
+            tabindex="-1"
+            aria-hidden="true"
+            @change="onDatePicked"
+        />
     </div>
 </template>

@@ -6,7 +6,7 @@ import {
     ChevronRight,
     Clock3,
 } from '@lucide/vue';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { useDateNavigation } from '@/composables/useDateNavigation';
 import { formatMinutesJa } from '@/lib/todayPlanDisplay';
@@ -20,12 +20,14 @@ interface Props {
 
 const props = defineProps<Props>();
 const dateRef = computed(() => props.date);
+const dateInputRef = ref<HTMLInputElement | null>(null);
 
-const { formattedDate, isToday, shiftDate, goToday } = useDateNavigation({
-    date: dateRef,
-    routeUrl: '/routines',
-    reloadOnly: ['plans', 'ops', 'date'],
-});
+const { formattedDate, isToday, shiftDate, goToday, goToDate } =
+    useDateNavigation({
+        date: dateRef,
+        routeUrl: '/routines',
+        reloadOnly: ['plans', 'ops', 'date'],
+    });
 
 const completionRate = computed(() => {
     if (props.totalCount === 0) {
@@ -34,6 +36,27 @@ const completionRate = computed(() => {
 
     return Math.round((props.completedCount / props.totalCount) * 100);
 });
+
+function openDatePicker(): void {
+    const input = dateInputRef.value;
+
+    if (!input) {
+        return;
+    }
+
+    if (typeof input.showPicker === 'function') {
+        input.showPicker();
+
+        return;
+    }
+
+    input.click();
+}
+
+function onDatePicked(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    goToDate(value);
+}
 </script>
 
 <template>
@@ -42,7 +65,7 @@ const completionRate = computed(() => {
             class="flex min-w-0 flex-col gap-3 p-3 sm:flex-row sm:items-center sm:gap-3 sm:p-3.5"
         >
             <div
-                class="flex min-w-0 flex-1 items-center gap-2 rounded-xl bg-white/70 px-2.5 py-2"
+                class="flex min-w-0 flex-1 items-center gap-1 rounded-xl bg-white/70 px-2 py-2 sm:gap-2 sm:px-2.5"
             >
                 <Button
                     type="button"
@@ -54,18 +77,25 @@ const completionRate = computed(() => {
                 >
                     <ChevronLeft :size="16" :stroke-width="1.6" />
                 </Button>
-                <CalendarDays
-                    :size="16"
-                    :stroke-width="1.7"
-                    class="shrink-0 text-primary"
-                    aria-hidden="true"
-                />
-                <div class="min-w-0 flex-1 text-left">
-                    <p
-                        class="truncate font-sans text-sm font-semibold text-cd-ink"
-                    >
-                        {{ formattedDate }}
-                    </p>
+
+                <div
+                    class="flex min-w-0 flex-1 flex-col items-center justify-center text-center"
+                >
+                    <div class="inline-flex max-w-full items-center gap-1.5">
+                        <button
+                            type="button"
+                            class="inline-flex shrink-0 items-center justify-center rounded-md p-1 text-primary transition-colors hover:bg-primary/10"
+                            aria-label="日付を選択"
+                            @click="openDatePicker"
+                        >
+                            <CalendarDays :size="16" :stroke-width="1.7" />
+                        </button>
+                        <p
+                            class="truncate font-sans text-sm font-semibold text-cd-ink"
+                        >
+                            {{ formattedDate }}
+                        </p>
+                    </div>
                     <button
                         v-if="!isToday"
                         type="button"
@@ -80,7 +110,17 @@ const completionRate = computed(() => {
                     >
                         今日のルーティン
                     </p>
+                    <input
+                        ref="dateInputRef"
+                        type="date"
+                        class="sr-only"
+                        :value="date"
+                        tabindex="-1"
+                        aria-hidden="true"
+                        @change="onDatePicked"
+                    />
                 </div>
+
                 <Button
                     type="button"
                     variant="ghost"

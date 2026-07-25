@@ -162,6 +162,21 @@ class RoutinesHubTabsContractTest extends TestCase
             $progress,
             'Progress panel must not force horizontal overflow on narrow screens',
         );
+        $this->assertStringContainsString(
+            'items-center justify-center text-center',
+            $progress,
+            'Date label and today caption must be centered between day arrows',
+        );
+        $this->assertStringContainsString(
+            'type="date"',
+            $progress,
+            'Calendar icon must open a date picker for direct date jumps',
+        );
+        $this->assertStringContainsString(
+            '日付を選択',
+            $progress,
+            'Calendar control must expose a clear date-select label',
+        );
     }
 
     public function test_today_ops_primary_skips_checkin_nudge_cards(): void

@@ -19,7 +19,7 @@ const emit = defineEmits<{
 
 <template>
     <div
-        class="flex gap-1"
+        class="inline-flex max-w-full flex-wrap gap-1 rounded-xl bg-muted/70 p-1"
         role="tablist"
         :aria-label="ariaLabel ?? '表示切替'"
     >
@@ -31,11 +31,11 @@ const emit = defineEmits<{
             role="tab"
             :aria-selected="modelValue === tab.id"
             :aria-controls="`panel-${tab.id}`"
-            class="relative px-4 py-2.5 font-sans text-sm font-medium transition-colors"
+            class="rounded-lg px-4 py-2 font-sans text-sm font-medium transition-colors"
             :class="
                 modelValue === tab.id
-                    ? 'rounded-lg bg-primary text-primary-foreground'
-                    : 'text-cd-ink-muted hover:text-cd-ink'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-cd-ink-muted hover:bg-background/90 hover:text-cd-ink'
             "
             @click="emit('update:modelValue', tab.id)"
         >

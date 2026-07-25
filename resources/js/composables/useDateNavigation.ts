@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/vue3';
-import { computed, type ComputedRef, type Ref } from 'vue';
+import { computed } from 'vue';
+import type { ComputedRef, Ref } from 'vue';
 import {
     formatDateKeyJa,
     isTodayKey,
@@ -22,29 +23,33 @@ export function useDateNavigation({
     const formattedDate = computed(() => formatDateKeyJa(date.value));
     const isToday = computed(() => isTodayKey(date.value));
 
-    function shiftDate(days: number): void {
+    function visitDate(dateKey: string | undefined): void {
         router.get(
             routeUrl,
-            { date: shiftDateKey(date.value, days) },
+            dateKey ? { date: dateKey } : {},
             {
                 preserveState: true,
                 preserveScroll,
                 ...(reloadOnly ? { only: reloadOnly } : {}),
             },
         );
+    }
+
+    function shiftDate(days: number): void {
+        visitDate(shiftDateKey(date.value, days));
     }
 
     function goToday(): void {
-        router.get(
-            routeUrl,
-            {},
-            {
-                preserveState: true,
-                preserveScroll,
-                ...(reloadOnly ? { only: reloadOnly } : {}),
-            },
-        );
+        visitDate(undefined);
     }
 
-    return { formattedDate, isToday, shiftDate, goToday };
+    function goToDate(dateKey: string): void {
+        if (!dateKey || dateKey === date.value) {
+            return;
+        }
+
+        visitDate(dateKey);
+    }
+
+    return { formattedDate, isToday, shiftDate, goToday, goToDate };
 }
