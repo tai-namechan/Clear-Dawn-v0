@@ -28,11 +28,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiFetch } from '@/lib/apiFetch';
 import {
-    formatSleepDelta,
-    formatSleepMinutes,
-    metricLabel,
-} from '@/lib/metricLabels';
-import {
     CHART_COLORS,
     chartAxisLabel,
     chartAxisLine,
@@ -40,6 +35,11 @@ import {
     chartLineSeriesStyle,
     chartSplitLine,
 } from '@/lib/chartTheme';
+import {
+    formatSleepDelta,
+    formatSleepMinutes,
+    metricLabel,
+} from '@/lib/metricLabels';
 import type { ChartPoint, DailyMetricEntry } from '@/types/routine';
 import type { CheckinFormState, TodayOpsCheckin } from '@/types/todayOps';
 
@@ -395,27 +395,27 @@ const chartOption = computed<EChartsCoreOption>(() => {
         ),
     ).sort();
 
-    const seriesFor = (key: string, color: string, name: string) => {
-        const map = new Map(
+    const mapFor = (key: string) =>
+        new Map(
             (props.chartSeries[key] ?? []).map((point) => [
                 point.date,
                 Number(point.value),
             ]),
         );
 
-        return {
-            name,
-            type: 'line' as const,
-            smooth: true,
-            ...chartLineSeriesStyle(color),
-            data: dates.map((date) => map.get(date) ?? null),
-        };
-    };
+    const weightMap = mapFor('weight');
+    const pitchMap = mapFor('pitch_speed_max');
+    const sleepHoursMap = new Map(
+        [...mapFor('sleep_minutes').entries()].map(([date, minutes]) => [
+            date,
+            Math.round((minutes / 60) * 10) / 10,
+        ]),
+    );
 
     return {
-        grid: { left: 48, right: 48, top: 40, bottom: 32 },
+        grid: { left: 52, right: 52, top: 20, bottom: 56 },
         tooltip: { trigger: 'axis' },
-        legend: chartLegend(11),
+        legend: chartLegend(11, { bottom: 0, left: 'center' }),
         xAxis: {
             type: 'category',
             data: dates,
@@ -426,32 +426,68 @@ const chartOption = computed<EChartsCoreOption>(() => {
             {
                 type: 'value',
                 name: 'kg / km/h',
+                nameLocation: 'end',
+                nameGap: 12,
+                nameTextStyle: chartAxisLabel(11),
                 axisLabel: chartAxisLabel(11),
                 splitLine: chartSplitLine(),
+                scale: true,
             },
             {
                 type: 'value',
-                name: '分',
+                name: '睡眠 時間',
+                nameLocation: 'end',
+                nameGap: 12,
+                nameTextStyle: chartAxisLabel(11),
                 axisLabel: chartAxisLabel(11),
                 splitLine: { show: false },
+                min: 0,
+                max: (extent: { max: number }) =>
+                    Math.max(10, Math.ceil((extent.max || 0) + 1)),
             },
         ],
         series: [
             {
-                ...seriesFor('weight', CHART_COLORS.primary, '体重'),
+                name: '体重',
+                type: 'line' as const,
+                smooth: true,
                 yAxisIndex: 0,
+                ...chartLineSeriesStyle(CHART_COLORS.primary),
+                data: dates.map((date) => weightMap.get(date) ?? null),
+                tooltip: {
+                    valueFormatter: (value: unknown) =>
+                        value == null || value === ''
+                            ? '—'
+                            : `${value} kg`,
+                },
             },
             {
-                ...seriesFor('sleep_minutes', CHART_COLORS.secondary, '睡眠時間'),
+                name: '睡眠時間',
+                type: 'line' as const,
+                smooth: true,
                 yAxisIndex: 1,
+                ...chartLineSeriesStyle(CHART_COLORS.secondary),
+                data: dates.map((date) => sleepHoursMap.get(date) ?? null),
+                tooltip: {
+                    valueFormatter: (value: unknown) =>
+                        value == null || value === ''
+                            ? '—'
+                            : `${value} 時間`,
+                },
             },
             {
-                ...seriesFor(
-                    'pitch_speed_max',
-                    CHART_COLORS.tertiary,
-                    '最高球速',
-                ),
+                name: '最高球速',
+                type: 'line' as const,
+                smooth: true,
                 yAxisIndex: 0,
+                ...chartLineSeriesStyle(CHART_COLORS.tertiary),
+                data: dates.map((date) => pitchMap.get(date) ?? null),
+                tooltip: {
+                    valueFormatter: (value: unknown) =>
+                        value == null || value === ''
+                            ? '—'
+                            : `${value} km/h`,
+                },
             },
         ],
     };
