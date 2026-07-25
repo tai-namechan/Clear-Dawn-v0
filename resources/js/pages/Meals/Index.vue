@@ -16,18 +16,18 @@ import {
     Trash2,
     Utensils,
 } from '@lucide/vue';
-import type { Component } from 'vue';
 import type { EChartsCoreOption } from 'echarts/core';
 import { computed, ref, watch } from 'vue';
+import type { Component } from 'vue';
 import BarcodeLookupModal from '@/components/BarcodeLookupModal.vue';
-import RestaurantLookupModal from '@/components/RestaurantLookupModal.vue';
 import DateNavigator from '@/components/DateNavigator.vue';
-import PageSectionCard from '@/components/PageSectionCard.vue';
-import PageTabShell from '@/components/PageTabShell.vue';
-import PageViewTabs from '@/components/PageViewTabs.vue';
 import MealsSettingsPanel from '@/components/meals/MealsSettingsPanel.vue';
 import MealsTodayHero from '@/components/meals/MealsTodayHero.vue';
 import MealsTrendsPanel from '@/components/meals/MealsTrendsPanel.vue';
+import PageSectionCard from '@/components/PageSectionCard.vue';
+import PageTabShell from '@/components/PageTabShell.vue';
+import PageViewTabs from '@/components/PageViewTabs.vue';
+import RestaurantLookupModal from '@/components/RestaurantLookupModal.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,

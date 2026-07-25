@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { router } from '@inertiajs/vue3';
 import { Star } from '@lucide/vue';
+import { computed, ref } from 'vue';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/apiFetch';
-import { router } from '@inertiajs/vue3';
 import type { TodayOps } from '@/types/todayOps';
 
 interface Props {

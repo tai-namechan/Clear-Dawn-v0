@@ -82,6 +82,7 @@ watch(
     () => props.ops.checkin,
     (checkin) => {
         showCheckinEditor.value = checkin == null;
+
         if (checkin) {
             checkinForm.value = {
                 sleep_quality: checkin.sleep_quality ?? 5,
