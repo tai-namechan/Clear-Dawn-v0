@@ -10,19 +10,13 @@ type HubTab = {
 
 /**
  * ハブ導線:
- * プログラムを確認 → ルーティン（実行） → 今日/作戦 → 履歴
+ * プログラム → ルーティン（実行・作戦・チェックイン含む） → 履歴
  *
- * 見た目は PageViewTabs と同じ下線タブ。URL / ページ遷移は従来どおり
- *（Inertia Link。同一ページ内パネル切替ではない）。
- *
- * 実施項目（ステップで使う部品の整理画面）は主導線外。
- * ルーティン編集の「ステップを追加」から作るのが基本。
- * サイドバー着地は /routines のまま（ナビ変更禁止）。
+ * 「今日/作戦」は /routines の今日タブへ巻き取り済み。
  */
 const tabs: HubTab[] = [
     { label: 'プログラム', href: '/programs', matchPrefix: true },
     { label: 'ルーティン', href: '/routines', matchPrefix: true },
-    { label: '今日/作戦', href: '/today', matchPrefix: true },
     { label: '履歴', href: '/history' },
 ];
 

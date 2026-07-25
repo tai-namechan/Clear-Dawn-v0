@@ -129,13 +129,13 @@ class TodayOpsPhaseTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user)->get(route('today.index'))->assertOk();
+        $this->actingAs($user)->get(route('today.index'))->assertRedirect(route('routines.index'));
 
         $countAfterFirstVisit = RuleEvaluation::query()->where('user_id', $user->id)->count();
         $this->assertGreaterThan(0, $countAfterFirstVisit);
 
-        $this->actingAs($user)->get(route('today.index'))->assertOk();
-        $this->actingAs($user)->get(route('today.index'))->assertOk();
+        $this->actingAs($user)->get(route('today.index'))->assertRedirect(route('routines.index'));
+        $this->actingAs($user)->get(route('today.index'))->assertRedirect(route('routines.index'));
 
         $this->assertSame(
             $countAfterFirstVisit,
@@ -148,7 +148,7 @@ class TodayOpsPhaseTest extends TestCase
         $user = User::factory()->create();
         $date = Carbon::parse('2026-07-21');
 
-        $this->actingAs($user)->get(route('today.index', ['date' => $date->toDateString()]))->assertOk();
+        $this->actingAs($user)->get(route('today.index', ['date' => $date->toDateString()]))->assertRedirect(route('routines.index'));
 
         $firstIds = Recommendation::query()
             ->where('user_id', $user->id)
@@ -160,8 +160,8 @@ class TodayOpsPhaseTest extends TestCase
 
         $this->assertNotEmpty($firstIds);
 
-        $this->actingAs($user)->get(route('today.index', ['date' => $date->toDateString()]))->assertOk();
-        $this->actingAs($user)->get(route('today.index', ['date' => $date->toDateString()]))->assertOk();
+        $this->actingAs($user)->get(route('today.index', ['date' => $date->toDateString()]))->assertRedirect(route('routines.index'));
+        $this->actingAs($user)->get(route('today.index', ['date' => $date->toDateString()]))->assertRedirect(route('routines.index'));
 
         $laterIds = Recommendation::query()
             ->where('user_id', $user->id)
@@ -209,7 +209,7 @@ class TodayOpsPhaseTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('today.index', ['date' => $date->toDateString()]))
-            ->assertOk();
+            ->assertRedirect(route('routines.index'));
 
         $programCard = Recommendation::query()
             ->where('user_id', $user->id)
@@ -240,7 +240,7 @@ class TodayOpsPhaseTest extends TestCase
 
         $this->actingAs($owner)
             ->get(route('today.index', ['date' => '2026-07-21']))
-            ->assertOk();
+            ->assertRedirect(route('routines.index'));
 
         $recommendation = Recommendation::query()->where('user_id', $owner->id)->firstOrFail();
 
@@ -262,9 +262,13 @@ class TodayOpsPhaseTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('today.index'))
+            ->assertRedirect(route('routines.index'));
+
+        $this->actingAs($user)
+            ->get(route('routines.index'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('Today/Index')
+                ->component('Routines/Index')
                 ->where('date', '2026-07-18')
             );
 
@@ -280,9 +284,13 @@ class TodayOpsPhaseTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('today.index'))
+            ->assertRedirect(route('routines.index'));
+
+        $this->actingAs($user)
+            ->get(route('routines.index'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('Today/Index')
+                ->component('Routines/Index')
                 ->where('date', '2026-07-18')
             );
 

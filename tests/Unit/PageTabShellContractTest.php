@@ -79,19 +79,19 @@ class PageTabShellContractTest extends TestCase
         }
     }
 
-    public function test_today_and_routines_use_shell_for_primary_chrome(): void
+    public function test_routines_use_shell_for_primary_chrome(): void
     {
-        $today = $this->pageSource('resources/js/pages/Today/Index.vue');
         $routines = $this->pageSource('resources/js/pages/Routines/Index.vue');
-
-        $this->assertStringContainsString('PageTabShell', $today);
-        $this->assertStringContainsString('RoutinesHubTabs', $today);
-        $this->assertStringContainsString('#tabs', $today);
 
         $this->assertStringContainsString('PageTabShell', $routines);
         $this->assertStringContainsString('PageViewTabs', $routines);
         $this->assertStringContainsString('#tabs', $routines);
         $this->assertStringContainsString('#actions', $routines);
+        $this->assertStringContainsString(
+            'TodayOpsPrimary',
+            $routines,
+            'Today tab owns ops after /today fold-in',
+        );
     }
 
     public function test_meals_keeps_secondary_logging_outside_shell(): void

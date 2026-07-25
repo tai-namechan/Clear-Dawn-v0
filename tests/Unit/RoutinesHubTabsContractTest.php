@@ -10,17 +10,23 @@ use Tests\TestCase;
  */
 class RoutinesHubTabsContractTest extends TestCase
 {
-    public function test_hub_tabs_keep_existing_urls(): void
+    public function test_hub_tabs_keep_existing_urls_without_today_ops(): void
     {
         $source = $this->componentSource();
 
-        foreach (['/programs', '/routines', '/today', '/history'] as $href) {
+        foreach (['/programs', '/routines', '/history'] as $href) {
             $this->assertStringContainsString(
                 "href: '{$href}'",
                 $source,
                 "Hub tab must keep navigation URL {$href}",
             );
         }
+
+        $this->assertStringNotContainsString(
+            "href: '/today'",
+            $source,
+            '今日/作戦 was folded into /routines today tab',
+        );
     }
 
     public function test_hub_tabs_use_underline_style_not_pill_buttons(): void
@@ -44,92 +50,66 @@ class RoutinesHubTabsContractTest extends TestCase
         );
     }
 
-    public function test_today_session_header_stacks_on_mobile(): void
+    public function test_routines_today_owns_ops_and_session_start(): void
     {
-        $source = file_get_contents(base_path('resources/js/pages/Today/Index.vue'));
-        $this->assertNotFalse($source);
+        $source = $this->pageSource('resources/js/pages/Routines/Index.vue');
 
         $this->assertStringContainsString(
-            'flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between',
+            'TodayOpsPrimary',
             $source,
-            'Today session title and add button must stack on narrow screens',
+            'Ops primary card lives on /routines today tab after fold-in',
         );
         $this->assertStringContainsString(
-            'w-full shrink-0 font-sans sm:w-auto',
+            'DailyCheckinPanel',
             $source,
-            'Add-from-routines CTA must be full-width on mobile to avoid title wrap',
+            'Check-in UI lives on /routines today tab (single instance)',
         );
         $this->assertStringContainsString(
-            'grid grid-cols-3 gap-2',
+            '今日のメインセッション',
             $source,
-            'Meal remaining PFC metrics must sit in a readable three-column grid',
-        );
-    }
-
-    public function test_today_progress_panel_centers_metrics(): void
-    {
-        $absolute = base_path(
-            'resources/js/components/routine/TodayProgressPanel.vue',
-        );
-        $this->assertFileExists($absolute);
-        $source = file_get_contents($absolute);
-        $this->assertNotFalse($source);
-
-        $this->assertStringContainsString(
-            'flex w-full items-center justify-center gap-2',
-            $source,
-            'Date navigation row must be centered in the progress card',
-        );
-        $this->assertStringContainsString(
-            'flex flex-col items-center rounded-xl bg-primary/10',
-            $source,
-            'Progress metric cells must center their icon and values',
-        );
-    }
-
-    public function test_today_plan_card_vertically_centers_actions(): void
-    {
-        $absolute = base_path(
-            'resources/js/components/routine/TodayPlanCard.vue',
-        );
-        $this->assertFileExists($absolute);
-        $source = file_get_contents($absolute);
-        $this->assertNotFalse($source);
-
-        $this->assertStringContainsString(
-            'flex items-center gap-3',
-            $source,
-            'Plan card row must vertically center icon and start button',
-        );
-        $this->assertStringContainsString(
-            'class="min-w-0 flex-1"',
-            $source,
-            'Duration line must live inside the middle column so actions center against full content',
+            'Session start remains on /routines today tab',
         );
         $this->assertStringNotContainsString(
-            'pl-[3.25rem]',
+            '/today?date=',
             $source,
-            'Regression guard: indented duration row pulled icon/button visually upward',
+            'Routines must not deep-link to the retired /today page for check-in/ops',
+        );
+    }
+
+    public function test_today_ops_primary_skips_checkin_nudge_cards(): void
+    {
+        $source = $this->pageSource(
+            'resources/js/components/routine/TodayOpsPrimary.vue',
+        );
+
+        $this->assertStringContainsString(
+            'isCheckinNudge',
+            $source,
+            'Primary ops must filter check-in nudge recommendation cards',
         );
     }
 
     public function test_programs_index_includes_hub_tabs(): void
     {
-        $absolute = base_path('resources/js/pages/Programs/Index.vue');
-        $this->assertFileExists($absolute);
-        $source = file_get_contents($absolute);
-        $this->assertNotFalse($source);
+        $source = $this->pageSource('resources/js/pages/Programs/Index.vue');
 
         $this->assertStringContainsString(
             'RoutinesHubTabs',
             $source,
-            'Programs index is a hub destination and must show the same underline hub tabs on mobile and PC',
+            'Programs index is a hub destination and must show the same underline hub tabs',
         );
     }
 
     private function componentSource(): string
     {
-        $absolute = base_path('resources/js/components/routine/RoutinesHubTabs.vue');
+        return $this->pageSource(
+            'resources/js/components/routine/RoutinesHubTabs.vue',
+        );
+    }
+
+    private function pageSource(string $relative): string
+    {
+        $absolute = base_path($relative);
         $this->assertFileExists($absolute);
 
         $contents = file_get_contents($absolute);

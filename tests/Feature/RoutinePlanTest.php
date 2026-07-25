@@ -143,8 +143,13 @@ class RoutinePlanTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('today.index', ['date' => $date]))
+            ->assertRedirect(route('routines.index'));
+
+        $this->actingAs($user)
+            ->get(route('routines.index'))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
+                ->component('Routines/Index')
                 ->has('plans', 2)
             );
 

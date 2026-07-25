@@ -5,8 +5,8 @@ import {
     BookOpen,
     CalendarPlus,
     Check,
+    ChevronDown,
     CirclePlay,
-    ClipboardList,
     Dumbbell,
     Footprints,
     HeartPulse,
@@ -23,6 +23,8 @@ import type { Component } from 'vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTabShell from '@/components/PageTabShell.vue';
 import PageViewTabs from '@/components/PageViewTabs.vue';
+import DailyCheckinPanel from '@/components/routine/DailyCheckinPanel.vue';
+import TodayOpsPrimary from '@/components/routine/TodayOpsPrimary.vue';
 import TodayPlanCard from '@/components/routine/TodayPlanCard.vue';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/apiFetch';
@@ -41,7 +43,7 @@ import type {
     RoutinePlan,
     StepPurpose,
 } from '@/types/routine';
-import type { TodayOps } from '@/types/todayOps';
+import type { CheckinFormState, TodayOps } from '@/types/todayOps';
 
 interface Props {
     date: string;
@@ -64,11 +66,38 @@ const activeTab = ref(props.tab);
 const applyingId = ref<string | null>(null);
 const starting = ref(false);
 const showCompleted = ref(false);
+const showCheckinEditor = ref(props.ops.checkin == null);
+const savingCheckin = ref(false);
+const checkinForm = ref<CheckinFormState>({
+    sleep_quality: props.ops.checkin?.sleep_quality ?? 5,
+    fatigue: props.ops.checkin?.fatigue ?? 5,
+    muscle_soreness: props.ops.checkin?.muscle_soreness ?? 5,
+    stress: props.ops.checkin?.stress ?? 5,
+    mood: props.ops.checkin?.mood ?? 5,
+    readiness_self: props.ops.checkin?.readiness_self ?? 5,
+});
 
 watch(
     () => props.tab,
     (tab) => {
         activeTab.value = tab;
+    },
+);
+
+watch(
+    () => props.ops.checkin,
+    (checkin) => {
+        showCheckinEditor.value = checkin == null;
+        if (checkin) {
+            checkinForm.value = {
+                sleep_quality: checkin.sleep_quality ?? 5,
+                fatigue: checkin.fatigue ?? 5,
+                muscle_soreness: checkin.muscle_soreness ?? 5,
+                stress: checkin.stress ?? 5,
+                mood: checkin.mood ?? 5,
+                readiness_self: checkin.readiness_self ?? 5,
+            };
+        }
     },
 );
 
@@ -126,13 +155,6 @@ const programBadge = computed(() => {
 
     return `W${ctx.week_number ?? '-'} · ${ctx.day_code ?? ''}`;
 });
-
-const primaryRecommendation = computed(
-    () =>
-        props.ops.recommendations.find((card) => card.status === 'pending') ??
-        props.ops.recommendations[0] ??
-        null,
-);
 
 const checkinSummary = computed(() => {
     const checkin = props.ops.checkin;
@@ -249,6 +271,24 @@ function onTabChange(tab: string): void {
 
 function openRoutinesTab(): void {
     onTabChange('routines');
+}
+
+async function saveCheckin(): Promise<void> {
+    savingCheckin.value = true;
+
+    try {
+        await apiFetch('/today/checkin', {
+            method: 'PUT',
+            body: JSON.stringify({
+                checked_on: props.date,
+                ...checkinForm.value,
+            }),
+        });
+        showCheckinEditor.value = false;
+        await router.reload({ only: ['ops', 'plans'] });
+    } finally {
+        savingCheckin.value = false;
+    }
 }
 
 async function startOrOpenPrimary(): Promise<void> {
@@ -379,16 +419,25 @@ function historyDescription(log: ActivityLog): string {
                     />
                 </template>
 
-                <!-- 今日: メインセッション -->
+                <!-- 今日: 作戦 → セッション -->
                 <div
                     v-show="activeTab === 'today'"
                     id="panel-today"
                     role="tabpanel"
                     aria-labelledby="tab-today"
+                    class="flex flex-col gap-6"
                 >
+                    <TodayOpsPrimary :date="date" :ops="ops" />
+
                     <div
                         v-if="primaryPlan"
                         class="flex flex-col gap-6 lg:flex-row lg:items-stretch lg:justify-between"
+                        :class="
+                            ops.recommendations.length > 0 ||
+                            ops.program_context.some((c) => c.needs_choice)
+                                ? 'border-t border-cd-line pt-6'
+                                : undefined
+                        "
                         aria-label="今日のメインセッション"
                     >
                         <div class="min-w-0 flex-1">
@@ -681,83 +730,39 @@ function historyDescription(log: ActivityLog): string {
                 </div>
             </PageTabShell>
 
-            <!-- 今日（二次ブロック） -->
+            <!-- 今日（二次: チェックインは1つだけ + その他セッション） -->
             <div
                 v-show="activeTab === 'today'"
                 class="flex flex-col gap-4"
             >
                 <div
-                    v-if="primaryPlan"
-                    class="grid gap-4 md:grid-cols-2"
+                    v-if="ops.checkin && !showCheckinEditor"
+                    class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cd-line bg-cd-surface/80 px-4 py-3"
                 >
-                    <PageSectionCard padding="sm" aria-label="チェックイン">
-                        <div
-                            class="flex items-center justify-between gap-3 font-sans text-sm"
-                        >
-                            <p
-                                v-if="checkinSummary"
-                                class="inline-flex items-center gap-2 text-cd-moss"
-                            >
-                                <Check :size="16" :stroke-width="2.2" />
-                                {{ checkinSummary }}
-                            </p>
-                            <p v-else class="text-cd-ink-muted">
-                                チェックイン未入力
-                            </p>
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                class="font-sans"
-                                as-child
-                            >
-                                <Link :href="`/today?date=${date}`">
-                                    {{ checkinSummary ? '変更' : '入力' }}
-                                </Link>
-                            </Button>
-                        </div>
-                    </PageSectionCard>
-
-                    <PageSectionCard
-                        v-if="primaryRecommendation"
-                        padding="sm"
-                        aria-label="今日の作戦"
+                    <p
+                        class="inline-flex items-center gap-2 font-sans text-sm text-cd-moss"
                     >
-                        <p
-                            class="font-sans text-xs font-medium text-cd-ink-muted"
-                        >
-                            今日の作戦
-                        </p>
-                        <p
-                            class="mt-1 font-sans text-sm font-semibold text-cd-ink"
-                        >
-                            {{ primaryRecommendation.title }}
-                        </p>
-                        <p
-                            v-if="primaryRecommendation.rationale"
-                            class="mt-1 line-clamp-2 font-sans text-xs text-cd-ink-muted"
-                        >
-                            {{ primaryRecommendation.rationale }}
-                        </p>
-                        <div class="mt-3 flex flex-wrap gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                class="font-sans"
-                                as-child
-                            >
-                                <Link :href="`/today?date=${date}`">
-                                    <ClipboardList
-                                        :size="14"
-                                        :stroke-width="1.6"
-                                    />
-                                    作戦を見る
-                                </Link>
-                            </Button>
-                        </div>
-                    </PageSectionCard>
+                        <Check :size="16" :stroke-width="2" />
+                        {{ checkinSummary }}
+                    </p>
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-1 font-sans text-sm font-medium text-primary"
+                        @click="showCheckinEditor = true"
+                    >
+                        チェックインを変更
+                        <ChevronDown :size="14" :stroke-width="1.6" />
+                    </button>
                 </div>
+
+                <DailyCheckinPanel
+                    v-if="showCheckinEditor"
+                    v-model="checkinForm"
+                    :saving="savingCheckin"
+                    :has-existing="ops.checkin != null"
+                    compact
+                    @save="saveCheckin"
+                />
 
                 <PageSectionCard
                     v-if="secondaryPlans.length > 0"
@@ -806,7 +811,9 @@ function historyDescription(log: ActivityLog): string {
                         <Pencil :size="14" :stroke-width="1.6" />
                         ルーティンを編集
                     </button>
-                    <span class="ml-2">テンプレートの追加・編集はこちらから。</span>
+                    <span class="ml-2"
+                        >テンプレートの追加・編集はこちらから。</span
+                    >
                 </p>
             </div>
         </div>
