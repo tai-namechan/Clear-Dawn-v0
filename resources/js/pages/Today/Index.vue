@@ -457,12 +457,16 @@ function optionVariant(actionKey: string): 'default' | 'outline' {
             <!-- セッション + 食事（二次） -->
             <div class="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(260px,0.8fr)]">
                 <section
-                    class="flex min-w-0 flex-col rounded-2xl border border-cd-line/80 bg-cd-surface/95 px-5 py-5 shadow-sm md:px-6"
+                    class="flex min-w-0 flex-col rounded-2xl border border-cd-line/80 bg-cd-surface/95 px-4 py-5 shadow-sm sm:px-5 md:px-6"
                     aria-label="今日のセッション"
                 >
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <h2 class="font-sans text-lg font-semibold tracking-tight text-cd-ink">
+                    <div
+                        class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
+                    >
+                        <div class="min-w-0 flex-1">
+                            <h2
+                                class="font-sans text-lg font-semibold tracking-tight text-cd-ink"
+                            >
                                 今日のセッション
                             </h2>
                             <p class="mt-1 font-sans text-xs text-cd-ink-muted">
@@ -474,7 +478,7 @@ function optionVariant(actionKey: string): 'default' | 'outline' {
                             type="button"
                             variant="outline"
                             size="sm"
-                            class="shrink-0 font-sans"
+                            class="w-full shrink-0 font-sans sm:w-auto"
                             as-child
                         >
                             <Link href="/routines">
@@ -546,7 +550,7 @@ function optionVariant(actionKey: string): 'default' | 'outline' {
                 </section>
 
                 <section
-                    class="rounded-2xl border border-cd-line/80 bg-cd-surface/95 px-5 py-5 shadow-sm"
+                    class="rounded-2xl border border-cd-line/80 bg-cd-surface/95 px-4 py-5 shadow-sm sm:px-5"
                     aria-label="食事の残り"
                 >
                     <h2 class="font-sans text-sm font-semibold text-cd-ink">
@@ -554,47 +558,130 @@ function optionVariant(actionKey: string): 'default' | 'outline' {
                     </h2>
 
                     <template v-if="nutritionTarget && remainingKcal !== null">
-                        <p class="mt-3 font-sans text-2xl font-bold text-cd-ink">
-                            残り {{ remainingKcal.toLocaleString('ja-JP') }}
-                            <span class="text-base font-semibold text-cd-ink-muted">kcal</span>
+                        <p class="mt-3 font-sans text-2xl font-bold tracking-tight text-cd-ink">
+                            残り
+                            {{ remainingKcal.toLocaleString('ja-JP') }}
+                            <span
+                                class="text-base font-semibold text-cd-ink-muted"
+                                >kcal</span
+                            >
                         </p>
-                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-cd-line/40">
+                        <div
+                            class="mt-3 h-2 overflow-hidden rounded-full bg-cd-line/40"
+                        >
                             <div
                                 class="h-full rounded-full bg-primary transition-[width]"
                                 :style="{ width: `${kcalProgress}%` }"
                             />
                         </div>
                         <p class="mt-2 font-sans text-xs text-muted-foreground">
-                            {{ Number(nutritionIntake.kcal).toLocaleString('ja-JP') }}
+                            {{
+                                Number(nutritionIntake.kcal).toLocaleString(
+                                    'ja-JP',
+                                )
+                            }}
                             /
-                            {{ Number(nutritionTarget.kcal).toLocaleString('ja-JP') }} kcal
+                            {{
+                                Number(nutritionTarget.kcal).toLocaleString(
+                                    'ja-JP',
+                                )
+                            }}
+                            kcal
                         </p>
-                        <ul class="mt-4 space-y-1.5 font-sans text-xs text-muted-foreground">
-                            <li>
-                                たんぱく質
-                                {{ Number(nutritionIntake.protein_g).toFixed(0) }}
-                                /
-                                {{ Number(nutritionTarget.protein_g).toFixed(0) }}g
+                        <ul class="mt-4 grid grid-cols-3 gap-2">
+                            <li
+                                class="rounded-xl bg-muted/35 px-2.5 py-2.5 text-center"
+                            >
+                                <p
+                                    class="font-sans text-[11px] text-muted-foreground"
+                                >
+                                    たんぱく質
+                                </p>
+                                <p
+                                    class="mt-1 font-sans text-sm font-semibold text-cd-ink"
+                                >
+                                    {{
+                                        Number(
+                                            nutritionIntake.protein_g,
+                                        ).toFixed(0)
+                                    }}
+                                    <span
+                                        class="font-medium text-cd-ink-muted"
+                                        >/
+                                        {{
+                                            Number(
+                                                nutritionTarget.protein_g,
+                                            ).toFixed(0)
+                                        }}g</span
+                                    >
+                                </p>
                             </li>
-                            <li>
-                                脂質
-                                {{ Number(nutritionIntake.fat_g).toFixed(0) }}
-                                /
-                                {{ Number(nutritionTarget.fat_g).toFixed(0) }}g
+                            <li
+                                class="rounded-xl bg-muted/35 px-2.5 py-2.5 text-center"
+                            >
+                                <p
+                                    class="font-sans text-[11px] text-muted-foreground"
+                                >
+                                    脂質
+                                </p>
+                                <p
+                                    class="mt-1 font-sans text-sm font-semibold text-cd-ink"
+                                >
+                                    {{
+                                        Number(nutritionIntake.fat_g).toFixed(
+                                            0,
+                                        )
+                                    }}
+                                    <span
+                                        class="font-medium text-cd-ink-muted"
+                                        >/
+                                        {{
+                                            Number(
+                                                nutritionTarget.fat_g,
+                                            ).toFixed(0)
+                                        }}g</span
+                                    >
+                                </p>
                             </li>
-                            <li>
-                                炭水化物
-                                {{ Number(nutritionIntake.carb_g).toFixed(0) }}
-                                /
-                                {{ Number(nutritionTarget.carb_g).toFixed(0) }}g
+                            <li
+                                class="rounded-xl bg-muted/35 px-2.5 py-2.5 text-center"
+                            >
+                                <p
+                                    class="font-sans text-[11px] text-muted-foreground"
+                                >
+                                    炭水化物
+                                </p>
+                                <p
+                                    class="mt-1 font-sans text-sm font-semibold text-cd-ink"
+                                >
+                                    {{
+                                        Number(nutritionIntake.carb_g).toFixed(
+                                            0,
+                                        )
+                                    }}
+                                    <span
+                                        class="font-medium text-cd-ink-muted"
+                                        >/
+                                        {{
+                                            Number(
+                                                nutritionTarget.carb_g,
+                                            ).toFixed(0)
+                                        }}g</span
+                                    >
+                                </p>
                             </li>
                         </ul>
                     </template>
-                    <p v-else class="mt-3 font-sans text-sm text-muted-foreground">
+                    <p
+                        v-else
+                        class="mt-3 font-sans text-sm text-muted-foreground"
+                    >
                         栄養目標が未設定です。食事記録で目標を設定できます。
                     </p>
 
-                    <div class="mt-4 flex flex-col gap-2">
+                    <div
+                        class="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4"
+                    >
                         <Link
                             href="/meals"
                             class="font-sans text-sm font-medium text-primary underline-offset-2 hover:underline"
