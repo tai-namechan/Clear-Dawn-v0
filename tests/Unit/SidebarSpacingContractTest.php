@@ -80,7 +80,7 @@ class SidebarSpacingContractTest extends TestCase
         $this->assertStringContainsString(
             'cd-sidebar-panel',
             $source,
-            'Mobile SheetContent is teleported; panel marker lets CSS apply the CD gradient',
+            'Mobile SheetContent is teleported; panel marker lets CSS apply the CD sidebar fill',
         );
         $this->assertStringContainsString(
             'mx-auto mt-8 flex items-baseline',
@@ -126,7 +126,22 @@ class SidebarSpacingContractTest extends TestCase
         $this->assertStringContainsString(
             "[data-sidebar='sidebar'][data-mobile='true']:has(.cd-sidebar-panel)",
             $source,
-            'CD sidebar gradient must target the teleported mobile SheetContent',
+            'CD sidebar fill must target the teleported mobile SheetContent',
+        );
+        $this->assertStringContainsString(
+            'background-color: var(--cd-dawn-deep)',
+            $source,
+            'CD sidebar uses a flat deep fill for nav readability',
+        );
+        $this->assertStringNotContainsString(
+            "var(--cd-lavender-mist) 100%\n        );",
+            $source,
+            'Regression guard: pale lavender end of the vertical sidebar gradient is retired',
+        );
+        $this->assertStringNotContainsString(
+            '--sidebar-foreground: var(--cd-dawn-deep)',
+            $source,
+            'Footer no longer flips to dark ink; flat deep fill keeps light tokens',
         );
     }
 

@@ -622,13 +622,13 @@
 }
 
 /*
- * Clear Dawn sidebar gradient.
+ * Clear Dawn sidebar background (flat deep purple).
  * Kept outside @layer so it wins over the `bg-sidebar` utility applied inside
  * the ui/sidebar component (which must not be modified directly).
  * Desktop: scoped by `.cd-sidebar` on <Sidebar> in AppSidebar.vue.
  * Mobile: SheetContent is teleported to <body>, so `.cd-sidebar` is not an
  * ancestor — match via `[data-mobile=true]:has(.cd-sidebar-panel)` instead.
- * Sidebar-scoped tokens are re-declared for readability on the dark gradient.
+ * Sidebar-scoped tokens stay light for readability on the dark fill.
  */
 .cd-sidebar [data-sidebar='sidebar'],
 [data-sidebar='sidebar'][data-mobile='true']:has(.cd-sidebar-panel) {
@@ -637,30 +637,6 @@
     --sidebar-accent-foreground: hsl(0 0% 100%);
     --sidebar-border: hsl(0 0% 100% / 0.14);
     --sidebar-ring: hsl(256 30% 80%);
-    background:
-        radial-gradient(
-            ellipse 120% 40% at 50% 0%,
-            hsl(0 0% 100% / 0.06),
-            transparent 70%
-        ),
-        linear-gradient(
-            180deg,
-            var(--cd-dawn-deep) 0%,
-            var(--cd-dawn-deep) 22%,
-            var(--cd-dawn-mid) 46%,
-            var(--cd-dawn-soft) 72%,
-            var(--cd-lavender-mist) 100%
-        );
+    background-color: var(--cd-dawn-deep);
     color: var(--sidebar-foreground);
-}
-
-/* Footer (user menu) sits on the pale lavender end of the gradient,
-   so its text and hover tokens flip to dark ink for readability. */
-.cd-sidebar [data-sidebar='footer'],
-[data-sidebar='sidebar'][data-mobile='true']:has(.cd-sidebar-panel)
-    [data-sidebar='footer'] {
-    --sidebar-foreground: var(--cd-dawn-deep);
-    --sidebar-accent: hsl(237 32% 16% / 0.08);
-    --sidebar-accent-foreground: var(--cd-dawn-deep);
-    color: var(--cd-dawn-deep);
 }
