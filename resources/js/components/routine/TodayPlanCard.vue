@@ -22,6 +22,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { apiFetch } from '@/lib/apiFetch';
+import { planRunStatusBadgeClasses } from '@/lib/statusBadge';
 import {
     displayDurationMinutes,
     formatClockRange,
@@ -73,9 +74,15 @@ return '結果';
 });
 
 const statusMeta: Record<TodayPlanRunStatus, { label: string; className: string }> = {
-    completed: { label: '完了', className: 'bg-cd-moss/15 text-cd-moss' },
-    in_progress: { label: '進行中', className: 'bg-cd-moss text-white' },
-    not_started: { label: '未開始', className: 'bg-muted text-cd-ink-muted' },
+    completed: { label: '完了', className: planRunStatusBadgeClasses.completed },
+    in_progress: {
+        label: '進行中',
+        className: planRunStatusBadgeClasses.in_progress,
+    },
+    not_started: {
+        label: '未開始',
+        className: planRunStatusBadgeClasses.not_started,
+    },
 };
 
 const iconComponent = computed((): Component => {

@@ -6,6 +6,7 @@ import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { goalStatusBadgeClasses } from '@/lib/statusBadge';
 import { show, store } from '@/routes/goals';
 import type { GoalSummary } from '@/types/program';
 
@@ -22,12 +23,7 @@ const statusLabels: Record<string, string> = {
     abandoned: '中止',
 };
 
-const statusClasses: Record<string, string> = {
-    draft: 'bg-muted text-cd-ink-muted',
-    active: 'bg-cd-moss/15 text-cd-moss',
-    achieved: 'bg-primary/10 text-primary',
-    abandoned: 'bg-muted text-cd-ink-muted line-through',
-};
+const statusClasses = goalStatusBadgeClasses;
 </script>
 
 <template>
