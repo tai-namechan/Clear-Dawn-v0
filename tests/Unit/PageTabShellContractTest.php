@@ -143,6 +143,37 @@ class PageTabShellContractTest extends TestCase
             $source,
             'Compact mode must show a calendar affordance in the shell header',
         );
+        $this->assertStringContainsString(
+            'type="date"',
+            $source,
+            'Calendar icon must open a date picker for direct date jumps',
+        );
+        $this->assertStringContainsString(
+            '日付を選択',
+            $source,
+            'Calendar control must expose a clear date-select label',
+        );
+    }
+
+    public function test_page_view_tabs_expose_hoverable_tab_track(): void
+    {
+        $source = $this->pageSource('resources/js/components/PageViewTabs.vue');
+
+        $this->assertStringContainsString(
+            'role="tablist"',
+            $source,
+            'PageViewTabs must remain a tablist',
+        );
+        $this->assertStringContainsString(
+            'bg-muted/70',
+            $source,
+            'Tab track background makes the control read as a switcher',
+        );
+        $this->assertStringContainsString(
+            'hover:bg-background/90',
+            $source,
+            'Inactive tabs must show a hover background',
+        );
     }
 
     public function test_records_hub_puts_compact_calendar_in_shell_header(): void
