@@ -38,7 +38,9 @@ const hasBody = computed(() => Boolean(slots.default));
                 ← {{ backLabel }}
             </Link>
 
-            <div class="flex flex-wrap items-start justify-between gap-3">
+            <div
+                class="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-start md:justify-between"
+            >
                 <div class="min-w-0 flex-1">
                     <PageTitleOrnament
                         :title="title"
@@ -50,7 +52,7 @@ const hasBody = computed(() => Boolean(slots.default));
 
                 <div
                     v-if="hasHeaderRight"
-                    class="flex shrink-0 flex-wrap items-center justify-end gap-2"
+                    class="flex shrink-0 flex-wrap items-center justify-end gap-2 md:pt-1"
                 >
                     <slot name="calendar" />
                     <slot name="actions" />
