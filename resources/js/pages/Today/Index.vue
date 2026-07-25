@@ -217,7 +217,7 @@ function optionVariant(actionKey: string): 'default' | 'outline' {
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4">
-            <PageSectionCard>
+            <PageSectionCard aria-label="今日の作戦">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <PageTitleOrnament
@@ -236,146 +236,168 @@ function optionVariant(actionKey: string): 'default' | 'outline' {
                 <div class="mt-5">
                     <RoutinesHubTabs />
                 </div>
-            </PageSectionCard>
 
-            <section
-                v-if="programContext.some((ctx) => ctx.needs_choice)"
-                class="rounded-2xl border border-cd-line/80 bg-cd-surface/95 px-5 py-4 shadow-sm"
-                aria-label="今日のプログラム選択"
-            >
-                <h2 class="font-sans text-sm font-semibold text-cd-ink">
-                    今日のプログラム選択
-                </h2>
-                <ul class="mt-3 flex flex-col gap-3">
-                    <li
-                        v-for="ctx in programContext.filter((c) => c.needs_choice)"
-                        :key="ctx.plan_id"
-                        class="rounded-xl border border-border/70 px-4 py-3"
-                    >
-                        <p class="font-sans text-sm font-medium text-foreground">
-                            W{{ ctx.week_number ?? '-' }} · {{ ctx.day_code }}
-                            {{ ctx.day_name }}
-                        </p>
-                        <p class="mt-1 font-sans text-xs text-muted-foreground">
-                            {{ ctx.title }}
-                        </p>
-                        <div class="mt-3 flex flex-wrap gap-2">
-                            <Button
-                                v-for="option in ctx.choice_options"
-                                :key="option.id"
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                class="font-sans"
-                                @click="selectChoice(option.id)"
-                            >
-                                {{ option.label }}
-                            </Button>
-                        </div>
-                    </li>
-                </ul>
-            </section>
-
-            <!-- 作戦カード（最優先） -->
-            <section
-                class="rounded-2xl border border-cd-line/80 bg-cd-surface/95 px-5 py-5 shadow-sm md:px-6"
-                aria-label="今日の作戦"
-            >
-                <template v-if="primaryRecommendation">
-                    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div class="min-w-0 flex-1">
-                            <p class="font-sans text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                {{ primaryRecommendation.scope }}
-                                · {{ primaryRecommendation.status }}
-                            </p>
-                            <h2 class="mt-2 font-sans text-xl font-semibold tracking-tight text-cd-ink md:text-2xl">
-                                {{ primaryRecommendation.title }}
-                            </h2>
+                <div
+                    v-if="programContext.some((ctx) => ctx.needs_choice)"
+                    class="mt-5 border-t border-cd-line pt-5"
+                    aria-label="今日のプログラム選択"
+                >
+                    <h2 class="font-sans text-sm font-semibold text-cd-ink">
+                        今日のプログラム選択
+                    </h2>
+                    <ul class="mt-3 flex flex-col gap-3">
+                        <li
+                            v-for="ctx in programContext.filter(
+                                (c) => c.needs_choice,
+                            )"
+                            :key="ctx.plan_id"
+                            class="rounded-xl border border-border/70 px-4 py-3"
+                        >
                             <p
-                                v-if="primaryRecommendation.rationale"
-                                class="mt-3 max-w-2xl font-sans text-sm leading-relaxed text-muted-foreground"
+                                class="font-sans text-sm font-medium text-foreground"
                             >
-                                {{ primaryRecommendation.rationale }}
+                                W{{ ctx.week_number ?? '-' }} ·
+                                {{ ctx.day_code }}
+                                {{ ctx.day_name }}
                             </p>
                             <p
-                                v-if="primaryRecommendation.goal_impact"
-                                class="mt-2 font-sans text-xs text-muted-foreground"
+                                class="mt-1 font-sans text-xs text-muted-foreground"
                             >
-                                狙い: {{ primaryRecommendation.goal_impact }}
+                                {{ ctx.title }}
                             </p>
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <Button
+                                    v-for="option in ctx.choice_options"
+                                    :key="option.id"
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    class="font-sans"
+                                    @click="selectChoice(option.id)"
+                                >
+                                    {{ option.label }}
+                                </Button>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 作戦カード（最優先・タブと同じ面） -->
+                <div class="mt-5 border-t border-cd-line pt-5">
+                    <template v-if="primaryRecommendation">
+                        <div
+                            class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+                        >
+                            <div class="min-w-0 flex-1">
+                                <p
+                                    class="font-sans text-xs font-medium tracking-wide text-muted-foreground uppercase"
+                                >
+                                    {{ primaryRecommendation.scope }}
+                                    · {{ primaryRecommendation.status }}
+                                </p>
+                                <h2
+                                    class="mt-2 font-sans text-xl font-semibold tracking-tight text-cd-ink md:text-2xl"
+                                >
+                                    {{ primaryRecommendation.title }}
+                                </h2>
+                                <p
+                                    v-if="primaryRecommendation.rationale"
+                                    class="mt-3 max-w-2xl font-sans text-sm leading-relaxed text-muted-foreground"
+                                >
+                                    {{ primaryRecommendation.rationale }}
+                                </p>
+                                <p
+                                    v-if="primaryRecommendation.goal_impact"
+                                    class="mt-2 font-sans text-xs text-muted-foreground"
+                                >
+                                    狙い:
+                                    {{ primaryRecommendation.goal_impact }}
+                                </p>
+                            </div>
+
+                            <div
+                                v-if="confidenceLabel"
+                                class="flex size-24 shrink-0 flex-col items-center justify-center rounded-full border-4 border-primary/30 bg-primary/5"
+                            >
+                                <span
+                                    v-if="confidenceLabel.percent !== null"
+                                    class="font-sans text-lg font-bold text-cd-ink"
+                                >
+                                    {{ confidenceLabel.percent }}%
+                                </span>
+                                <span
+                                    class="font-sans text-[11px] text-muted-foreground"
+                                >
+                                    {{ confidenceLabel.label }}
+                                </span>
+                            </div>
                         </div>
 
                         <div
-                            v-if="confidenceLabel"
-                            class="flex size-24 shrink-0 flex-col items-center justify-center rounded-full border-4 border-primary/30 bg-primary/5"
+                            v-if="primaryRecommendation.status === 'pending'"
+                            class="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
                         >
-                            <span
-                                v-if="confidenceLabel.percent !== null"
-                                class="font-sans text-lg font-bold text-cd-ink"
+                            <Button
+                                v-for="option in primaryRecommendation.options"
+                                :key="option.id"
+                                type="button"
+                                size="lg"
+                                :variant="optionVariant(option.action_key)"
+                                class="h-auto min-h-12 flex-col gap-0.5 py-3 font-sans"
+                                :disabled="
+                                    decidingId === primaryRecommendation.id
+                                "
+                                @click="
+                                    decideRecommendation(
+                                        primaryRecommendation.id,
+                                        option.action_key,
+                                        option.id,
+                                    )
+                                "
                             >
-                                {{ confidenceLabel.percent }}%
-                            </span>
-                            <span class="font-sans text-[11px] text-muted-foreground">
-                                {{ confidenceLabel.label }}
-                            </span>
+                                <span class="text-sm font-semibold">{{
+                                    option.label
+                                }}</span>
+                                <span
+                                    v-if="option.description"
+                                    class="text-[11px] font-normal opacity-80"
+                                >
+                                    {{ option.description }}
+                                </span>
+                            </Button>
                         </div>
-                    </div>
-
-                    <div
-                        v-if="primaryRecommendation.status === 'pending'"
-                        class="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
-                    >
-                        <Button
-                            v-for="option in primaryRecommendation.options"
-                            :key="option.id"
-                            type="button"
-                            size="lg"
-                            :variant="optionVariant(option.action_key)"
-                            class="h-auto min-h-12 flex-col gap-0.5 py-3 font-sans"
-                            :disabled="decidingId === primaryRecommendation.id"
-                            @click="
-                                decideRecommendation(
-                                    primaryRecommendation.id,
-                                    option.action_key,
-                                    option.id,
-                                )
-                            "
+                        <p
+                            v-else-if="primaryRecommendation.decision"
+                            class="mt-4 font-sans text-sm text-muted-foreground"
                         >
-                            <span class="text-sm font-semibold">{{ option.label }}</span>
-                            <span
-                                v-if="option.description"
-                                class="text-[11px] font-normal opacity-80"
-                            >
-                                {{ option.description }}
-                            </span>
-                        </Button>
-                    </div>
-                    <p
-                        v-else-if="primaryRecommendation.decision"
-                        class="mt-4 font-sans text-sm text-muted-foreground"
-                    >
-                        決定済み: {{ primaryRecommendation.decision.action_key }}
-                    </p>
-                </template>
+                            決定済み:
+                            {{ primaryRecommendation.decision.action_key }}
+                        </p>
+                    </template>
 
-                <template v-else>
-                    <h2 class="font-sans text-lg font-semibold text-cd-ink">
-                        今日の作戦カードはまだありません
-                    </h2>
-                    <p class="mt-2 font-sans text-sm text-muted-foreground">
-                        チェックインを記録すると、ルールに応じて作戦カードが生成されます。
-                    </p>
-                    <Button
-                        v-if="!ops?.checkin"
-                        type="button"
-                        size="sm"
-                        class="mt-4 font-sans"
-                        @click="showCheckinEditor = true"
-                    >
-                        チェックインする
-                    </Button>
-                </template>
-            </section>
+                    <template v-else>
+                        <h2
+                            class="font-sans text-lg font-semibold text-cd-ink"
+                        >
+                            今日の作戦カードはまだありません
+                        </h2>
+                        <p
+                            class="mt-2 font-sans text-sm text-muted-foreground"
+                        >
+                            チェックインを記録すると、ルールに応じて作戦カードが生成されます。
+                        </p>
+                        <Button
+                            v-if="!ops?.checkin"
+                            type="button"
+                            size="sm"
+                            class="mt-4 font-sans"
+                            @click="showCheckinEditor = true"
+                        >
+                            チェックインする
+                        </Button>
+                    </template>
+                </div>
+            </PageSectionCard>
 
             <!-- 薄いチェックイン状態 -->
             <div

@@ -380,22 +380,16 @@ function historyDescription(log: ActivityLog): string {
                         @update:model-value="onTabChange"
                     />
                 </div>
-            </PageSectionCard>
 
-            <!-- 今日 -->
-            <div
-                v-show="activeTab === 'today'"
-                id="panel-today"
-                role="tabpanel"
-                aria-labelledby="tab-today"
-                class="flex flex-col gap-4"
-            >
-                <PageSectionCard
-                    v-if="primaryPlan"
-                    aria-label="今日のメインセッション"
+                <!-- 今日ヒーロー（タブと同じ面） -->
+                <div
+                    v-show="activeTab === 'today'"
+                    class="mt-5 border-t border-cd-line pt-5"
                 >
                     <div
+                        v-if="primaryPlan"
                         class="flex flex-col gap-6 lg:flex-row lg:items-stretch lg:justify-between"
+                        aria-label="今日のメインセッション"
                     >
                         <div class="min-w-0 flex-1">
                             <p
@@ -471,8 +465,51 @@ function historyDescription(log: ActivityLog): string {
                             </div>
                         </div>
                     </div>
-                </PageSectionCard>
 
+                    <div
+                        v-else
+                        class="flex flex-col items-center gap-4 px-2 py-8 text-center"
+                        aria-label="今日のセッションがありません"
+                    >
+                        <div
+                            class="flex size-20 items-center justify-center rounded-full bg-primary/8 text-primary"
+                        >
+                            <Dumbbell :size="36" :stroke-width="1.4" />
+                        </div>
+                        <div class="space-y-2">
+                            <p
+                                class="font-sans text-base font-semibold text-cd-ink"
+                            >
+                                今日やるセッションはまだありません
+                            </p>
+                            <p
+                                class="max-w-sm font-sans text-sm text-cd-ink-muted"
+                            >
+                                ルーティンから選ぶか、新しく作って今日に追加できます。
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap justify-center gap-2">
+                            <Button type="button" @click="openRoutinesTab">
+                                ルーティンから選ぶ
+                            </Button>
+                            <Button type="button" variant="outline" as-child>
+                                <Link href="/routines/create">
+                                    ルーティンを作る
+                                </Link>
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </PageSectionCard>
+
+            <!-- 今日（二次ブロック） -->
+            <div
+                v-show="activeTab === 'today'"
+                id="panel-today"
+                role="tabpanel"
+                aria-labelledby="tab-today"
+                class="flex flex-col gap-4"
+            >
                 <div
                     v-if="primaryPlan"
                     class="grid gap-4 md:grid-cols-2"
@@ -579,43 +616,6 @@ function historyDescription(log: ActivityLog): string {
                             :plan="plan"
                         />
                     </ul>
-                </PageSectionCard>
-
-                <PageSectionCard
-                    v-if="!primaryPlan"
-                    aria-label="今日のセッションがありません"
-                >
-                    <div
-                        class="flex flex-col items-center gap-4 px-2 py-12 text-center"
-                    >
-                        <div
-                            class="flex size-20 items-center justify-center rounded-full bg-primary/8 text-primary"
-                        >
-                            <Dumbbell :size="36" :stroke-width="1.4" />
-                        </div>
-                        <div class="space-y-2">
-                            <p
-                                class="font-sans text-base font-semibold text-cd-ink"
-                            >
-                                今日やるセッションはまだありません
-                            </p>
-                            <p
-                                class="max-w-sm font-sans text-sm text-cd-ink-muted"
-                            >
-                                ルーティンから選ぶか、新しく作って今日に追加できます。
-                            </p>
-                        </div>
-                        <div class="flex flex-wrap justify-center gap-2">
-                            <Button type="button" @click="openRoutinesTab">
-                                ルーティンから選ぶ
-                            </Button>
-                            <Button type="button" variant="outline" as-child>
-                                <Link href="/routines/create">
-                                    ルーティンを作る
-                                </Link>
-                            </Button>
-                        </div>
-                    </div>
                 </PageSectionCard>
 
                 <p
