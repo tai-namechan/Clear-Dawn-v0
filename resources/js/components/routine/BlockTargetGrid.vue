@@ -40,6 +40,12 @@ const showAmount = computed(
         props.trackingType === 'distance',
 );
 const showMemo = computed(() => props.trackingType !== 'check');
+/** reps / count は整数。時間・距離は小数を許容する */
+const amountStep = computed(() =>
+    props.trackingType === 'duration' || props.trackingType === 'distance'
+        ? '0.1'
+        : '1',
+);
 
 function emptyRow(): BlockTargetRow {
     return { load: '', amount: '', memo: '' };
@@ -115,7 +121,7 @@ watch(
                         <Input
                             v-model="row.amount"
                             type="number"
-                            step="0.1"
+                            :step="amountStep"
                             min="0"
                             class="h-8"
                             :disabled="disabled"

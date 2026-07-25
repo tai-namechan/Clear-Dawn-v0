@@ -29,6 +29,7 @@ import {
     categoryDefaultPurpose,
     defaultAmountUnitForTracking,
     defaultLoadUnit,
+    formatQuantityDisplay,
     formatStepTarget,
     itemNamePlaceholders,
     loadUnitPresets,
@@ -103,6 +104,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     'update:open': [value: boolean];
     submit: [payload: StepEditorPayload];
+    delete: [];
     'items-changed': [];
 }>();
 
@@ -447,8 +449,8 @@ watch(
             videoId.value = step.video_id;
             blockRows.value = [
                 {
-                    load: step.target_load ?? '',
-                    amount: step.target_amount ?? '',
+                    load: formatQuantityDisplay(step.target_load) ?? '',
+                    amount: formatQuantityDisplay(step.target_amount) ?? '',
                     memo: '',
                 },
             ];
@@ -716,6 +718,18 @@ async function submit(): Promise<void> {
             : null,
         note: combinedNote || null,
     });
+}
+
+function requestDelete(): void {
+    if (!isEditing.value || props.saving) {
+        return;
+    }
+
+    if (!confirm('このステップを削除しますか？')) {
+        return;
+    }
+
+    emit('delete');
 }
 
 defineExpose({
@@ -1211,11 +1225,13 @@ defineExpose({
                         >
                             {{ index + 1 }}セット:
                             <span v-if="row.load">
-                                {{ row.load }}{{ loadUnit }}
+                                {{ formatQuantityDisplay(row.load)
+                                }}{{ loadUnit }}
                             </span>
                             <span v-if="row.load && row.amount"> × </span>
                             <span v-if="row.amount">
-                                {{ row.amount }}{{ amountUnit }}
+                                {{ formatQuantityDisplay(row.amount)
+                                }}{{ amountUnit }}
                             </span>
                             <span v-if="!row.load && !row.amount">—</span>
                         </li>
@@ -1224,6 +1240,16 @@ defineExpose({
             </div>
 
             <DialogFooter class="shrink-0 border-t border-cd-line pt-4">
+                <Button
+                    v-if="isEditing"
+                    type="button"
+                    variant="destructive"
+                    class="mr-auto"
+                    :disabled="saving || creatingItem"
+                    @click="requestDelete"
+                >
+                    削除
+                </Button>
                 <Button
                     type="button"
                     variant="ghost"
