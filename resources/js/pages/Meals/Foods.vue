@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ArrowLeft, Pencil, Plus, Trash2 } from '@lucide/vue';
+import { ArrowLeft, Pencil, Plus, Star, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
@@ -124,6 +124,18 @@ async function deleteFood(food: FoodItem): Promise<void> {
     await apiFetch(`/meals/foods/${food.id}`, { method: 'DELETE' });
     router.reload({ only: ['foods'] });
 }
+
+async function toggleFavorite(food: FoodItem): Promise<void> {
+    try {
+        await apiFetch(`/meals/foods/${food.id}/favorite`, {
+            method: 'PATCH',
+            body: JSON.stringify({ is_favorite: !(food.is_favorite ?? false) }),
+        });
+        router.reload({ only: ['foods'] });
+    } catch {
+        message.value = 'お気に入りの更新に失敗しました。';
+    }
+}
 </script>
 
 <template>
@@ -206,6 +218,20 @@ async function deleteFood(food: FoodItem): Promise<void> {
                             </p>
                         </div>
                         <div class="flex shrink-0 gap-1">
+                            <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                :aria-label="`${food.name} のお気に入りを切替`"
+                                @click="toggleFavorite(food)"
+                            >
+                                <Star
+                                    :size="14"
+                                    :stroke-width="1.6"
+                                    :fill="food.is_favorite ? 'currentColor' : 'none'"
+                                    class="text-primary"
+                                />
+                            </Button>
                             <Button
                                 type="button"
                                 size="icon"

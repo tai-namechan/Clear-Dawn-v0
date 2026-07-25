@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Yoyu\Support\UserTimezoneResolver;
+use App\Http\Requests\MealEntries\CopyMealEntryRequest;
 use App\Http\Requests\MealEntries\CopyPreviousDayMealsRequest;
 use App\Http\Requests\MealEntries\ShowMealsRequest;
 use App\Http\Requests\MealEntries\StoreMealEntryRequest;
@@ -12,6 +13,7 @@ use App\Http\Resources\NutritionGoalResource;
 use App\Models\MealEntry;
 use App\Queries\GetDailyMealsQuery;
 use App\Queries\GetNutritionChartQuery;
+use App\Services\CopyMealEntryService;
 use App\Services\CopyPreviousDayMealsService;
 use App\Services\CreateMealEntryService;
 use App\Services\DeleteMealEntryService;
@@ -107,5 +109,22 @@ class MealEntryController extends Controller
         );
 
         return response()->json($result);
+    }
+
+    public function copy(
+        CopyMealEntryRequest $request,
+        MealEntry $mealEntry,
+        CopyMealEntryService $service,
+    ): JsonResponse {
+        Gate::authorize('view', $mealEntry);
+
+        /** @var array{eaten_on: string, meal_type?: string|null, quantity?: float|int|string|null, note?: string|null} $validated */
+        $validated = $request->validated();
+
+        $entry = $service->handle($request->user(), $mealEntry, $validated);
+
+        return response()->json([
+            'entry' => MealEntryResource::make($entry)->resolve(),
+        ], 201);
     }
 }

@@ -15,9 +15,17 @@ import { Label } from '@/components/ui/label';
 import { useBarcodeScan } from '@/composables/useBarcodeScan';
 import { downscaleLabelImage } from '@/composables/useLabelImageCapture';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
-import type { FoodItem } from '@/types/routine';
+import type { FoodItem, MealEntry, MealSection } from '@/types/routine';
 
-type Step = 'scan' | 'ocr_capture' | 'polling' | 'confirm' | 'hit';
+type Step =
+    | 'scan'
+    | 'ocr_capture'
+    | 'polling'
+    | 'confirm'
+    | 'hit'
+    | 'not_found'
+    | 'manual'
+    | 'one_off';
 
 interface LookupResult {
     name: string | null;
@@ -32,15 +40,20 @@ interface LookupResult {
 
 interface Props {
     open: boolean;
+    date: string;
+    defaultMealType?: MealSection['meal_type'];
 }
 
 interface Emits {
     (e: 'update:open', value: boolean): void;
     (e: 'food-registered', food: FoodItem): void;
     (e: 'food-hit', food: FoodItem): void;
+    (e: 'meal-added', payload: { food: FoodItem | null; entry: MealEntry }): void;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    defaultMealType: 'breakfast',
+});
 const emit = defineEmits<Emits>();
 
 type PollingKind = 'off' | 'ocr';
@@ -64,10 +77,15 @@ const confirmForm = ref({
     name: '',
     serving_label: '',
     barcode: '',
+    brand: '',
+    nutrition_basis: 'serving' as 'serving' | '100g' | 'package',
     kcal: '',
     protein_g: '',
     fat_g: '',
     carb_g: '',
+    meal_type: 'breakfast' as MealSection['meal_type'],
+    quantity: '1',
+    note: '',
 });
 
 const { isSupported, scanning, error: scanError, videoRef, start: startCamera, stop: stopCamera } =
@@ -90,6 +108,45 @@ const canConfirm = computed(() => {
     );
 });
 
+const canOneOff = computed(() => {
+    const f = confirmForm.value;
+
+    return (
+        f.name.trim() !== '' &&
+        f.kcal !== '' &&
+        Number(f.kcal) >= 0 &&
+        f.protein_g !== '' &&
+        Number(f.protein_g) >= 0 &&
+        f.fat_g !== '' &&
+        Number(f.fat_g) >= 0 &&
+        f.carb_g !== '' &&
+        Number(f.carb_g) >= 0 &&
+        Number(f.quantity) >= 0.1
+    );
+});
+
+const previewTotals = computed(() => {
+    const q = Number(confirmForm.value.quantity) || 0;
+    const kcal = Number(confirmForm.value.kcal) || 0;
+    const p = Number(confirmForm.value.protein_g) || 0;
+    const f = Number(confirmForm.value.fat_g) || 0;
+    const c = Number(confirmForm.value.carb_g) || 0;
+
+    return {
+        kcal: Math.round(kcal * q * 10) / 10,
+        protein_g: Math.round(p * q * 10) / 10,
+        fat_g: Math.round(f * q * 10) / 10,
+        carb_g: Math.round(c * q * 10) / 10,
+    };
+});
+
+const quantityHint = computed(() => {
+    const label = confirmForm.value.serving_label.trim() || '1サービング';
+    const q = Number(confirmForm.value.quantity) || 0;
+
+    return `${label} × ${q}`;
+});
+
 watch(
     () => props.open,
     (open) => {
@@ -102,6 +159,7 @@ watch(
 );
 
 function reset(): void {
+    cleanup();
     step.value = 'scan';
     manualBarcode.value = '';
     knownBarcode.value = '';
@@ -112,31 +170,26 @@ function reset(): void {
     hitFood.value = null;
     saving.value = false;
     errorMessage.value = null;
-    clearOcrFile();
     confirmForm.value = {
         name: '',
         serving_label: '',
         barcode: '',
+        brand: '',
+        nutrition_basis: 'serving',
         kcal: '',
         protein_g: '',
         fat_g: '',
         carb_g: '',
+        meal_type: props.defaultMealType,
+        quantity: '1',
+        note: '',
     };
 }
 
 function cleanup(): void {
-    stopCamera();
     clearPollTimer();
+    stopCamera();
     clearOcrFile();
-}
-
-function clearOcrFile(): void {
-    if (ocrPreviewUrl.value !== null) {
-        URL.revokeObjectURL(ocrPreviewUrl.value);
-    }
-
-    ocrFile.value = null;
-    ocrPreviewUrl.value = null;
 }
 
 function clearPollTimer(): void {
@@ -146,56 +199,66 @@ function clearPollTimer(): void {
     }
 }
 
+function clearOcrFile(): void {
+    if (ocrPreviewUrl.value) {
+        URL.revokeObjectURL(ocrPreviewUrl.value);
+    }
+    ocrPreviewUrl.value = null;
+    ocrFile.value = null;
+}
+
 function close(): void {
     emit('update:open', false);
 }
 
-async function onBarcodeDetected(barcode: string): Promise<void> {
-    stopCamera();
-    await submitBarcode(barcode);
+function onBarcodeDetected(code: string): void {
+    void submitBarcode(code);
 }
 
 async function submitManualBarcode(): Promise<void> {
-    const code = manualBarcode.value.trim();
+    await submitBarcode(manualBarcode.value.trim());
+}
 
-    if (code === '') {
+async function submitBarcode(code: string): Promise<void> {
+    if (saving.value || code === '') {
         return;
     }
 
-    await submitBarcode(code);
-}
-
-async function submitBarcode(barcode: string): Promise<void> {
     saving.value = true;
     errorMessage.value = null;
+    stopCamera();
 
     try {
-        const data = await apiFetch<
-            | { status: 'hit'; food: FoodItem }
-            | { status: 'pending'; lookup_id: string }
-        >('/meals/barcode-lookup', {
+        const data = await apiFetch<{
+            status: string;
+            food?: FoodItem;
+            lookup_id?: string;
+        }>('/meals/barcode-lookup', {
             method: 'POST',
-            body: JSON.stringify({ barcode }),
+            body: JSON.stringify({ barcode: code }),
         });
 
-        knownBarcode.value = barcode.trim();
+        knownBarcode.value = code;
 
-        if (data.status === 'hit') {
+        if (data.status === 'hit' && data.food) {
             hitFood.value = data.food;
+            confirmForm.value.meal_type = props.defaultMealType;
+            confirmForm.value.quantity = '1';
             step.value = 'hit';
-        } else {
-            lookupId.value = data.lookup_id;
-            pollingKind.value = 'off';
-            step.value = 'polling';
-            startPolling();
+
+            return;
         }
+
+        lookupId.value = data.lookup_id ?? null;
+        pollingKind.value = 'off';
+        step.value = 'polling';
+        startPolling();
     } catch (e) {
         if (e instanceof ApiError && e.status === 422) {
             const body = e.body as { errors?: Record<string, string[]> };
-            const msgs = body.errors?.barcode;
-            errorMessage.value = msgs?.[0] ?? 'バーコードの形式が正しくありません。';
+            errorMessage.value = body.errors?.barcode?.[0] ?? 'バーコードを確認してください。';
         } else {
-            errorMessage.value = '送信に失敗しました。もう一度お試しください。';
+            errorMessage.value = '検索に失敗しました。';
         }
     } finally {
         saving.value = false;
@@ -230,9 +293,8 @@ async function pollLookup(): Promise<void> {
         }
 
         if (data.status === 'not_found') {
-            errorMessage.value =
-                'Open Food Facts に見つかりませんでした。「成分表を撮影して登録」で AI 読み取りができます。';
-            step.value = 'scan';
+            errorMessage.value = null;
+            step.value = 'not_found';
 
             return;
         }
@@ -244,16 +306,16 @@ async function pollLookup(): Promise<void> {
                 step.value = 'ocr_capture';
             } else if (data.error_code === 'ocr_quota_exceeded') {
                 errorMessage.value =
-                    '今月のAI利用枠を使い切ったため読み取れません。直接入力で登録してください。';
-                step.value = 'scan';
+                    '今月のAI利用枠を使い切ったため読み取れません。手入力で登録してください。';
+                step.value = 'not_found';
             } else if (data.error_code?.startsWith('ocr_')) {
                 errorMessage.value =
-                    '読み取りに失敗しました。もう一度撮影するか、直接入力で登録してください。';
+                    '読み取りに失敗しました。もう一度撮影するか、手入力で登録してください。';
                 step.value = 'ocr_capture';
             } else {
                 errorMessage.value =
-                    '照合に失敗しました。もう一度スキャンするか、「成分表を撮影して登録」をお試しください。';
-                step.value = 'scan';
+                    '照合に失敗しました。成分表撮影または手入力で続けられます。';
+                step.value = 'not_found';
             }
 
             return;
@@ -266,20 +328,58 @@ async function pollLookup(): Promise<void> {
     }
 }
 
-/** 入口1: F1 miss した lookup に成分表を添付して再解析 */
 function startOcrForMiss(): void {
     stopCamera();
     errorMessage.value = null;
     step.value = 'ocr_capture';
 }
 
-/** 入口2: バーコードなしで成分表から直接登録 */
 function startOcrWithoutBarcode(): void {
     stopCamera();
     lookupId.value = null;
     knownBarcode.value = '';
     errorMessage.value = null;
     step.value = 'ocr_capture';
+}
+
+function startManualEntry(): void {
+    errorMessage.value = null;
+    confirmForm.value = {
+        ...confirmForm.value,
+        name: '',
+        serving_label: '1個',
+        barcode: knownBarcode.value,
+        brand: '',
+        nutrition_basis: 'serving',
+        kcal: '',
+        protein_g: '',
+        fat_g: '',
+        carb_g: '',
+        meal_type: props.defaultMealType,
+        quantity: '1',
+        note: '',
+    };
+    step.value = 'manual';
+}
+
+function startOneOffEntry(): void {
+    errorMessage.value = null;
+    confirmForm.value = {
+        ...confirmForm.value,
+        name: '',
+        serving_label: '1食分',
+        barcode: knownBarcode.value,
+        brand: '',
+        nutrition_basis: 'serving',
+        kcal: '',
+        protein_g: '',
+        fat_g: '',
+        carb_g: '',
+        meal_type: props.defaultMealType,
+        quantity: '1',
+        note: '',
+    };
+    step.value = 'one_off';
 }
 
 function openLabelFilePicker(): void {
@@ -336,7 +436,6 @@ async function submitLabelImage(): Promise<void> {
             errorMessage.value =
                 body.errors?.image?.[0] ?? body.message ?? '画像を確認してください。';
         } else if (e instanceof ApiError && e.status === 409) {
-            // すでに解析中: そのままポーリングへ合流
             pollingKind.value = 'ocr';
             step.value = 'polling';
             startPolling();
@@ -349,18 +448,42 @@ async function submitLabelImage(): Promise<void> {
 }
 
 function prefillConfirmForm(result: LookupResult): void {
+    const basis =
+        result.per === '100g' ? '100g' : result.per === 'package' ? 'package' : 'serving';
+
     confirmForm.value = {
         name: result.name ?? '',
-        serving_label: result.serving_label ?? '100g',
+        serving_label: result.serving_label ?? (basis === '100g' ? '100g' : '1食分'),
         barcode: knownBarcode.value,
+        brand: result.brands ?? '',
+        nutrition_basis: basis,
         kcal: result.kcal != null ? String(result.kcal) : '',
         protein_g: result.protein_g != null ? String(result.protein_g) : '',
         fat_g: result.fat_g != null ? String(result.fat_g) : '',
         carb_g: result.carb_g != null ? String(result.carb_g) : '',
+        meal_type: props.defaultMealType,
+        quantity: '1',
+        note: '',
     };
 }
 
-async function confirmAndSave(): Promise<void> {
+function nutritionPayload(): Record<string, unknown> {
+    return {
+        name: confirmForm.value.name.trim(),
+        serving_label: confirmForm.value.serving_label.trim(),
+        kcal: Number(confirmForm.value.kcal),
+        protein_g: Number(confirmForm.value.protein_g),
+        fat_g: Number(confirmForm.value.fat_g),
+        carb_g: Number(confirmForm.value.carb_g),
+        brand: confirmForm.value.brand.trim() || null,
+        nutrition_basis: confirmForm.value.nutrition_basis,
+        ...(confirmForm.value.barcode.trim() !== ''
+            ? { barcode: confirmForm.value.barcode.trim() }
+            : {}),
+    };
+}
+
+async function confirmAndSave(addToMeal: boolean): Promise<void> {
     if (!lookupId.value || !canConfirm.value) {
         return;
     }
@@ -369,25 +492,31 @@ async function confirmAndSave(): Promise<void> {
     errorMessage.value = null;
 
     try {
-        const data = await apiFetch<{ food: FoodItem }>(
+        const body: Record<string, unknown> = {
+            ...nutritionPayload(),
+            add_to_meal: addToMeal,
+        };
+
+        if (addToMeal) {
+            body.eaten_on = props.date;
+            body.meal_type = confirmForm.value.meal_type;
+            body.quantity = Number(confirmForm.value.quantity);
+            body.note = confirmForm.value.note.trim() || null;
+        }
+
+        const data = await apiFetch<{ food: FoodItem; entry?: MealEntry }>(
             `/meals/barcode-lookup/${lookupId.value}/confirm`,
             {
                 method: 'POST',
-                body: JSON.stringify({
-                    name: confirmForm.value.name.trim(),
-                    serving_label: confirmForm.value.serving_label.trim(),
-                    kcal: Number(confirmForm.value.kcal),
-                    protein_g: Number(confirmForm.value.protein_g),
-                    fat_g: Number(confirmForm.value.fat_g),
-                    carb_g: Number(confirmForm.value.carb_g),
-                    ...(confirmForm.value.barcode.trim() !== ''
-                        ? { barcode: confirmForm.value.barcode.trim() }
-                        : {}),
-                }),
+                body: JSON.stringify(body),
             },
         );
 
-        emit('food-registered', data.food);
+        if (addToMeal && data.entry) {
+            emit('meal-added', { food: data.food, entry: data.entry });
+        } else {
+            emit('food-registered', data.food);
+        }
         close();
     } catch (e) {
         if (e instanceof ApiError && e.status === 422) {
@@ -402,12 +531,155 @@ async function confirmAndSave(): Promise<void> {
     }
 }
 
+async function saveManual(addToMeal: boolean): Promise<void> {
+    if (!canConfirm.value) {
+        return;
+    }
+
+    saving.value = true;
+    errorMessage.value = null;
+
+    try {
+        const body: Record<string, unknown> = {
+            ...nutritionPayload(),
+            save_mode: addToMeal ? 'food_and_meal' : 'food_only',
+        };
+
+        if (addToMeal) {
+            body.eaten_on = props.date;
+            body.meal_type = confirmForm.value.meal_type;
+            body.quantity = Number(confirmForm.value.quantity);
+            body.note = confirmForm.value.note.trim() || null;
+        }
+
+        const data = await apiFetch<{ food: FoodItem | null; entry: MealEntry | null }>(
+            '/meals/foods/manual',
+            {
+                method: 'POST',
+                body: JSON.stringify(body),
+            },
+        );
+
+        if (addToMeal && data.entry) {
+            emit('meal-added', { food: data.food, entry: data.entry });
+        } else if (data.food) {
+            emit('food-registered', data.food);
+        }
+        close();
+    } catch (e) {
+        if (e instanceof ApiError && e.status === 422) {
+            const body = e.body as { errors?: Record<string, string[]> };
+            const firstErr = Object.values(body.errors ?? {})[0];
+            errorMessage.value = firstErr?.[0] ?? '入力内容を確認してください。';
+        } else {
+            errorMessage.value = '保存に失敗しました。';
+        }
+    } finally {
+        saving.value = false;
+    }
+}
+
+async function saveOneOff(): Promise<void> {
+    if (!canOneOff.value) {
+        return;
+    }
+
+    saving.value = true;
+    errorMessage.value = null;
+
+    try {
+        const data = await apiFetch<{ food: null; entry: MealEntry }>(
+            '/meals/foods/manual',
+            {
+                method: 'POST',
+                body: JSON.stringify({
+                    save_mode: 'one_off',
+                    name: confirmForm.value.name.trim(),
+                    kcal: Number(confirmForm.value.kcal),
+                    protein_g: Number(confirmForm.value.protein_g),
+                    fat_g: Number(confirmForm.value.fat_g),
+                    carb_g: Number(confirmForm.value.carb_g),
+                    eaten_on: props.date,
+                    meal_type: confirmForm.value.meal_type,
+                    quantity: Number(confirmForm.value.quantity),
+                    note: confirmForm.value.note.trim() || null,
+                }),
+            },
+        );
+
+        emit('meal-added', { food: null, entry: data.entry });
+        close();
+    } catch (e) {
+        if (e instanceof ApiError && e.status === 422) {
+            const body = e.body as { errors?: Record<string, string[]> };
+            const firstErr = Object.values(body.errors ?? {})[0];
+            errorMessage.value = firstErr?.[0] ?? '入力内容を確認してください。';
+        } else {
+            errorMessage.value = '保存に失敗しました。';
+        }
+    } finally {
+        saving.value = false;
+    }
+}
+
+async function addHitFoodToMeal(): Promise<void> {
+    if (!hitFood.value) {
+        return;
+    }
+
+    saving.value = true;
+    errorMessage.value = null;
+
+    try {
+        const data = await apiFetch<{ entry: MealEntry }>('/meals', {
+            method: 'POST',
+            body: JSON.stringify({
+                eaten_on: props.date,
+                meal_type: confirmForm.value.meal_type,
+                food_item_id: hitFood.value.id,
+                quantity: Number(confirmForm.value.quantity),
+                note: confirmForm.value.note.trim() || null,
+            }),
+        });
+
+        emit('meal-added', { food: hitFood.value, entry: data.entry });
+        close();
+    } catch {
+        errorMessage.value = '食事への追加に失敗しました。';
+    } finally {
+        saving.value = false;
+    }
+}
+
 function useHitFood(): void {
     if (hitFood.value) {
         emit('food-hit', hitFood.value);
         close();
     }
 }
+
+const dialogTitle = computed(() => {
+    switch (step.value) {
+        case 'scan':
+            return 'バーコードスキャン';
+        case 'ocr_capture':
+            return '成分表を撮影';
+        case 'polling':
+            return pollingKind.value === 'ocr' ? '読み取り中...' : '照合中...';
+        case 'confirm':
+            return '栄養情報の確認';
+        case 'hit':
+            return '登録済み食品';
+        case 'not_found':
+            return '商品が見つかりませんでした';
+        case 'manual':
+            return '手入力で登録';
+        case 'one_off':
+            return '今回だけ直接入力';
+        default:
+            return 'バーコード';
+    }
+});
 </script>
 
 <template>
@@ -415,34 +687,37 @@ function useHitFood(): void {
         <DialogContent class="bg-cd-surface sm:max-w-lg">
             <DialogHeader>
                 <DialogTitle class="font-sans">
-                    {{
-                        step === 'scan'
-                            ? 'バーコードスキャン'
-                            : step === 'ocr_capture'
-                              ? '成分表を撮影'
-                              : step === 'polling'
-                                ? pollingKind === 'ocr'
-                                  ? '読み取り中...'
-                                  : '照合中...'
-                                : step === 'confirm'
-                                  ? '栄養情報の確認'
-                                  : '登録済み食品'
-                    }}
+                    {{ dialogTitle }}
                 </DialogTitle>
                 <DialogDescription class="font-sans text-sm text-cd-ink-muted">
-                    {{
-                        step === 'scan'
-                            ? 'カメラでバーコードを読み取るか、番号を直接入力してください。'
-                            : step === 'ocr_capture'
-                              ? '栄養成分表示を撮影すると AI が読み取ります。'
-                              : step === 'polling'
-                                ? pollingKind === 'ocr'
-                                  ? '成分表を AI が読み取っています...'
-                                  : 'データベースを照合しています...'
-                                : step === 'confirm'
-                                  ? '内容を確認・編集して保存してください。値は自由に修正できます。'
-                                  : 'この商品は既にマイ食品に登録されています。'
-                    }}
+                    <template v-if="step === 'scan'">
+                        カメラでバーコードを読み取るか、番号を直接入力してください。
+                    </template>
+                    <template v-else-if="step === 'ocr_capture'">
+                        栄養成分表示を撮影すると AI が読み取ります。
+                    </template>
+                    <template v-else-if="step === 'polling'">
+                        {{
+                            pollingKind === 'ocr'
+                                ? '成分表を AI が読み取っています...'
+                                : 'データベースを照合しています...'
+                        }}
+                    </template>
+                    <template v-else-if="step === 'confirm'">
+                        内容を確認し、保存して食事に追加できます。
+                    </template>
+                    <template v-else-if="step === 'hit'">
+                        数量と食事区分を指定して当日の食事へ追加できます。
+                    </template>
+                    <template v-else-if="step === 'not_found'">
+                        Open Food Facts に未登録です。次の方法で続けられます。
+                    </template>
+                    <template v-else-if="step === 'manual'">
+                        読み取ったバーコードを引き継いでマイ食品へ登録します。
+                    </template>
+                    <template v-else-if="step === 'one_off'">
+                        マイ食品には保存せず、今日の食事記録だけ作成します。
+                    </template>
                 </DialogDescription>
             </DialogHeader>
 
@@ -453,7 +728,6 @@ function useHitFood(): void {
                 {{ errorMessage }}
             </p>
 
-            <!-- Scan step -->
             <div v-if="step === 'scan'" class="flex flex-col gap-4">
                 <div v-if="isSupported" class="relative overflow-hidden rounded-xl bg-black">
                     <video
@@ -468,14 +742,12 @@ function useHitFood(): void {
                     >
                         <div class="h-0.5 w-3/4 animate-pulse rounded bg-primary/70" />
                     </div>
-                    <div v-if="!scanning" class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60">
+                    <div
+                        v-if="!scanning"
+                        class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60"
+                    >
                         <ScanLine :size="32" class="text-white/70" />
-                        <Button
-                            type="button"
-                            size="sm"
-                            class="font-sans"
-                            @click="startCamera"
-                        >
+                        <Button type="button" size="sm" class="font-sans" @click="startCamera">
                             カメラを起動
                         </Button>
                     </div>
@@ -510,27 +782,41 @@ function useHitFood(): void {
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-2 border-t border-cd-line pt-3">
-                    <Button
-                        v-if="lookupId"
-                        type="button"
-                        class="font-sans"
-                        @click="startOcrForMiss"
-                    >
-                        <Camera :size="16" class="mr-1" />
-                        この商品の成分表を撮影して登録
-                    </Button>
-                    <button
-                        type="button"
-                        class="font-sans text-xs text-cd-ink-muted underline-offset-2 hover:underline"
-                        @click="startOcrWithoutBarcode"
-                    >
-                        バーコードがない商品は、成分表の撮影から登録できます
-                    </button>
-                </div>
+                <button
+                    type="button"
+                    class="font-sans text-xs text-cd-ink-muted underline-offset-2 hover:underline"
+                    @click="startOcrWithoutBarcode"
+                >
+                    バーコードがない商品は、成分表の撮影から登録できます
+                </button>
             </div>
 
-            <!-- OCR capture step -->
+            <div v-if="step === 'not_found'" class="flex flex-col gap-3">
+                <p v-if="knownBarcode" class="font-sans text-xs text-cd-ink-muted">
+                    バーコード: {{ knownBarcode }}
+                </p>
+                <Button type="button" class="font-sans justify-start" @click="startOcrForMiss">
+                    <Camera :size="16" class="mr-2" />
+                    成分表を撮影
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    class="font-sans justify-start"
+                    @click="startManualEntry"
+                >
+                    手入力で登録
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    class="font-sans justify-start"
+                    @click="startOneOffEntry"
+                >
+                    今回だけ直接入力
+                </Button>
+            </div>
+
             <div v-if="step === 'ocr_capture'" class="flex flex-col gap-4">
                 <input
                     ref="labelFileInput"
@@ -579,13 +865,8 @@ function useHitFood(): void {
                         AIで読み取る
                     </Button>
                 </div>
-
-                <p class="font-sans text-xs text-cd-ink-muted">
-                    成分表全体が明るく写るように撮影してください。読み取り結果は保存前に必ず確認できます。写真は解析後に破棄されます。
-                </p>
             </div>
 
-            <!-- Polling step -->
             <div v-if="step === 'polling'" class="flex flex-col items-center gap-4 py-8">
                 <Loader2 :size="32" class="animate-spin text-primary" />
                 <p class="font-sans text-sm text-cd-ink-muted">
@@ -597,10 +878,12 @@ function useHitFood(): void {
                 </p>
             </div>
 
-            <!-- Confirm step -->
-            <div v-if="step === 'confirm'" class="flex flex-col gap-3">
+            <div
+                v-if="step === 'confirm' || step === 'manual' || step === 'one_off'"
+                class="flex flex-col gap-3"
+            >
                 <p
-                    v-if="lookupSource"
+                    v-if="step === 'confirm' && lookupSource"
                     class="font-sans text-xs text-cd-ink-muted"
                 >
                     出典:
@@ -615,20 +898,60 @@ function useHitFood(): void {
                         · {{ lookupResult.brands }}
                     </template>
                     <template v-if="lookupResult?.per">
-                        · {{ lookupResult.per === 'serving' ? '1食分' : '100g あたり' }}
+                        ·
+                        {{
+                            lookupResult.per === 'serving'
+                                ? '1食分'
+                                : lookupResult.per === 'package'
+                                  ? '1包装あたり'
+                                  : '100g あたり'
+                        }}
                     </template>
                 </p>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div class="col-span-2 flex flex-col gap-1">
-                        <Label class="font-sans text-xs">商品名 <span class="text-destructive">*</span></Label>
+                        <Label class="font-sans text-xs">
+                            商品名 <span class="text-destructive">*</span>
+                        </Label>
                         <Input v-model="confirmForm.name" type="text" maxlength="100" />
                     </div>
-                    <div class="col-span-2 flex flex-col gap-1">
-                        <Label class="font-sans text-xs">1サービング <span class="text-destructive">*</span></Label>
+                    <div
+                        v-if="step !== 'one_off'"
+                        class="col-span-2 flex flex-col gap-1"
+                    >
+                        <Label class="font-sans text-xs">
+                            ブランド・メーカー（任意）
+                        </Label>
+                        <Input v-model="confirmForm.brand" type="text" maxlength="100" />
+                    </div>
+                    <div
+                        v-if="step !== 'one_off'"
+                        class="col-span-2 flex flex-col gap-1"
+                    >
+                        <Label class="font-sans text-xs">
+                            1サービング <span class="text-destructive">*</span>
+                        </Label>
                         <Input v-model="confirmForm.serving_label" type="text" maxlength="50" />
                     </div>
-                    <div class="col-span-2 flex flex-col gap-1">
+                    <div
+                        v-if="step !== 'one_off'"
+                        class="col-span-2 flex flex-col gap-1"
+                    >
+                        <Label class="font-sans text-xs">栄養基準</Label>
+                        <select
+                            v-model="confirmForm.nutrition_basis"
+                            class="rounded-md border border-input bg-transparent px-3 py-2 font-sans text-sm"
+                        >
+                            <option value="serving">1サービング</option>
+                            <option value="100g">100g あたり</option>
+                            <option value="package">1包装あたり</option>
+                        </select>
+                    </div>
+                    <div
+                        v-if="step !== 'one_off'"
+                        class="col-span-2 flex flex-col gap-1"
+                    >
                         <Label class="font-sans text-xs">バーコード（任意）</Label>
                         <Input
                             v-model="confirmForm.barcode"
@@ -640,25 +963,90 @@ function useHitFood(): void {
                         />
                     </div>
                     <div class="flex flex-col gap-1">
-                        <Label class="font-sans text-xs">kcal <span class="text-destructive">*</span></Label>
-                        <Input v-model="confirmForm.kcal" type="number" min="0" max="9999" step="0.1" />
+                        <Label class="font-sans text-xs">
+                            kcal <span class="text-destructive">*</span>
+                        </Label>
+                        <Input
+                            v-model="confirmForm.kcal"
+                            type="number"
+                            min="0"
+                            max="9999"
+                            step="0.1"
+                        />
                     </div>
                     <div class="flex flex-col gap-1">
-                        <Label class="font-sans text-xs">P (g) <span class="text-destructive">*</span></Label>
-                        <Input v-model="confirmForm.protein_g" type="number" min="0" max="999" step="0.1" />
+                        <Label class="font-sans text-xs">
+                            P (g) <span class="text-destructive">*</span>
+                        </Label>
+                        <Input
+                            v-model="confirmForm.protein_g"
+                            type="number"
+                            min="0"
+                            max="999"
+                            step="0.1"
+                        />
                     </div>
                     <div class="flex flex-col gap-1">
-                        <Label class="font-sans text-xs">F (g) <span class="text-destructive">*</span></Label>
-                        <Input v-model="confirmForm.fat_g" type="number" min="0" max="999" step="0.1" />
+                        <Label class="font-sans text-xs">
+                            F (g) <span class="text-destructive">*</span>
+                        </Label>
+                        <Input
+                            v-model="confirmForm.fat_g"
+                            type="number"
+                            min="0"
+                            max="999"
+                            step="0.1"
+                        />
                     </div>
                     <div class="flex flex-col gap-1">
-                        <Label class="font-sans text-xs">C (g) <span class="text-destructive">*</span></Label>
-                        <Input v-model="confirmForm.carb_g" type="number" min="0" max="999" step="0.1" />
+                        <Label class="font-sans text-xs">
+                            C (g) <span class="text-destructive">*</span>
+                        </Label>
+                        <Input
+                            v-model="confirmForm.carb_g"
+                            type="number"
+                            min="0"
+                            max="999"
+                            step="0.1"
+                        />
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <Label class="font-sans text-xs">食事区分</Label>
+                        <select
+                            v-model="confirmForm.meal_type"
+                            class="rounded-md border border-input bg-transparent px-3 py-2 font-sans text-sm"
+                        >
+                            <option value="breakfast">朝食</option>
+                            <option value="lunch">昼食</option>
+                            <option value="dinner">夕食</option>
+                            <option value="snack">間食</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <Label class="font-sans text-xs">数量</Label>
+                        <Input
+                            v-model="confirmForm.quantity"
+                            type="number"
+                            min="0.1"
+                            max="100"
+                            step="0.1"
+                        />
+                        <p class="font-sans text-[11px] text-cd-ink-muted">
+                            {{ quantityHint }}
+                        </p>
+                    </div>
+                    <div class="col-span-2 rounded-lg bg-muted/40 px-3 py-2 font-sans text-xs text-cd-ink-muted">
+                        記録予定:
+                        {{ previewTotals.kcal }} kcal · P {{ previewTotals.protein_g }}g · F
+                        {{ previewTotals.fat_g }}g · C {{ previewTotals.carb_g }}g
+                    </div>
+                    <div class="col-span-2 flex flex-col gap-1">
+                        <Label class="font-sans text-xs">メモ（任意）</Label>
+                        <Input v-model="confirmForm.note" type="text" maxlength="500" />
                     </div>
                 </div>
             </div>
 
-            <!-- Hit step -->
             <div v-if="step === 'hit' && hitFood" class="flex flex-col gap-3 py-2">
                 <div class="rounded-xl border border-cd-line bg-muted/30 px-4 py-3">
                     <p class="font-sans text-sm font-semibold text-cd-ink">
@@ -675,43 +1063,109 @@ function useHitFood(): void {
                         <span class="text-cd-pfc-c">C {{ hitFood.carb_g }}g</span>
                     </p>
                 </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="flex flex-col gap-1">
+                        <Label class="font-sans text-xs">食事区分</Label>
+                        <select
+                            v-model="confirmForm.meal_type"
+                            class="rounded-md border border-input bg-transparent px-3 py-2 font-sans text-sm"
+                        >
+                            <option value="breakfast">朝食</option>
+                            <option value="lunch">昼食</option>
+                            <option value="dinner">夕食</option>
+                            <option value="snack">間食</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <Label class="font-sans text-xs">数量</Label>
+                        <Input
+                            v-model="confirmForm.quantity"
+                            type="number"
+                            min="0.1"
+                            max="100"
+                            step="0.1"
+                        />
+                        <p class="font-sans text-[11px] text-cd-ink-muted">
+                            {{ hitFood.serving_label }} × {{ confirmForm.quantity }}
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            <DialogFooter v-if="step === 'confirm' || step === 'hit'">
+            <DialogFooter
+                v-if="step === 'confirm' || step === 'manual'"
+                class="flex-col gap-2 sm:flex-col"
+            >
+                <Button
+                    type="button"
+                    class="w-full font-sans"
+                    :disabled="saving || !canConfirm"
+                    @click="step === 'manual' ? saveManual(true) : confirmAndSave(true)"
+                >
+                    保存して食事に追加
+                </Button>
                 <Button
                     type="button"
                     variant="outline"
-                    class="font-sans"
-                    @click="close"
-                >
-                    キャンセル
-                </Button>
-                <Button
-                    v-if="step === 'confirm'"
-                    type="button"
-                    class="font-sans"
+                    class="w-full font-sans"
                     :disabled="saving || !canConfirm"
-                    @click="confirmAndSave"
+                    @click="step === 'manual' ? saveManual(false) : confirmAndSave(false)"
                 >
-                    マイ食品に保存
+                    マイ食品にだけ保存
                 </Button>
                 <Button
-                    v-if="step === 'hit'"
                     type="button"
-                    class="font-sans"
-                    @click="useHitFood"
+                    variant="ghost"
+                    class="w-full font-sans"
+                    @click="step === 'manual' ? (step = 'not_found') : close()"
                 >
-                    この食品を使う
+                    {{ step === 'manual' ? '戻る' : 'キャンセル' }}
                 </Button>
             </DialogFooter>
 
-            <DialogFooter v-if="step === 'scan'">
+            <DialogFooter v-if="step === 'one_off'" class="flex-col gap-2 sm:flex-col">
+                <Button
+                    type="button"
+                    class="w-full font-sans"
+                    :disabled="saving || !canOneOff"
+                    @click="saveOneOff"
+                >
+                    食事に追加（保存しない）
+                </Button>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    class="w-full font-sans"
+                    @click="step = 'not_found'"
+                >
+                    戻る
+                </Button>
+            </DialogFooter>
+
+            <DialogFooter v-if="step === 'hit'" class="flex-col gap-2 sm:flex-col">
+                <Button
+                    type="button"
+                    class="w-full font-sans"
+                    :disabled="saving"
+                    @click="addHitFoodToMeal"
+                >
+                    食事に追加
+                </Button>
                 <Button
                     type="button"
                     variant="outline"
-                    class="font-sans"
-                    @click="close"
+                    class="w-full font-sans"
+                    @click="useHitFood"
                 >
+                    詳細を編集して使う
+                </Button>
+                <Button type="button" variant="ghost" class="w-full font-sans" @click="close">
+                    キャンセル
+                </Button>
+            </DialogFooter>
+
+            <DialogFooter v-if="step === 'scan' || step === 'not_found'">
+                <Button type="button" variant="outline" class="font-sans" @click="close">
                     閉じる
                 </Button>
             </DialogFooter>
@@ -721,9 +1175,9 @@ function useHitFood(): void {
                     type="button"
                     variant="outline"
                     class="font-sans"
-                    @click="step = 'scan'"
+                    @click="step = lookupId ? 'not_found' : 'scan'"
                 >
-                    バーコード入力に戻る
+                    戻る
                 </Button>
             </DialogFooter>
         </DialogContent>
