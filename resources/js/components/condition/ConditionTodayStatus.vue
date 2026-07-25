@@ -56,7 +56,7 @@ function toneClass(tone: DeltaTone): string {
                 <Sparkles
                     :size="14"
                     :stroke-width="1.6"
-                    class="text-primary"
+                    class="text-cd-icon-primary"
                 />
                 総合 {{ overall.display }} / 100
                 <span
@@ -72,22 +72,17 @@ function toneClass(tone: DeltaTone): string {
             <li
                 v-for="card in statusCards"
                 :key="card.key"
-                class="rounded-xl border border-cd-line bg-cd-surface p-4"
+                class="relative rounded-xl border border-cd-line bg-cd-surface p-4 pr-12"
             >
-                <div class="flex items-start justify-between gap-2">
-                    <p class="font-sans text-xs font-medium text-cd-ink-muted">
-                        {{ card.label }}
-                    </p>
-                    <span
-                        class="flex size-8 items-center justify-center rounded-full bg-primary/10 text-primary"
-                    >
-                        <component
-                            :is="card.icon"
-                            :size="16"
-                            :stroke-width="1.6"
-                        />
-                    </span>
-                </div>
+                <component
+                    :is="card.icon"
+                    class="pointer-events-none absolute top-[14px] right-4 text-cd-icon-primary opacity-90"
+                    :size="18"
+                    :stroke-width="1.6"
+                />
+                <p class="font-sans text-xs font-medium text-cd-ink-muted">
+                    {{ card.label }}
+                </p>
                 <p class="mt-3 font-sans text-2xl font-semibold text-cd-ink">
                     {{ card.display }}
                     <span

@@ -32,6 +32,14 @@ import {
     formatSleepMinutes,
     metricLabel,
 } from '@/lib/metricLabels';
+import {
+    CHART_COLORS,
+    chartAxisLabel,
+    chartAxisLine,
+    chartLegend,
+    chartLineSeriesStyle,
+    chartSplitLine,
+} from '@/lib/chartTheme';
 import type { ChartPoint, DailyMetricEntry } from '@/types/routine';
 import type { CheckinFormState, TodayOpsCheckin } from '@/types/todayOps';
 
@@ -399,54 +407,50 @@ const chartOption = computed<EChartsCoreOption>(() => {
             name,
             type: 'line' as const,
             smooth: true,
-            symbol: 'circle',
-            symbolSize: 6,
+            ...chartLineSeriesStyle(color),
             data: dates.map((date) => map.get(date) ?? null),
-            lineStyle: { color, width: 2 },
-            itemStyle: { color },
         };
     };
 
     return {
         grid: { left: 48, right: 48, top: 40, bottom: 32 },
         tooltip: { trigger: 'axis' },
-        legend: {
-            top: 0,
-            textStyle: { color: '#5c5a6e', fontSize: 11 },
-        },
+        legend: chartLegend(11),
         xAxis: {
             type: 'category',
             data: dates,
-            axisLabel: { color: '#5c5a6e', fontSize: 11 },
-            axisLine: { lineStyle: { color: '#cfc8d8' } },
+            axisLabel: chartAxisLabel(11),
+            axisLine: chartAxisLine(),
         },
         yAxis: [
             {
                 type: 'value',
                 name: 'kg / km/h',
-                axisLabel: { color: '#5c5a6e', fontSize: 11 },
-                splitLine: {
-                    lineStyle: { color: '#cfc8d8', opacity: 0.45 },
-                },
+                axisLabel: chartAxisLabel(11),
+                splitLine: chartSplitLine(),
             },
             {
                 type: 'value',
                 name: '分',
-                axisLabel: { color: '#5c5a6e', fontSize: 11 },
+                axisLabel: chartAxisLabel(11),
                 splitLine: { show: false },
             },
         ],
         series: [
             {
-                ...seriesFor('weight', '#5b5577', '体重'),
+                ...seriesFor('weight', CHART_COLORS.primary, '体重'),
                 yAxisIndex: 0,
             },
             {
-                ...seriesFor('sleep_minutes', '#2b8fef', '睡眠時間'),
+                ...seriesFor('sleep_minutes', CHART_COLORS.secondary, '睡眠時間'),
                 yAxisIndex: 1,
             },
             {
-                ...seriesFor('pitch_speed_max', '#29a35c', '最高球速'),
+                ...seriesFor(
+                    'pitch_speed_max',
+                    CHART_COLORS.tertiary,
+                    '最高球速',
+                ),
                 yAxisIndex: 0,
             },
         ],

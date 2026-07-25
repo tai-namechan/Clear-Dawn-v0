@@ -8,6 +8,15 @@ import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+    STRENGTH_SERIES_COLORS,
+    chartAxisLabel,
+    chartAxisLine,
+    chartLegend,
+    chartLineSeriesStyle,
+    chartSplitLine,
+    eachDateInclusive,
+} from '@/lib/chartTheme';
 
 type Period = 'week' | 'month' | '3months' | 'year' | null;
 
@@ -46,52 +55,33 @@ const periodOptions: { value: Exclude<Period, null>; label: string }[] = [
     { value: 'year', label: '年' },
 ];
 
-const chartColors = [
-    'var(--chart-1)',
-    'var(--chart-2)',
-    'var(--chart-3)',
-    'var(--chart-4)',
-    'var(--chart-5)',
-];
+const chartColors = [...STRENGTH_SERIES_COLORS];
 
 const itemNames = computed(() =>
     [...new Set(props.chartPoints.map((point) => point.item_name))].sort(),
 );
 
 const dates = computed(() =>
-    [...new Set(props.chartPoints.map((point) => point.date))].sort(),
+    eachDateInclusive(props.from, props.to),
 );
 
 const chartOption = computed<EChartsCoreOption>(() => ({
     grid: { left: 48, right: 24, top: 40, bottom: 32 },
-    legend: {
-        top: 0,
-        textStyle: { color: 'var(--cd-ink-muted)', fontSize: 11 },
-    },
+    legend: chartLegend(11),
     tooltip: {
         trigger: 'axis',
     },
     xAxis: {
         type: 'category',
         data: dates.value,
-        axisLabel: {
-            color: 'var(--cd-ink-muted)',
-            fontSize: 11,
-        },
-        axisLine: {
-            lineStyle: { color: 'var(--cd-line)' },
-        },
+        axisLabel: chartAxisLabel(11),
+        axisLine: chartAxisLine(),
     },
     yAxis: {
         type: 'value',
         name: 'kg',
-        axisLabel: {
-            color: 'var(--cd-ink-muted)',
-            fontSize: 11,
-        },
-        splitLine: {
-            lineStyle: { color: 'var(--cd-line)', opacity: 0.4 },
-        },
+        axisLabel: chartAxisLabel(11),
+        splitLine: chartSplitLine(),
     },
     series: itemNames.value.map((itemName, index) => {
         const byDate = new Map(
@@ -105,21 +95,12 @@ const chartOption = computed<EChartsCoreOption>(() => ({
             name: itemName,
             type: 'line' as const,
             smooth: true,
-            symbol: 'circle',
-            symbolSize: 6,
-            connectNulls: false,
+            ...chartLineSeriesStyle(color),
             data: dates.value.map((date) => {
                 const value = byDate.get(date);
 
                 return value != null ? Number(value) : null;
             }),
-            lineStyle: {
-                color,
-                width: 2,
-            },
-            itemStyle: {
-                color,
-            },
         };
     }),
 }));

@@ -110,6 +110,21 @@
     --color-cd-pfc-p: var(--cd-pfc-p);
     --color-cd-pfc-f: var(--cd-pfc-f);
     --color-cd-pfc-c: var(--cd-pfc-c);
+    --color-cd-protein: var(--cd-protein);
+    --color-cd-fat: var(--cd-fat);
+    --color-cd-carbs: var(--cd-carbs);
+    --color-cd-chart-primary: var(--cd-chart-primary);
+    --color-cd-chart-secondary: var(--cd-chart-secondary);
+    --color-cd-chart-tertiary: var(--cd-chart-tertiary);
+    --color-cd-chart-light: var(--cd-chart-light);
+    --color-cd-chart-grid: var(--cd-chart-grid);
+    --color-cd-chart-axis: var(--cd-chart-axis);
+    --color-cd-chart-label: var(--cd-chart-label);
+    --color-cd-icon-primary: var(--cd-icon-primary);
+    --color-cd-icon-secondary: var(--cd-icon-secondary);
+    --color-cd-icon-muted: var(--cd-icon-muted);
+    --color-cd-icon-bg: var(--cd-icon-bg);
+    --color-cd-icon-bg-hover: var(--cd-icon-bg-hover);
     --color-cd-current: var(--cd-current);
     --color-cd-matrix-surface: var(--cd-matrix-surface);
     --color-cd-matrix-line: var(--cd-matrix-line);
@@ -196,11 +211,11 @@
     --border: hsl(260 12% 80%);
     --input: hsl(260 12% 78%);
     --ring: #5b5577;
-    --chart-1: hsl(238 29% 35%);
-    --chart-2: hsl(251 17% 55%);
-    --chart-3: hsl(43 33% 60%);
-    --chart-4: hsl(215 25% 55%);
-    --chart-5: hsl(150 15% 50%);
+    --chart-1: #5b5577;
+    --chart-2: #4d8fcb;
+    --chart-3: #81779f;
+    --chart-4: #aaa3bd;
+    --chart-5: #716d79;
     --radius: 0.5rem;
     --sidebar-background: hsl(256 14% 85%);
     --sidebar-foreground: hsl(233 20% 25%);
@@ -244,10 +259,29 @@
     ); /* faintest sunrise tint (--cd-accent-light) */
     --cd-moss: hsl(125 13% 50%); /* quiet green (--cd-success family) */
     --cd-mist: hsl(210 29% 56%); /* soft blue-grey (--cd-info family) */
-    /* PFC chart / legend — brighter than moss/sunrise/mist for readability */
-    --cd-pfc-p: hsl(142 62% 42%);
-    --cd-pfc-f: hsl(27 92% 55%);
-    --cd-pfc-c: hsl(207 82% 52%);
+    /* PFC chart / legend — semantic macronutrient colors */
+    --cd-pfc-p: #3f9a70;
+    --cd-pfc-f: #d58a38;
+    --cd-pfc-c: #3b82c4;
+    --cd-protein: #3f9a70;
+    --cd-fat: #d58a38;
+    --cd-carbs: #3b82c4;
+
+    /* Performance charts */
+    --cd-chart-primary: #5b5577;
+    --cd-chart-secondary: #4d8fcb;
+    --cd-chart-tertiary: #81779f;
+    --cd-chart-light: #aaa3bd;
+    --cd-chart-grid: #e9e6ec;
+    --cd-chart-axis: #cec9d3;
+    --cd-chart-label: #716d79;
+
+    /* Performance icons */
+    --cd-icon-primary: #5b5577;
+    --cd-icon-secondary: #858094;
+    --cd-icon-muted: #b5b1be;
+    --cd-icon-bg: #f0edf5;
+    --cd-icon-bg-hover: #e8e3f0;
 
     /* Clear Dawn chrome (sidebar + header) */
     --cd-sidebar-text: #f5f2ec;

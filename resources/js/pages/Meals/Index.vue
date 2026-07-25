@@ -40,6 +40,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiFetch } from '@/lib/apiFetch';
 import { PFC_COLORS } from '@/lib/pfcColors';
+import {
+    CHART_COLORS,
+    chartAxisLabel,
+    chartAxisLine,
+    chartLegend,
+    chartLineSeriesStyle,
+    chartSplitLine,
+    nutritionSeriesByDate,
+} from '@/lib/chartTheme';
 import type {
     FoodItem,
     MealEntry,
@@ -242,87 +251,107 @@ const mealTypeMeta: Record<
     },
 };
 
-const kcalChartOption = computed<EChartsCoreOption>(() => ({
-    grid: { left: 48, right: 24, top: 24, bottom: 32 },
-    tooltip: { trigger: 'axis' },
-    xAxis: {
-        type: 'category',
-        data: props.chartPoints.map((point) => point.date),
-        axisLabel: { color: '#5c5a6e', fontSize: 11 },
-        axisLine: { lineStyle: { color: '#cfc8d8' } },
-    },
-    yAxis: {
-        type: 'value',
-        axisLabel: { color: '#5c5a6e', fontSize: 11 },
-        splitLine: {
-            lineStyle: { color: '#cfc8d8', opacity: 0.45 },
-        },
-    },
-    series: [
-        {
-            name: 'kcal',
-            type: 'line',
-            smooth: true,
-            symbol: 'circle',
-            symbolSize: 8,
-            data: props.chartPoints.map((point) => point.kcal),
-            lineStyle: { color: '#5b5577', width: 2 },
-            itemStyle: { color: '#5b5577' },
-            areaStyle: { color: 'rgba(91, 85, 119, 0.12)' },
-        },
-    ],
-}));
+const kcalChartOption = computed<EChartsCoreOption>(() => {
+    const { dates, values } = nutritionSeriesByDate(
+        props.chartPoints,
+        filterFrom.value,
+        filterTo.value,
+        'kcal',
+    );
 
-const pfcChartOption = computed<EChartsCoreOption>(() => ({
-    grid: { left: 48, right: 24, top: 40, bottom: 32 },
-    tooltip: { trigger: 'axis' },
-    legend: {
-        top: 0,
-        textStyle: { color: '#5c5a6e', fontSize: 11 },
-    },
-    xAxis: {
-        type: 'category',
-        data: props.chartPoints.map((point) => point.date),
-        axisLabel: { color: '#5c5a6e', fontSize: 11 },
-        axisLine: { lineStyle: { color: '#cfc8d8' } },
-    },
-    yAxis: {
-        type: 'value',
-        axisLabel: { color: '#5c5a6e', fontSize: 11 },
-        splitLine: {
-            lineStyle: { color: '#cfc8d8', opacity: 0.45 },
+    return {
+        grid: { left: 48, right: 24, top: 24, bottom: 32 },
+        tooltip: { trigger: 'axis' },
+        xAxis: {
+            type: 'category',
+            data: dates,
+            axisLabel: chartAxisLabel(11),
+            axisLine: chartAxisLine(),
         },
-    },
-    series: [
-        {
-            name: 'P',
-            type: 'bar',
-            stack: 'pfc',
-            barMaxWidth: 36,
-            data: props.chartPoints.map((point) => point.protein_g),
-            itemStyle: { color: PFC_COLORS.p.hex, borderRadius: [0, 0, 0, 0] },
+        yAxis: {
+            type: 'value',
+            axisLabel: chartAxisLabel(11),
+            splitLine: chartSplitLine(),
         },
-        {
-            name: 'F',
-            type: 'bar',
-            stack: 'pfc',
-            barMaxWidth: 36,
-            data: props.chartPoints.map((point) => point.fat_g),
-            itemStyle: { color: PFC_COLORS.f.hex },
-        },
-        {
-            name: 'C',
-            type: 'bar',
-            stack: 'pfc',
-            barMaxWidth: 36,
-            data: props.chartPoints.map((point) => point.carb_g),
-            itemStyle: {
-                color: PFC_COLORS.c.hex,
-                borderRadius: [4, 4, 0, 0],
+        series: [
+            {
+                name: 'kcal',
+                type: 'line',
+                smooth: true,
+                ...chartLineSeriesStyle(CHART_COLORS.primary),
+                data: values,
+                areaStyle: { color: CHART_COLORS.primaryArea },
             },
+        ],
+    };
+});
+
+const pfcChartOption = computed<EChartsCoreOption>(() => {
+    const protein = nutritionSeriesByDate(
+        props.chartPoints,
+        filterFrom.value,
+        filterTo.value,
+        'protein_g',
+    );
+    const fat = nutritionSeriesByDate(
+        props.chartPoints,
+        filterFrom.value,
+        filterTo.value,
+        'fat_g',
+    );
+    const carb = nutritionSeriesByDate(
+        props.chartPoints,
+        filterFrom.value,
+        filterTo.value,
+        'carb_g',
+    );
+
+    return {
+        grid: { left: 48, right: 24, top: 40, bottom: 32 },
+        tooltip: { trigger: 'axis' },
+        legend: chartLegend(11),
+        xAxis: {
+            type: 'category',
+            data: protein.dates,
+            axisLabel: chartAxisLabel(11),
+            axisLine: chartAxisLine(),
         },
-    ],
-}));
+        yAxis: {
+            type: 'value',
+            axisLabel: chartAxisLabel(11),
+            splitLine: chartSplitLine(),
+        },
+        series: [
+            {
+                name: 'P',
+                type: 'bar',
+                stack: 'pfc',
+                barMaxWidth: 36,
+                data: protein.values,
+                itemStyle: { color: PFC_COLORS.p.hex },
+            },
+            {
+                name: 'F',
+                type: 'bar',
+                stack: 'pfc',
+                barMaxWidth: 36,
+                data: fat.values,
+                itemStyle: { color: PFC_COLORS.f.hex },
+            },
+            {
+                name: 'C',
+                type: 'bar',
+                stack: 'pfc',
+                barMaxWidth: 36,
+                data: carb.values,
+                itemStyle: {
+                    color: PFC_COLORS.c.hex,
+                    borderRadius: [4, 4, 0, 0],
+                },
+            },
+        ],
+    };
+});
 
 const hasChartData = computed(() =>
     props.chartPoints.some(
