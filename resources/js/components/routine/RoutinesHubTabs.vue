@@ -54,11 +54,11 @@ function isActive(tab: HubTab): boolean {
             :key="tab.href"
             :href="tab.href"
             :aria-current="isActive(tab) ? 'page' : undefined"
-            class="relative -mb-px min-w-0 flex-1 px-1.5 py-2.5 text-center font-sans text-xs font-medium whitespace-nowrap transition-colors sm:flex-none sm:px-4 sm:text-sm"
+            class="relative -mb-px min-w-0 flex-1 px-1.5 py-2.5 text-center font-sans text-xs whitespace-nowrap transition-colors sm:flex-none sm:px-4 sm:text-sm"
             :class="
                 isActive(tab)
-                    ? 'text-primary'
-                    : 'text-cd-ink-muted hover:text-cd-ink'
+                    ? 'bg-primary/8 font-semibold text-primary'
+                    : 'font-medium text-cd-ink-muted hover:text-cd-ink'
             "
         >
             {{ tab.label }}

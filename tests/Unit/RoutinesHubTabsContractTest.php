@@ -33,9 +33,9 @@ class RoutinesHubTabsContractTest extends TestCase
             'Hub tabs must use underline tab bar (PageViewTabs family)',
         );
         $this->assertStringContainsString(
-            'h-0.5 rounded-full bg-primary',
+            'bg-primary/8 font-semibold text-primary',
             $source,
-            'Active hub tab must show primary underline indicator',
+            'Active hub tab must use a tinted primary treatment for selection',
         );
         $this->assertStringNotContainsString(
             'rounded-full border px-4 py-1.5',
@@ -63,6 +63,53 @@ class RoutinesHubTabsContractTest extends TestCase
             'grid grid-cols-3 gap-2',
             $source,
             'Meal remaining PFC metrics must sit in a readable three-column grid',
+        );
+    }
+
+    public function test_today_progress_panel_centers_metrics(): void
+    {
+        $absolute = base_path(
+            'resources/js/components/routine/TodayProgressPanel.vue',
+        );
+        $this->assertFileExists($absolute);
+        $source = file_get_contents($absolute);
+        $this->assertNotFalse($source);
+
+        $this->assertStringContainsString(
+            'flex w-full items-center justify-center gap-2',
+            $source,
+            'Date navigation row must be centered in the progress card',
+        );
+        $this->assertStringContainsString(
+            'flex flex-col items-center rounded-xl bg-primary/10',
+            $source,
+            'Progress metric cells must center their icon and values',
+        );
+    }
+
+    public function test_today_plan_card_vertically_centers_actions(): void
+    {
+        $absolute = base_path(
+            'resources/js/components/routine/TodayPlanCard.vue',
+        );
+        $this->assertFileExists($absolute);
+        $source = file_get_contents($absolute);
+        $this->assertNotFalse($source);
+
+        $this->assertStringContainsString(
+            'flex items-center gap-3',
+            $source,
+            'Plan card row must vertically center icon and start button',
+        );
+        $this->assertStringContainsString(
+            'class="min-w-0 flex-1"',
+            $source,
+            'Duration line must live inside the middle column so actions center against full content',
+        );
+        $this->assertStringNotContainsString(
+            'pl-[3.25rem]',
+            $source,
+            'Regression guard: indented duration row pulled icon/button visually upward',
         );
     }
 

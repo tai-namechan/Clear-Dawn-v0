@@ -125,28 +125,61 @@ return;
 </script>
 
 <template>
-    <li class="group rounded-xl border border-cd-line/90 bg-white/70 px-3 py-3 transition-colors hover:border-cd-dawn-soft/40 hover:bg-white sm:px-4">
+    <li
+        class="group rounded-xl border border-cd-line/90 bg-white/70 px-3 py-3 transition-colors hover:border-cd-dawn-soft/40 hover:bg-white sm:px-4"
+    >
         <div class="flex items-center gap-3">
-            <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-cd-dawn-soft/15 text-cd-dawn-soft">
-                <component :is="iconComponent" :size="19" :stroke-width="1.6" />
+            <div
+                class="flex size-10 shrink-0 items-center justify-center rounded-full bg-cd-dawn-soft/15 text-cd-dawn-soft"
+            >
+                <component
+                    :is="iconComponent"
+                    :size="19"
+                    :stroke-width="1.6"
+                />
             </div>
 
-            <Link :href="`/plans/${plan.id}`" class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-center gap-2">
-                    <p class="truncate font-sans text-sm font-semibold text-cd-ink">
-                        {{ plan.title }}
+            <div class="min-w-0 flex-1">
+                <Link :href="`/plans/${plan.id}`" class="block min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <p
+                            class="truncate font-sans text-sm font-semibold text-cd-ink"
+                        >
+                            {{ plan.title }}
+                        </p>
+                        <span
+                            class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-sans text-[0.68rem] font-medium"
+                            :class="statusMeta[status].className"
+                        >
+                            <Check
+                                v-if="status === 'completed'"
+                                :size="11"
+                                :stroke-width="2"
+                            />
+                            {{ statusMeta[status].label }}
+                        </span>
+                    </div>
+                    <p
+                        class="mt-0.5 line-clamp-1 font-sans text-xs text-cd-ink-muted"
+                    >
+                        {{ description }}
                     </p>
-                    <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-sans text-[0.68rem] font-medium" :class="statusMeta[status].className">
-                        <Check v-if="status === 'completed'" :size="11" :stroke-width="2" />
-                        {{ statusMeta[status].label }}
-                    </span>
+                </Link>
+                <div
+                    v-if="durationMinutes || clockRange"
+                    class="mt-1.5 flex items-center gap-3 font-sans text-[11px] text-cd-ink-muted md:hidden"
+                >
+                    <span v-if="durationMinutes"
+                        >予定 {{ formatMinutesJa(durationMinutes) }}</span
+                    >
+                    <span v-if="clockRange">{{ clockRange }}</span>
                 </div>
-                <p class="mt-0.5 line-clamp-1 font-sans text-xs text-cd-ink-muted">
-                    {{ description }}
-                </p>
-            </Link>
+            </div>
 
-            <div v-if="durationMinutes" class="hidden shrink-0 items-center gap-1.5 font-sans text-xs text-cd-ink-muted md:flex">
+            <div
+                v-if="durationMinutes"
+                class="hidden shrink-0 items-center gap-1.5 font-sans text-xs text-cd-ink-muted md:flex"
+            >
                 <Clock3 :size="14" :stroke-width="1.6" />
                 {{ formatMinutesJa(durationMinutes) }}
             </div>
@@ -155,14 +188,20 @@ return;
                 v-if="status === 'not_started'"
                 type="button"
                 size="sm"
-                class="shrink-0"
+                class="shrink-0 self-center"
                 :disabled="starting"
                 @click="startSession"
             >
                 <CirclePlay :size="15" :stroke-width="1.7" />
                 {{ starting ? '開始中…' : primaryLabel }}
             </Button>
-            <Button v-else type="button" size="sm" class="shrink-0" as-child>
+            <Button
+                v-else
+                type="button"
+                size="sm"
+                class="shrink-0 self-center"
+                as-child
+            >
                 <Link :href="primaryHref">
                     <CirclePlay :size="15" :stroke-width="1.7" />
                     {{ primaryLabel }}
@@ -171,7 +210,13 @@ return;
 
             <DropdownMenu>
                 <DropdownMenuTrigger as-child>
-                    <Button type="button" variant="ghost" size="icon-sm" class="hidden shrink-0 text-cd-ink-muted sm:inline-flex" :aria-label="`${plan.title} のメニュー`">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        class="hidden shrink-0 self-center text-cd-ink-muted sm:inline-flex"
+                        :aria-label="`${plan.title} のメニュー`"
+                    >
                         <EllipsisVertical :size="16" :stroke-width="1.6" />
                     </Button>
                 </DropdownMenuTrigger>
@@ -179,16 +224,14 @@ return;
                     <DropdownMenuItem as-child>
                         <Link :href="`/plans/${plan.id}`">プラン詳細</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem v-if="status === 'in_progress'" as-child>
+                    <DropdownMenuItem
+                        v-if="status === 'in_progress'"
+                        as-child
+                    >
                         <Link :href="primaryHref">実行を続ける</Link>
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
-        </div>
-
-        <div v-if="durationMinutes || clockRange" class="mt-2 flex items-center gap-3 pl-[3.25rem] font-sans text-[11px] text-cd-ink-muted md:hidden">
-            <span v-if="durationMinutes">予定 {{ formatMinutesJa(durationMinutes) }}</span>
-            <span v-if="clockRange">{{ clockRange }}</span>
         </div>
     </li>
 </template>
