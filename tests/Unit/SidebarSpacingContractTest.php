@@ -93,6 +93,16 @@ class SidebarSpacingContractTest extends TestCase
             'Nav links use shared active/hover chrome classes',
         );
         $this->assertStringContainsString(
+            ':stroke-width="2.2"',
+            $source,
+            'Nav icons use a heavier stroke for readability on the dawn sidebar',
+        );
+        $this->assertStringContainsString(
+            'font-serif text-xs font-semibold tracking-[0.2em]',
+            $source,
+            'Nav labels stay serif but use semibold weight for clarity',
+        );
+        $this->assertStringContainsString(
             'cd-sidebar-decor',
             $source,
             'Sidebar decorations stay but are toned via shared opacity',
