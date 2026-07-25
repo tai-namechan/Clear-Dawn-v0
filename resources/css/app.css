@@ -464,6 +464,72 @@
         color: var(--cd-ink);
     }
 
+    /*
+     * Routine session exercise video shell.
+     * Height follows orientation so portrait clips stay readable; video uses contain.
+     */
+    .exercise-video-shell {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border-radius: 12px;
+        background: #14131a;
+        /* Default to landscape height until metadata resolves (avoids portrait jump-first). */
+        height: clamp(340px, 45vh, 500px);
+        transition: height 200ms ease;
+    }
+
+    .exercise-video-shell.is-landscape {
+        height: clamp(340px, 45vh, 500px);
+    }
+
+    .exercise-video-shell.is-portrait {
+        height: clamp(520px, 68vh, 760px);
+    }
+
+    .exercise-video-shell__media,
+    .exercise-video-shell__placeholder {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: #14131a;
+    }
+
+    .exercise-video-shell__placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #1c1a24;
+        padding-inline: 1.5rem;
+        text-align: center;
+        font-size: 0.875rem;
+        color: rgb(255 255 255 / 0.7);
+    }
+
+    @media (max-width: 1024px) {
+        .exercise-video-shell,
+        .exercise-video-shell.is-landscape {
+            height: clamp(300px, 42vh, 440px);
+        }
+
+        .exercise-video-shell.is-portrait {
+            height: clamp(420px, 62vh, 640px);
+        }
+    }
+
+    @media (max-width: 640px) {
+        .exercise-video-shell,
+        .exercise-video-shell.is-landscape {
+            height: clamp(240px, 34vh, 320px);
+        }
+
+        .exercise-video-shell.is-portrait {
+            height: clamp(420px, 60vh, 580px);
+        }
+    }
+
     /* Step registration numbered section */
     .cd-step-section {
         display: flex;
