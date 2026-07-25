@@ -146,6 +146,40 @@ class RoutineSessionTest extends TestCase
         ]);
     }
 
+    public function test_adding_video_on_plan_syncs_to_in_progress_pending_session_step(): void
+    {
+        $user = User::factory()->create();
+        ['plan' => $plan, 'routineItem' => $routineItem] = $this->readyPlanWithStep($user, 'WGS');
+        $planStep = $plan->steps->firstOrFail();
+        $video = Video::factory()->ready()->create([
+            'user_id' => $user->id,
+            'routine_item_id' => $routineItem->id,
+            'title' => 'WGSフォーム',
+        ]);
+
+        $this->actingAs($user)->postJson(route('routine-sessions.start', $plan))->assertOk();
+
+        $this->assertDatabaseHas('routine_session_steps', [
+            'routine_item_id' => $routineItem->id,
+            'video_id' => null,
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($user)->patchJson(route('routine-plan-steps.update', [$plan, $planStep]), [
+            'video_id' => $video->id,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('routine_plan_steps', [
+            'id' => $planStep->id,
+            'video_id' => $video->id,
+        ]);
+        $this->assertDatabaseHas('routine_session_steps', [
+            'routine_item_id' => $routineItem->id,
+            'status' => 'pending',
+            'video_id' => $video->id,
+        ]);
+    }
+
     public function test_soft_deleting_a_routine_item_after_start_preserves_item_name_on_session(): void
     {
         $user = User::factory()->create();

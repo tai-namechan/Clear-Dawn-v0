@@ -19,6 +19,7 @@ use App\Models\RoutinePlan;
 use App\Models\User;
 use App\Support\LoadRounding;
 use App\Support\ProgramStepKindMapper;
+use App\Support\RoutineStepDisplay;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -250,6 +251,8 @@ class GenerateProgramDayPlansService
                     'routine_item_id' => $item->routine_item_id,
                     'program_step_item_id' => $item->id,
                     'title' => $item->routineItem->name,
+                    // 実施項目の既定動画をプランにスナップショット（手動ルーティン生成と同じ）
+                    'video_id' => RoutineStepDisplay::resolveVideoId(null, $item->routineItem),
                     'purpose' => ProgramStepKindMapper::toStepPurpose($dayStep->step_kind),
                     'step_kind' => $dayStep->step_kind->value,
                     'required_level' => $item->required_level->value,
