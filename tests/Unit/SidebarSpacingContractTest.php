@@ -62,14 +62,24 @@ class SidebarSpacingContractTest extends TestCase
             'Negative trigger margin pulls Clear Dawn title too close to the toggle',
         );
         $this->assertStringContainsString(
-            'max-md:bg-primary',
+            'cd-app-header',
             $source,
-            'Mobile Clear Dawn header must use primary (same token as CTA buttons)',
+            'Clear Dawn header must use the shared chrome class for translucent white fill',
         );
         $this->assertStringContainsString(
+            'cd-app-header-title',
+            $source,
+            'Clear Dawn title uses neutral ink, not brand purple fill',
+        );
+        $this->assertStringNotContainsString(
+            'max-md:bg-primary',
+            $source,
+            'Mobile header no longer uses solid primary purple chrome',
+        );
+        $this->assertStringNotContainsString(
             'max-md:text-primary-foreground',
             $source,
-            'Mobile Clear Dawn header title/trigger must stay readable on primary',
+            'Mobile Clear Dawn header title/trigger stay on translucent white chrome',
         );
     }
 
@@ -78,9 +88,14 @@ class SidebarSpacingContractTest extends TestCase
         $source = $this->componentSource('resources/js/components/AppSidebar.vue');
 
         $this->assertStringContainsString(
-            'cd-sidebar-panel',
+            'cd-sidebar-nav-link',
             $source,
-            'Mobile SheetContent is teleported; panel marker lets CSS apply the CD gradient',
+            'Nav links use shared active/hover chrome classes',
+        );
+        $this->assertStringContainsString(
+            'cd-sidebar-decor',
+            $source,
+            'Sidebar decorations stay but are toned via shared opacity',
         );
         $this->assertStringContainsString(
             'mx-auto mt-8 flex items-baseline',
@@ -108,6 +123,11 @@ class SidebarSpacingContractTest extends TestCase
             'iPad landscape compact mode must keep usable brand-to-nav breathing room',
         );
         $this->assertStringNotContainsString(
+            'cd-mask-violin',
+            $source,
+            'Sidebar violin decoration is retired',
+        );
+        $this->assertStringNotContainsString(
             'mt-24 flex flex-col items-center gap-3',
             $source,
             'Regression guard: previous desktop top pack felt cramped on tall laptops',
@@ -126,7 +146,32 @@ class SidebarSpacingContractTest extends TestCase
         $this->assertStringContainsString(
             "[data-sidebar='sidebar'][data-mobile='true']:has(.cd-sidebar-panel)",
             $source,
-            'CD sidebar gradient must target the teleported mobile SheetContent',
+            'CD sidebar chrome must target the teleported mobile SheetContent',
+        );
+        $this->assertStringContainsString(
+            'var(--cd-lavender-mist) 100%',
+            $source,
+            'Sidebar keeps the original dawn gradient ending in pale lavender',
+        );
+        $this->assertStringContainsString(
+            'var(--cd-dawn-deep) 0%',
+            $source,
+            'Sidebar gradient starts from dawn-deep',
+        );
+        $this->assertStringContainsString(
+            '--cd-header-bg: rgba(255, 255, 255, 0.68)',
+            $source,
+            'Header uses translucent white over marble',
+        );
+        $this->assertStringContainsString(
+            '.cd-app-header',
+            $source,
+            'Header chrome must live in shared CSS',
+        );
+        $this->assertStringContainsString(
+            'background-color: #ffffff',
+            $source,
+            'Shared cd-panel cards use opaque white',
         );
     }
 

@@ -221,8 +221,10 @@
     --cd-ink-pen: hsl(228 36% 13%); /* ballpoint ink: deep blue-black */
     --cd-ink-muted: hsl(232 14% 34%); /* secondary text — readable, not washed out */
     --cd-line: hsl(260 12% 80%); /* hairline borders */
-    --cd-surface: hsl(40 50% 99%); /* warmer opaque paper card surface */
+    --cd-surface: #ffffff; /* opaque white card surface */
     --cd-primary: #5b5577;
+    --cd-primary-strong: #49435f;
+    --cd-primary-subtle: #efecf5;
     /* Light lavender wash — pair with dark text on hover */
     --cd-primary-hover: #d6d3de;
     --cd-secondary: hsl(255 18% 88%);
@@ -232,6 +234,7 @@
     --cd-danger: hsl(4 52% 46%);
     --cd-danger-hover: hsl(4 55% 40%);
     --cd-gilt: hsl(43 33% 66%); /* restrained pale gold accent */
+    --cd-antique-gold: #c9ae78;
     --cd-sunrise: hsl(22 62% 61%); /* dawn accent (design-system --cd-accent) */
     --cd-sunrise-soft: hsl(
         27 67% 92%
@@ -245,6 +248,21 @@
     --cd-pfc-p: hsl(142 62% 42%);
     --cd-pfc-f: hsl(27 92% 55%);
     --cd-pfc-c: hsl(207 82% 52%);
+
+    /* Clear Dawn chrome (sidebar + header) */
+    --cd-sidebar-text: #f5f2ec;
+    --cd-sidebar-text-muted: #bbb7c4;
+    --cd-sidebar-icon: #e5e1e8;
+    --cd-sidebar-active-bg: rgba(91, 85, 119, 0.48);
+    --cd-sidebar-active-border: rgba(232, 224, 207, 0.52);
+    --cd-sidebar-hover-bg: rgba(255, 255, 255, 0.07);
+    --cd-sidebar-divider: rgba(255, 255, 255, 0.1);
+    --cd-header-bg: rgba(255, 255, 255, 0.68);
+    --cd-header-control-bg: #fffefc;
+    --cd-header-border: #e5dfd7;
+    --cd-text-primary: #292735;
+    --cd-text-secondary: #696572;
+    --cd-text-muted: #8d8993;
 
     /* Seed K product accents (ProductSwitcher / OsShell) */
     --os-yoyu: #129488;
@@ -396,7 +414,7 @@
 
     /* Routine / registration screens: solid readable surface (not frosted). */
     .cd-panel {
-        background-color: #fffcf8;
+        background-color: #ffffff;
         border: 1px solid var(--cd-line);
         border-radius: 1rem;
         box-shadow:
@@ -406,7 +424,7 @@
     }
 
     .cd-panel-muted {
-        background-color: hsl(40 30% 97%);
+        background-color: #ffffff;
         border: 1px solid var(--cd-line);
         border-radius: 0.75rem;
         color: var(--cd-ink);
@@ -622,21 +640,20 @@
 }
 
 /*
- * Clear Dawn sidebar gradient.
+ * Clear Dawn sidebar — original dawn gradient (deep purple → pale lavender).
  * Kept outside @layer so it wins over the `bg-sidebar` utility applied inside
  * the ui/sidebar component (which must not be modified directly).
  * Desktop: scoped by `.cd-sidebar` on <Sidebar> in AppSidebar.vue.
  * Mobile: SheetContent is teleported to <body>, so `.cd-sidebar` is not an
  * ancestor — match via `[data-mobile=true]:has(.cd-sidebar-panel)` instead.
- * Sidebar-scoped tokens are re-declared for readability on the dark gradient.
  */
 .cd-sidebar [data-sidebar='sidebar'],
 [data-sidebar='sidebar'][data-mobile='true']:has(.cd-sidebar-panel) {
-    --sidebar-foreground: hsl(256 30% 93%);
-    --sidebar-accent: hsl(0 0% 100% / 0.1);
-    --sidebar-accent-foreground: hsl(0 0% 100%);
-    --sidebar-border: hsl(0 0% 100% / 0.14);
-    --sidebar-ring: hsl(256 30% 80%);
+    --sidebar-foreground: var(--cd-sidebar-text);
+    --sidebar-accent: var(--cd-sidebar-hover-bg);
+    --sidebar-accent-foreground: var(--cd-sidebar-text);
+    --sidebar-border: var(--cd-sidebar-divider);
+    --sidebar-ring: var(--cd-primary);
     background:
         radial-gradient(
             ellipse 120% 40% at 50% 0%,
@@ -651,11 +668,10 @@
             var(--cd-dawn-soft) 72%,
             var(--cd-lavender-mist) 100%
         );
-    color: var(--sidebar-foreground);
+    color: var(--cd-sidebar-text);
 }
 
-/* Footer (user menu) sits on the pale lavender end of the gradient,
-   so its text and hover tokens flip to dark ink for readability. */
+/* Footer sits on the pale lavender end of the gradient. */
 .cd-sidebar [data-sidebar='footer'],
 [data-sidebar='sidebar'][data-mobile='true']:has(.cd-sidebar-panel)
     [data-sidebar='footer'] {
@@ -663,4 +679,90 @@
     --sidebar-accent: hsl(237 32% 16% / 0.08);
     --sidebar-accent-foreground: var(--cd-dawn-deep);
     color: var(--cd-dawn-deep);
+}
+
+.cd-sidebar .cd-sidebar-brand,
+.cd-sidebar .cd-sidebar-wordmark {
+    color: var(--cd-sidebar-text);
+}
+
+.cd-sidebar .cd-sidebar-nav-link {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--cd-sidebar-text-muted);
+}
+
+.cd-sidebar .cd-sidebar-nav-link svg {
+    color: var(--cd-sidebar-icon);
+}
+
+.cd-sidebar .cd-sidebar-nav-link:hover {
+    background: var(--cd-sidebar-hover-bg);
+    color: var(--cd-sidebar-text);
+}
+
+.cd-sidebar .cd-sidebar-nav-link:hover svg {
+    color: var(--cd-sidebar-text);
+}
+
+.cd-sidebar .cd-sidebar-nav-link.is-active {
+    border-color: var(--cd-sidebar-active-border);
+    background: var(--cd-sidebar-active-bg);
+    color: var(--cd-sidebar-text);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 4px 14px rgba(10, 10, 25, 0.14);
+}
+
+.cd-sidebar .cd-sidebar-nav-link.is-active svg {
+    color: var(--cd-sidebar-text);
+}
+
+.cd-sidebar .cd-sidebar-nav-link:focus-visible {
+    outline: 2px solid rgba(91, 85, 119, 0.45);
+    outline-offset: 2px;
+}
+
+/*
+ * Clear Dawn app header — translucent white over marble (recommendation A).
+ * Opaque controls keep text/actions readable without a solid purple bar.
+ */
+.cd-app-header {
+    background: var(--cd-header-bg);
+    border-bottom: 1px solid rgba(229, 223, 215, 0.65);
+    box-shadow: 0 1px 8px rgba(38, 34, 50, 0.03);
+    color: var(--cd-text-primary);
+}
+
+.cd-app-header .cd-app-header-title {
+    color: var(--cd-text-primary);
+}
+
+.cd-app-header .cd-header-control,
+.cd-app-header [data-test='product-switcher-trigger'],
+.cd-app-header [data-test='header-user-menu-button'] {
+    background: var(--cd-header-control-bg);
+    border: 1px solid var(--cd-header-border);
+    color: var(--cd-text-primary);
+    box-shadow:
+        0 1px 2px rgba(38, 34, 50, 0.03),
+        0 4px 12px rgba(38, 34, 50, 0.035);
+}
+
+.cd-app-header .cd-header-control:hover,
+.cd-app-header [data-test='product-switcher-trigger']:hover,
+.cd-app-header [data-test='header-user-menu-button']:hover {
+    border-color: rgba(91, 85, 119, 0.48);
+    background: #ffffff;
+}
+
+.cd-app-header .cd-header-control:focus-visible,
+.cd-app-header [data-test='product-switcher-trigger']:focus-visible,
+.cd-app-header [data-test='header-user-menu-button']:focus-visible {
+    outline: 2px solid rgba(91, 85, 119, 0.22);
+    outline-offset: 2px;
+}
+
+.cd-app-header .cd-header-divider {
+    background: var(--cd-header-border);
 }

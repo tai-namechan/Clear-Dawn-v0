@@ -38,14 +38,12 @@ const todayIso = [
 
 <template>
     <header
-        class="flex min-h-16 shrink-0 items-center justify-between gap-2 border-b border-sidebar-border/70 px-4 py-3 transition-[width,height] ease-linear landscape-compact:min-h-12 landscape-compact:py-2 md:border-sidebar-border/70 md:bg-transparent md:px-6 md:py-4 landscape-compact:md:py-2 max-md:border-primary max-md:bg-primary max-md:text-primary-foreground"
+        class="cd-app-header flex min-h-16 shrink-0 items-center justify-between gap-2 px-4 py-3 transition-[width,height] ease-linear landscape-compact:min-h-12 landscape-compact:py-2 md:px-6 md:py-4 landscape-compact:md:py-2"
     >
         <div class="flex min-w-0 flex-1 items-center gap-3 md:gap-4">
-            <SidebarTrigger
-                class="shrink-0 max-md:text-primary-foreground max-md:hover:bg-primary-foreground/10 max-md:hover:text-primary-foreground"
-            />
+            <SidebarTrigger class="shrink-0 text-cd-ink-muted hover:bg-muted/40 hover:text-cd-ink" />
             <h1
-                class="truncate font-serif text-[2rem] leading-none font-normal tracking-[0.16em] text-cd-dawn-deep landscape-compact:text-[1.5rem] landscape-compact:tracking-[0.12em] md:text-[2.5rem] landscape-compact:md:text-[1.65rem] max-md:text-primary-foreground"
+                class="cd-app-header-title truncate font-serif text-[2rem] leading-none font-normal tracking-[0.16em] landscape-compact:text-[1.5rem] landscape-compact:tracking-[0.12em] md:text-[2.5rem] landscape-compact:md:text-[1.65rem]"
             >
                 Clear Dawn
             </h1>
@@ -58,26 +56,29 @@ const todayIso = [
         <div class="flex shrink-0 items-center gap-2 md:gap-3">
             <div
                 v-if="onDashboard"
-                class="cd-frost hidden items-center gap-3 rounded-full border border-cd-line px-4 py-2 shadow-sm sm:flex landscape-compact:gap-2 landscape-compact:px-3 landscape-compact:py-1 md:gap-4 md:px-5"
+                class="cd-header-control hidden items-center gap-3 rounded-full px-4 py-2 sm:flex landscape-compact:gap-2 landscape-compact:px-3 landscape-compact:py-1 md:gap-4 md:px-5"
             >
                 <time
                     :datetime="todayIso"
-                    class="cursor-default font-serif text-base tracking-[0.12em] text-cd-ink lining-nums select-none landscape-compact:text-sm"
+                    class="cursor-default font-serif text-base tracking-[0.12em] text-[var(--cd-text-primary)] lining-nums select-none landscape-compact:text-sm"
                 >
                     {{ today }}
                 </time>
 
-                <div aria-hidden="true" class="cd-header-divider h-5 landscape-compact:h-4" />
+                <div
+                    aria-hidden="true"
+                    class="cd-header-divider h-5 landscape-compact:h-4"
+                />
 
                 <Link
                     :href="lifeAreasIndex()"
                     aria-label="領域管理"
-                    class="group inline-flex items-center gap-1.5 font-serif text-base tracking-[0.12em] text-cd-ink transition-colors hover:text-cd-dawn-deep landscape-compact:text-sm"
+                    class="group inline-flex items-center gap-1.5 font-serif text-base tracking-[0.12em] text-[var(--cd-text-primary)] transition-colors hover:text-[var(--cd-primary-strong)] landscape-compact:text-sm"
                 >
                     <SlidersHorizontal
                         :size="16"
                         :stroke-width="1.6"
-                        class="opacity-80 transition-opacity group-hover:opacity-100"
+                        class="text-[var(--cd-primary)] opacity-80 transition-opacity group-hover:opacity-100"
                         aria-hidden="true"
                     />
                     <span class="underline-offset-4 group-hover:underline">
@@ -86,7 +87,7 @@ const todayIso = [
                 </Link>
             </div>
 
-            <HeaderUserMenu compact primary-on-mobile />
+            <HeaderUserMenu compact />
         </div>
     </header>
 </template>
