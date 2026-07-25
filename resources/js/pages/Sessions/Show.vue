@@ -14,6 +14,7 @@ import {
 import { computed, ref, watch } from 'vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import SessionBlockLogger from '@/components/routine/SessionBlockLogger.vue';
+import SessionExerciseVideo from '@/components/routine/SessionExerciseVideo.vue';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/apiFetch';
 import {
@@ -561,33 +562,15 @@ const metrics = computed((): MetricChip[] => {
                     </div>
 
                     <div class="space-y-4 px-5 py-5">
-                        <div
-                            class="overflow-hidden rounded-2xl border border-cd-line bg-[#14131A] shadow-sm"
-                        >
-                            <div
-                                v-if="playbackLoading"
-                                class="flex aspect-video max-h-[min(42vh,22rem)] items-center justify-center font-sans text-sm text-white/70"
-                            >
-                                動画を読み込み中…
-                            </div>
-                            <video
-                                v-else-if="playbackUrl"
-                                :src="playbackUrl"
-                                class="aspect-video max-h-[min(42vh,22rem)] w-full bg-black object-contain"
-                                controls
-                                playsinline
-                            />
-                            <div
-                                v-else
-                                class="flex aspect-video max-h-[min(42vh,22rem)] items-center justify-center bg-[#1C1A24] px-6 text-center font-sans text-sm text-white/70"
-                            >
-                                {{
-                                    currentStep.video
-                                        ? '動画の準備ができていません'
-                                        : 'このステップには動画がありません'
-                                }}
-                            </div>
-                        </div>
+                        <SessionExerciseVideo
+                            :src="playbackUrl"
+                            :loading="playbackLoading"
+                            :empty-label="
+                                currentStep.video
+                                    ? '動画の準備ができていません'
+                                    : 'このステップには動画がありません'
+                            "
+                        />
 
                         <div
                             v-if="
@@ -617,6 +600,7 @@ const metrics = computed((): MetricChip[] => {
 
                         <SessionBlockLogger
                             v-if="trackingType && currentStep"
+                            class="lg:hidden"
                             :tracking-type="trackingType"
                             :target-blocks="targetBlocks"
                             :completed-logs="currentStep.block_logs ?? []"
@@ -651,14 +635,15 @@ const metrics = computed((): MetricChip[] => {
                         ステップ一覧（{{ steps.length }}）
                     </div>
 
-                    <ul class="max-h-[min(50vh,420px)] overflow-y-auto">
+                    <ul class="max-h-[min(70vh,720px)] overflow-y-auto">
                         <li
                             v-for="(step, index) in steps"
                             :key="step.id"
+                            class="border-b border-cd-line/40 last:border-b-0"
                         >
                             <button
                                 type="button"
-                                class="flex w-full items-start gap-3 border-b border-cd-line/40 px-4 py-3 text-left transition-colors last:border-b-0"
+                                class="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors"
                                 :class="
                                     index === currentIndex
                                         ? 'bg-primary/10'
@@ -716,6 +701,33 @@ const metrics = computed((): MetricChip[] => {
                                     {{ index + 1 }}
                                 </span>
                             </button>
+
+                            <div
+                                v-if="
+                                    index === currentIndex &&
+                                    trackingType &&
+                                    currentStep &&
+                                    !isSessionFinished
+                                "
+                                class="hidden border-t border-cd-line/40 bg-white/70 px-3 py-3 lg:block"
+                            >
+                                <SessionBlockLogger
+                                    :tracking-type="trackingType"
+                                    :target-blocks="targetBlocks"
+                                    :completed-logs="
+                                        currentStep.block_logs ?? []
+                                    "
+                                    :load-unit="currentStep.load_unit"
+                                    :amount-unit="currentStep.amount_unit"
+                                    :default-load="currentStep.target_load"
+                                    :default-amount="
+                                        currentStep.target_amount
+                                    "
+                                    :logging="logging"
+                                    @log="logBlock"
+                                    @unlog="unlogBlock"
+                                />
+                            </div>
                         </li>
                     </ul>
 
