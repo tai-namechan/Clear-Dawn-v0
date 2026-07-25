@@ -113,6 +113,20 @@ class RoutinesHubTabsContractTest extends TestCase
         );
     }
 
+    public function test_programs_index_includes_hub_tabs(): void
+    {
+        $absolute = base_path('resources/js/pages/Programs/Index.vue');
+        $this->assertFileExists($absolute);
+        $source = file_get_contents($absolute);
+        $this->assertNotFalse($source);
+
+        $this->assertStringContainsString(
+            'RoutinesHubTabs',
+            $source,
+            'Programs index is a hub destination and must show the same underline hub tabs on mobile and PC',
+        );
+    }
+
     private function componentSource(): string
     {
         $absolute = base_path('resources/js/components/routine/RoutinesHubTabs.vue');
