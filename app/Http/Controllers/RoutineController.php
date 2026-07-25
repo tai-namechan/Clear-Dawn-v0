@@ -49,7 +49,7 @@ class RoutineController extends Controller
         $history = $historyQuery->handle($user, [], 8);
 
         $tab = match ($request->query('tab')) {
-            'menu' => 'menu',
+            'menu', 'routines' => 'routines',
             'history' => 'history',
             default => 'today',
         };

@@ -45,7 +45,7 @@ import type { TodayOps } from '@/types/todayOps';
 
 interface Props {
     date: string;
-    tab: 'today' | 'menu' | 'history';
+    tab: 'today' | 'routines' | 'history';
     plans: RoutinePlan[];
     routines: Routine[];
     ops: TodayOps;
@@ -56,7 +56,7 @@ const props = defineProps<Props>();
 
 const viewTabs = [
     { id: 'today', label: '今日' },
-    { id: 'menu', label: 'メニュー' },
+    { id: 'routines', label: 'ルーティン' },
     { id: 'history', label: '履歴' },
 ];
 
@@ -234,7 +234,11 @@ const heroIcon = computed(() => {
 function onTabChange(tab: string): void {
     activeTab.value = tab;
     const query =
-        tab === 'today' ? {} : tab === 'menu' ? { tab: 'menu' } : { tab: 'history' };
+        tab === 'today'
+            ? {}
+            : tab === 'routines'
+              ? { tab: 'routines' }
+              : { tab: 'history' };
 
     router.get('/routines', query, {
         preserveState: true,
@@ -243,8 +247,8 @@ function onTabChange(tab: string): void {
     });
 }
 
-function openMenuTab(): void {
-    onTabChange('menu');
+function openRoutinesTab(): void {
+    onTabChange('routines');
 }
 
 async function startOrOpenPrimary(): Promise<void> {
@@ -350,11 +354,24 @@ function historyDescription(log: ActivityLog): string {
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4">
             <PageSectionCard>
-                <PageTitleOrnament
-                    title="ルーティン"
-                    subtitle="今日やるセッションを最初に。メニューと履歴はここから。"
-                    align="left"
-                />
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <PageTitleOrnament
+                        title="ルーティン"
+                        subtitle="今日やるセッションを最初に。ルーティンと履歴はここから。"
+                        align="left"
+                    />
+                    <Button
+                        type="button"
+                        variant="outline"
+                        class="mt-1 shrink-0 font-sans"
+                        as-child
+                    >
+                        <Link href="/programs">
+                            <Dumbbell :size="16" :stroke-width="1.6" />
+                            プログラム
+                        </Link>
+                    </Button>
+                </div>
                 <div class="mt-5">
                     <PageViewTabs
                         :model-value="activeTab"
@@ -585,16 +602,16 @@ function historyDescription(log: ActivityLog): string {
                             <p
                                 class="max-w-sm font-sans text-sm text-cd-ink-muted"
                             >
-                                メニューから選ぶか、新しく作って今日に追加できます。
+                                ルーティンから選ぶか、新しく作って今日に追加できます。
                             </p>
                         </div>
                         <div class="flex flex-wrap justify-center gap-2">
-                            <Button type="button" @click="openMenuTab">
-                                メニューから選ぶ
+                            <Button type="button" @click="openRoutinesTab">
+                                ルーティンから選ぶ
                             </Button>
                             <Button type="button" variant="outline" as-child>
                                 <Link href="/routines/create">
-                                    メニューを作る
+                                    ルーティンを作る
                                 </Link>
                             </Button>
                         </div>
@@ -608,33 +625,33 @@ function historyDescription(log: ActivityLog): string {
                     <button
                         type="button"
                         class="inline-flex items-center gap-1.5 text-primary underline-offset-2 hover:underline"
-                        @click="openMenuTab"
+                        @click="openRoutinesTab"
                     >
                         <Pencil :size="14" :stroke-width="1.6" />
-                        メニューを編集
+                        ルーティンを編集
                     </button>
                     <span class="ml-2">テンプレートの追加・編集はこちらから。</span>
                 </p>
             </div>
 
-            <!-- メニュー -->
+            <!-- ルーティン（テンプレ一覧） -->
             <div
-                v-show="activeTab === 'menu'"
-                id="panel-menu"
+                v-show="activeTab === 'routines'"
+                id="panel-routines"
                 role="tabpanel"
-                aria-labelledby="tab-menu"
+                aria-labelledby="tab-routines"
                 class="flex flex-col gap-4"
             >
                 <div class="flex justify-end">
                     <Button type="button" as-child>
                         <Link href="/routines/create">
                             <Plus :size="16" :stroke-width="1.8" />
-                            メニューを作る
+                            ルーティンを作る
                         </Link>
                     </Button>
                 </div>
 
-                <PageSectionCard padding="none" aria-label="メニュー一覧">
+                <PageSectionCard padding="none" aria-label="ルーティン一覧">
                     <ul v-if="routines.length > 0" class="flex flex-col">
                         <li
                             v-for="routine in routines"
@@ -734,7 +751,7 @@ function historyDescription(log: ActivityLog): string {
                             <p
                                 class="font-sans text-base font-semibold text-cd-ink"
                             >
-                                まだメニューがありません
+                                まだルーティンがありません
                             </p>
                             <p
                                 class="max-w-sm font-sans text-sm text-cd-ink-muted"
@@ -745,7 +762,7 @@ function historyDescription(log: ActivityLog): string {
                         <Button type="button" as-child>
                             <Link href="/routines/create">
                                 <Plus :size="16" :stroke-width="1.8" />
-                                メニューを作る
+                                ルーティンを作る
                             </Link>
                         </Button>
                     </div>

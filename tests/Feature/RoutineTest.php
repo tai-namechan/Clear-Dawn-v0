@@ -123,18 +123,26 @@ class RoutineTest extends TestCase
             );
     }
 
-    public function test_index_accepts_menu_tab_query(): void
+    public function test_index_accepts_routines_tab_query(): void
     {
         $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('routines.index', ['tab' => 'routines']))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Routines/Index')
+                ->where('tab', 'routines')
+                ->has('ops')
+                ->has('history')
+            );
 
         $this->actingAs($user)
             ->get(route('routines.index', ['tab' => 'menu']))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Routines/Index')
-                ->where('tab', 'menu')
-                ->has('ops')
-                ->has('history')
+                ->where('tab', 'routines')
             );
     }
 
