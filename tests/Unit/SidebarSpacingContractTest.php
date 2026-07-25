@@ -108,9 +108,19 @@ class SidebarSpacingContractTest extends TestCase
             'Clear Dawn wordmark needs space under the CD monogram',
         );
         $this->assertStringContainsString(
-            'flex w-full flex-row items-center gap-2',
+            'justify-center overflow-visible landscape-compact:justify-start',
             $source,
-            'Nav items keep icon and label on one horizontal row',
+            'Tall desktops should vertically center the nav block instead of packing it under the logo',
+        );
+        $this->assertStringContainsString(
+            'gap-5 group-data-[collapsible=icon]:mt-8',
+            $source,
+            'Desktop nav item gaps need room so the cluster does not look crushed',
+        );
+        $this->assertStringContainsString(
+            'landscape-compact:mt-10 landscape-compact:gap-2',
+            $source,
+            'iPad landscape compact mode must keep usable brand-to-nav breathing room',
         );
         $this->assertStringNotContainsString(
             'cd-mask-violin',
@@ -118,14 +128,14 @@ class SidebarSpacingContractTest extends TestCase
             'Sidebar violin decoration is retired',
         );
         $this->assertStringNotContainsString(
-            'flex w-24 flex-col items-center',
+            'mt-24 flex flex-col items-center gap-3',
             $source,
-            'Regression guard: vertical stacked nav chips are retired',
+            'Regression guard: previous desktop top pack felt cramped on tall laptops',
         );
-        $this->assertStringContainsString(
-            'justify-center overflow-visible landscape-compact:justify-start',
+        $this->assertStringNotContainsString(
+            'landscape-compact:mt-6 landscape-compact:gap-1.5',
             $source,
-            'Tall desktops should vertically center the nav block instead of packing it under the logo',
+            'Regression guard: previous iPad compact packing crushed the top of the sidebar',
         );
     }
 
