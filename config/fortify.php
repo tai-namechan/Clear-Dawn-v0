@@ -163,7 +163,15 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // 公開登録は APP_PUBLIC_SIGNUP_ENABLED でルートごと止める。
+        // ここを無条件 Features::registration() にすると、フラグを false に
+        // しても UI からリンクが消えるだけで POST /register は稼働し続ける
+        // （docs/audit/2026-07-26-pre-release-audit.md C-2）。
+        // 「UI に出さない」と「機能を止める」は別物として扱う。
+        ...(config('app.public_signup_enabled') ? [Features::registration()] : []),
+
+        // パスワード再設定は「既存ユーザーの復旧手段」であり、
+        // 新規登録の可否とは無関係。公開登録を閉じても常に有効にする。
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([

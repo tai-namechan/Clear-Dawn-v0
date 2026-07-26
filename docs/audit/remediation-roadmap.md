@@ -115,8 +115,21 @@ Claude Code からは参照されない。**規約の半分がツールによっ
 | `app/Models/User.php` | `MustVerifyEmail` を実装。`verified` ミドルウェアが実際のゲートになる |
 | `database/migrations/..._backfill_email_verified_at_for_existing_users.php` | 既存ユーザーの `email_verified_at` を `created_at` でバックフィル（ロックアウト防止） |
 | `config/fortify.php` | `Features::registration()` を `public_signup_enabled` で条件化 |
+| `routes/web.php` / `FortifyServiceProvider.php` | **C-2b**: パスワード再設定を公開登録フラグから分離 |
+| `phpunit.xml` | `APP_PUBLIC_SIGNUP_ENABLED=true` を明示（未設定だと登録系テストが全 skip する） |
 | `tests/Feature/Auth/EmailVerificationTest.php` | 未検証ユーザーが保護ルートで弾かれることを検証（従来欠けていた本質的なケース） |
-| `tests/Feature/Auth/RegistrationTest.php` | フラグ false で登録ルートが 404 になることを検証 |
+| `tests/Feature/Auth/ClosedSignupTest.php` | 新規。フラグ false で登録が 404、再設定とログインは生存 |
+| `tests/Feature/Kioku/MemoryTagsUpdateTest.php` | 「MustVerifyEmail 実装後にカバーされる」と自らコメントしていた箇所を実際の検証に更新 |
+
+### phpunit.xml に `APP_PUBLIC_SIGNUP_ENABLED=true` を足した理由
+
+`tests/TestCase.php::skipUnlessFortifyHas()` は機能が無効なら `markTestSkipped()` する。
+フラグを未設定（= false）のままにすると、**既存の登録系テストが全て skip され、
+「緑だが何も検証していない」状態**になる。これは監査で指摘した
+「通っているのに守れていないテスト」（C-1 の `EmailVerificationTest`）と同じ失敗である。
+
+そのためテスト既定は `true`（登録系テストが実際に走る）とし、
+フラグ false の挙動は `ClosedSignupTest` がアプリ生成前に環境変数を差し替えて個別に検証する。
 
 ### 既存ユーザーへの影響（意図的な配慮）
 

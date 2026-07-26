@@ -165,6 +165,31 @@ Fortify はこの `features` 配列を見てルートを登録するため、**�
 `APP_PUBLIC_SIGNUP_ENABLED=false` で `POST /register` が 404 になること、
 `true` で従来どおり登録できることの両方をテストで固定する。
 
+#### 派生指摘 C-2b: パスワード再設定が公開登録フラグに巻き込まれている
+
+修正作業中に発見した関連バグ。
+
+`routes/web.php:78` および `app/Providers/FortifyServiceProvider.php:53` は
+
+```php
+'canResetPassword' => config('app.public_signup_enabled') && Features::enabled(Features::resetPasswords()),
+```
+
+としており、**公開登録を閉じるとパスワード再設定リンクも UI から消えていた**。
+
+パスワード再設定は「既に登録されているユーザーの復旧手段」であり、
+「新規ユーザーを受け入れるか」とは何の関係もない。
+招待制運用（`public_signup_enabled=false`）にした瞬間、
+**既存ユーザーがパスワードを忘れると自力で復旧できなくなる**。
+
+ルート自体は生きているため URL を直接知っていれば到達できるが、
+UI からの導線が消えるため実質的に使えない。
+
+**あるべき姿**: 2つのフラグを分離する。登録は `public_signup_enabled` で制御し、
+パスワード再設定は常に有効。
+
+**修正で得られるもの**: 招待制運用でも既存ユーザーがパスワードを自力で復旧できる。
+
 ---
 
 ### C-3. Money CSV インポートが Laravel Cloud で構造的に動作しない

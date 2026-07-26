@@ -107,10 +107,25 @@ class MemoryTagsUpdateTest extends TestCase
         $this->assertContains('auth', $middleware);
         $this->assertContains('verified', $middleware);
 
-        // User does not implement MustVerifyEmail, so EnsureEmailIsVerified is
-        // currently a no-op (same as other Kioku routes). Keep the middleware
-        // registered so enabling MustVerifyEmail later covers this endpoint.
-        $user = User::factory()->unverified()->create();
+        // User が MustVerifyEmail を実装したことで、ここに登録された 'verified' が
+        // 実際のゲートとして機能するようになった（監査 C-1）。
+        // 未検証ユーザーは弾かれ、検証済みユーザーだけが更新できる。
+        $unverified = User::factory()->unverified()->create();
+        $unverifiedMemory = Memory::factory()->create([
+            'user_id' => $unverified->id,
+            'tags' => ['検証前'],
+            'status' => 'ready',
+        ]);
+
+        $this->actingAs($unverified)
+            ->put(route('kioku.memories.tags.update', $unverifiedMemory), [
+                'tags' => ['変更されないはず'],
+            ])
+            ->assertRedirect(route('verification.notice'));
+
+        $this->assertSame(['検証前'], $unverifiedMemory->fresh()->tags);
+
+        $user = User::factory()->create();
         $memory = Memory::factory()->create([
             'user_id' => $user->id,
             'tags' => ['検証前'],
