@@ -18,6 +18,10 @@ import {
     routineItemCategoryLabels,
     trackingTypeLabels,
 } from '@/lib/routineConstants';
+import {
+    categoryHeaderClasses,
+    categoryNameClasses,
+} from '@/lib/routineItemCategoryColors';
 import type {
     RoutineItem,
     RoutineItemCategory,
@@ -162,7 +166,8 @@ async function deleteItem(item: RoutineItem): Promise<void> {
                     :aria-label="group.label"
                 >
                     <h2
-                        class="border-b border-cd-line px-5 py-4 font-sans text-base font-semibold text-cd-ink"
+                        class="border-b px-5 py-4 font-sans text-base font-semibold"
+                        :class="categoryHeaderClasses(group.category)"
                     >
                         {{ group.label }}
                     </h2>
@@ -179,7 +184,10 @@ async function deleteItem(item: RoutineItem): Promise<void> {
                                     class="group flex items-center gap-1"
                                 >
                                     <p
-                                        class="inline-block max-w-full truncate rounded-md bg-primary/8 px-2 py-0.5 font-sans text-base font-semibold text-cd-ink group-hover:bg-primary/12 group-hover:text-primary"
+                                        class="inline-block max-w-full truncate rounded-md px-2 py-0.5 font-sans text-base font-semibold"
+                                        :class="
+                                            categoryNameClasses(group.category)
+                                        "
                                     >
                                         {{ item.name }}
                                     </p>

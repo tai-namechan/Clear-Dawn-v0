@@ -5,7 +5,7 @@ namespace Tests\Unit;
 use Tests\TestCase;
 
 /**
- * Prove category cards sit four-across; items inside each card stay vertical.
+ * Prove category cards sit four-across; headers and item names use vivid colors.
  */
 class RoutineItemsIndexLayoutContractTest extends TestCase
 {
@@ -34,9 +34,54 @@ class RoutineItemsIndexLayoutContractTest extends TestCase
             'Regression guard: items themselves must not use the four-column grid',
         );
         $this->assertStringContainsString(
-            'inline-block max-w-full truncate rounded-md bg-primary/8 px-2 py-0.5',
+            'categoryHeaderClasses(group.category)',
             $source,
-            'Item names get a soft background chip; the rest of the row stays plain',
+            'Category headers (筋力 / 野球 …) must take a solid category color',
+        );
+        $this->assertStringContainsString(
+            'categoryNameClasses(group.category)',
+            $source,
+            'Item names must use a different vivid chip color from the header',
+        );
+        $this->assertStringNotContainsString(
+            'bg-primary/8',
+            $source,
+            'Subtle primary tint alone is not enough for the requested flashy headers/names',
+        );
+    }
+
+    public function test_category_color_map_separates_header_and_name(): void
+    {
+        $source = $this->componentSource(
+            'resources/js/lib/routineItemCategoryColors.ts',
+        );
+
+        foreach ([
+            'strength',
+            'baseball',
+            'mobility',
+            'care',
+            'music',
+            'study',
+            'life',
+            'other',
+        ] as $category) {
+            $this->assertMatchesRegularExpression(
+                '/'.$category.':\s*\{\s*header:\s*\'[^\']+\'\s*,\s*name:\s*\'[^\']+\'/',
+                $source,
+                "Category {$category} needs distinct header and name color classes",
+            );
+        }
+
+        $this->assertStringContainsString(
+            'bg-rose-600 text-white',
+            $source,
+            'Strength header should be a solid flashy fill',
+        );
+        $this->assertStringContainsString(
+            'bg-orange-400 text-orange-950',
+            $source,
+            'Strength item names should use a different vivid chip than the header',
         );
     }
 
