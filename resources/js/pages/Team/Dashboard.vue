@@ -119,12 +119,30 @@ const cards = computed<SummaryCard[]>(() => [
             <section
                 class="rounded-xl border border-slate-200 bg-white p-5 xl:col-span-2"
             >
-                <h2 class="font-semibold">今日の実施状況</h2>
-                <div
-                    class="mt-8 rounded-lg bg-slate-50 p-8 text-center text-sm text-slate-500"
-                >
-                    デモ記録の集計は選手一覧から確認できます。
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h2 class="font-semibold">プロトタイプで確認できること</h2>
+                    <span
+                        class="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700"
+                    >
+                        ローカルレビュー版
+                    </span>
                 </div>
+                <ul
+                    class="mt-5 grid gap-3 text-sm text-slate-600 sm:grid-cols-2"
+                >
+                    <li class="rounded-lg bg-slate-50 p-3">
+                        チーム専用ログインと個人版セッションの分離
+                    </li>
+                    <li class="rounded-lg bg-slate-50 p-3">
+                        所属中の選手だけを対象にした一覧・検索
+                    </li>
+                    <li class="rounded-lg bg-slate-50 p-3">
+                        7日間の練習・食事記録の集計
+                    </li>
+                    <li class="rounded-lg bg-slate-50 p-3">
+                        安全な要約だけを表示する選手詳細
+                    </li>
+                </ul>
             </section>
             <section class="rounded-xl border border-slate-200 bg-white p-5">
                 <h2 class="font-semibold">要確認</h2>

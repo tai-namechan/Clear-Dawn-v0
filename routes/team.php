@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::domain(config('app.team_domain'))->name('team.')->group(function (): void {
     Route::get('/login', [TeamAuthController::class, 'create'])->name('login');
-    Route::get('/auth/google', [TeamAuthController::class, 'redirect'])->name('auth.google');
-    Route::get('/auth/google/callback', [TeamAuthController::class, 'callback'])->name('auth.google.callback');
+    Route::get('/auth/google', [TeamAuthController::class, 'redirect'])->middleware('throttle:20,1')->name('auth.google');
+    Route::get('/auth/google/callback', [TeamAuthController::class, 'callback'])->middleware('throttle:20,1')->name('auth.google.callback');
 
     if (app()->isLocal()) {
         Route::post('/demo-login', function (Request $request) {
@@ -19,7 +19,7 @@ Route::domain(config('app.team_domain'))->name('team.')->group(function (): void
             $request->session()->regenerate();
 
             return redirect()->route('team.home');
-        })->name('demo.login');
+        })->middleware('throttle:10,1')->name('demo.login');
     }
 
     Route::middleware('team.auth')->group(function (): void {

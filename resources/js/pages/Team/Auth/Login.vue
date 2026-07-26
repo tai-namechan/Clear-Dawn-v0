@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ShieldCheck, Users } from '@lucide/vue';
-defineProps<{ googleEnabled: boolean; demoEnabled: boolean }>();
+defineProps<{
+    googleEnabled: boolean;
+    demoEnabled: boolean;
+    errors?: { google?: string };
+}>();
 </script>
 <template>
     <div class="flex min-h-screen items-center justify-center bg-slate-50 px-4">
@@ -26,6 +30,13 @@ defineProps<{ googleEnabled: boolean; demoEnabled: boolean }>();
                 コーチ・管理者・専門スタッフ専用です。選手本人のClear
                 Dawnアカウントとは分離されています。
             </p>
+            <div
+                v-if="errors?.google"
+                role="alert"
+                class="mt-5 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+            >
+                {{ errors.google }}
+            </div>
             <Link
                 v-if="googleEnabled"
                 href="/auth/google"

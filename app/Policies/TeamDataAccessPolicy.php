@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\TeamMembershipRole;
 use App\Models\Team;
 use App\Models\TeamUser;
 use App\Models\User;
@@ -14,7 +15,7 @@ class TeamDataAccessPolicy
             ->where('member_type', 'team_user')
             ->where('member_id', $actor->id)
             ->where('status', 'active')
-            ->whereIn('role', ['owner', 'admin', 'head_coach', 'coach', 'nutrition_staff', 'conditioning_staff'])
+            ->whereIn('role', TeamMembershipRole::staffValues())
             ->exists();
     }
 

@@ -16,4 +16,13 @@ enum TeamMembershipRole: string
     {
         return $this !== self::Athlete;
     }
+
+    /** @return list<string> */
+    public static function staffValues(): array
+    {
+        return array_values(array_map(
+            fn (self $role): string => $role->value,
+            array_filter(self::cases(), fn (self $role): bool => $role->isStaff()),
+        ));
+    }
 }

@@ -21,6 +21,10 @@ const team = computed(() => (page.props as TeamProps).team);
 const actor = computed(() => (page.props as TeamProps).actor);
 const open = ref(false);
 
+function isActive(href: string): boolean {
+    return href !== '#' && page.url.startsWith(href);
+}
+
 const items = computed(() =>
     team.value
         ? [
@@ -113,7 +117,9 @@ function logout(): void {
                     :class="
                         item.disabled
                             ? 'cursor-not-allowed text-slate-300'
-                            : 'text-slate-600 hover:bg-violet-50 hover:text-violet-700'
+                            : isActive(item.href)
+                              ? 'bg-violet-50 text-violet-700'
+                              : 'text-slate-600 hover:bg-violet-50 hover:text-violet-700'
                     "
                     @click="open = false"
                     ><component :is="item.icon" :size="18" />{{ item.label

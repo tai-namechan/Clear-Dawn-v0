@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Team;
 
+use App\Enums\TeamMembershipRole;
 use App\Http\Controllers\Controller;
 use App\Models\TeamInvitation;
 use App\Models\TeamMembership;
@@ -43,21 +44,40 @@ class TeamAuthController extends Controller
         }
 
         $subject = (string) $oauthUser->getId();
-        $email = (string) $oauthUser->getEmail();
+        $email = mb_strtolower(trim((string) $oauthUser->getEmail()));
         $verified = filter_var($oauthUser->user['email_verified'] ?? false, FILTER_VALIDATE_BOOL);
         abort_if($subject === '' || $email === '' || ! $verified, 403, '確認済みGoogleアカウントが必要です。');
 
-        $teamUser = DB::transaction(function () use ($oauthUser, $subject, $email): TeamUser {
-            $teamUser = TeamUser::query()->updateOrCreate(['google_subject' => $subject], ['email' => $email, 'name' => (string) $oauthUser->getName(), 'avatar_url' => $oauthUser->getAvatar(), 'last_authenticated_at' => now()]);
-            $invitation = TeamInvitation::query()->where('invitee_type', 'team_user')->where('email', $email)->whereNull('accepted_at')->where('expires_at', '>', now())->lockForUpdate()->first();
+        $teamUser = DB::transaction(function () use ($oauthUser, $subject, $email): ?TeamUser {
+            $teamUser = TeamUser::query()->where('google_subject', $subject)->lockForUpdate()->first();
+            $invitation = TeamInvitation::query()->where('invitee_type', 'team_user')->whereRaw('LOWER(email) = ?', [$email])->whereNull('accepted_at')->where('expires_at', '>', now())->lockForUpdate()->first();
+
+            if ($teamUser === null && $invitation === null) {
+                return null;
+            }
+
+            $teamUser ??= new TeamUser(['google_subject' => $subject]);
+            $teamUser->fill(['email' => $email, 'name' => (string) $oauthUser->getName(), 'avatar_url' => $oauthUser->getAvatar(), 'last_authenticated_at' => now(), 'status' => 'active'])->save();
 
             if ($invitation !== null) {
                 TeamMembership::query()->firstOrCreate(['team_id' => $invitation->team_id, 'member_type' => 'team_user', 'member_id' => $teamUser->id, 'role' => $invitation->role], ['status' => 'active', 'joined_at' => now(), 'invited_by_team_user_id' => $invitation->invited_by_team_user_id]);
                 $invitation->update(['accepted_at' => now(), 'accepted_member_type' => 'team_user', 'accepted_member_id' => $teamUser->id]);
             }
 
-            return $teamUser;
+            $hasActiveTeam = TeamMembership::query()
+                ->where('member_type', 'team_user')
+                ->where('member_id', $teamUser->id)
+                ->where('status', 'active')
+                ->whereIn('role', TeamMembershipRole::staffValues())
+                ->whereHas('team', fn ($query) => $query->where('status', 'active'))
+                ->exists();
+
+            return $hasActiveTeam ? $teamUser : null;
         });
+
+        if ($teamUser === null) {
+            return redirect()->route('team.login')->withErrors(['google' => '有効なチーム招待または所属が見つかりませんでした。管理者へ確認してください。']);
+        }
 
         Auth::guard('team')->login($teamUser);
         $request->session()->regenerate();
