@@ -48,18 +48,12 @@ const showAvatar = computed(
                 ]"
                 :aria-label="`${user.name} のメニュー`"
             >
-                <span
-                    class="inline-flex items-center justify-center rounded-lg bg-muted text-cd-ink md:hidden"
-                    :class="[
-                        compact ? 'size-7' : 'size-8',
-                        primaryOnMobile
-                            ? 'max-md:bg-primary-foreground/15 max-md:text-primary-foreground'
-                            : undefined,
-                    ]"
+                <User
+                    class="shrink-0 md:hidden"
+                    :size="compact ? 18 : 20"
+                    :stroke-width="2.2"
                     aria-hidden="true"
-                >
-                    <User :size="compact ? 16 : 18" :stroke-width="1.6" />
-                </span>
+                />
                 <Avatar
                     class="hidden overflow-hidden rounded-lg md:flex"
                     :class="compact ? 'h-7 w-7' : 'h-8 w-8'"

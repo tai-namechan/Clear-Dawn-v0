@@ -5,11 +5,11 @@ namespace Tests\Unit;
 use Tests\TestCase;
 
 /**
- * Prove header user control collapses to an avatar on phone widths.
+ * Prove header user control collapses to a person icon on phone widths.
  */
 class HeaderUserMenuContractTest extends TestCase
 {
-    public function test_mobile_header_shows_avatar_without_username(): void
+    public function test_mobile_header_shows_person_icon_without_username(): void
     {
         $source = $this->componentSource(
             'resources/js/components/HeaderUserMenu.vue',
@@ -26,14 +26,19 @@ class HeaderUserMenuContractTest extends TestCase
             'Chevron beside the username must also hide on mobile',
         );
         $this->assertStringContainsString(
-            'inline-flex items-center justify-center rounded-lg bg-muted text-cd-ink md:hidden',
+            'class="shrink-0 md:hidden"',
             $source,
-            'Mobile trigger uses the shared person icon instead of initials',
+            'Mobile trigger uses the person icon alone inside the header control pill',
         );
         $this->assertStringContainsString(
-            '<User :size="compact ? 16 : 18" :stroke-width="1.6" />',
+            ':stroke-width="2.2"',
             $source,
-            'Lucide User silhouette is the mobile account affordance',
+            'Person icon stroke must stay heavy enough on the translucent header control',
+        );
+        $this->assertStringNotContainsString(
+            'bg-muted text-cd-ink md:hidden',
+            $source,
+            'Nested white chip made the light icon unreadable on the mobile header control',
         );
         $this->assertStringContainsString(
             ':aria-label="`${user.name} のメニュー`"',
