@@ -35,8 +35,8 @@ class EnsureDefaultRuleDefinitionsService
             [
                 'key' => 'calibration_period',
                 'kind' => RuleDefinitionKind::EvidenceRule,
-                'title' => '較正期間中',
-                'description' => 'ベースライン sample_count が 28 未満のときは警告系カードを出さず「較正中」と表示する。',
+                'title' => '個人の基準づくりの期間です',
+                'description' => 'ベースライン sample_count が 28 未満のときは警告系カードを出さず、個人の基準がまだ固まっていない旨を表示する。',
                 'params' => ['min_samples' => 28],
                 'is_hard_gate' => false,
                 'confidence' => 0.8,
