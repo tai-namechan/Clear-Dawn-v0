@@ -179,19 +179,62 @@ Claude Code からは参照されない。**規約の半分がツールによっ
 
 - **ナビゲーション UI に触れただけで課金・書き込みが起きなくなる**
 - **音声文字起こしの滞留が自動復旧する**（ユーザーが問い合わせる前に直る）
+- 定期キャッシュフローの生成が「ダッシュボードを見たかどうか」に依存しなくなる
 - 単一ユーザーによる AI クォータ枯渇が緩和される
-- 「うっかり書いた1行が全ユーザーのデータを返す」事故が構造的に起きなくなる
 - AI 課金計算の静かなズレが検知可能になる
+
+H-4（テナントスコープのフェイルクローズ化）は**このフェーズでは実施していない**。
+理由は下記「H-4 を見送った理由」を参照。
 
 ### 変更内容
 
-| ID | 対象 | 変更 |
-| --- | --- | --- |
-| H-1 | `OsSidebar.vue` / `ProductSwitcher.vue` | 副作用を持つルートから prefetch を除去 |
-| H-2 | `routes/console.php` | 未配線コマンド4件を登録（`withoutOverlapping()` + `onOneServer()` 付き） |
-| H-3 | `routes/yoyu.php` | `/chat` に `throttle:20,1`、`/briefing` に `throttle:10,1` |
-| H-4 | `BelongsToUser` | 認証不在時をフェイルクローズ化（`whereRaw('1 = 0')`） |
-| H-5 | `config/ai.php` `.env.example` | 既定モデルを現行世代へ更新。価格表フォールバック時に警告ログ |
+| ID | 対象 | 変更 | 状態 |
+| --- | --- | --- | --- |
+| H-1 | `OsSidebar.vue` / `ProductSwitcher.vue` | 副作用を持つルートから prefetch を除去 | 一部（下記） |
+| H-2 | `routes/console.php` | 未配線コマンド4件を登録（`withoutOverlapping()` + `onOneServer()` 付き） | 完了 |
+| H-3 | `routes/yoyu.php` | `/chat` に `throttle:20,1`、`/briefing` に `throttle:10,1` | 完了 |
+| H-4 | `BelongsToUser` | フェイルクローズ化 | **見送り（Phase 6 へ）** |
+| H-5 | `config/ai.php` `.env.example` `AiCostCalculator` | 既定モデルを現行世代へ更新。価格表フォールバック時に警告ログ | 完了 |
+
+### H-4 を見送った理由（重要）
+
+当初フェイルクローズ化（`Auth::id()` が null なら `whereRaw('1 = 0')`）を実装したが、
+**呼び出し側の調査で、現状のまま切り替えると実害の大きい退行を生むことが判明したため revert した。**
+
+ジョブ／コマンドから到達する以下の経路が、グローバルスコープが no-op であることに
+暗黙的に依存していた（明示的な `user_id` 条件は持つが `withoutUserScope()` を呼んでいない）。
+
+| 経路 | 切り替えた場合に起きること |
+| --- | --- |
+| `KiokuConciergePilotService:84`<br>`KiokuConciergeSchedule::query()->updateOrCreate(['user_id' => ...])` | 既存行が引けず、実行のたびにスケジュールを**重複作成**する |
+| `CachedGoogleCalendarProvider:87`<br>（`GenerateYoyuBriefingJob` から到達） | キャッシュ済みカレンダー予定が 0 件になり、**ブリーフィングから予定が黙って消える** |
+| `KiokuLetterGenerator` の dedupe 再取得経路 | 重複判定が壊れる |
+
+**防ごうとしている事故より大きな障害を作ることになる。**
+
+正しい順序は次のとおりで、Phase 6 で実施する。
+
+1. 上記を含む23箇所（`app/Domain` / `app/Services` 配下でスコープ対象モデルを
+   `withoutUserScope()` なしにクエリしている箇所）に、明示的な `withoutUserScope()` と
+   `user_id` 条件を入れ切る
+2. その状態で全テストが緑であることを CI で確認する
+3. しかるのち `BelongsToUser` をフェイルクローズへ切り替える
+
+該当箇所の洗い出しには次のスクリプトが使える（本監査で使用したもの）。
+
+```
+app/Domain/Connectors/Calendar/CachedGoogleCalendarProvider.php:87
+app/Domain/Kioku/Services/CaptureMemoryService.php:47,102,115
+app/Domain/Kioku/Services/KiokuConciergePilotService.php:84
+app/Domain/Kioku/Services/KiokuContextBuilder.php:325
+app/Domain/Kioku/Services/KiokuLetterEvaluationService.php:101,248
+app/Domain/Kioku/Services/KiokuLetterGenerator.php:226,281,310
+app/Domain/Kioku/Services/RelatedMemoryService.php:40,47,64
+app/Domain/Yoyu/Services/EnsureTodayBriefingService.php:34,47,96,121,188
+app/Domain/Yoyu/Services/YoyuPlaceTravelService.php:23,93,105,117
+```
+
+なお `MemoryLink` / `MemoryAsset` / `KiokuLetterItem` は `BelongsToUser` を使っていないため対象外。
 
 ### H-1 の対応範囲について（重要）
 
@@ -203,11 +246,6 @@ Claude Code からは参照されない。**規約の半分がツールによっ
 prefetch を外したことで「ユーザーが実際に画面を開いたとき」に限定されたが、
 GET が冪等であるべきという原則自体はまだ満たしていない。
 
-### H-4 の互換性について
-
-`withoutUserScope()` は既に **217箇所**で明示的に使われており、
-バッチ処理側は主キー指定か明示的な `where('user_id', ...)` を伴っていることを確認済み。
-フェイルクローズ化しても既存の呼び出しは壊れない。
 
 ---
 
@@ -268,6 +306,7 @@ GET が冪等であるべきという原則自体はまだ満たしていない�
 
 | ID | 内容 | 理由 |
 | --- | --- | --- |
+| **H-4** | `BelongsToUser` のフェイルクローズ化 | **前提作業あり。** 先に23箇所の呼び出し側へ `withoutUserScope()` を入れ切る必要がある（詳細は Phase 3 の「H-4 を見送った理由」）。順序を逆にすると letter 生成とブリーフィングが壊れる |
 | H-1 残 | GET から副作用を分離（`MoneyDashboardController` / `HomeController` / `TodayController`） | コントローラとサービスの責務再設計が必要。UX（初回表示時に何を見せるか）の判断を伴う |
 | M-7 | `processImport` のチャンク化 | トランザクション境界の再設計。部分再開の仕様策定が必要 |
 | L-3 | `MetricRecordController::destroy` の親子関係検証 | ルート設計（`{metric}/{metricRecord}`）自体の見直しが望ましい |

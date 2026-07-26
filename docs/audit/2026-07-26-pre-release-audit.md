@@ -559,6 +559,24 @@ static::addGlobalScope('user', function (Builder $builder): void {
 - スコープの意図（強制的なテナント分離）とコードの挙動が一致する
 - 新規参加者が `withoutUserScope()` の必要性を、実害を出さずに学べる
 
+#### 対応状況: 見送り（前提作業が必要）
+
+是正作業でフェイルクローズ化を一度実装したが、**呼び出し側の調査により
+現状のまま切り替えると実害の大きい退行を生むことが判明したため revert した。**
+
+ジョブ／コマンドから到達する次の経路が、スコープが no-op であることに暗黙的に依存している。
+
+| 経路 | 切り替えた場合に起きること |
+| --- | --- |
+| `KiokuConciergePilotService:84` の `KiokuConciergeSchedule::updateOrCreate(['user_id' => ...])` | 既存行が引けず、実行のたびにスケジュールを重複作成する |
+| `CachedGoogleCalendarProvider:87`（`GenerateYoyuBriefingJob` から到達） | キャッシュ済み予定が 0 件になり、ブリーフィングから予定が黙って消える |
+| `KiokuLetterGenerator` の dedupe 再取得経路 | 重複判定が壊れる |
+
+**防ごうとしている事故より大きな障害を作ることになる。**
+先に該当23箇所へ `withoutUserScope()` と明示的な `user_id` 条件を入れ切り、
+CI が緑であることを確認してから切り替える。詳細と対象一覧は
+`docs/audit/remediation-roadmap.md` の Phase 3 / Phase 6 を参照。
+
 ---
 
 ### H-5. AI モデル ID が旧世代を指し、価格表フォールバックが無言

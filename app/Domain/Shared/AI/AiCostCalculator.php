@@ -2,6 +2,8 @@
 
 namespace App\Domain\Shared\AI;
 
+use Illuminate\Support\Facades\Log;
+
 final class AiCostCalculator
 {
     /**
@@ -56,11 +58,27 @@ final class AiCostCalculator
     }
 
     /**
+     * 価格表に無いモデルは default（$3/$15）へフォールバックする。
+     *
+     * フォールバック自体は必要だが、無言で行うと「月次上限 $10」が実際の
+     * 金額を意味しなくなったことに誰も気づけない。モデルを差し替えて
+     * config/ai.php の pricing 更新を忘れた場合を検知できるよう警告を残す
+     * （docs/audit/2026-07-26-pre-release-audit.md H-5）。
+     *
+     * 課金経路はホットパスなので、同一モデルにつき1プロセス1回だけ出す。
+     *
      * @return array{input: string, output: string}
      */
     public function ratesFor(string $model): array
     {
-        $pricing = config("ai.pricing.{$model}", config('ai.pricing.default'));
+        $pricing = config("ai.pricing.{$model}");
+
+        if (! is_array($pricing)) {
+            $this->warnOnceAboutMissingPricing($model);
+
+            $pricing = config('ai.pricing.default');
+        }
+
         $input = is_array($pricing) ? ($pricing['input'] ?? 3.0) : 3.0;
         $output = is_array($pricing) ? ($pricing['output'] ?? 15.0) : 15.0;
 
@@ -68,6 +86,26 @@ final class AiCostCalculator
             'input' => $this->rateToString($input),
             'output' => $this->rateToString($output),
         ];
+    }
+
+    /**
+     * @var array<string, true>
+     */
+    private array $warnedModels = [];
+
+    private function warnOnceAboutMissingPricing(string $model): void
+    {
+        if (isset($this->warnedModels[$model])) {
+            return;
+        }
+
+        $this->warnedModels[$model] = true;
+
+        Log::warning('AI pricing table has no entry for model; falling back to default rates.', [
+            'model' => $model,
+            'hint' => 'config/ai.php の pricing に該当モデルを追加してください。'
+                .'未追加のままだと月次上限が実際の金額とずれます。',
+        ]);
     }
 
     private function rateToString(mixed $rate): string
