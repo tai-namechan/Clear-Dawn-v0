@@ -74,14 +74,24 @@ class RoutineItemsIndexLayoutContractTest extends TestCase
         }
 
         $this->assertStringContainsString(
-            'bg-rose-600 text-white',
+            'bg-rose-50 text-rose-800',
             $source,
-            'Strength header should be a solid flashy fill',
+            'Strength header should be a soft tint fill, not a loud solid',
         );
         $this->assertStringContainsString(
+            'bg-orange-50 text-orange-700',
+            $source,
+            'Strength item names should use a soft different chip than the header',
+        );
+        $this->assertStringNotContainsString(
+            'bg-rose-600 text-white',
+            $source,
+            'Regression: flashy solid header fills are too loud for Clear Dawn',
+        );
+        $this->assertStringNotContainsString(
             'bg-orange-400 text-orange-950',
             $source,
-            'Strength item names should use a different vivid chip than the header',
+            'Regression: flashy solid name chips are too loud for Clear Dawn',
         );
     }
 
