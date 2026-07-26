@@ -19,13 +19,25 @@ trait AuthorizesMoneyUser
     }
 
     /**
+     * 金額（minor unit）の最大桁数。
+     *
+     * 桁数上限が無いと 100 桁の数値文字列も検証を通過し、
+     * サービス層の (int) キャストで PHP_INT_MAX に飽和して
+     * 残高計算がオーバーフローする（監査 M-5）。
+     * 15 桁 = 兆円規模であり、実用上の上限として十分。
+     */
+    private const MAX_MINOR_DIGITS = 15;
+
+    /**
      * @return list<string|ValidationRule>
      */
     protected function nonNegativeMinorRules(bool $required = true): array
     {
-        $rules = [$required ? 'required' : 'nullable', 'string', 'regex:/^\d+$/'];
-
-        return $rules;
+        return [
+            $required ? 'required' : 'nullable',
+            'string',
+            'regex:/^\d{1,'.self::MAX_MINOR_DIGITS.'}$/',
+        ];
     }
 
     /**
@@ -33,7 +45,11 @@ trait AuthorizesMoneyUser
      */
     protected function signedMinorRules(bool $required = true): array
     {
-        return [$required ? 'required' : 'nullable', 'string', 'regex:/^-?\d+$/'];
+        return [
+            $required ? 'required' : 'nullable',
+            'string',
+            'regex:/^-?\d{1,'.self::MAX_MINOR_DIGITS.'}$/',
+        ];
     }
 
     /**

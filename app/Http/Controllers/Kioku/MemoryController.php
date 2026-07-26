@@ -407,6 +407,11 @@ class MemoryController extends Controller
         return $disk->response($asset->path, null, [
             'Content-Type' => $asset->mime_type,
             'Cache-Control' => 'private, max-age=0, no-store',
+            // mime_type はアップロード時に許可リスト検証済みだが、
+            // ブラウザの MIME スニッフィングに対する多層防御として付ける。
+            // 将来 MIME 検証が緩んだ場合の被害を防ぐ（監査 M-6）。
+            'X-Content-Type-Options' => 'nosniff',
+            'Content-Disposition' => 'inline',
         ]);
     }
 

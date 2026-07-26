@@ -233,6 +233,82 @@ class MoneyCsvImportFlowTest extends TestCase
         Storage::disk('local')->assertMissing((string) $import->source_storage_path);
     }
 
+    /**
+     * 監査 M-1 の回帰テスト。
+     *
+     * delimiter は max:8 の自由文字列だったため2文字以上を送ると
+     * setCsvControl が ValueError を投げて 500 になっていた。
+     * encoding も同様で、未知の値は mb_convert_encoding が ValueError を投げる
+     * （@ では抑制できない。PHP 8 では警告ではなく例外のため）。
+     *
+     * 500 ではなくバリデーションエラーとして返し、ユーザーが自力で直せる状態にする。
+     */
+    public function test_invalid_csv_delimiter_is_rejected_by_validation(): void
+    {
+        [$user, $account] = $this->createUserWithAccount();
+
+        $this->actingAs($user)
+            ->post(route('yoyu.money.imports.store'), [
+                'account_id' => $account->id,
+                'file' => UploadedFile::fake()->createWithContent('bank.csv', self::CSV),
+            ])
+            ->assertRedirect();
+
+        /** @var MoneyImport $import */
+        $import = MoneyImport::query()->withoutUserScope()->where('user_id', $user->id)->firstOrFail();
+
+        $this->actingAs($user)
+            ->from(route('yoyu.money.imports.create'))
+            ->post(route('yoyu.money.imports.configure', $import), [
+                'date_column' => 'date',
+                'amount_column' => 'amount',
+                'delimiter' => '||',
+            ])
+            ->assertSessionHasErrors('delimiter');
+
+        $this->actingAs($user)
+            ->from(route('yoyu.money.imports.create'))
+            ->post(route('yoyu.money.imports.configure', $import), [
+                'date_column' => 'date',
+                'amount_column' => 'amount',
+                'encoding' => 'NOT-A-CHARSET',
+            ])
+            ->assertSessionHasErrors('encoding');
+    }
+
+    /**
+     * UI は amount_sign に 'signed' を送る。MoneyCsvNormalizer は
+     * 'income_positive' 以外を expense_positive として安全に既定処理するため、
+     * ここを許可リスト化すると不具合を直さずに既存 UI を壊すだけになる。
+     */
+    public function test_configure_still_accepts_the_amount_sign_the_ui_sends(): void
+    {
+        [$user, $account] = $this->createUserWithAccount();
+
+        $this->actingAs($user)
+            ->post(route('yoyu.money.imports.store'), [
+                'account_id' => $account->id,
+                'file' => UploadedFile::fake()->createWithContent('bank.csv', self::CSV),
+            ])
+            ->assertRedirect();
+
+        /** @var MoneyImport $import */
+        $import = MoneyImport::query()->withoutUserScope()->where('user_id', $user->id)->firstOrFail();
+
+        $this->actingAs($user)
+            ->post(route('yoyu.money.imports.configure', $import), [
+                'date_column' => 'date',
+                'description_column' => 'description',
+                'amount_column' => 'amount',
+                'amount_sign' => 'signed',
+                'encoding' => 'UTF-8',
+                'delimiter' => ',',
+                'has_header' => true,
+            ])
+            ->assertSessionHasNoErrors()
+            ->assertRedirect();
+    }
+
     public function test_user_cannot_configure_another_users_import(): void
     {
         [$owner, $account] = $this->createUserWithAccount();

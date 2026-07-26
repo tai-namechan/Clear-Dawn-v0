@@ -260,22 +260,37 @@ GET が冪等であるべきという原則自体はまだ満たしていない�
 
 ### 変更内容
 
-| ID | 対象 | 変更 |
-| --- | --- | --- |
-| M-1 | `ConfigureMoneyImportRequest` | `delimiter` / `encoding` を許可リスト検証 |
-| M-2 | `AppServiceProvider` | 非本番で `preventLazyLoading()` + `preventSilentlyDiscardingAttributes()` |
-| M-3/M-4 | `.env.example` | `SESSION_SECURE_COOKIE` 他、本番必須変数を明記 |
-| M-5 | `AuthorizesMoneyUser` | 金額に桁数上限（15桁） |
-| M-6 | `MemoryController::audio` | `X-Content-Type-Options: nosniff` + `Content-Disposition` |
-| L-1 | `app/Domain/Kioku/Commands/` | 参照ゼロのデッドコード2件を削除 |
-| L-2 | `AppHeader.vue` / `NavFooter.vue` | `rel="noopener noreferrer"` |
-| L-5 | `routes/console.php` | `videos:prune-pending` に `withoutOverlapping()` + `onOneServer()` |
+| ID | 対象 | 変更 | 状態 |
+| --- | --- | --- | --- |
+| M-1 | `ConfigureMoneyImportRequest` | `delimiter` / `encoding` を許可リスト検証（500 → 422） | 完了 |
+| M-2 | `AppServiceProvider` | `local` で `preventLazyLoading()` + `preventSilentlyDiscardingAttributes()` | 一部（下記） |
+| M-3/M-4 | `.env.example` | `SESSION_SECURE_COOKIE` 他、本番必須変数を明記 | 完了 |
+| M-5 | `AuthorizesMoneyUser` | 金額に桁数上限（15桁） | 完了 |
+| M-6 | `MemoryController::audio` | `X-Content-Type-Options: nosniff` + `Content-Disposition` | 完了 |
+| L-1 | `app/Domain/Kioku/Commands/` | 参照ゼロのデッドコード2件を削除 | 完了 |
+| ~~L-2~~ | — | **誤検知だったため対応不要**（下記） | 取り下げ |
+| L-5 | `routes/console.php` | `videos:prune-pending` に `withoutOverlapping()` + `onOneServer()` | 完了（Phase 3 で実施） |
 
-### M-2 の適用範囲について
+### M-2 の適用範囲について（local のみ）
 
-`preventLazyLoading()` は **非本番環境のみ**で有効化した。
-本番で有効にすると、未検出の遅延ロードが 500 エラーとしてユーザーに到達するため。
-開発・テストで検出し、本番では従来どおり動作させるのが安全側の選択。
+`preventLazyLoading()` の有効範囲は **`local` のみ**に絞った。
+
+- **本番**: 未検出の遅延ロードが 500 としてユーザーに到達するより、従来どおり動作させる方が安全
+- **testing**: 既存 904 テストに潜在 N+1 があると一斉に落ち、
+  **本監査の Critical 修正の検証結果が埋もれる**。CI が稼働し、影響を確認できる状態になってから
+  `testing` へ広げる（Phase 6）
+
+「検出範囲を最大化する」より「Critical 修正の検証を先に通す」を優先した判断である。
+
+### L-2 は誤検知だった
+
+当初 `AppHeader.vue` / `NavFooter.vue` の `target="_blank"` に `rel="noopener"` が
+無いと報告したが、**行単位 grep による誤りだった**。実際には3箇所とも次の行に
+`rel="noopener noreferrer"` が付いている。
+
+タグ単位で `resources/js` 配下の全 `.vue` を再走査したところ、
+`target="_blank"` を持ち `noopener` を欠くアンカーは **0件**だった。
+監査レポート側にも取り消し線で記録してある。
 
 ---
 
