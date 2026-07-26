@@ -4,6 +4,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import AuthLayout from '@/layouts/AuthLayout.vue';
 import OsShellLayout from '@/layouts/OsShellLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
+import TeamLayout from '@/layouts/TeamLayout.vue';
 import { initializeFlashToast } from '@/lib/flashToast';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
@@ -14,6 +15,10 @@ createInertiaApp({
         switch (true) {
             case name === 'PublicLandingPage':
                 return null;
+            case name.startsWith('Team/Auth/'):
+                return null;
+            case name.startsWith('Team/'):
+                return TeamLayout;
             case name.startsWith('auth/') && name !== 'auth/ConfirmPassword':
                 return AuthLayout;
             case name.startsWith('settings/'):

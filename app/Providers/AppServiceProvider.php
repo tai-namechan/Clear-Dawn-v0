@@ -8,6 +8,8 @@ use App\Domain\Kioku\Transcription\OpenAiTranscriptionGateway;
 use App\Domain\Kioku\Transcription\TranscriptionGateway;
 use App\Models\MatrixCellItem;
 use App\Models\RoutineSession;
+use App\Models\TeamUser;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -54,6 +56,8 @@ class AppServiceProvider extends ServiceProvider
         Relation::enforceMorphMap([
             'matrix_cell_item' => MatrixCellItem::class,
             'routine_session' => RoutineSession::class,
+            'user' => User::class,
+            'team_user' => TeamUser::class,
         ]);
     }
 

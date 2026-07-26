@@ -58,6 +58,7 @@ Clear Dawn v0（プロトタイプ）の仕様・設計・デザインに関す�
 | [roadmap.md](./roadmap.md) | 実装ロードマップ（マイルストーン管理） |
 | [progress.md](./progress.md) | 実装進捗の可視化（done / partial / not_started） |
 | [dev/laravel-boost.md](./dev/laravel-boost.md) | Laravel Boost 導入・使いどころ |
+| [team-workspace.md](./team-workspace.md) | チームワークスペースのローカル確認手順 |
 | [architecture/frontend-asset-boundaries.md](./architecture/frontend-asset-boundaries.md) | フロントエンド・アセット境界（ページ追加耐性・static closure 予算） |
 | [architecture/kioku-knowledge-retrieval.md](./architecture/kioku-knowledge-retrieval.md) | キオク ナレッジ検索・Context Builder 基盤（三層モデル・タグ検索・AI向け取得上限） |
 | [adr/](./adr/) | アーキテクチャ決定記録（ADR） |

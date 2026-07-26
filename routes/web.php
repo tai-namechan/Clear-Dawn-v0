@@ -39,6 +39,8 @@ use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
+require __DIR__.'/team.php';
+
 Route::bind('metric', function (string $value): Metric {
     return Metric::query()
         ->where('key', $value)

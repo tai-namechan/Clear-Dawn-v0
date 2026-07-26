@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\TeamUser;
 use App\Models\User;
 
 return [
@@ -42,6 +43,10 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'team' => [
+            'driver' => 'session',
+            'provider' => 'team_users',
+        ],
     ],
 
     /*
@@ -65,6 +70,10 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+        'team_users' => [
+            'driver' => 'eloquent',
+            'model' => TeamUser::class,
         ],
 
         // 'users' => [

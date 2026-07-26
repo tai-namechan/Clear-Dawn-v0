@@ -1,0 +1,32 @@
+<?php
+
+use App\Http\Controllers\Team\TeamAuthController;
+use App\Http\Controllers\Team\TeamWorkspaceController;
+use App\Models\TeamUser;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+Route::domain(config('app.team_domain'))->name('team.')->group(function (): void {
+    Route::get('/login', [TeamAuthController::class, 'create'])->name('login');
+    Route::get('/auth/google', [TeamAuthController::class, 'redirect'])->name('auth.google');
+    Route::get('/auth/google/callback', [TeamAuthController::class, 'callback'])->name('auth.google.callback');
+
+    if (app()->isLocal()) {
+        Route::post('/demo-login', function (Request $request) {
+            $teamUser = TeamUser::query()->where('email', 'coach@team.local')->where('status', 'active')->firstOrFail();
+            Auth::guard('team')->login($teamUser);
+            $request->session()->regenerate();
+
+            return redirect()->route('team.home');
+        })->name('demo.login');
+    }
+
+    Route::middleware('team.auth')->group(function (): void {
+        Route::get('/', [TeamWorkspaceController::class, 'home'])->name('home');
+        Route::post('/logout', [TeamAuthController::class, 'destroy'])->name('logout');
+        Route::get('/t/{team}/dashboard', [TeamWorkspaceController::class, 'dashboard'])->name('dashboard');
+        Route::get('/t/{team}/athletes', [TeamWorkspaceController::class, 'athletes'])->name('athletes.index');
+        Route::get('/t/{team}/athletes/{athlete}', [TeamWorkspaceController::class, 'athlete'])->name('athletes.show');
+    });
+});

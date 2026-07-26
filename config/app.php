@@ -54,6 +54,10 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'team_domain' => env('TEAM_APP_DOMAIN', 'team.localhost'),
+
+    'team_url' => env('TEAM_APP_URL', 'http://team.localhost:8000'),
+
     /*
     |--------------------------------------------------------------------------
     | Public Sign-up Entry Points
