@@ -238,9 +238,6 @@ class MoneyCsvImportFlowTest extends TestCase
      *
      * delimiter は max:8 の自由文字列だったため2文字以上を送ると
      * setCsvControl が ValueError を投げて 500 になっていた。
-     * encoding も同様で、未知の値は mb_convert_encoding が ValueError を投げる
-     * （@ では抑制できない。PHP 8 では警告ではなく例外のため）。
-     *
      * 500 ではなくバリデーションエラーとして返し、ユーザーが自力で直せる状態にする。
      */
     public function test_invalid_csv_delimiter_is_rejected_by_validation(): void
@@ -265,6 +262,27 @@ class MoneyCsvImportFlowTest extends TestCase
                 'delimiter' => '||',
             ])
             ->assertSessionHasErrors('delimiter');
+    }
+
+    /**
+     * 監査 M-1 のエンコーディング検証に対する回帰テスト。
+     *
+     * 未知の値は mb_convert_encoding が ValueError を投げるため、
+     * サービスへ到達する前にバリデーションエラーとして返す。
+     */
+    public function test_invalid_csv_encoding_is_rejected_by_validation(): void
+    {
+        [$user, $account] = $this->createUserWithAccount();
+
+        $this->actingAs($user)
+            ->post(route('yoyu.money.imports.store'), [
+                'account_id' => $account->id,
+                'file' => UploadedFile::fake()->createWithContent('bank.csv', self::CSV),
+            ])
+            ->assertRedirect();
+
+        /** @var MoneyImport $import */
+        $import = MoneyImport::query()->withoutUserScope()->where('user_id', $user->id)->firstOrFail();
 
         $this->actingAs($user)
             ->from(route('yoyu.money.imports.create'))
