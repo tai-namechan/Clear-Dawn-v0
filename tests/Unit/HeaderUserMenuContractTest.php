@@ -26,14 +26,19 @@ class HeaderUserMenuContractTest extends TestCase
             'Chevron beside the username must also hide on mobile',
         );
         $this->assertStringContainsString(
-            ':aria-label="`${user.name} のメニュー`"',
+            'inline-flex items-center justify-center rounded-lg bg-muted text-cd-ink md:hidden',
             $source,
-            'Avatar-only control still needs an accessible name',
+            'Mobile trigger uses the shared person icon instead of initials',
         );
         $this->assertStringContainsString(
-            'getInitials(user.name)',
+            '<User :size="compact ? 16 : 18" :stroke-width="1.6" />',
             $source,
-            'Fallback avatar initials remain available when no photo is set',
+            'Lucide User silhouette is the mobile account affordance',
+        );
+        $this->assertStringContainsString(
+            ':aria-label="`${user.name} のメニュー`"',
+            $source,
+            'Icon-only control still needs an accessible name',
         );
     }
 

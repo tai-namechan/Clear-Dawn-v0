@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { usePage } from '@inertiajs/vue3';
-import { ChevronsUpDown } from '@lucide/vue';
+import { ChevronsUpDown, User } from '@lucide/vue';
 import { computed } from 'vue';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import UserMenuContent from '@/components/UserMenuContent.vue';
 import { useInitials } from '@/composables/useInitials';
-import type { User } from '@/types';
+import type { User as AuthUser } from '@/types';
 
 interface Props {
     /** AppSidebarHeader 等、狭いヘッダー行向けのコンパクト表示 */
@@ -25,7 +25,7 @@ withDefaults(defineProps<Props>(), {
 });
 
 const page = usePage();
-const user = computed(() => page.props.auth.user! as User);
+const user = computed(() => page.props.auth.user! as AuthUser);
 const { getInitials } = useInitials();
 
 const showAvatar = computed(
@@ -48,8 +48,20 @@ const showAvatar = computed(
                 ]"
                 :aria-label="`${user.name} のメニュー`"
             >
+                <span
+                    class="inline-flex items-center justify-center rounded-lg bg-muted text-cd-ink md:hidden"
+                    :class="[
+                        compact ? 'size-7' : 'size-8',
+                        primaryOnMobile
+                            ? 'max-md:bg-primary-foreground/15 max-md:text-primary-foreground'
+                            : undefined,
+                    ]"
+                    aria-hidden="true"
+                >
+                    <User :size="compact ? 16 : 18" :stroke-width="1.6" />
+                </span>
                 <Avatar
-                    class="overflow-hidden rounded-lg"
+                    class="hidden overflow-hidden rounded-lg md:flex"
                     :class="compact ? 'h-7 w-7' : 'h-8 w-8'"
                 >
                     <AvatarImage
@@ -59,33 +71,18 @@ const showAvatar = computed(
                     />
                     <AvatarFallback
                         class="rounded-lg bg-muted font-medium text-cd-ink"
-                        :class="
-                            primaryOnMobile
-                                ? 'max-md:bg-primary-foreground/15 max-md:text-primary-foreground'
-                                : undefined
-                        "
                     >
                         {{ getInitials(user.name) }}
                     </AvatarFallback>
                 </Avatar>
                 <span
                     class="hidden max-w-[10rem] truncate font-serif tracking-[0.06em] text-cd-ink md:inline"
-                    :class="[
-                        compact ? 'text-sm' : 'text-base',
-                        primaryOnMobile
-                            ? 'max-md:text-primary-foreground'
-                            : undefined,
-                    ]"
+                    :class="compact ? 'text-sm' : 'text-base'"
                 >
                     {{ user.name }}
                 </span>
                 <ChevronsUpDown
                     class="hidden size-4 shrink-0 text-cd-ink-muted opacity-70 transition-opacity group-hover:opacity-100 md:block"
-                    :class="
-                        primaryOnMobile
-                            ? 'max-md:text-primary-foreground/80'
-                            : undefined
-                    "
                     aria-hidden="true"
                 />
             </button>
