@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  php:
+    name: PHP (Pint / Larastan / PHPUnit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, bcmath, intl, sqlite3, pdo_sqlite
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ runner.os }}-php8.4-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php8.4-
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      # Pint / Larastan / PHPUnit はどれが落ちても全部の結果を見たいので
+      # 個別ステップに分け、if: '!cancelled()' で後続を止めない。
+      - name: Pint (code style)
+        if: '!cancelled()'
+        run: vendor/bin/pint --test
+
+      - name: Larastan (static analysis)
+        if: '!cancelled()'
+        run: vendor/bin/phpstan analyse --memory-limit=512M --no-progress
+
+      - name: PHPUnit
+        if: '!cancelled()'
+        run: php artisan test
+
+  js:
+    name: JS (ESLint / Prettier / vue-tsc / Vitest / build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: dom, curl, libxml, mbstring, zip, sqlite3, pdo_sqlite
+          coverage: none
+
+      - name: Cache Composer packages
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ runner.os }}-php8.4-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php8.4-
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      # resources/js/{actions,routes,wayfinder} は .gitignore 済みの生成物。
+      # types:check と build より先に必ず生成する。
+      - name: Generate Wayfinder types
+        run: php artisan wayfinder:generate --with-form
+
+      - name: ESLint
+        if: '!cancelled()'
+        run: npm run lint:check
+
+      - name: Prettier
+        if: '!cancelled()'
+        run: npm run format:check
+
+      - name: TypeScript (vue-tsc)
+        if: '!cancelled()'
+        run: npm run types:check
+
+      - name: JS tests
+        if: '!cancelled()'
+        run: npm run test:js
+
+      - name: Build (client + SSR)
+        if: '!cancelled()'
+        run: npm run build:ssr
+
+  docs:
+    name: Docs (agent preamble sync)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # CLAUDE.md と AGENTS.md のプリアンブルが乖離すると、
+      # ツールによってプロジェクトルールが見えたり見えなかったりする。
+      # 人間の記憶に依存させず機械的に検査する。
+      - name: Check CLAUDE.md / AGENTS.md preamble sync
+        run: node scripts/check-agent-preamble.mjs
