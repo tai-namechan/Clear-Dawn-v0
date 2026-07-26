@@ -23,12 +23,12 @@ class DispatchPendingTranscriptionsCommand extends Command
     public function handle(): int
     {
         if (config('kioku.transcription.provider', 'none') === 'none') {
-            $this->error(
+            $this->comment(
                 'KIOKU_TRANSCRIPTION_PROVIDER is none — nothing to dispatch. '
                 .'Configure a provider, then re-run this command.',
             );
 
-            return self::FAILURE;
+            return self::SUCCESS;
         }
 
         $query = Memory::query()
