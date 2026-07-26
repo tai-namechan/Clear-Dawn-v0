@@ -94,7 +94,7 @@ export function chartLineSeriesStyle(color: string): {
     symbol: 'circle';
     symbolSize: number;
     showSymbol: boolean;
-    connectNulls: false;
+    connectNulls: true;
     lineStyle: { color: string; width: number };
     itemStyle: { color: string };
     emphasis: { scale: number };
@@ -103,7 +103,8 @@ export function chartLineSeriesStyle(color: string): {
         symbol: 'circle',
         symbolSize: 6,
         showSymbol: true,
-        connectNulls: false,
+        // 未記録日は null のまま軸に残し、記録点同士は線で結んで推移を見せる
+        connectNulls: true,
         lineStyle: { color, width: 2 },
         itemStyle: { color },
         emphasis: { scale: 10 / 6 },
@@ -113,7 +114,8 @@ export function chartLineSeriesStyle(color: string): {
 type NutritionValueKey = 'kcal' | 'protein_g' | 'fat_g' | 'carb_g';
 
 /**
- * 期間内の全日を軸にし、未記録日は null（0 で結ばない）。
+ * 期間内の全日を軸にし、未記録日は null（0 で谷を作らない）。
+ * 線グラフ側は connectNulls で記録点同士をつなぐ。
  */
 export function nutritionSeriesByDate(
     points: NutritionChartPoint[],

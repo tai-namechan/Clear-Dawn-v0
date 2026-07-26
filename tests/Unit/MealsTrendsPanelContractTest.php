@@ -9,26 +9,31 @@ use Tests\TestCase;
  */
 class MealsTrendsPanelContractTest extends TestCase
 {
-    public function test_date_filter_uses_shrinkable_grid_on_mobile(): void
+    public function test_date_filter_uses_two_column_range_on_mobile(): void
     {
         $source = $this->componentSource(
             'resources/js/components/meals/MealsTrendsPanel.vue',
         );
 
         $this->assertStringContainsString(
-            'grid w-full grid-cols-2 items-end gap-3 sm:flex sm:w-auto sm:flex-nowrap sm:items-end',
+            'grid grid-cols-2 items-end gap-2 sm:gap-3',
             $source,
-            'Date inputs must share two equal columns on mobile, then sit in a single row from sm up',
+            'Start/end dates sit in two equal columns like common mobile date-range forms',
         );
         $this->assertSame(
             2,
-            substr_count($source, 'flex min-w-0 flex-col gap-1 sm:w-40'),
-            'Start/end date fields must allow shrinking below native date input intrinsic width',
+            substr_count($source, 'flex min-w-0 flex-col gap-1'),
+            'Start/end fields must shrink below native date input intrinsic width',
         );
         $this->assertStringContainsString(
-            'col-span-2 w-full font-sans sm:w-auto',
+            'w-full min-w-0',
             $source,
-            'Apply button must span full width under the dates on mobile',
+            'Native date inputs must fill their column without overflowing',
+        );
+        $this->assertStringContainsString(
+            'w-full font-sans sm:w-auto sm:self-end',
+            $source,
+            'Apply button spans full width under the date pair on mobile',
         );
         $this->assertStringNotContainsString(
             'flex flex-wrap items-end gap-3',

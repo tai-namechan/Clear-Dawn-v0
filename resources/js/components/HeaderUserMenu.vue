@@ -46,6 +46,7 @@ const showAvatar = computed(
                         ? 'hover:bg-muted/50 max-md:hover:bg-primary-foreground/10'
                         : 'hover:bg-muted/50',
                 ]"
+                :aria-label="`${user.name} のメニュー`"
             >
                 <Avatar
                     class="overflow-hidden rounded-lg"
@@ -68,7 +69,7 @@ const showAvatar = computed(
                     </AvatarFallback>
                 </Avatar>
                 <span
-                    class="max-w-[10rem] truncate font-serif tracking-[0.06em] text-cd-ink"
+                    class="hidden max-w-[10rem] truncate font-serif tracking-[0.06em] text-cd-ink md:inline"
                     :class="[
                         compact ? 'text-sm' : 'text-base',
                         primaryOnMobile
@@ -79,7 +80,7 @@ const showAvatar = computed(
                     {{ user.name }}
                 </span>
                 <ChevronsUpDown
-                    class="size-4 shrink-0 text-cd-ink-muted opacity-70 transition-opacity group-hover:opacity-100"
+                    class="hidden size-4 shrink-0 text-cd-ink-muted opacity-70 transition-opacity group-hover:opacity-100 md:block"
                     :class="
                         primaryOnMobile
                             ? 'max-md:text-primary-foreground/80'

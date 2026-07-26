@@ -27,7 +27,12 @@ class ChartThemeContractTest extends TestCase
 
         $this->assertStringContainsString('nutritionSeriesByDate', $source);
         $this->assertStringContainsString('return point ? Number(point[key]) : null', $source);
-        $this->assertStringContainsString('connectNulls: false', $source);
+        $this->assertStringContainsString('connectNulls: true', $source);
+        $this->assertStringNotContainsString(
+            'connectNulls: false',
+            $source,
+            'Recorded points must stay connected so kcal trends remain visible across gaps',
+        );
     }
 
     public function test_pfc_hex_matches_semantic_tokens(): void
