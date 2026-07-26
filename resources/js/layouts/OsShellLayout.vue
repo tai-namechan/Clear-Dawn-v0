@@ -89,7 +89,7 @@ const titleClass = computed(() => {
                     <SidebarTrigger class="-ml-1 shrink-0" />
                     <h1
                         v-if="productName"
-                        class="truncate text-[2rem] leading-none md:text-[2.5rem]"
+                        class="hidden truncate text-[2rem] leading-none md:block md:text-[2.5rem]"
                         :class="titleClass"
                     >
                         {{ productName }}
