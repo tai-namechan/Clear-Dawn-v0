@@ -33,6 +33,11 @@ class RoutineItemsIndexLayoutContractTest extends TestCase
             $source,
             'Regression guard: items themselves must not use the four-column grid',
         );
+        $this->assertStringContainsString(
+            'inline-block max-w-full truncate rounded-md bg-primary/8 px-2 py-0.5',
+            $source,
+            'Item names get a soft background chip; the rest of the row stays plain',
+        );
     }
 
     private function componentSource(string $relativePath): string

@@ -179,7 +179,7 @@ async function deleteItem(item: RoutineItem): Promise<void> {
                                     class="group flex items-center gap-1"
                                 >
                                     <p
-                                        class="truncate font-sans text-base font-semibold text-cd-ink group-hover:text-primary"
+                                        class="inline-block max-w-full truncate rounded-md bg-primary/8 px-2 py-0.5 font-sans text-base font-semibold text-cd-ink group-hover:bg-primary/12 group-hover:text-primary"
                                     >
                                         {{ item.name }}
                                     </p>
