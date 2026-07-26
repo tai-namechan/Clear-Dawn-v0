@@ -23,6 +23,7 @@ use App\Support\RoutineStepDisplay;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -278,7 +279,9 @@ class GenerateProgramDayPlansService
      *     target_blocks: int|null,
      *     rest_seconds: int|null,
      *     percent_of_reference: string|null,
-     *     rpe_target: string|null
+     *     rpe_target: string|null,
+     *     prescription_intent: string|null,
+     *     prescription_note: string|null
      * }
      */
     private function resolveTargets(User $user, ProgramStepItem $item, ProgramWeek $week, \DateTimeInterface $asOf): array
@@ -321,16 +324,22 @@ class GenerateProgramDayPlansService
             'rest_seconds' => $item->rest_seconds,
             'percent_of_reference' => $percent,
             'rpe_target' => $rpe,
+            'prescription_intent' => $prescription?->intent,
+            'prescription_note' => $prescription?->note,
         ];
     }
 
     /**
+     * その週の処方（intent / note）も含めて、ステップに表示する一行を組み立てる。
+     *
      * @param  array<string, mixed>  $resolved
      */
     private function composeNote(ProgramStepItem $item, array $resolved): ?string
     {
         $parts = array_filter([
             $item->cues,
+            $resolved['prescription_intent'],
+            $resolved['prescription_note'],
             $item->tempo !== null ? 'tempo '.$item->tempo : null,
             $item->side !== null ? 'side '.$item->side : null,
             $resolved['percent_of_reference'] !== null && $resolved['target_load'] === null
@@ -340,6 +349,6 @@ class GenerateProgramDayPlansService
             $item->note,
         ]);
 
-        return $parts === [] ? null : implode(' / ', $parts);
+        return $parts === [] ? null : Str::limit(implode(' / ', $parts), 255, '');
     }
 }

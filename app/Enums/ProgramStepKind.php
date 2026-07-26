@@ -16,4 +16,8 @@ enum ProgramStepKind: string
     case ArmCare = 'arm_care';
     case Conditioning = 'conditioning';
     case Cooldown = 'cooldown';
+    case Technique = 'technique';
+    case Reading = 'reading';
+    case Repertoire = 'repertoire';
+    case Review = 'review';
 }

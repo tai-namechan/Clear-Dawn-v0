@@ -37,6 +37,10 @@ const stepKindLabels: Record<string, string> = {
     arm_care: 'アームケア',
     conditioning: 'コンディショニング',
     cooldown: 'クールダウン',
+    technique: '基礎技術',
+    reading: '譜読み・観察',
+    repertoire: '曲',
+    review: '記録・振り返り',
 };
 
 function prescriptionLine(item: ProgramStepItemDetail): string {
