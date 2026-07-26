@@ -24,13 +24,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
-use SplFileObject;
 use Throwable;
 
 final class MoneyCsvImportService
 {
-    private const DISK = 'local';
-
     private const PATH_PREFIX = 'yoyu-money-imports';
 
     private const PREVIEW_LIMIT = 100;
@@ -41,6 +38,19 @@ final class MoneyCsvImportService
         private readonly MoneyAuditService $auditService,
         private readonly MoneyCsvNormalizer $normalizer,
     ) {}
+
+    /**
+     * CSV 原本を置くディスク。
+     *
+     * Web コンテナが書き込み、キューコンテナ（ProcessMoneyImportJob）が読み出すため、
+     * Laravel Cloud のように両者がファイルシステムを共有しない環境では
+     * Object Storage を指す必要がある。以前は 'local' 固定で、本番では
+     * 取り込みが必ず失敗していた（docs/audit/2026-07-26-pre-release-audit.md C-3）。
+     */
+    private function disk(): string
+    {
+        return (string) config('yoyu.money.import.disk', 'local');
+    }
 
     public function upload(User $user, UploadedFile $file, string $accountId): MoneyImport
     {
@@ -78,7 +88,7 @@ final class MoneyCsvImportService
 
         $ulid = (string) Str::ulid();
         $path = self::PATH_PREFIX.'/'.$user->id.'/'.$ulid.'.csv';
-        Storage::disk(self::DISK)->put($path, $contents);
+        Storage::disk($this->disk())->put($path, $contents);
 
         try {
             /** @var MoneyImport $import */
@@ -94,7 +104,7 @@ final class MoneyCsvImportService
             ]);
         } catch (UniqueConstraintViolationException) {
             // 同一ファイルの並行アップロードに敗れた場合は勝った方の import を返す
-            Storage::disk(self::DISK)->delete($path);
+            Storage::disk($this->disk())->delete($path);
 
             /** @var MoneyImport $import */
             $import = MoneyImport::query()
@@ -246,30 +256,64 @@ final class MoneyCsvImportService
         return $import->refresh();
     }
 
+    /**
+     * CSV 行から取引を作成する。
+     *
+     * 二重実行に対して冪等でなければならない。キューは retry_after を過ぎた
+     * ジョブを「タイムアウトした」とみなして再可視化するため、実行中の
+     * ジョブが別ワーカーに二重取得されうる（ShouldBeUnique は dispatch 時の
+     * ロックであり、この再解放には関与しない）。
+     * 二重実行されると同じ CSV 行から2件の取引が作られ、金額が二重計上される。
+     *
+     * 防御は2層:
+     *   1. config/queue.php の retry_after を最長 timeout 超に設定して発生自体を防ぐ
+     *   2. 本メソッドが行ロックを取り、ロック取得後に状態を再判定する（本実装）
+     *
+     * 2 を入れているのは、retry_after が運用者に変更されうる設定値だからである。
+     * 金銭を扱う処理が設定値の正しさに依存する設計にはしない。
+     *
+     * 行ロックを効かせるため、状態の再判定はトランザクション内で行う
+     * （MoneyCashflowService::settle と同じ構造）。SQLite は行ロックを
+     * 強制しないが、yoyu_money_import_rows の unique(import_id, row_number)
+     * が DB レベルの最終防壁として働く。
+     */
     public function processImport(MoneyImport $import): void
     {
+        $mapping = $this->normalizeMapping(
+            MoneyImport::query()
+                ->withoutUserScope()
+                ->whereKey($import->id)
+                ->value('mapping_config') ?? []
+        );
+
         /** @var MoneyImport|null $locked */
-        $locked = MoneyImport::query()
-            ->withoutUserScope()
-            ->whereKey($import->id)
-            ->first();
-
-        if ($locked === null) {
-            return;
-        }
-
-        if ($locked->status === MoneyImportStatus::Completed) {
-            return;
-        }
-
-        $mapping = $this->normalizeMapping($locked->mapping_config ?? []);
-        $accountId = (string) $locked->account_id;
+        $locked = null;
 
         try {
-            DB::transaction(function () use ($locked, $mapping, $accountId): void {
+            $processed = DB::transaction(function () use ($import, $mapping, &$locked): bool {
+                /** @var MoneyImport|null $claimed */
+                $claimed = MoneyImport::query()
+                    ->withoutUserScope()
+                    ->whereKey($import->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($claimed === null) {
+                    return false;
+                }
+
+                // ロック取得後に再判定する。二重実行された後続のワーカーは、
+                // 先行ワーカーのコミットを待ってからここで Completed を見て降りる。
+                if ($claimed->status === MoneyImportStatus::Completed) {
+                    return false;
+                }
+
+                $locked = $claimed;
+                $accountId = (string) $claimed->account_id;
+
                 MoneyImportRow::query()
                     ->withoutUserScope()
-                    ->where('import_id', $locked->id)
+                    ->where('import_id', $claimed->id)
                     ->delete();
 
                 $accepted = 0;
@@ -277,14 +321,14 @@ final class MoneyCsvImportService
                 $duplicates = 0;
                 $rowCount = 0;
 
-                foreach ($this->streamCsvRows($locked, $mapping) as $row) {
+                foreach ($this->streamCsvRows($claimed, $mapping) as $row) {
                     $rowCount++;
                     $normalized = $this->normalizeRow($row['cells'], $mapping, $accountId);
 
                     if (! $normalized['ok']) {
                         MoneyImportRow::query()->withoutUserScope()->create([
-                            'user_id' => $locked->user_id,
-                            'import_id' => $locked->id,
+                            'user_id' => $claimed->user_id,
+                            'import_id' => $claimed->id,
                             'row_number' => $row['row_number'],
                             'raw_payload' => $row['raw'],
                             'normalized_payload' => $normalized['payload'],
@@ -307,11 +351,11 @@ final class MoneyCsvImportService
                      * } $payload */
                     $payload = $normalized['payload'];
 
-                    $strongDup = $this->findStrongDuplicate($locked, $accountId, $payload);
+                    $strongDup = $this->findStrongDuplicate($claimed, $accountId, $payload);
                     if ($strongDup !== null) {
                         MoneyImportRow::query()->withoutUserScope()->create([
-                            'user_id' => $locked->user_id,
-                            'import_id' => $locked->id,
+                            'user_id' => $claimed->user_id,
+                            'import_id' => $claimed->id,
                             'row_number' => $row['row_number'],
                             'raw_payload' => $row['raw'],
                             'normalized_payload' => $payload,
@@ -324,11 +368,11 @@ final class MoneyCsvImportService
                         continue;
                     }
 
-                    $probableDup = $this->findProbableDuplicate($locked, $accountId, $payload);
+                    $probableDup = $this->findProbableDuplicate($claimed, $accountId, $payload);
                     if ($probableDup !== null) {
                         MoneyImportRow::query()->withoutUserScope()->create([
-                            'user_id' => $locked->user_id,
-                            'import_id' => $locked->id,
+                            'user_id' => $claimed->user_id,
+                            'import_id' => $claimed->id,
                             'row_number' => $row['row_number'],
                             'raw_payload' => $row['raw'],
                             'normalized_payload' => $payload,
@@ -347,8 +391,8 @@ final class MoneyCsvImportService
 
                     /** @var MoneyImportRow $importRow */
                     $importRow = MoneyImportRow::query()->withoutUserScope()->create([
-                        'user_id' => $locked->user_id,
-                        'import_id' => $locked->id,
+                        'user_id' => $claimed->user_id,
+                        'import_id' => $claimed->id,
                         'row_number' => $row['row_number'],
                         'raw_payload' => $row['raw'],
                         'normalized_payload' => $payload,
@@ -358,7 +402,7 @@ final class MoneyCsvImportService
 
                     /** @var MoneyTransaction $transaction */
                     $transaction = MoneyTransaction::query()->withoutUserScope()->create([
-                        'user_id' => $locked->user_id,
+                        'user_id' => $claimed->user_id,
                         'account_id' => $accountId,
                         'direction' => MoneyDirection::from($payload['direction']),
                         'kind' => $kind,
@@ -371,7 +415,7 @@ final class MoneyCsvImportService
                         'status' => MoneyTransactionStatus::Posted,
                         'source' => MoneyTransactionSource::Csv,
                         'external_id' => $payload['external_id'] ?? ('csv:'.$payload['row_hash']),
-                        'import_id' => $locked->id,
+                        'import_id' => $claimed->id,
                         'import_row_id' => $importRow->id,
                     ]);
 
@@ -381,15 +425,23 @@ final class MoneyCsvImportService
                     $accepted++;
                 }
 
-                $locked->row_count = $rowCount;
-                $locked->accepted_count = $accepted;
-                $locked->rejected_count = $rejected;
-                $locked->duplicate_count = $duplicates;
-                $locked->status = MoneyImportStatus::Completed;
-                $locked->finished_at = Date::now();
-                $locked->error_message = null;
-                $locked->save();
+                $claimed->row_count = $rowCount;
+                $claimed->accepted_count = $accepted;
+                $claimed->rejected_count = $rejected;
+                $claimed->duplicate_count = $duplicates;
+                $claimed->status = MoneyImportStatus::Completed;
+                $claimed->finished_at = Date::now();
+                $claimed->error_message = null;
+                $claimed->save();
+
+                return true;
             });
+
+            // 二重実行の後続や、既に Completed だった場合は監査ログを出さない
+            // （同じ取り込みに対して completed イベントが2回並ぶのを防ぐ）。
+            if (! $processed || $locked === null) {
+                return;
+            }
 
             // Intentionally does NOT update account balance.
             $this->auditService->record(
@@ -408,10 +460,19 @@ final class MoneyCsvImportService
                 ],
             );
         } catch (Throwable $e) {
-            $locked->status = MoneyImportStatus::Failed;
-            $locked->error_message = $e->getMessage();
-            $locked->finished_at = Date::now();
-            $locked->save();
+            // 失敗記録はロールバック済みトランザクションの外で行う。
+            // ロックを取る前に落ちた場合（$locked === null）は状態を触らない。
+            if ($locked !== null) {
+                MoneyImport::query()
+                    ->withoutUserScope()
+                    ->whereKey($locked->id)
+                    ->where('status', '!=', MoneyImportStatus::Completed->value)
+                    ->update([
+                        'status' => MoneyImportStatus::Failed->value,
+                        'error_message' => $e->getMessage(),
+                        'finished_at' => Date::now(),
+                    ]);
+            }
 
             throw $e;
         }
@@ -527,8 +588,8 @@ final class MoneyCsvImportService
                         continue;
                     }
 
-                    if (Storage::disk(self::DISK)->exists($path)) {
-                        Storage::disk(self::DISK)->delete($path);
+                    if (Storage::disk($this->disk())->exists($path)) {
+                        Storage::disk($this->disk())->delete($path);
                     }
 
                     $import->source_storage_path = null;
@@ -584,12 +645,12 @@ final class MoneyCsvImportService
      */
     private function streamCsvRows(MoneyImport $import, array $mapping): \Generator
     {
+        $disk = $this->disk();
         $path = $import->source_storage_path;
-        if ($path === null || ! Storage::disk(self::DISK)->exists($path)) {
+        if ($path === null || ! Storage::disk($disk)->exists($path)) {
             throw new InvalidArgumentException('Import source file is missing.');
         }
 
-        $absolute = Storage::disk(self::DISK)->path($path);
         $encoding = strtoupper((string) ($mapping['encoding'] ?? 'UTF-8'));
         $delimiter = (string) ($mapping['delimiter'] ?? ',');
         if ($delimiter === '') {
@@ -597,63 +658,66 @@ final class MoneyCsvImportService
         }
         $hasHeader = (bool) ($mapping['has_header'] ?? true);
 
-        $file = new SplFileObject($absolute, 'r');
-        $file->setFlags(SplFileObject::READ_CSV | SplFileObject::SKIP_EMPTY | SplFileObject::DROP_NEW_LINE);
-        $file->setCsvControl($delimiter);
+        // Storage::path() + SplFileObject はローカルディスク専用 API であり、
+        // Object Storage 上のファイルを読めない。readStream ならドライバを問わず
+        // 逐次読み出しできる（docs/audit/2026-07-26-pre-release-audit.md C-3）。
+        $handle = Storage::disk($disk)->readStream($path);
+        if (! is_resource($handle)) {
+            throw new InvalidArgumentException('Import source file is not readable.');
+        }
 
         $headers = null;
         $dataRowNumber = 0;
 
-        foreach ($file as $index => $csvRow) {
-            if (! is_array($csvRow)) {
-                continue;
-            }
-
-            /** @var list<string|null> $csvRow */
-            if ($this->isEmptyCsvRow($csvRow)) {
-                continue;
-            }
-
-            $decoded = array_map(
-                fn (?string $cell): string => $this->decodeCell((string) ($cell ?? ''), $encoding),
-                $csvRow,
-            );
-
-            if ($hasHeader && $headers === null) {
-                $headers = [];
-                foreach ($decoded as $i => $header) {
-                    $key = trim($header);
-                    $headers[$i] = $key !== '' ? $key : (string) $i;
+        try {
+            while (($csvRow = fgetcsv($handle, 0, $delimiter)) !== false) {
+                /** @var list<string|null> $csvRow */
+                if ($this->isEmptyCsvRow($csvRow)) {
+                    continue;
                 }
 
-                continue;
-            }
+                $decoded = array_map(
+                    fn (?string $cell): string => $this->decodeCell((string) ($cell ?? ''), $encoding),
+                    $csvRow,
+                );
 
-            if ($headers === null) {
-                $headers = [];
-                foreach (array_keys($decoded) as $i) {
-                    $headers[$i] = (string) $i;
+                if ($hasHeader && $headers === null) {
+                    $headers = [];
+                    foreach ($decoded as $i => $header) {
+                        $key = trim($header);
+                        $headers[$i] = $key !== '' ? $key : (string) $i;
+                    }
+
+                    continue;
                 }
+
+                if ($headers === null) {
+                    $headers = [];
+                    foreach (array_keys($decoded) as $i) {
+                        $headers[$i] = (string) $i;
+                    }
+                }
+
+                $raw = [];
+                $cells = [];
+                foreach ($decoded as $i => $value) {
+                    $key = $headers[$i] ?? (string) $i;
+                    $raw[$key] = $value;
+                    $cells[$key] = $value;
+                    $cells[(string) $i] = $value;
+                }
+
+                $dataRowNumber++;
+
+                yield [
+                    'row_number' => $dataRowNumber,
+                    'raw' => $raw,
+                    'cells' => $cells,
+                ];
             }
-
-            $raw = [];
-            $cells = [];
-            foreach ($decoded as $i => $value) {
-                $key = $headers[$i] ?? (string) $i;
-                $raw[$key] = $value;
-                $cells[$key] = $value;
-                $cells[(string) $i] = $value;
-            }
-
-            $dataRowNumber++;
-
-            yield [
-                'row_number' => $dataRowNumber,
-                'raw' => $raw,
-                'cells' => $cells,
-            ];
-
-            unset($index);
+        } finally {
+            // 呼び出し側が break した場合（readCsvRows の limit 到達）でも確実に閉じる。
+            fclose($handle);
         }
     }
 

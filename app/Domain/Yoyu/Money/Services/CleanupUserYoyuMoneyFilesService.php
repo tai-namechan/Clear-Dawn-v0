@@ -14,9 +14,17 @@ use Throwable;
  */
 final class CleanupUserYoyuMoneyFilesService
 {
-    private const DISK = 'local';
 
     private const PATH_PREFIX = 'yoyu-money-imports';
+
+    /**
+     * MoneyCsvImportService と同じディスクを見る必要がある。
+     * ここが食い違うと、アカウント削除時に CSV 原本が消し残る。
+     */
+    private function disk(): string
+    {
+        return (string) config('yoyu.money.import.disk', 'local');
+    }
 
     /**
      * Must be called before User::delete(). Failures abort account deletion
@@ -43,18 +51,18 @@ final class CleanupUserYoyuMoneyFilesService
             $knownPaths[$path] = true;
 
             try {
-                $this->deletePath(self::DISK, $path);
+                $this->deletePath($this->disk(), $path);
             } catch (Throwable $e) {
-                $failures[] = self::DISK.':'.$path.' ('.$e->getMessage().')';
+                $failures[] = $this->disk().':'.$path.' ('.$e->getMessage().')';
             }
         }
 
         $prefix = self::PATH_PREFIX.'/'.$user->id;
 
         try {
-            $files = Storage::disk(self::DISK)->allFiles($prefix);
+            $files = Storage::disk($this->disk())->allFiles($prefix);
         } catch (Throwable $e) {
-            $failures[] = self::DISK.':list '.$prefix.' ('.$e->getMessage().')';
+            $failures[] = $this->disk().':list '.$prefix.' ('.$e->getMessage().')';
             $files = [];
         }
 
@@ -64,9 +72,9 @@ final class CleanupUserYoyuMoneyFilesService
             }
 
             try {
-                $this->deletePath(self::DISK, $path);
+                $this->deletePath($this->disk(), $path);
             } catch (Throwable $e) {
-                $failures[] = self::DISK.':'.$path.' ('.$e->getMessage().')';
+                $failures[] = $this->disk().':'.$path.' ('.$e->getMessage().')';
             }
         }
 
