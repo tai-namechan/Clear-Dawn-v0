@@ -40,16 +40,18 @@ const items = computed(() =>
               },
               {
                   label: 'プログラム',
-                  href: '#',
+                  href: `/t/${team.value.slug}/programs`,
                   icon: ClipboardList,
-                  disabled: true,
               },
-              { label: 'レポート', href: '#', icon: BarChart3, disabled: true },
+              {
+                  label: 'レポート',
+                  href: `/t/${team.value.slug}/reports`,
+                  icon: BarChart3,
+              },
               {
                   label: 'チーム設定',
-                  href: '#',
+                  href: `/t/${team.value.slug}/settings`,
                   icon: Settings,
-                  disabled: true,
               },
           ]
         : [],
@@ -108,25 +110,21 @@ function logout(): void {
                 class="flex-1 space-y-1 px-3"
                 aria-label="チームナビゲーション"
             >
-                <component
-                    :is="item.disabled ? 'span' : Link"
+                <Link
                     v-for="item in items"
                     :key="item.label"
                     :href="item.href"
                     class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium"
                     :class="
-                        item.disabled
-                            ? 'cursor-not-allowed text-slate-300'
-                            : isActive(item.href)
-                              ? 'bg-violet-50 text-violet-700'
-                              : 'text-slate-600 hover:bg-violet-50 hover:text-violet-700'
+                        isActive(item.href)
+                            ? 'bg-violet-50 text-violet-700'
+                            : 'text-slate-600 hover:bg-violet-50 hover:text-violet-700'
                     "
                     @click="open = false"
-                    ><component :is="item.icon" :size="18" />{{ item.label
-                    }}<span v-if="item.disabled" class="ml-auto text-[10px]"
-                        >準備中</span
-                    ></component
                 >
+                    <component :is="item.icon" :size="18" />
+                    {{ item.label }}
+                </Link>
             </nav>
             <div class="border-t p-4">
                 <p class="truncate text-sm font-medium">{{ actor?.name }}</p>
