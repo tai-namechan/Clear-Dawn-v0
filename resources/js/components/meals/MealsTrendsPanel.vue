@@ -36,35 +36,39 @@ const emit = defineEmits<{
                 </p>
             </div>
 
-            <div
-                class="grid w-full grid-cols-2 items-end gap-3 sm:flex sm:w-auto sm:flex-nowrap sm:items-end"
-            >
-                <div class="flex min-w-0 flex-col gap-1 sm:w-40">
-                    <Label class="font-sans text-xs">開始</Label>
-                    <Input
-                        :model-value="filterFrom"
-                        type="date"
-                        class="w-full"
-                        @update:model-value="
-                            emit('update:filterFrom', String($event ?? ''))
-                        "
-                    />
-                </div>
-                <div class="flex min-w-0 flex-col gap-1 sm:w-40">
-                    <Label class="font-sans text-xs">終了</Label>
-                    <Input
-                        :model-value="filterTo"
-                        type="date"
-                        class="w-full"
-                        @update:model-value="
-                            emit('update:filterTo', String($event ?? ''))
-                        "
-                    />
+            <div class="flex w-full flex-col gap-3 sm:w-auto">
+                <div class="grid grid-cols-2 items-end gap-2 sm:gap-3">
+                    <div class="flex min-w-0 flex-col gap-1">
+                        <Label class="font-sans text-xs text-cd-ink-muted">
+                            開始
+                        </Label>
+                        <Input
+                            :model-value="filterFrom"
+                            type="date"
+                            class="w-full min-w-0"
+                            @update:model-value="
+                                emit('update:filterFrom', String($event ?? ''))
+                            "
+                        />
+                    </div>
+                    <div class="flex min-w-0 flex-col gap-1">
+                        <Label class="font-sans text-xs text-cd-ink-muted">
+                            終了
+                        </Label>
+                        <Input
+                            :model-value="filterTo"
+                            type="date"
+                            class="w-full min-w-0"
+                            @update:model-value="
+                                emit('update:filterTo', String($event ?? ''))
+                            "
+                        />
+                    </div>
                 </div>
                 <Button
                     type="button"
                     variant="outline"
-                    class="col-span-2 w-full font-sans sm:w-auto"
+                    class="w-full font-sans sm:w-auto sm:self-end"
                     @click="emit('apply')"
                 >
                     反映
