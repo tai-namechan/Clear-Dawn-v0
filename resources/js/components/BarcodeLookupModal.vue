@@ -684,7 +684,9 @@ const dialogTitle = computed(() => {
 
 <template>
     <Dialog :open="open" @update:open="(v) => emit('update:open', v)">
-        <DialogContent class="bg-cd-surface sm:max-w-lg">
+        <DialogContent
+            class="max-h-[90dvh] overflow-y-auto bg-cd-surface sm:max-w-lg"
+        >
             <DialogHeader>
                 <DialogTitle class="font-sans">
                     {{ dialogTitle }}
