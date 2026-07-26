@@ -36,22 +36,26 @@ const emit = defineEmits<{
                 </p>
             </div>
 
-            <div class="flex flex-wrap items-end gap-3">
-                <div class="flex flex-col gap-1">
+            <div
+                class="grid w-full grid-cols-2 items-end gap-3 sm:flex sm:w-auto sm:flex-nowrap sm:items-end"
+            >
+                <div class="flex min-w-0 flex-col gap-1 sm:w-40">
                     <Label class="font-sans text-xs">開始</Label>
                     <Input
                         :model-value="filterFrom"
                         type="date"
+                        class="w-full"
                         @update:model-value="
                             emit('update:filterFrom', String($event ?? ''))
                         "
                     />
                 </div>
-                <div class="flex flex-col gap-1">
+                <div class="flex min-w-0 flex-col gap-1 sm:w-40">
                     <Label class="font-sans text-xs">終了</Label>
                     <Input
                         :model-value="filterTo"
                         type="date"
+                        class="w-full"
                         @update:model-value="
                             emit('update:filterTo', String($event ?? ''))
                         "
@@ -60,7 +64,7 @@ const emit = defineEmits<{
                 <Button
                     type="button"
                     variant="outline"
-                    class="font-sans"
+                    class="col-span-2 w-full font-sans sm:w-auto"
                     @click="emit('apply')"
                 >
                     反映

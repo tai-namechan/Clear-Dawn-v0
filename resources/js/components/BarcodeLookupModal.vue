@@ -684,14 +684,16 @@ const dialogTitle = computed(() => {
 
 <template>
     <Dialog :open="open" @update:open="(v) => emit('update:open', v)">
-        <DialogContent class="bg-cd-surface sm:max-w-lg">
+        <DialogContent
+            class="max-h-[90dvh] overflow-y-auto bg-cd-surface sm:max-w-lg"
+        >
             <DialogHeader>
                 <DialogTitle class="font-sans">
                     {{ dialogTitle }}
                 </DialogTitle>
                 <DialogDescription class="font-sans text-sm text-cd-ink-muted">
                     <template v-if="step === 'scan'">
-                        カメラでバーコードを読み取るか、番号を直接入力してください。
+                        バーコードを読み取るか、成分表を撮影して登録できます。
                     </template>
                     <template v-else-if="step === 'ocr_capture'">
                         栄養成分表示を撮影すると AI が読み取ります。
@@ -782,12 +784,34 @@ const dialogTitle = computed(() => {
                     </div>
                 </div>
 
+                <div class="flex items-center gap-3" aria-hidden="true">
+                    <div class="h-px flex-1 bg-cd-line" />
+                    <span class="font-sans text-xs text-cd-ink-muted">または</span>
+                    <div class="h-px flex-1 bg-cd-line" />
+                </div>
+
                 <button
                     type="button"
-                    class="font-sans text-xs text-cd-ink-muted underline-offset-2 hover:underline"
+                    class="flex items-center gap-3 rounded-xl border border-cd-line px-4 py-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
                     @click="startOcrWithoutBarcode"
                 >
-                    バーコードがない商品は、成分表の撮影から登録できます
+                    <div
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10"
+                    >
+                        <Camera
+                            :size="20"
+                            :stroke-width="1.6"
+                            class="text-primary"
+                        />
+                    </div>
+                    <div class="min-w-0">
+                        <p class="font-sans text-sm font-semibold text-cd-ink">
+                            成分表を撮影
+                        </p>
+                        <p class="mt-0.5 font-sans text-xs text-cd-ink-muted">
+                            バーコードがない商品も、栄養成分表示から登録できます
+                        </p>
+                    </div>
                 </button>
             </div>
 

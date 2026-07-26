@@ -480,7 +480,7 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
 <template>
     <Dialog :open="open" @update:open="(v) => emit('update:open', v)">
         <DialogContent
-            class="bg-cd-surface sm:max-w-lg"
+            class="max-h-[90dvh] overflow-y-auto bg-cd-surface sm:max-w-lg"
             :class="step === 'confirm' ? 'p-0 gap-0' : ''"
         >
             <!-- Header for non-confirm steps -->
