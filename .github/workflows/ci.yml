@@ -38,6 +38,16 @@ jobs:
       - name: Install PHP dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
 
+      # composer.json の setup スクリプトと同じ前提を満たす。
+      # このリポジトリは .env の存在を前提としており、無いと
+      #   - アプリを生成するたび LoadEnvironmentVariables が file_get_contents に失敗し
+      #     全テストが警告扱いになる（約900件）
+      #   - AWS_DEFAULT_REGION 未定義で config/filesystems.php の videos ディスクが
+      #     解決できず VideoTest が落ちる
+      # phpunit.xml の <env> は .env より優先されるため、テスト用の値は上書きされない。
+      - name: Prepare .env
+        run: cp .env.example .env
+
       # Pint / Larastan / PHPUnit はどれが落ちても全部の結果を見たいので
       # 個別ステップに分け、if: '!cancelled()' で後続を止めない。
       - name: Pint (code style)
@@ -76,6 +86,10 @@ jobs:
 
       - name: Install PHP dependencies
         run: composer install --no-interaction --no-progress --prefer-dist
+
+      # wayfinder:generate も artisan 経由なので php ジョブと同じく .env が要る。
+      - name: Prepare .env
+        run: cp .env.example .env
 
       - uses: actions/setup-node@v4
         with:
