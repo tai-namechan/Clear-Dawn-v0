@@ -76,7 +76,9 @@ watch(
 
 <template>
     <div class="overflow-x-auto rounded-xl border border-cd-line/60">
-        <table class="w-full min-w-0 text-left font-sans text-sm sm:min-w-[420px]">
+        <table
+            class="w-full min-w-0 text-left font-sans text-sm sm:min-w-[420px]"
+        >
             <thead>
                 <tr
                     class="border-b border-cd-line/60 bg-white/40 text-xs tracking-[0.06em] text-cd-ink-muted"

@@ -5,6 +5,7 @@ namespace Tests\Feature\Yoyu\Money;
 use App\Domain\Yoyu\Money\Enums\MoneyAccountType;
 use App\Domain\Yoyu\Money\Enums\MoneyImportStatus;
 use App\Domain\Yoyu\Money\Models\MoneyAccount;
+use App\Domain\Yoyu\Money\Models\MoneyAuditEvent;
 use App\Domain\Yoyu\Money\Models\MoneyImport;
 use App\Domain\Yoyu\Money\Models\MoneyImportRow;
 use App\Domain\Yoyu\Money\Models\MoneyTransaction;
@@ -194,6 +195,15 @@ class MoneyCsvImportFlowTest extends TestCase
         $import->refresh();
         $this->assertSame(MoneyImportStatus::Completed, $import->status);
         $this->assertSame(2, (int) $import->accepted_count);
+        $this->assertSame(
+            1,
+            MoneyAuditEvent::query()
+                ->withoutUserScope()
+                ->where('event_type', 'money_import.completed')
+                ->where('subject_id', $import->id)
+                ->count(),
+            '完了済み import の再処理で監査イベントが重複してはならない。',
+        );
     }
 
     /**

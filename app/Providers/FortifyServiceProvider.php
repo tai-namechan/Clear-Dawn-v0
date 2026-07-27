@@ -51,9 +51,11 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/Login', [
             // 判定基準は routes/web.php の home ルートと揃える。
-            // パスワード再設定は公開登録の可否と無関係（既存ユーザーの復旧手段）。
+            // パスワード再設定は新規登録の導線と無関係（既存ユーザーの復旧手段）。
+            // 以前は public_signup_enabled と AND を取っていたため、フラグを
+            // false にすると既存ユーザーが再設定リンクを見つけられなかった。
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
-            'canRegister' => Features::enabled(Features::registration()),
+            'canRegister' => config('app.public_signup_enabled') && Features::enabled(Features::registration()),
             'status' => $request->session()->get('status'),
         ]));
 

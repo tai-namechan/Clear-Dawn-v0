@@ -290,7 +290,7 @@ final class MoneyCsvImportService
         $locked = null;
 
         try {
-            $processed = DB::transaction(function () use ($import, $mapping, &$locked): bool {
+            DB::transaction(function () use ($import, $mapping, &$locked): bool {
                 /** @var MoneyImport|null $claimed */
                 $claimed = MoneyImport::query()
                     ->withoutUserScope()
@@ -434,31 +434,27 @@ final class MoneyCsvImportService
                 $claimed->error_message = null;
                 $claimed->save();
 
+                // The completion state and its audit event are one atomic unit.
+                // If audit persistence fails, the import transaction rolls back
+                // so a queue retry can safely perform both operations again.
+                $this->auditService->record(
+                    (int) $claimed->user_id,
+                    'money_import.completed',
+                    MoneyImport::class,
+                    (string) $claimed->id,
+                    null,
+                    [
+                        'id' => $claimed->id,
+                        'status' => MoneyImportStatus::Completed->value,
+                        'row_count' => $claimed->row_count,
+                        'accepted_count' => $claimed->accepted_count,
+                        'rejected_count' => $claimed->rejected_count,
+                        'duplicate_count' => $claimed->duplicate_count,
+                    ],
+                );
+
                 return true;
             });
-
-            // 二重実行の後続や、既に Completed だった場合は監査ログを出さない
-            // （同じ取り込みに対して completed イベントが2回並ぶのを防ぐ）。
-            if (! $processed || $locked === null) {
-                return;
-            }
-
-            // Intentionally does NOT update account balance.
-            $this->auditService->record(
-                (int) $locked->user_id,
-                'money_import.completed',
-                MoneyImport::class,
-                (string) $locked->id,
-                null,
-                [
-                    'id' => $locked->id,
-                    'status' => MoneyImportStatus::Completed->value,
-                    'row_count' => $locked->refresh()->row_count,
-                    'accepted_count' => $locked->accepted_count,
-                    'rejected_count' => $locked->rejected_count,
-                    'duplicate_count' => $locked->duplicate_count,
-                ],
-            );
         } catch (Throwable $e) {
             // 失敗記録はロールバック済みトランザクションの外で行う。
             // ロックを取る前に落ちた場合（$locked === null）は状態を触らない。
@@ -670,7 +666,10 @@ final class MoneyCsvImportService
         $dataRowNumber = 0;
 
         try {
-            while (($csvRow = fgetcsv($handle, 0, $delimiter)) !== false) {
+            // enclosure / escape は明示する。PHP 8.4 で escape 省略は非推奨になり、
+            // 省略すると CSV の1行ごとに Deprecation が出る。値は SplFileObject の
+            // 既定（setCsvControl の第2/第3引数）と同じにして挙動を維持する。
+            while (($csvRow = fgetcsv($handle, 0, $delimiter, '"', '\\')) !== false) {
                 /** @var list<string|null> $csvRow */
                 if ($this->isEmptyCsvRow($csvRow)) {
                     continue;

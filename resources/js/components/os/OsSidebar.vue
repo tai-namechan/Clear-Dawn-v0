@@ -21,7 +21,11 @@ import {
     SidebarHeader,
 } from '@/components/ui/sidebar';
 import { useCurrentUrl } from '@/composables/useCurrentUrl';
-import { home as kiokuHome, settings as kiokuSettings, sources as kiokuSources } from '@/routes/kioku';
+import {
+    home as kiokuHome,
+    settings as kiokuSettings,
+    sources as kiokuSources,
+} from '@/routes/kioku';
 import { index as kiokuLetters } from '@/routes/kioku/letters';
 import { index as kiokuMemories } from '@/routes/kioku/memories';
 import { home as yoyuHome } from '@/routes/yoyu';
@@ -43,9 +47,7 @@ type OsNavItem = {
 const page = usePage();
 const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
 
-const currentProduct = computed(
-    () => page.props.currentProduct as ProductKey,
-);
+const currentProduct = computed(() => page.props.currentProduct as ProductKey);
 
 const isMoneySection = computed(() =>
     page.url.split('?')[0].startsWith('/yoyu/money'),
@@ -69,7 +71,9 @@ const sidebarImage = computed(() => {
 });
 
 const sidebarClass = computed(() =>
-    currentProduct.value === 'kioku' ? 'os-sidebar os-sidebar-kioku' : 'os-sidebar os-sidebar-yoyu',
+    currentProduct.value === 'kioku'
+        ? 'os-sidebar os-sidebar-kioku'
+        : 'os-sidebar os-sidebar-yoyu',
 );
 
 const navItems = computed((): OsNavItem[] => {
@@ -175,11 +179,7 @@ const idleClass = computed(() =>
 </script>
 
 <template>
-    <Sidebar
-        collapsible="icon"
-        variant="sidebar"
-        :class="sidebarClass"
-    >
+    <Sidebar collapsible="icon" variant="sidebar" :class="sidebarClass">
         <div
             aria-hidden="true"
             class="pointer-events-none absolute inset-0 overflow-hidden"
@@ -193,9 +193,11 @@ const idleClass = computed(() =>
 
         <!-- Branding + tagline live in the sidebar image; reserve space so nav clears them.
              Keep overflow-y-auto so the last item (e.g. お金) stays reachable on short viewports. -->
-        <SidebarHeader class="relative z-10 min-h-48 group-data-[collapsible=icon]:min-h-8" />
+        <SidebarHeader
+            class="relative z-10 min-h-48 group-data-[collapsible=icon]:min-h-8"
+        />
 
-        <SidebarContent class="relative z-10 overflow-y-auto overflow-x-hidden">
+        <SidebarContent class="relative z-10 overflow-x-hidden overflow-y-auto">
             <nav
                 aria-label="プロダクトメニュー"
                 class="mt-14 flex flex-col items-center gap-3 group-data-[collapsible=icon]:mt-4 group-data-[collapsible=icon]:gap-4"
@@ -212,11 +214,7 @@ const idleClass = computed(() =>
                     :prefetch="item.prefetch ?? false"
                     :only="item.only ?? []"
                 >
-                    <component
-                        :is="item.icon"
-                        :size="22"
-                        :stroke-width="1.5"
-                    />
+                    <component :is="item.icon" :size="22" :stroke-width="1.5" />
                     <span
                         class="text-xs font-semibold tracking-wide whitespace-nowrap group-data-[collapsible=icon]:hidden"
                     >

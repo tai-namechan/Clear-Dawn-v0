@@ -21,14 +21,6 @@
         <env name="APP_ENV" value="testing"/>
         <env name="APP_KEY" value="base64:VCNrI53xrDZYyvrIC8nQYXaYvQWD7Z3uRcmONqagzuM="/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
-        <!--
-            登録機能は config/fortify.php でこのフラグ制御下にある。
-            テストでは既定を true にして登録系テストが実際に走るようにする
-            （未設定だと false になり skipUnlessFortifyHas が全て skip し、
-            「緑だが何も検証していない」状態になる）。
-            フラグ false の挙動は RegistrationTest 側で個別に上書きして検証する。
-        -->
-        <env name="APP_PUBLIC_SIGNUP_ENABLED" value="true"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>

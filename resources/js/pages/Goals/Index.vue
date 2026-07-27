@@ -66,7 +66,7 @@ const statusClasses = goalStatusBadgeClasses;
                                 aria-hidden="true"
                             />
                             <span
-                                class="min-w-0 flex-1 break-words whitespace-normal font-sans text-base font-semibold text-cd-ink group-hover:text-primary"
+                                class="min-w-0 flex-1 font-sans text-base font-semibold break-words whitespace-normal text-cd-ink group-hover:text-primary"
                             >
                                 {{ goal.name }}
                             </span>
@@ -100,7 +100,7 @@ const statusClasses = goalStatusBadgeClasses;
                                     class="group flex min-w-0 flex-wrap items-start gap-x-2 gap-y-1 py-1 sm:flex-nowrap sm:items-center"
                                 >
                                     <span
-                                        class="min-w-0 flex-1 break-words whitespace-normal font-sans text-sm text-cd-ink group-hover:text-primary"
+                                        class="min-w-0 flex-1 font-sans text-sm break-words whitespace-normal text-cd-ink group-hover:text-primary"
                                     >
                                         {{ child.name }}
                                     </span>

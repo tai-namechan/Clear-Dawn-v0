@@ -75,13 +75,12 @@ Route::get('/', function () {
     }
 
     return Inertia::render('PublicLandingPage', [
-        // パスワード再設定は既存ユーザーの復旧手段であり、公開登録の可否とは無関係。
-        // 以前は public_signup_enabled と AND を取っていたため、招待制運用にすると
-        // 既存ユーザーが再設定リンクを見つけられなかった。
+        // パスワード再設定は既存ユーザーの復旧手段であり、新規登録の導線とは無関係。
+        // 以前は public_signup_enabled と AND を取っていたため、フラグを false に
+        // すると既存ユーザーが再設定リンクを見つけられなかった。
         'canResetPassword' => Features::enabled(Features::resetPasswords()),
-        // registration は config/fortify.php 側でフラグ制御済み。ここで二重に
-        // 判定すると正が2箇所になるため、機能の有効性だけを見る。
-        'canRegister' => Features::enabled(Features::registration()),
+        // 登録導線の出し分けは UI 側のみで行う（docs/product/signup-policy.md）。
+        'canRegister' => config('app.public_signup_enabled') && Features::enabled(Features::registration()),
         'passwordRules' => Password::defaults()->toPasswordRulesString(),
     ]);
 })->name('home');

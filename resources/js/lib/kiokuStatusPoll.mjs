@@ -5,11 +5,7 @@
 
 export const KIOKU_PENDING_STATUSES = new Set(['captured', 'enriching']);
 
-export const KIOKU_TERMINAL_STATUSES = new Set([
-    'ready',
-    'failed',
-    'missing',
-]);
+export const KIOKU_TERMINAL_STATUSES = new Set(['ready', 'failed', 'missing']);
 
 export const KIOKU_POLL_MAX_DURATION_MS = 180_000;
 export const KIOKU_POLL_MAX_CONSECUTIVE_FAILURES = 5;
@@ -310,7 +306,12 @@ export function createKiokuStatusPollEngine(options) {
      * @param {number} requestRunId
      */
     function scheduleNext(requestRunId) {
-        if (requestRunId !== runId || disposed || stopped || startedAt === null) {
+        if (
+            requestRunId !== runId ||
+            disposed ||
+            stopped ||
+            startedAt === null
+        ) {
             return;
         }
 

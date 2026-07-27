@@ -206,10 +206,14 @@ async function toggleFavorite(food: FoodItem): Promise<void> {
                         class="flex items-start justify-between gap-3 border-b border-cd-line px-5 py-4 last:border-b-0"
                     >
                         <div class="min-w-0">
-                            <p class="font-sans text-base font-semibold text-cd-ink">
+                            <p
+                                class="font-sans text-base font-semibold text-cd-ink"
+                            >
                                 {{ food.name }}
                             </p>
-                            <p class="mt-0.5 font-sans text-xs text-cd-ink-muted">
+                            <p
+                                class="mt-0.5 font-sans text-xs text-cd-ink-muted"
+                            >
                                 {{ food.serving_label }} ·
                                 {{ formatNum(food.kcal) }} kcal · P
                                 {{ formatNum(food.protein_g) }} / F
@@ -228,7 +232,11 @@ async function toggleFavorite(food: FoodItem): Promise<void> {
                                 <Star
                                     :size="14"
                                     :stroke-width="1.6"
-                                    :fill="food.is_favorite ? 'currentColor' : 'none'"
+                                    :fill="
+                                        food.is_favorite
+                                            ? 'currentColor'
+                                            : 'none'
+                                    "
                                     class="text-primary"
                                 />
                             </Button>
@@ -288,7 +296,12 @@ async function toggleFavorite(food: FoodItem): Promise<void> {
                 </div>
                 <div class="flex flex-col gap-1">
                     <Label class="font-sans text-xs">kcal</Label>
-                    <Input v-model="form.kcal" type="number" min="0" step="0.1" />
+                    <Input
+                        v-model="form.kcal"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                    />
                 </div>
                 <div class="flex flex-col gap-1">
                     <Label class="font-sans text-xs">P (g)</Label>
@@ -301,7 +314,12 @@ async function toggleFavorite(food: FoodItem): Promise<void> {
                 </div>
                 <div class="flex flex-col gap-1">
                     <Label class="font-sans text-xs">F (g)</Label>
-                    <Input v-model="form.fat_g" type="number" min="0" step="0.1" />
+                    <Input
+                        v-model="form.fat_g"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                    />
                 </div>
                 <div class="flex flex-col gap-1">
                     <Label class="font-sans text-xs">C (g)</Label>

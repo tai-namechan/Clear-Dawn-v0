@@ -17,6 +17,26 @@ class AiUsageReconcileCommandTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_reconcile_command_defaults_to_the_current_period(): void
+    {
+        config(['app.timezone' => 'UTC']);
+        $user = User::factory()->create();
+        $period = now()->format('Y-m');
+
+        AiUsageLog::factory()->create([
+            'user_id' => $user->id,
+            'estimated_cost_usd' => '0.7500',
+            'created_at' => now(),
+        ]);
+
+        $monthly = app(AiUsageLedger::class)->ensureMonthly($user->id, $period);
+        $monthly->update(['spent_usd' => '0.000000']);
+
+        $this->artisan('ai:usage-reconcile')->assertSuccessful();
+
+        $this->assertSame('0.750000', AiMoney::of((string) $monthly->fresh()->spent_usd)->toString());
+    }
+
     public function test_reconcile_command_is_idempotent(): void
     {
         config(['app.timezone' => 'UTC']);

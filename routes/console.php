@@ -39,7 +39,7 @@ Schedule::command('ai:usage-reconcile')
     ->onOneServer();
 
 // テスト便りの掃除（監査 H-2）。
-Schedule::command('kioku:letters:test:prune')
+Schedule::command('kioku:letters:test:prune --expired-only')
     ->daily()
     ->withoutOverlapping(10)
     ->onOneServer();

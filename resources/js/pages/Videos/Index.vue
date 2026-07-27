@@ -1,12 +1,6 @@
 <script setup lang="ts">
 import { Head, router } from '@inertiajs/vue3';
-import {
-    AlertTriangle,
-    Clapperboard,
-    Plus,
-    Trash2,
-    Upload,
-} from '@lucide/vue';
+import { AlertTriangle, Clapperboard, Plus, Trash2, Upload } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
@@ -23,10 +17,7 @@ import { Input } from '@/components/ui/input';
 import VideoThumb from '@/components/video/VideoThumb.vue';
 import { useVideoUpload } from '@/composables/useVideoUpload';
 import { apiFetch } from '@/lib/apiFetch';
-import {
-    formatVideoDuration,
-    videoStatusLabels,
-} from '@/lib/routineConstants';
+import { formatVideoDuration, videoStatusLabels } from '@/lib/routineConstants';
 import { isMovVideoFile } from '@/lib/videoMimeType.mjs';
 import type { Video } from '@/types/routine';
 
@@ -144,9 +135,7 @@ async function deleteVideo(video: Video): Promise<void> {
 <template>
     <Head title="動画" />
 
-    <div
-        class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6"
-    >
+    <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4">
             <PageSectionCard>
                 <div class="flex items-start justify-between gap-4">
@@ -344,7 +333,7 @@ async function deleteVideo(video: Video): Promise<void> {
         @update:open="(v) => (showPlaybackModal = v)"
     >
         <DialogContent
-            class="bg-cd-surface max-h-[90dvh] overflow-y-auto p-4 sm:max-w-2xl sm:p-6"
+            class="max-h-[90dvh] overflow-y-auto bg-cd-surface p-4 sm:max-w-2xl sm:p-6"
         >
             <DialogHeader class="pr-8">
                 <DialogTitle
