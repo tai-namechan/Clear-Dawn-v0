@@ -155,7 +155,12 @@ const navItems = computed((): OsNavItem[] => {
             active: isMoneySection.value,
             preserveState: false,
             replace: false,
-            prefetch: true,
+            // prefetch しない（監査 H-1）。
+            // GET /yoyu/money は MoneySetupService::ensureForUser と
+            // RecurringCashflowGenerator::generateForUser を呼ぶため、
+            // ホバーしただけで定期キャッシュフローの金融レコードが作られてしまう。
+            // GET から副作用を分離するまで prefetch は付けない。
+            prefetch: false,
         },
     ];
 });

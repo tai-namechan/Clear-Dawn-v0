@@ -28,8 +28,16 @@ Route::middleware(['auth', 'verified'])->prefix('yoyu')->name('yoyu.')->group(fu
         ->name('events.travel-lead');
     Route::post('/focus', [HomeController::class, 'storeFocus'])->name('focus.store');
     Route::patch('/focus/{focus}', [HomeController::class, 'updateFocus'])->name('focus.update');
-    Route::post('/briefing', [HomeController::class, 'regenerateBriefing'])->name('briefing.regenerate');
-    Route::post('/chat', [HomeController::class, 'chat'])->name('chat');
+    // AI を同期的に呼ぶエンドポイントはコストに比例した throttle を付ける（監査 H-3）。
+    // chat はアプリ中で最も高価（tier=strong / max_tokens=1100 / 履歴30件×4000文字）
+    // なのに従来 throttle が無く、月次クォータを短時間で使い切れる状態だった。
+    // 比較: kioku キャプチャ 60/分・食事推定 10/分。保護が価格と逆相関していた。
+    Route::post('/briefing', [HomeController::class, 'regenerateBriefing'])
+        ->middleware('throttle:10,1')
+        ->name('briefing.regenerate');
+    Route::post('/chat', [HomeController::class, 'chat'])
+        ->middleware('throttle:20,1')
+        ->name('chat');
 
     Route::get('/settings', [CalendarConnectionController::class, 'settings'])->name('settings');
     Route::patch('/settings/travel-lead', [CalendarConnectionController::class, 'updateTravelLead'])
