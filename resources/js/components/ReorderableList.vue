@@ -1,18 +1,10 @@
 <script setup lang="ts" generic="T extends ReorderableItem">
 import { ArrowDown, ArrowUp, GripVertical } from '@lucide/vue';
 import Sortable from 'sortablejs';
-import {
-    computed,
-    onBeforeUnmount,
-    onMounted,
-    ref,
-    watch,
-} from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { ComponentPublicInstance } from 'vue';
 import { Button } from '@/components/ui/button';
-import {
-    useReorderableList,
-} from '@/composables/useReorderableList';
+import { useReorderableList } from '@/composables/useReorderableList';
 import type { ReorderableItem } from '@/composables/useReorderableList';
 
 interface Props {
@@ -188,11 +180,7 @@ function setContainerRef(element: Element | ComponentPublicInstance | null) {
         </tr>
     </tbody>
 
-    <ul
-        v-else
-        :ref="setContainerRef"
-        class="reorderable-list flex flex-col"
-    >
+    <ul v-else :ref="setContainerRef" class="reorderable-list flex flex-col">
         <li
             v-for="(item, index) in displayItems"
             :key="item.id"
@@ -200,7 +188,9 @@ function setContainerRef(element: Element | ComponentPublicInstance | null) {
             :class="resolveItemClass(item)"
             :data-id="item.id"
         >
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <div
+                class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+            >
                 <div class="flex min-w-0 flex-1 items-start gap-2">
                     <div
                         v-if="!disabled"
@@ -217,7 +207,9 @@ function setContainerRef(element: Element | ComponentPublicInstance | null) {
                         >
                             <GripVertical :size="16" :stroke-width="1.6" />
                         </button>
-                        <div class="flex flex-col sm:flex-row sm:items-center sm:gap-0.5">
+                        <div
+                            class="flex flex-col sm:flex-row sm:items-center sm:gap-0.5"
+                        >
                             <Button
                                 type="button"
                                 variant="ghost"
@@ -254,7 +246,9 @@ function setContainerRef(element: Element | ComponentPublicInstance | null) {
                         <slot name="row" :item="item" :index="index" />
                     </div>
                 </div>
-                <div class="flex shrink-0 items-center justify-end gap-1 self-end sm:self-center">
+                <div
+                    class="flex shrink-0 items-center justify-end gap-1 self-end sm:self-center"
+                >
                     <slot name="actions" :item="item" :index="index" />
                 </div>
             </div>

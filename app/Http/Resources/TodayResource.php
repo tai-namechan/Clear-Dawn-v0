@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\RoutinePlan;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Collection;
@@ -13,7 +14,7 @@ class TodayResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        /** @var array{date: string, plans: Collection<int, \App\Models\RoutinePlan>} $data */
+        /** @var array{date: string, plans: Collection<int, RoutinePlan>} $data */
         $data = $this->resource;
 
         return [

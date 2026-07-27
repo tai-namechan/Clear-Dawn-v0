@@ -167,10 +167,7 @@ watch(
     },
 );
 
-function metricValue(
-    list: DailyMetricEntry[],
-    key: string,
-): number | null {
+function metricValue(list: DailyMetricEntry[], key: string): number | null {
     const entry = list.find((item) => item.metric.key === key);
 
     if (!entry?.record?.value) {
@@ -272,7 +269,9 @@ function conditionScore(list: DailyMetricEntry[]): number | null {
         return null;
     }
 
-    return Math.round(parts.reduce((sum, part) => sum + part, 0) / parts.length);
+    return Math.round(
+        parts.reduce((sum, part) => sum + part, 0) / parts.length,
+    );
 }
 
 const overall = computed(() => {
@@ -332,8 +331,9 @@ const statusCards = computed(() =>
     }),
 );
 
-const hasAnyPrimaryInput = computed(() =>
-    statusCards.value.some((card) => card.filled) || props.checkin != null,
+const hasAnyPrimaryInput = computed(
+    () =>
+        statusCards.value.some((card) => card.filled) || props.checkin != null,
 );
 
 const hasChartData = computed(() =>
@@ -456,9 +456,7 @@ const chartOption = computed<EChartsCoreOption>(() => {
                 data: dates.map((date) => weightMap.get(date) ?? null),
                 tooltip: {
                     valueFormatter: (value: unknown) =>
-                        value == null || value === ''
-                            ? '—'
-                            : `${value} kg`,
+                        value == null || value === '' ? '—' : `${value} kg`,
                 },
             },
             {
@@ -470,9 +468,7 @@ const chartOption = computed<EChartsCoreOption>(() => {
                 data: dates.map((date) => sleepHoursMap.get(date) ?? null),
                 tooltip: {
                     valueFormatter: (value: unknown) =>
-                        value == null || value === ''
-                            ? '—'
-                            : `${value} 時間`,
+                        value == null || value === '' ? '—' : `${value} 時間`,
                 },
             },
             {
@@ -484,9 +480,7 @@ const chartOption = computed<EChartsCoreOption>(() => {
                 data: dates.map((date) => pitchMap.get(date) ?? null),
                 tooltip: {
                     valueFormatter: (value: unknown) =>
-                        value == null || value === ''
-                            ? '—'
-                            : `${value} km/h`,
+                        value == null || value === '' ? '—' : `${value} km/h`,
                 },
             },
         ],
@@ -554,7 +548,13 @@ async function saveAll(): Promise<void> {
 
         saveMessage.value = '保存しました。';
         router.reload({
-            only: ['metrics', 'previousMetrics', 'chartSeries', 'date', 'checkin'],
+            only: [
+                'metrics',
+                'previousMetrics',
+                'chartSeries',
+                'date',
+                'checkin',
+            ],
         });
     } catch {
         saveMessage.value = '保存に失敗しました。';
@@ -568,7 +568,9 @@ async function saveAll(): Promise<void> {
     <Head title="コンディション" />
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
-        <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 md:gap-5">
+        <div
+            class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 md:gap-5"
+        >
             <PageTabShell
                 title="コンディション"
                 subtitle="今日の入力と、過去の推移を分けて見ます"
@@ -620,10 +622,7 @@ async function saveAll(): Promise<void> {
             </PageTabShell>
 
             <!-- 今日（二次ブロック） -->
-            <div
-                v-show="activeTab === 'today'"
-                class="flex flex-col gap-4"
-            >
+            <div v-show="activeTab === 'today'" class="flex flex-col gap-4">
                 <DailyCheckinPanel
                     v-model="checkinForm"
                     :saving="savingCheckin"
@@ -647,7 +646,9 @@ async function saveAll(): Promise<void> {
                     aria-label="今日のコンディションを記録"
                 >
                     <div class="border-b border-cd-line px-5 py-4">
-                        <h2 class="font-sans text-base font-semibold text-cd-ink">
+                        <h2
+                            class="font-sans text-base font-semibold text-cd-ink"
+                        >
                             基本の測定を記録
                         </h2>
                         <p class="mt-1 font-sans text-xs text-cd-ink-muted">
@@ -675,11 +676,14 @@ async function saveAll(): Promise<void> {
                                         }}
                                         <span
                                             class="ml-1 text-xs font-normal text-cd-ink-muted"
-                                        >({{ entry.metric.unit }})</span>
+                                            >({{ entry.metric.unit }})</span
+                                        >
                                     </Label>
                                 </div>
 
-                                <template v-if="entry.metric.key === 'sleep_minutes'">
+                                <template
+                                    v-if="entry.metric.key === 'sleep_minutes'"
+                                >
                                     <div class="flex items-center gap-2">
                                         <Input
                                             v-model="sleepHours"
@@ -688,7 +692,9 @@ async function saveAll(): Promise<void> {
                                             placeholder="時"
                                             class="text-center"
                                         />
-                                        <span class="font-sans text-sm">時間</span>
+                                        <span class="font-sans text-sm"
+                                            >時間</span
+                                        >
                                         <Input
                                             v-model="sleepMinutesPart"
                                             type="text"
@@ -696,12 +702,16 @@ async function saveAll(): Promise<void> {
                                             placeholder="分"
                                             class="text-center"
                                         />
-                                        <span class="font-sans text-sm">分</span>
+                                        <span class="font-sans text-sm"
+                                            >分</span
+                                        >
                                     </div>
                                 </template>
 
                                 <template
-                                    v-else-if="entry.metric.value_type === 'scale_1_5'"
+                                    v-else-if="
+                                        entry.metric.value_type === 'scale_1_5'
+                                    "
                                 >
                                     <div class="flex flex-wrap gap-1.5">
                                         <Button
@@ -710,12 +720,15 @@ async function saveAll(): Promise<void> {
                                             type="button"
                                             size="sm"
                                             :variant="
-                                                values[entry.metric.key] === String(n)
+                                                values[entry.metric.key] ===
+                                                String(n)
                                                     ? 'default'
                                                     : 'outline'
                                             "
                                             class="min-w-9 font-sans"
-                                            @click="setScale(entry.metric.key, n)"
+                                            @click="
+                                                setScale(entry.metric.key, n)
+                                            "
                                         >
                                             {{ n }}
                                         </Button>
@@ -733,20 +746,25 @@ async function saveAll(): Promise<void> {
                                                 stepValue(
                                                     entry.metric.key,
                                                     -1,
-                                                    entry.metric.value_type === 'decimal'
+                                                    entry.metric.value_type ===
+                                                        'decimal'
                                                         ? 0.1
                                                         : 1,
                                                 )
                                             "
                                         >
-                                            <Minus :size="14" :stroke-width="1.6" />
+                                            <Minus
+                                                :size="14"
+                                                :stroke-width="1.6"
+                                            />
                                         </Button>
                                         <Input
                                             :id="`metric-${entry.metric.key}`"
                                             v-model="values[entry.metric.key]"
                                             type="text"
                                             :inputmode="
-                                                entry.metric.value_type === 'decimal'
+                                                entry.metric.value_type ===
+                                                'decimal'
                                                     ? 'decimal'
                                                     : 'numeric'
                                             "
@@ -762,13 +780,17 @@ async function saveAll(): Promise<void> {
                                                 stepValue(
                                                     entry.metric.key,
                                                     1,
-                                                    entry.metric.value_type === 'decimal'
+                                                    entry.metric.value_type ===
+                                                        'decimal'
                                                         ? 0.1
                                                         : 1,
                                                 )
                                             "
                                         >
-                                            <Plus :size="14" :stroke-width="1.6" />
+                                            <Plus
+                                                :size="14"
+                                                :stroke-width="1.6"
+                                            />
                                         </Button>
                                     </div>
                                 </template>
@@ -819,7 +841,8 @@ async function saveAll(): Promise<void> {
                                     }}
                                     <span
                                         class="ml-1 text-xs font-normal text-cd-ink-muted"
-                                    >({{ entry.metric.unit }})</span>
+                                        >({{ entry.metric.unit }})</span
+                                    >
                                 </Label>
                                 <div class="mt-3 flex items-center gap-2">
                                     <Button
@@ -830,7 +853,8 @@ async function saveAll(): Promise<void> {
                                             stepValue(
                                                 entry.metric.key,
                                                 -1,
-                                                entry.metric.value_type === 'decimal'
+                                                entry.metric.value_type ===
+                                                    'decimal'
                                                     ? 0.1
                                                     : 1,
                                             )
@@ -852,7 +876,8 @@ async function saveAll(): Promise<void> {
                                             stepValue(
                                                 entry.metric.key,
                                                 1,
-                                                entry.metric.value_type === 'decimal'
+                                                entry.metric.value_type ===
+                                                    'decimal'
                                                     ? 0.1
                                                     : 1,
                                             )
@@ -881,7 +906,8 @@ async function saveAll(): Promise<void> {
                         <Label
                             for="reflection-note"
                             class="font-sans text-sm font-semibold text-cd-ink"
-                        >今日の振り返りメモ</Label>
+                            >今日の振り返りメモ</Label
+                        >
                         <textarea
                             id="reflection-note"
                             v-model="reflection"

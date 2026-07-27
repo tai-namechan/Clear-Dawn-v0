@@ -65,7 +65,11 @@ function updateField(key: keyof CheckinFormState, raw: string): void {
 
         <div
             class="mt-4 grid gap-3"
-            :class="compact ? 'grid-cols-2 md:grid-cols-3' : 'sm:grid-cols-2 lg:grid-cols-3'"
+            :class="
+                compact
+                    ? 'grid-cols-2 md:grid-cols-3'
+                    : 'sm:grid-cols-2 lg:grid-cols-3'
+            "
         >
             <label
                 v-for="field in fields"
@@ -74,7 +78,9 @@ function updateField(key: keyof CheckinFormState, raw: string): void {
             >
                 <span class="flex items-center justify-between gap-2">
                     <span>{{ field[1] }}</span>
-                    <span class="tabular-nums text-sm font-semibold text-cd-ink">
+                    <span
+                        class="text-sm font-semibold text-cd-ink tabular-nums"
+                    >
                         {{ model[field[0]] }} / 10
                     </span>
                 </span>

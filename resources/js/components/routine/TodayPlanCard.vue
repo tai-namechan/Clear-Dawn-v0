@@ -47,10 +47,13 @@ const description = computed(() => planDescription(props.plan));
 const durationMinutes = computed(() => displayDurationMinutes(props.plan));
 const clockRange = computed(() => {
     if (status.value === 'not_started') {
-return null;
-}
+        return null;
+    }
 
-    return formatClockRange(session.value?.started_at, session.value?.finished_at);
+    return formatClockRange(
+        session.value?.started_at,
+        session.value?.finished_at,
+    );
 });
 
 const primaryHref = computed(() => {
@@ -63,18 +66,24 @@ const primaryHref = computed(() => {
 
 const primaryLabel = computed(() => {
     if (status.value === 'in_progress') {
-return '続ける';
-}
+        return '続ける';
+    }
 
     if (status.value === 'completed') {
-return '結果';
-}
+        return '結果';
+    }
 
     return '開始';
 });
 
-const statusMeta: Record<TodayPlanRunStatus, { label: string; className: string }> = {
-    completed: { label: '完了', className: planRunStatusBadgeClasses.completed },
+const statusMeta: Record<
+    TodayPlanRunStatus,
+    { label: string; className: string }
+> = {
+    completed: {
+        label: '完了',
+        className: planRunStatusBadgeClasses.completed,
+    },
     in_progress: {
         label: '進行中',
         className: planRunStatusBadgeClasses.in_progress,
@@ -89,7 +98,11 @@ const iconComponent = computed((): Component => {
     const purpose = primaryStepPurpose(props.plan);
     const category = props.plan.steps?.[0]?.routine_item?.category;
 
-    if (purpose === 'strength' || purpose === 'power' || category === 'strength') {
+    if (
+        purpose === 'strength' ||
+        purpose === 'power' ||
+        category === 'strength'
+    ) {
         return Footprints;
     }
 
@@ -114,8 +127,8 @@ const iconComponent = computed((): Component => {
 
 async function startSession(): Promise<void> {
     if (starting.value || status.value !== 'not_started') {
-return;
-}
+        return;
+    }
 
     starting.value = true;
 
@@ -139,11 +152,7 @@ return;
             <div
                 class="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#F3F1F8] text-primary"
             >
-                <component
-                    :is="iconComponent"
-                    :size="20"
-                    :stroke-width="1.6"
-                />
+                <component :is="iconComponent" :size="20" :stroke-width="1.6" />
             </div>
 
             <div class="min-w-0 flex-1 overflow-hidden">
@@ -227,17 +236,12 @@ return;
                             class="text-cd-ink-muted sm:inline-flex"
                             :aria-label="`${plan.title} のメニュー`"
                         >
-                            <EllipsisVertical
-                                :size="16"
-                                :stroke-width="1.6"
-                            />
+                            <EllipsisVertical :size="16" :stroke-width="1.6" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" class="min-w-40">
                         <DropdownMenuItem as-child>
-                            <Link :href="`/plans/${plan.id}`"
-                                >プラン詳細</Link
-                            >
+                            <Link :href="`/plans/${plan.id}`">プラン詳細</Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem
                             v-if="status === 'in_progress'"

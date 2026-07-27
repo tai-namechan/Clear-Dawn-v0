@@ -96,7 +96,10 @@ const emit = defineEmits<{
             </Button>
         </div>
 
-        <div v-if="canRegister" class="text-center text-sm text-muted-foreground">
+        <div
+            v-if="canRegister"
+            class="text-center text-sm text-muted-foreground"
+        >
             アカウントをお持ちでない方
             <button
                 v-if="modal"

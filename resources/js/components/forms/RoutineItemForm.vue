@@ -72,11 +72,7 @@ const note = defineModel<string>('note', { required: true });
             </SelectContent>
         </Select>
 
-        <Input
-            v-model="note"
-            placeholder="メモ（任意）"
-            :disabled="disabled"
-        />
+        <Input v-model="note" placeholder="メモ（任意）" :disabled="disabled" />
 
         <p v-if="error" class="font-sans text-xs text-destructive">
             {{ error }}

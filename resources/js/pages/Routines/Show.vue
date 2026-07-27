@@ -1,11 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
-import {
-    ArrowLeft,
-    CalendarDays,
-    Pencil,
-    Plus,
-} from '@lucide/vue';
+import { ArrowLeft, CalendarDays, Pencil, Plus } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import RoutineBasicsForm from '@/components/forms/RoutineBasicsForm.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
@@ -76,7 +71,9 @@ watch(
 );
 
 const steps = computed(() => ensureArray(props.routine.steps));
-const isCreateMode = computed(() => props.isCreating || props.routine.id === null);
+const isCreateMode = computed(
+    () => props.isCreating || props.routine.id === null,
+);
 
 /** ①名前 → ②ステップ → ③今日/作戦 */
 const flowPhase = computed<'name' | 'steps' | 'ready'>(() => {
@@ -362,7 +359,9 @@ async function deleteRoutine(): Promise<void> {
         return;
     }
 
-    if (!confirm(`「${formName.value || props.routine.name}」を削除しますか？`)) {
+    if (
+        !confirm(`「${formName.value || props.routine.name}」を削除しますか？`)
+    ) {
         return;
     }
 
@@ -399,32 +398,62 @@ function stepPurposeKey(step: RoutineStep) {
                         ルーティン一覧
                     </Link>
 
-                    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div
+                        class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
+                    >
                         <div class="min-w-0">
                             <PageTitleOrnament
                                 :title="isCreateMode ? pageHeading : formName"
                                 :subtitle="pageSubtitle"
                                 align="left"
                             />
-                            <div v-if="!isCreateMode" class="mt-3 flex flex-wrap gap-2">
-                                <span class="rounded-full bg-primary/8 px-3 py-1 font-sans text-xs font-medium text-primary">
+                            <div
+                                v-if="!isCreateMode"
+                                class="mt-3 flex flex-wrap gap-2"
+                            >
+                                <span
+                                    class="rounded-full bg-primary/8 px-3 py-1 font-sans text-xs font-medium text-primary"
+                                >
                                     {{ steps.length }} STEP
                                 </span>
-                                <span class="rounded-full bg-white px-3 py-1 font-sans text-xs text-cd-ink-muted">
-                                    {{ formatDurationSeconds(totalDurationSeconds) }}
+                                <span
+                                    class="rounded-full bg-white px-3 py-1 font-sans text-xs text-cd-ink-muted"
+                                >
+                                    {{
+                                        formatDurationSeconds(
+                                            totalDurationSeconds,
+                                        )
+                                    }}
                                 </span>
-                                <span class="rounded-full bg-white px-3 py-1 font-sans text-xs text-cd-ink-muted">
+                                <span
+                                    class="rounded-full bg-white px-3 py-1 font-sans text-xs text-cd-ink-muted"
+                                >
                                     {{ dominantCategory }}
                                 </span>
                             </div>
                         </div>
 
-                        <div v-if="flowPhase === 'ready'" class="flex flex-wrap gap-2">
-                            <Button type="button" variant="outline" @click="showBasics = !showBasics">
+                        <div
+                            v-if="flowPhase === 'ready'"
+                            class="flex flex-wrap gap-2"
+                        >
+                            <Button
+                                type="button"
+                                variant="outline"
+                                @click="showBasics = !showBasics"
+                            >
                                 <Pencil :size="15" :stroke-width="1.6" />
-                                {{ showBasics ? '基本情報を閉じる' : '基本情報を編集' }}
+                                {{
+                                    showBasics
+                                        ? '基本情報を閉じる'
+                                        : '基本情報を編集'
+                                }}
                             </Button>
-                            <Button type="button" :disabled="applyingToToday" @click="applyToToday">
+                            <Button
+                                type="button"
+                                :disabled="applyingToToday"
+                                @click="applyToToday"
+                            >
                                 <CalendarDays :size="16" :stroke-width="1.6" />
                                 {{ applyingToToday ? '登録中…' : '今日に追加' }}
                             </Button>
@@ -437,7 +466,11 @@ function stepPurposeKey(step: RoutineStep) {
                         aria-label="作成の手順"
                     >
                         <li
-                            v-for="(label, index) in ['名前を保存', 'ステップを保存', '今日/作戦']"
+                            v-for="(label, index) in [
+                                '名前を保存',
+                                'ステップを保存',
+                                '今日/作戦',
+                            ]"
                             :key="label"
                             class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-sans text-xs font-medium"
                             :class="
@@ -471,8 +504,12 @@ function stepPurposeKey(step: RoutineStep) {
                         aria-label="基本情報"
                         class="cd-panel px-5 py-5"
                     >
-                        <div class="flex flex-wrap items-center justify-between gap-2">
-                            <h2 class="font-sans text-base font-semibold text-cd-ink">
+                        <div
+                            class="flex flex-wrap items-center justify-between gap-2"
+                        >
+                            <h2
+                                class="font-sans text-base font-semibold text-cd-ink"
+                            >
                                 基本情報
                             </h2>
                             <button
@@ -493,17 +530,30 @@ function stepPurposeKey(step: RoutineStep) {
                                 :life-areas="lifeAreas"
                                 :disabled="savingRoutine"
                                 :category-label="dominantCategory"
-                                :total-duration-label="formatDurationSeconds(totalDurationSeconds)"
+                                :total-duration-label="
+                                    formatDurationSeconds(totalDurationSeconds)
+                                "
                                 :step-count-label="`${steps.length} 件`"
                             />
                         </div>
 
-                        <p v-if="formError" class="mt-3 font-sans text-sm text-destructive" role="alert">
+                        <p
+                            v-if="formError"
+                            class="mt-3 font-sans text-sm text-destructive"
+                            role="alert"
+                        >
                             {{ formError }}
                         </p>
 
-                        <div class="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-cd-line pt-4">
-                            <Button v-if="isCreateMode" type="button" variant="ghost" as-child>
+                        <div
+                            class="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-cd-line pt-4"
+                        >
+                            <Button
+                                v-if="isCreateMode"
+                                type="button"
+                                variant="ghost"
+                                as-child
+                            >
                                 <Link href="/routines">キャンセル</Link>
                             </Button>
                             <Button
@@ -511,7 +561,11 @@ function stepPurposeKey(step: RoutineStep) {
                                 :disabled="savingRoutine || !formName.trim()"
                                 @click="saveRoutine"
                             >
-                                {{ isCreateMode ? '名前を保存して次へ' : '変更を保存' }}
+                                {{
+                                    isCreateMode
+                                        ? '名前を保存して次へ'
+                                        : '変更を保存'
+                                }}
                             </Button>
                         </div>
                     </section>
@@ -521,17 +575,31 @@ function stepPurposeKey(step: RoutineStep) {
                         class="cd-panel overflow-hidden"
                         :class="{ 'opacity-70': isCreateMode }"
                     >
-                        <div class="flex flex-col gap-2 border-b border-cd-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div
+                            class="flex flex-col gap-2 border-b border-cd-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                        >
                             <div class="min-w-0">
-                                <h2 class="font-sans text-base font-semibold text-cd-ink">
+                                <h2
+                                    class="font-sans text-base font-semibold text-cd-ink"
+                                >
                                     セッション構成
-                                    <span class="ml-1 font-normal text-cd-ink-muted">({{ steps.length }})</span>
+                                    <span
+                                        class="ml-1 font-normal text-cd-ink-muted"
+                                        >({{ steps.length }})</span
+                                    >
                                 </h2>
-                                <p class="mt-1 font-sans text-xs text-cd-ink-muted">
+                                <p
+                                    class="mt-1 font-sans text-xs text-cd-ink-muted"
+                                >
                                     DAY内で行う順番です。ドラッグまたは上下ボタンで並べ替えられます。
                                 </p>
                             </div>
-                            <Button type="button" size="sm" :disabled="isCreateMode" @click="openAddStep">
+                            <Button
+                                type="button"
+                                size="sm"
+                                :disabled="isCreateMode"
+                                @click="openAddStep"
+                            >
                                 <Plus :size="14" :stroke-width="1.8" />
                                 ステップを追加
                             </Button>
@@ -541,46 +609,105 @@ function stepPurposeKey(step: RoutineStep) {
                             v-if="steps.length"
                             :items="steps"
                             :reorder-url="`/routines/${routine.id}/steps/reorder`"
-                            :item-label="(step) => step.display_name || step.routine_item?.name"
+                            :item-label="
+                                (step) =>
+                                    step.display_name || step.routine_item?.name
+                            "
                         >
                             <template #row="{ item: step, index }">
-                                <div class="flex flex-wrap items-start gap-x-3 gap-y-2">
-                                    <span class="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/8 font-sans text-xs font-semibold text-primary">
+                                <div
+                                    class="flex flex-wrap items-start gap-x-3 gap-y-2"
+                                >
+                                    <span
+                                        class="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/8 font-sans text-xs font-semibold text-primary"
+                                    >
                                         {{ index + 1 }}
                                     </span>
                                     <div class="min-w-[12rem] flex-1">
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <p class="font-sans text-sm font-semibold text-cd-ink sm:text-base">
-                                                {{ step.display_name || step.routine_item?.name || '—' }}
+                                        <div
+                                            class="flex flex-wrap items-center gap-2"
+                                        >
+                                            <p
+                                                class="font-sans text-sm font-semibold text-cd-ink sm:text-base"
+                                            >
+                                                {{
+                                                    step.display_name ||
+                                                    step.routine_item?.name ||
+                                                    '—'
+                                                }}
                                             </p>
                                             <span
                                                 class="inline-flex rounded-full border px-2 py-0.5 font-sans text-[11px]"
-                                                :class="purposeChipClasses(stepPurposeKey(step))"
+                                                :class="
+                                                    purposeChipClasses(
+                                                        stepPurposeKey(step),
+                                                    )
+                                                "
                                             >
                                                 {{ stepPurpose(step) }}
                                             </span>
                                         </div>
-                                        <p v-if="step.title && step.routine_item?.name" class="mt-0.5 font-sans text-xs text-cd-ink-muted">
-                                            実施項目: {{ step.routine_item.name }}
+                                        <p
+                                            v-if="
+                                                step.title &&
+                                                step.routine_item?.name
+                                            "
+                                            class="mt-0.5 font-sans text-xs text-cd-ink-muted"
+                                        >
+                                            実施項目:
+                                            {{ step.routine_item.name }}
                                         </p>
-                                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">
+                                        <p
+                                            class="mt-1 font-sans text-xs text-cd-ink-muted"
+                                        >
                                             {{ formatStepTarget(step) }}
-                                            <span v-if="step.routine_item" class="before:mx-1.5 before:content-['·']">
-                                                {{ trackingTypeLabels[step.routine_item.tracking_type] }}
+                                            <span
+                                                v-if="step.routine_item"
+                                                class="before:mx-1.5 before:content-['·']"
+                                            >
+                                                {{
+                                                    trackingTypeLabels[
+                                                        step.routine_item
+                                                            .tracking_type
+                                                    ]
+                                                }}
                                             </span>
-                                            <span class="before:mx-1.5 before:content-['·']">
-                                                {{ formatDurationSeconds(estimateStepDurationSeconds({
-                                                    target_blocks: step.target_blocks,
-                                                    target_amount: step.target_amount,
-                                                    amount_unit: step.amount_unit,
-                                                    rest_seconds: step.rest_seconds,
-                                                    tracking_type: step.routine_item?.tracking_type,
-                                                })) }}
+                                            <span
+                                                class="before:mx-1.5 before:content-['·']"
+                                            >
+                                                {{
+                                                    formatDurationSeconds(
+                                                        estimateStepDurationSeconds(
+                                                            {
+                                                                target_blocks:
+                                                                    step.target_blocks,
+                                                                target_amount:
+                                                                    step.target_amount,
+                                                                amount_unit:
+                                                                    step.amount_unit,
+                                                                rest_seconds:
+                                                                    step.rest_seconds,
+                                                                tracking_type:
+                                                                    step
+                                                                        .routine_item
+                                                                        ?.tracking_type,
+                                                            },
+                                                        ),
+                                                    )
+                                                }}
                                             </span>
                                         </p>
-                                        <p v-if="step.note || step.video" class="mt-1 line-clamp-1 font-sans text-xs text-cd-ink-muted">
-                                            <span v-if="step.note">{{ step.note }}</span>
-                                            <span v-if="step.video" class="before:mx-1.5 before:content-['·']">
+                                        <p
+                                            v-if="step.note || step.video"
+                                            class="mt-1 line-clamp-1 font-sans text-xs text-cd-ink-muted"
+                                        >
+                                            <span v-if="step.note">{{
+                                                step.note
+                                            }}</span>
+                                            <span
+                                                v-if="step.video"
+                                                class="before:mx-1.5 before:content-['·']"
+                                            >
                                                 動画: {{ step.video.title }}
                                             </span>
                                         </p>
@@ -601,13 +728,23 @@ function stepPurposeKey(step: RoutineStep) {
                             </template>
                         </ReorderableList>
 
-                        <div v-else class="px-5 py-12 text-center font-sans text-sm text-cd-ink-muted">
+                        <div
+                            v-else
+                            class="px-5 py-12 text-center font-sans text-sm text-cd-ink-muted"
+                        >
                             <template v-if="isCreateMode">
-                                <p>基本情報を保存すると、ステップを追加できます。</p>
+                                <p>
+                                    基本情報を保存すると、ステップを追加できます。
+                                </p>
                             </template>
                             <template v-else>
                                 <p>ステップがまだありません。</p>
-                                <Button type="button" size="sm" class="mt-4" @click="openAddStep">
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    class="mt-4"
+                                    @click="openAddStep"
+                                >
                                     <Plus :size="14" :stroke-width="1.8" />
                                     最初のステップを追加
                                 </Button>
@@ -621,7 +758,9 @@ function stepPurposeKey(step: RoutineStep) {
                     :flow-phase="flowPhase"
                     :applying-to-today="applyingToToday"
                     :category-label="dominantCategory"
-                    :duration-label="formatDurationSeconds(totalDurationSeconds)"
+                    :duration-label="
+                        formatDurationSeconds(totalDurationSeconds)
+                    "
                     @apply-to-today="applyToToday"
                     @edit-basics="showBasics = true"
                     @delete="deleteRoutine"

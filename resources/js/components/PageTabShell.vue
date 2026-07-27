@@ -74,10 +74,7 @@ const hasBody = computed(() => Boolean(slots.default));
             </div>
         </div>
 
-        <div
-            v-if="hasBody"
-            class="mt-5 border-t border-cd-line pt-5"
-        >
+        <div v-if="hasBody" class="mt-5 border-t border-cd-line pt-5">
             <slot />
         </div>
     </PageSectionCard>

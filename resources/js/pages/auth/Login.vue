@@ -26,5 +26,8 @@ defineProps<{
         {{ status }}
     </div>
 
-    <AuthLoginForm :can-reset-password="canResetPassword" :can-register="canRegister" />
+    <AuthLoginForm
+        :can-reset-password="canResetPassword"
+        :can-register="canRegister"
+    />
 </template>
