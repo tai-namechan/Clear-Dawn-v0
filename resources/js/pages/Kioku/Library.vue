@@ -69,7 +69,13 @@ const { timedOut, timeoutMessage } = useKiokuStatusPoll(
 
 function manualReload(): void {
     router.reload({
-        only: ['memories', 'typeCounts', 'sourceCounts', 'tagCounts', 'totalCount'],
+        only: [
+            'memories',
+            'typeCounts',
+            'sourceCounts',
+            'tagCounts',
+            'totalCount',
+        ],
         preserveUrl: true,
     });
 }
@@ -95,8 +101,11 @@ const hasActiveFilters = computed(
 );
 
 const activeFilterChips = computed(() => {
-    const chips: Array<{ key: string; label: string; kind: 'q' | 'type' | 'tag' }> =
-        [];
+    const chips: Array<{
+        key: string;
+        label: string;
+        kind: 'q' | 'type' | 'tag';
+    }> = [];
 
     if (q.value) {
         chips.push({ key: 'q', label: `「${q.value}」`, kind: 'q' });

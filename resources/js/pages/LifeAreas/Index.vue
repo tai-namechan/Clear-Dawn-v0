@@ -1,12 +1,6 @@
 <script setup lang="ts">
 import { Form, Head, Link, router } from '@inertiajs/vue3';
-import {
-    ArrowLeft,
-    Eye,
-    EyeOff,
-    Pencil,
-    Plus,
-} from '@lucide/vue';
+import { ArrowLeft, Eye, EyeOff, Pencil, Plus } from '@lucide/vue';
 import { ref } from 'vue';
 import InputError from '@/components/InputError.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
@@ -50,9 +44,7 @@ function reactivate(area: LifeArea): void {
 <template>
     <Head title="領域管理" />
 
-    <div
-        class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6"
-    >
+    <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
             <PageSectionCard>
                 <div class="flex items-start justify-between gap-4">
@@ -87,7 +79,9 @@ function reactivate(area: LifeArea): void {
                     :reorder-url="reorder.url()"
                     :item-label="(area) => area.name"
                     :disabled="editingId !== null"
-                    :item-class="(area) => (!area.is_active ? 'opacity-55' : undefined)"
+                    :item-class="
+                        (area) => (!area.is_active ? 'opacity-55' : undefined)
+                    "
                 >
                     <template #row="{ item: area }">
                         <Form
@@ -157,10 +151,7 @@ function reactivate(area: LifeArea): void {
                             </div>
                         </Form>
 
-                        <div
-                            v-else
-                            class="flex min-w-0 items-center gap-3"
-                        >
+                        <div v-else class="flex min-w-0 items-center gap-3">
                             <span
                                 aria-hidden="true"
                                 class="size-4 shrink-0 rounded-full border border-cd-line"

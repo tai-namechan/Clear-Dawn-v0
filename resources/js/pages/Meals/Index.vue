@@ -39,7 +39,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiFetch } from '@/lib/apiFetch';
-import { PFC_COLORS } from '@/lib/pfcColors';
 import {
     CHART_COLORS,
     chartAxisLabel,
@@ -49,6 +48,7 @@ import {
     chartSplitLine,
     nutritionSeriesByDate,
 } from '@/lib/chartTheme';
+import { PFC_COLORS } from '@/lib/pfcColors';
 import type {
     FoodItem,
     MealEntry,
@@ -121,7 +121,9 @@ const copyForm = ref({
 
 const showBarcodeModal = ref(false);
 const showRestaurantModal = ref(false);
-const restaurantInitialStep = ref<'photo_capture' | 'menu_input' | undefined>(undefined);
+const restaurantInitialStep = ref<'photo_capture' | 'menu_input' | undefined>(
+    undefined,
+);
 
 const entryPreview = computed(() => {
     const q = Number(entryForm.value.quantity) || 0;
@@ -131,7 +133,9 @@ const entryPreview = computed(() => {
     const baseP = Number(
         selectedFood.value?.protein_g ?? entryForm.value.protein_g ?? 0,
     );
-    const baseF = Number(selectedFood.value?.fat_g ?? entryForm.value.fat_g ?? 0);
+    const baseF = Number(
+        selectedFood.value?.fat_g ?? entryForm.value.fat_g ?? 0,
+    );
     const baseC = Number(
         selectedFood.value?.carb_g ?? entryForm.value.carb_g ?? 0,
     );
@@ -421,7 +425,9 @@ function resetEntryForm(): void {
 }
 
 function nextMealType(): MealSection['meal_type'] {
-    const empty = props.sections.find((section) => section.entries.length === 0);
+    const empty = props.sections.find(
+        (section) => section.entries.length === 0,
+    );
 
     return empty?.meal_type ?? 'breakfast';
 }
@@ -472,7 +478,10 @@ function onBarcodeRegistered(food: FoodItem): void {
     router.reload({ only: ['sections', 'totals', 'chartPoints', 'goal'] });
 }
 
-function onMealAdded(payload: { food: FoodItem | null; entry: MealEntry }): void {
+function onMealAdded(payload: {
+    food: FoodItem | null;
+    entry: MealEntry;
+}): void {
     const name = payload.entry.name;
     message.value = `「${name}」を食事に追加しました。`;
     router.reload({ only: ['sections', 'totals', 'chartPoints', 'goal'] });
@@ -601,6 +610,7 @@ async function searchFoods(query: string): Promise<void> {
             `/meals/foods?${params.toString()}`,
         );
         foodResults.value = data.foods;
+
         if (query.trim() !== '') {
             showUsualSections.value = false;
         }
@@ -790,7 +800,9 @@ function applyChartFilter(): void {
     <Head title="食事記録" />
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
-        <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 md:gap-5">
+        <div
+            class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 md:gap-5"
+        >
             <PageTabShell
                 title="食事記録"
                 subtitle="残り摂取と次の一手を先に、記録は下で"
@@ -869,10 +881,7 @@ function applyChartFilter(): void {
             </p>
 
             <!-- 今日（二次ブロック） -->
-            <div
-                v-show="activeTab === 'today'"
-                class="flex flex-col gap-4"
-            >
+            <div v-show="activeTab === 'today'" class="flex flex-col gap-4">
                 <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     <button
                         v-for="action in quickActions"
@@ -935,7 +944,9 @@ function applyChartFilter(): void {
                         v-if="recordedEntries.length > 0"
                         class="overflow-x-auto"
                     >
-                        <table class="w-full min-w-[40rem] border-collapse text-left">
+                        <table
+                            class="w-full min-w-[40rem] border-collapse text-left"
+                        >
                             <thead>
                                 <tr
                                     class="border-b border-cd-line bg-[#FAFAFC] font-sans text-[11px] font-medium text-cd-ink-muted"
@@ -984,8 +995,9 @@ function applyChartFilter(): void {
                                             <span
                                                 class="flex size-7 items-center justify-center rounded-full"
                                                 :class="
-                                                    mealTypeMeta[entry.meal_type]
-                                                        .className
+                                                    mealTypeMeta[
+                                                        entry.meal_type
+                                                    ].className
                                                 "
                                             >
                                                 <component
@@ -1005,9 +1017,7 @@ function applyChartFilter(): void {
                                         class="max-w-[16rem] truncate px-3 py-3.5 font-sans text-sm text-cd-ink"
                                     >
                                         {{ entry.name }}
-                                        <span
-                                            class="text-cd-ink-muted"
-                                        >
+                                        <span class="text-cd-ink-muted">
                                             × {{ formatNum(entry.quantity) }}
                                         </span>
                                     </td>
@@ -1032,9 +1042,7 @@ function applyChartFilter(): void {
                                         {{ formatNum(entry.carb_g) }}
                                     </td>
                                     <td class="px-5 py-3.5">
-                                        <div
-                                            class="flex justify-end gap-1.5"
-                                        >
+                                        <div class="flex justify-end gap-1.5">
                                             <Button
                                                 type="button"
                                                 size="sm"
@@ -1127,7 +1135,12 @@ function applyChartFilter(): void {
             <div class="grid grid-cols-2 gap-3">
                 <div class="flex flex-col gap-1">
                     <Label class="font-sans text-xs">kcal</Label>
-                    <Input v-model="goalForm.kcal" type="number" min="0" step="1" />
+                    <Input
+                        v-model="goalForm.kcal"
+                        type="number"
+                        min="0"
+                        step="1"
+                    />
                 </div>
                 <div class="flex flex-col gap-1">
                     <Label class="font-sans text-xs">P (g)</Label>
@@ -1261,7 +1274,9 @@ function applyChartFilter(): void {
                     class="max-h-56 space-y-3 overflow-y-auto"
                 >
                     <div v-if="usualFavorites.length > 0">
-                        <p class="mb-1 font-sans text-xs font-semibold text-cd-ink-muted">
+                        <p
+                            class="mb-1 font-sans text-xs font-semibold text-cd-ink-muted"
+                        >
                             お気に入り
                         </p>
                         <ul class="rounded-lg border border-cd-line">
@@ -1269,14 +1284,22 @@ function applyChartFilter(): void {
                                 v-for="food in usualFavorites"
                                 :key="`fav-${food.id}`"
                                 class="flex cursor-pointer items-center gap-2 border-b border-cd-line px-3 py-2 last:border-b-0 hover:bg-muted/40"
-                                :class="selectedFood?.id === food.id ? 'bg-primary/5' : ''"
+                                :class="
+                                    selectedFood?.id === food.id
+                                        ? 'bg-primary/5'
+                                        : ''
+                                "
                                 @click="selectFood(food)"
                             >
                                 <div class="min-w-0 flex-1">
-                                    <p class="font-sans text-sm font-medium text-cd-ink">
+                                    <p
+                                        class="font-sans text-sm font-medium text-cd-ink"
+                                    >
                                         {{ food.name }}
                                     </p>
-                                    <p class="font-sans text-xs text-cd-ink-muted">
+                                    <p
+                                        class="font-sans text-xs text-cd-ink-muted"
+                                    >
                                         {{ food.serving_label }} ·
                                         {{ formatNum(food.kcal) }} kcal · P
                                         {{ formatNum(food.protein_g) }} / F
@@ -1292,14 +1315,20 @@ function applyChartFilter(): void {
                                 >
                                     <Star
                                         :size="16"
-                                        :fill="food.is_favorite ? 'currentColor' : 'none'"
+                                        :fill="
+                                            food.is_favorite
+                                                ? 'currentColor'
+                                                : 'none'
+                                        "
                                     />
                                 </button>
                             </li>
                         </ul>
                     </div>
                     <div v-if="usualRecent.length > 0">
-                        <p class="mb-1 font-sans text-xs font-semibold text-cd-ink-muted">
+                        <p
+                            class="mb-1 font-sans text-xs font-semibold text-cd-ink-muted"
+                        >
                             最近使った
                         </p>
                         <ul class="rounded-lg border border-cd-line">
@@ -1307,14 +1336,22 @@ function applyChartFilter(): void {
                                 v-for="food in usualRecent"
                                 :key="`recent-${food.id}`"
                                 class="flex cursor-pointer items-center gap-2 border-b border-cd-line px-3 py-2 last:border-b-0 hover:bg-muted/40"
-                                :class="selectedFood?.id === food.id ? 'bg-primary/5' : ''"
+                                :class="
+                                    selectedFood?.id === food.id
+                                        ? 'bg-primary/5'
+                                        : ''
+                                "
                                 @click="selectFood(food)"
                             >
                                 <div class="min-w-0 flex-1">
-                                    <p class="font-sans text-sm font-medium text-cd-ink">
+                                    <p
+                                        class="font-sans text-sm font-medium text-cd-ink"
+                                    >
                                         {{ food.name }}
                                     </p>
-                                    <p class="font-sans text-xs text-cd-ink-muted">
+                                    <p
+                                        class="font-sans text-xs text-cd-ink-muted"
+                                    >
                                         {{ food.serving_label }} ·
                                         {{ formatNum(food.kcal) }} kcal
                                     </p>
@@ -1327,14 +1364,20 @@ function applyChartFilter(): void {
                                 >
                                     <Star
                                         :size="16"
-                                        :fill="food.is_favorite ? 'currentColor' : 'none'"
+                                        :fill="
+                                            food.is_favorite
+                                                ? 'currentColor'
+                                                : 'none'
+                                        "
                                     />
                                 </button>
                             </li>
                         </ul>
                     </div>
                     <div v-if="usualFrequent.length > 0">
-                        <p class="mb-1 font-sans text-xs font-semibold text-cd-ink-muted">
+                        <p
+                            class="mb-1 font-sans text-xs font-semibold text-cd-ink-muted"
+                        >
                             よく使う
                         </p>
                         <ul class="rounded-lg border border-cd-line">
@@ -1342,14 +1385,22 @@ function applyChartFilter(): void {
                                 v-for="food in usualFrequent"
                                 :key="`freq-${food.id}`"
                                 class="flex cursor-pointer items-center gap-2 border-b border-cd-line px-3 py-2 last:border-b-0 hover:bg-muted/40"
-                                :class="selectedFood?.id === food.id ? 'bg-primary/5' : ''"
+                                :class="
+                                    selectedFood?.id === food.id
+                                        ? 'bg-primary/5'
+                                        : ''
+                                "
                                 @click="selectFood(food)"
                             >
                                 <div class="min-w-0 flex-1">
-                                    <p class="font-sans text-sm font-medium text-cd-ink">
+                                    <p
+                                        class="font-sans text-sm font-medium text-cd-ink"
+                                    >
                                         {{ food.name }}
                                     </p>
-                                    <p class="font-sans text-xs text-cd-ink-muted">
+                                    <p
+                                        class="font-sans text-xs text-cd-ink-muted"
+                                    >
                                         {{ food.serving_label }} ·
                                         {{ formatNum(food.kcal) }} kcal
                                     </p>
@@ -1362,7 +1413,11 @@ function applyChartFilter(): void {
                                 >
                                     <Star
                                         :size="16"
-                                        :fill="food.is_favorite ? 'currentColor' : 'none'"
+                                        :fill="
+                                            food.is_favorite
+                                                ? 'currentColor'
+                                                : 'none'
+                                        "
                                     />
                                 </button>
                             </li>
@@ -1388,11 +1443,15 @@ function applyChartFilter(): void {
                         v-for="food in foodResults"
                         :key="food.id"
                         class="flex cursor-pointer items-center gap-2 border-b border-cd-line px-3 py-2 last:border-b-0 hover:bg-muted/40"
-                        :class="selectedFood?.id === food.id ? 'bg-primary/5' : ''"
+                        :class="
+                            selectedFood?.id === food.id ? 'bg-primary/5' : ''
+                        "
                         @click="selectFood(food)"
                     >
                         <div class="min-w-0 flex-1">
-                            <p class="font-sans text-sm font-medium text-cd-ink">
+                            <p
+                                class="font-sans text-sm font-medium text-cd-ink"
+                            >
                                 {{ food.name }}
                             </p>
                             <p class="font-sans text-xs text-cd-ink-muted">
@@ -1411,7 +1470,9 @@ function applyChartFilter(): void {
                         >
                             <Star
                                 :size="16"
-                                :fill="food.is_favorite ? 'currentColor' : 'none'"
+                                :fill="
+                                    food.is_favorite ? 'currentColor' : 'none'
+                                "
                             />
                         </button>
                     </li>
@@ -1427,11 +1488,20 @@ function applyChartFilter(): void {
             <div v-else class="grid grid-cols-2 gap-3">
                 <div class="col-span-2 flex flex-col gap-1">
                     <Label class="font-sans text-xs">名前</Label>
-                    <Input v-model="entryForm.name" type="text" maxlength="100" />
+                    <Input
+                        v-model="entryForm.name"
+                        type="text"
+                        maxlength="100"
+                    />
                 </div>
                 <div class="flex flex-col gap-1">
                     <Label class="font-sans text-xs">kcal</Label>
-                    <Input v-model="entryForm.kcal" type="number" min="0" step="0.1" />
+                    <Input
+                        v-model="entryForm.kcal"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                    />
                 </div>
                 <div class="flex flex-col gap-1">
                     <Label class="font-sans text-xs">P (g)</Label>
@@ -1475,7 +1545,9 @@ function applyChartFilter(): void {
 
             <div class="grid grid-cols-2 gap-3">
                 <div class="flex flex-col gap-1">
-                    <Label class="font-sans text-xs">数量（サービング倍率）</Label>
+                    <Label class="font-sans text-xs"
+                        >数量（サービング倍率）</Label
+                    >
                     <Input
                         v-model="entryForm.quantity"
                         type="number"
@@ -1489,7 +1561,11 @@ function applyChartFilter(): void {
                 </div>
                 <div class="flex flex-col gap-1">
                     <Label class="font-sans text-xs">メモ</Label>
-                    <Input v-model="entryForm.note" type="text" maxlength="500" />
+                    <Input
+                        v-model="entryForm.note"
+                        type="text"
+                        maxlength="500"
+                    />
                 </div>
                 <div
                     class="col-span-2 rounded-lg bg-muted/40 px-3 py-2 font-sans text-xs text-cd-ink-muted"
@@ -1533,7 +1609,9 @@ function applyChartFilter(): void {
             <DialogHeader>
                 <DialogTitle class="font-sans">食事をコピー</DialogTitle>
                 <DialogDescription class="font-sans text-sm text-cd-ink-muted">
-                    「{{ copyingEntry?.name }}」を指定日・区分へコピーします。元の記録は変更されません。
+                    「{{
+                        copyingEntry?.name
+                    }}」を指定日・区分へコピーします。元の記録は変更されません。
                 </DialogDescription>
             </DialogHeader>
             <div class="grid grid-cols-2 gap-3">

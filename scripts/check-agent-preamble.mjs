@@ -23,6 +23,7 @@ const FILES = ['CLAUDE.md', 'AGENTS.md'];
  */
 function extractPreamble(file) {
     let content;
+
     try {
         content = readFileSync(file, 'utf8');
     } catch {
@@ -63,6 +64,7 @@ if (claude !== agents) {
     const max = Math.max(claudeLines.length, agentsLines.length);
 
     let firstDiff = -1;
+
     for (let i = 0; i < max; i++) {
         if (claudeLines[i] !== agentsLines[i]) {
             firstDiff = i;

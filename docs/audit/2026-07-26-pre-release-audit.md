@@ -800,7 +800,6 @@ $rules = [$required ? 'required' : 'nullable', 'string', 'regex:/^\d+$/'];
 | --- | --- | --- |
 | L-1 | `AttachToClearDawnGoal` / `SendToYoyuTask` が空実装スタブで参照ゼロ（デッドコード） | `app/Domain/Kioku/Commands/` |
 | L-2 | `target="_blank"` に `rel="noopener"` が無い | `AppHeader.vue:132,219`、`NavFooter.vue:33` |
-| L-3 | `destroy(Metric $metric, MetricRecord $metricRecord)` が両者の親子関係を検証していない | `MetricRecordController.php:213` |
 | L-4 | `Auth::logout()` → `$user->delete()` がトランザクション外 | `ProfileController.php:66-70` |
 | L-5 | `videos:prune-pending` のみ `withoutOverlapping()` / `onOneServer()` が無い | `routes/console.php:11` |
 | L-6 | `v-html` の使用（Fortify 生成 SVG のため実害無し。由来をコメントで固定すべき） | `TwoFactorSetupModal.vue:175` |

@@ -61,9 +61,7 @@ const itemNames = computed(() =>
     [...new Set(props.chartPoints.map((point) => point.item_name))].sort(),
 );
 
-const dates = computed(() =>
-    eachDateInclusive(props.from, props.to),
-);
+const dates = computed(() => eachDateInclusive(props.from, props.to));
 
 const chartOption = computed<EChartsCoreOption>(() => ({
     grid: { left: 48, right: 24, top: 40, bottom: 32 },

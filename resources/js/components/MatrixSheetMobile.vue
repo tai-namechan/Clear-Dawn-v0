@@ -63,7 +63,7 @@ function openEditor(rowIndex: number): void {
                 aria-label="領域"
             >
                 <div
-                    class="flex gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    class="flex [scrollbar-width:none] gap-1 overflow-x-auto [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                 >
                     <button
                         v-for="(area, areaIndex) in areas"

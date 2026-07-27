@@ -5,15 +5,13 @@ import { computed, ref, watch } from 'vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
 import ReorderableList from '@/components/ReorderableList.vue';
-import StepEditorDialog, {
-    type StepEditorPayload,
-} from '@/components/routine/StepEditorDialog.vue';
+import StepEditorDialog from '@/components/routine/StepEditorDialog.vue';
+import type { StepEditorPayload } from '@/components/routine/StepEditorDialog.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
 import { ensureArray } from '@/lib/array';
 import { fetchRoutineItemsFromPage } from '@/lib/fetchRoutineItems';
-import { purposeChipClasses } from '@/lib/stepPurposeColors';
 import {
     formatStepTarget,
     resolveStepPurpose,
@@ -21,6 +19,7 @@ import {
     stepPurposeLabels,
     trackingTypeLabels,
 } from '@/lib/routineConstants';
+import { purposeChipClasses } from '@/lib/stepPurposeColors';
 import type {
     RoutineItem,
     RoutinePlan,
@@ -230,9 +229,7 @@ function stepPurposeKey(step: RoutinePlanStep) {
 <template>
     <Head :title="plan.title" />
 
-    <div
-        class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6"
-    >
+    <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4">
             <PageSectionCard>
                 <div class="flex flex-col gap-4">
@@ -288,7 +285,9 @@ function stepPurposeKey(step: RoutinePlanStep) {
                         maxlength="100"
                     />
                     <Input v-model="note" placeholder="メモ（任意）" />
-                    <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div
+                        class="flex flex-wrap items-center justify-between gap-2"
+                    >
                         <Button
                             type="button"
                             size="sm"

@@ -280,7 +280,6 @@ GET が冪等であるべきという原則自体はまだ満たしていない�
 | --- | --- | --- |
 | H-1 残 | GET から副作用を分離（`MoneyDashboardController` / `HomeController` / `TodayController`） | コントローラとサービスの責務再設計が必要。UX（初回表示時に何を見せるか）の判断を伴う |
 | M-7 | `processImport` のチャンク化 | トランザクション境界の再設計。部分再開の仕様策定が必要 |
-| L-3 | `MetricRecordController::destroy` の親子関係検証 | ルート設計（`{metric}/{metricRecord}`）自体の見直しが望ましい |
 | L-4 | アカウント削除のトランザクション化 | ストレージ削除と DB 削除の順序・補償処理の設計が必要 |
 | L-7 | `AiGateway` の 429/5xx リトライ | 課金ライフサイクル（reserve/settle/release）との整合設計が必要 |
 | 負債 | `app/Services/` 76クラスのフラット構造再編 | 大規模リネーム。CI 稼働後に実施すべき |
