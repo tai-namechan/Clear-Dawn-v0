@@ -1,22 +1,15 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
-    BookOpen,
     CalendarPlus,
     ChevronDown,
     Dumbbell,
-    Footprints,
     Heart,
-    HeartPulse,
-    Music,
     NotebookPen,
     Plus,
-    Sparkles,
-    Target,
     Utensils,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
-import type { Component } from 'vue';
 import PageTabShell from '@/components/PageTabShell.vue';
 import PageViewTabs from '@/components/PageViewTabs.vue';
 import DailyCheckinPanel from '@/components/routine/DailyCheckinPanel.vue';
@@ -25,17 +18,13 @@ import TodayPlanCard from '@/components/routine/TodayPlanCard.vue';
 import TodayProgressPanel from '@/components/routine/TodayProgressPanel.vue';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/apiFetch';
+import { categoryIcon } from '@/lib/categoryIcon';
 import { activityLogEventTypeLabels } from '@/lib/routineConstants';
 import {
     displayDurationMinutes,
     planRunStatus,
 } from '@/lib/todayPlanDisplay';
-import type {
-    ActivityLog,
-    Routine,
-    RoutineItemCategory,
-    RoutinePlan,
-} from '@/types/routine';
+import type { ActivityLog, Routine, RoutinePlan } from '@/types/routine';
 import type { CheckinFormState, TodayOps } from '@/types/todayOps';
 
 interface Props {
@@ -176,27 +165,6 @@ const checkinSummary = computed(() => {
 
     return 'チェックイン済';
 });
-
-function categoryIcon(category: RoutineItemCategory | null | undefined): Component {
-    switch (category) {
-        case 'strength':
-            return Dumbbell;
-        case 'baseball':
-            return Target;
-        case 'mobility':
-            return Footprints;
-        case 'care':
-            return HeartPulse;
-        case 'music':
-            return Music;
-        case 'study':
-            return BookOpen;
-        case 'life':
-            return Sparkles;
-        default:
-            return NotebookPen;
-    }
-}
 
 function onTabChange(tab: string): void {
     activeTab.value = tab as 'today' | 'routines' | 'history';

@@ -224,6 +224,37 @@ class ViolinProgramInstallTest extends TestCase
         $this->assertContains('DAY5 · 投球日フル＋回旋パワー＋アームケア', $titles);
     }
 
+    /**
+     * 「今日のセッション」のアイコンは、プランのステップで最も多い実施項目カテゴリで決まる
+     * （music = 音符 / strength = ダンベル）。先頭ステップはどちらのプログラムも準備運動で
+     * 同じになるため、カテゴリの最頻値がプログラムを見分ける手がかりになる。
+     */
+    public function test_plans_are_dominated_by_the_category_that_drives_the_today_icon(): void
+    {
+        $user = User::factory()->create();
+        $this->artisan('cleardawn:install-program', ['userId' => $user->id])->assertSuccessful();
+        $this->artisan('cleardawn:install-violin-program', ['userId' => $user->id])->assertSuccessful();
+
+        // 2026-07-28 = 火曜 = 筋トレDAY1 と ヴァイオリンDAY B
+        $plans = app(GenerateProgramDayPlansService::class)->handle($user, Carbon::parse('2026-07-28'));
+
+        $dominantFor = function (string $title) use ($plans): ?string {
+            $plan = $plans->firstWhere('title', $title);
+
+            $this->assertNotNull($plan, "{$title} のプランがない");
+
+            return $plan->steps
+                ->load('routineItem')
+                ->countBy(fn ($step) => $step->routineItem->category->value)
+                ->sortDesc()
+                ->keys()
+                ->first();
+        };
+
+        $this->assertSame('music', $dominantFor('VIOLIN-B · ミニ技術'));
+        $this->assertSame('strength', $dominantFor('DAY1 · 胸・ベンチ＋アームケア'));
+    }
+
     public function test_generation_is_idempotent_for_the_violin_program(): void
     {
         $user = User::factory()->create();
