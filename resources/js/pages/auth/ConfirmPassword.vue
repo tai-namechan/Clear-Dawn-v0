@@ -30,9 +30,7 @@ defineOptions({
 <template>
     <Head title="パスワードの確認" />
 
-    <div
-        class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6"
-    >
+    <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-lg flex-1 flex-col gap-6">
             <div class="flex items-start justify-between gap-4">
                 <Heading

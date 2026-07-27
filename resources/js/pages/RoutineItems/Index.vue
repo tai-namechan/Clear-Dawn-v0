@@ -2,9 +2,9 @@
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ChevronRight, Pencil, Plus, Trash2 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import RoutineItemForm from '@/components/forms/RoutineItemForm.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTitleOrnament from '@/components/PageTitleOrnament.vue';
-import RoutineItemForm from '@/components/forms/RoutineItemForm.vue';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -131,9 +131,7 @@ async function deleteItem(item: RoutineItem): Promise<void> {
 <template>
     <Head title="実施項目" />
 
-    <div
-        class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6"
-    >
+    <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4">
             <PageSectionCard>
                 <div class="flex items-start justify-between gap-4">
@@ -200,9 +198,7 @@ async function deleteItem(item: RoutineItem): Promise<void> {
                                 <p
                                     class="mt-0.5 font-sans text-xs text-cd-ink-muted"
                                 >
-                                    {{
-                                        trackingTypeLabels[item.tracking_type]
-                                    }}
+                                    {{ trackingTypeLabels[item.tracking_type] }}
                                     <span
                                         v-if="item.videos_count"
                                         class="before:mx-1.5 before:content-['·']"

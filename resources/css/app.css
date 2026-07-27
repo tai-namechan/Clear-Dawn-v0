@@ -234,7 +234,9 @@
     --cd-lavender-mist: hsl(255 24% 76%); /* sidebar bottom: pale lavender */
     --cd-ink: hsl(227 28% 16%); /* body text: darker navy for contrast */
     --cd-ink-pen: hsl(228 36% 13%); /* ballpoint ink: deep blue-black */
-    --cd-ink-muted: hsl(232 14% 34%); /* secondary text — readable, not washed out */
+    --cd-ink-muted: hsl(
+        232 14% 34%
+    ); /* secondary text — readable, not washed out */
     --cd-line: hsl(260 12% 80%); /* hairline borders */
     --cd-surface: #ffffff; /* opaque white card surface */
     --cd-primary: #5b5577;

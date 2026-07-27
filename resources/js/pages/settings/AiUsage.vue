@@ -134,9 +134,13 @@ function formatUsd(value: string): string {
                         <p class="text-sm text-cd-ink-muted">
                             対象月 {{ usage.period }}
                         </p>
-                        <p class="text-2xl font-semibold tracking-tight text-cd-ink">
+                        <p
+                            class="text-2xl font-semibold tracking-tight text-cd-ink"
+                        >
                             {{ formatUsd(usage.spent_usd) }}
-                            <span class="text-base font-normal text-cd-ink-muted">
+                            <span
+                                class="text-base font-normal text-cd-ink-muted"
+                            >
                                 / {{ formatUsd(usage.limit_usd) }}
                             </span>
                         </p>

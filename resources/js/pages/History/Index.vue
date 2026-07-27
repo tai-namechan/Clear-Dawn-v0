@@ -129,9 +129,7 @@ const eventTypeOptions = Object.entries(activityLogEventTypeLabels) as Array<
 <template>
     <Head title="実行履歴" />
 
-    <div
-        class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6"
-    >
+    <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
             <PageSectionCard>
                 <PageTitleOrnament
@@ -199,7 +197,9 @@ const eventTypeOptions = Object.entries(activityLogEventTypeLabels) as Array<
                         <p class="font-sans text-xs text-cd-ink-muted">
                             {{ formatOccurredAt(log.occurred_at) }}
                         </p>
-                        <p class="mt-1 font-sans text-base font-semibold text-cd-ink">
+                        <p
+                            class="mt-1 font-sans text-base font-semibold text-cd-ink"
+                        >
                             {{ eventDescription(log) }}
                         </p>
                         <span

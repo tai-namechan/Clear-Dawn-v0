@@ -48,7 +48,10 @@ interface Emits {
     (e: 'update:open', value: boolean): void;
     (e: 'food-registered', food: FoodItem): void;
     (e: 'food-hit', food: FoodItem): void;
-    (e: 'meal-added', payload: { food: FoodItem | null; entry: MealEntry }): void;
+    (
+        e: 'meal-added',
+        payload: { food: FoodItem | null; entry: MealEntry },
+    ): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -88,8 +91,14 @@ const confirmForm = ref({
     note: '',
 });
 
-const { isSupported, scanning, error: scanError, videoRef, start: startCamera, stop: stopCamera } =
-    useBarcodeScan(onBarcodeDetected);
+const {
+    isSupported,
+    scanning,
+    error: scanError,
+    videoRef,
+    start: startCamera,
+    stop: stopCamera,
+} = useBarcodeScan(onBarcodeDetected);
 
 const canConfirm = computed(() => {
     const f = confirmForm.value;
@@ -203,6 +212,7 @@ function clearOcrFile(): void {
     if (ocrPreviewUrl.value) {
         URL.revokeObjectURL(ocrPreviewUrl.value);
     }
+
     ocrPreviewUrl.value = null;
     ocrFile.value = null;
 }
@@ -256,7 +266,8 @@ async function submitBarcode(code: string): Promise<void> {
     } catch (e) {
         if (e instanceof ApiError && e.status === 422) {
             const body = e.body as { errors?: Record<string, string[]> };
-            errorMessage.value = body.errors?.barcode?.[0] ?? 'バーコードを確認してください。';
+            errorMessage.value =
+                body.errors?.barcode?.[0] ?? 'バーコードを確認してください。';
         } else {
             errorMessage.value = '検索に失敗しました。';
         }
@@ -417,10 +428,13 @@ async function submitLabelImage(): Promise<void> {
             ? `/meals/barcode-lookup/${lookupId.value}/label-image`
             : '/meals/label-ocr';
 
-        const data = await apiFetch<{ status: string; lookup_id: string }>(url, {
-            method: 'POST',
-            body: form,
-        });
+        const data = await apiFetch<{ status: string; lookup_id: string }>(
+            url,
+            {
+                method: 'POST',
+                body: form,
+            },
+        );
 
         lookupId.value = data.lookup_id;
         clearOcrFile();
@@ -434,7 +448,9 @@ async function submitLabelImage(): Promise<void> {
                 errors?: Record<string, string[]>;
             };
             errorMessage.value =
-                body.errors?.image?.[0] ?? body.message ?? '画像を確認してください。';
+                body.errors?.image?.[0] ??
+                body.message ??
+                '画像を確認してください。';
         } else if (e instanceof ApiError && e.status === 409) {
             pollingKind.value = 'ocr';
             step.value = 'polling';
@@ -449,11 +465,16 @@ async function submitLabelImage(): Promise<void> {
 
 function prefillConfirmForm(result: LookupResult): void {
     const basis =
-        result.per === '100g' ? '100g' : result.per === 'package' ? 'package' : 'serving';
+        result.per === '100g'
+            ? '100g'
+            : result.per === 'package'
+              ? 'package'
+              : 'serving';
 
     confirmForm.value = {
         name: result.name ?? '',
-        serving_label: result.serving_label ?? (basis === '100g' ? '100g' : '1食分'),
+        serving_label:
+            result.serving_label ?? (basis === '100g' ? '100g' : '1食分'),
         barcode: knownBarcode.value,
         brand: result.brands ?? '',
         nutrition_basis: basis,
@@ -517,12 +538,14 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
         } else {
             emit('food-registered', data.food);
         }
+
         close();
     } catch (e) {
         if (e instanceof ApiError && e.status === 422) {
             const body = e.body as { errors?: Record<string, string[]> };
             const firstErr = Object.values(body.errors ?? {})[0];
-            errorMessage.value = firstErr?.[0] ?? '入力内容を確認してください。';
+            errorMessage.value =
+                firstErr?.[0] ?? '入力内容を確認してください。';
         } else {
             errorMessage.value = '保存に失敗しました。';
         }
@@ -552,25 +575,27 @@ async function saveManual(addToMeal: boolean): Promise<void> {
             body.note = confirmForm.value.note.trim() || null;
         }
 
-        const data = await apiFetch<{ food: FoodItem | null; entry: MealEntry | null }>(
-            '/meals/foods/manual',
-            {
-                method: 'POST',
-                body: JSON.stringify(body),
-            },
-        );
+        const data = await apiFetch<{
+            food: FoodItem | null;
+            entry: MealEntry | null;
+        }>('/meals/foods/manual', {
+            method: 'POST',
+            body: JSON.stringify(body),
+        });
 
         if (addToMeal && data.entry) {
             emit('meal-added', { food: data.food, entry: data.entry });
         } else if (data.food) {
             emit('food-registered', data.food);
         }
+
         close();
     } catch (e) {
         if (e instanceof ApiError && e.status === 422) {
             const body = e.body as { errors?: Record<string, string[]> };
             const firstErr = Object.values(body.errors ?? {})[0];
-            errorMessage.value = firstErr?.[0] ?? '入力内容を確認してください。';
+            errorMessage.value =
+                firstErr?.[0] ?? '入力内容を確認してください。';
         } else {
             errorMessage.value = '保存に失敗しました。';
         }
@@ -613,7 +638,8 @@ async function saveOneOff(): Promise<void> {
         if (e instanceof ApiError && e.status === 422) {
             const body = e.body as { errors?: Record<string, string[]> };
             const firstErr = Object.values(body.errors ?? {})[0];
-            errorMessage.value = firstErr?.[0] ?? '入力内容を確認してください。';
+            errorMessage.value =
+                firstErr?.[0] ?? '入力内容を確認してください。';
         } else {
             errorMessage.value = '保存に失敗しました。';
         }
@@ -731,7 +757,10 @@ const dialogTitle = computed(() => {
             </p>
 
             <div v-if="step === 'scan'" class="flex flex-col gap-4">
-                <div v-if="isSupported" class="relative overflow-hidden rounded-xl bg-black">
+                <div
+                    v-if="isSupported"
+                    class="relative overflow-hidden rounded-xl bg-black"
+                >
                     <video
                         ref="videoRef"
                         class="aspect-video w-full object-cover"
@@ -742,14 +771,21 @@ const dialogTitle = computed(() => {
                         v-if="scanning"
                         class="pointer-events-none absolute inset-0 flex items-center justify-center"
                     >
-                        <div class="h-0.5 w-3/4 animate-pulse rounded bg-primary/70" />
+                        <div
+                            class="h-0.5 w-3/4 animate-pulse rounded bg-primary/70"
+                        />
                     </div>
                     <div
                         v-if="!scanning"
                         class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60"
                     >
                         <ScanLine :size="32" class="text-white/70" />
-                        <Button type="button" size="sm" class="font-sans" @click="startCamera">
+                        <Button
+                            type="button"
+                            size="sm"
+                            class="font-sans"
+                            @click="startCamera"
+                        >
                             カメラを起動
                         </Button>
                     </div>
@@ -786,7 +822,9 @@ const dialogTitle = computed(() => {
 
                 <div class="flex items-center gap-3" aria-hidden="true">
                     <div class="h-px flex-1 bg-cd-line" />
-                    <span class="font-sans text-xs text-cd-ink-muted">または</span>
+                    <span class="font-sans text-xs text-cd-ink-muted"
+                        >または</span
+                    >
                     <div class="h-px flex-1 bg-cd-line" />
                 </div>
 
@@ -816,17 +854,24 @@ const dialogTitle = computed(() => {
             </div>
 
             <div v-if="step === 'not_found'" class="flex flex-col gap-3">
-                <p v-if="knownBarcode" class="font-sans text-xs text-cd-ink-muted">
+                <p
+                    v-if="knownBarcode"
+                    class="font-sans text-xs text-cd-ink-muted"
+                >
                     バーコード: {{ knownBarcode }}
                 </p>
-                <Button type="button" class="font-sans justify-start" @click="startOcrForMiss">
+                <Button
+                    type="button"
+                    class="justify-start font-sans"
+                    @click="startOcrForMiss"
+                >
                     <Camera :size="16" class="mr-2" />
                     成分表を撮影
                 </Button>
                 <Button
                     type="button"
                     variant="outline"
-                    class="font-sans justify-start"
+                    class="justify-start font-sans"
                     @click="startManualEntry"
                 >
                     手入力で登録
@@ -834,7 +879,7 @@ const dialogTitle = computed(() => {
                 <Button
                     type="button"
                     variant="outline"
-                    class="font-sans justify-start"
+                    class="justify-start font-sans"
                     @click="startOneOffEntry"
                 >
                     今回だけ直接入力
@@ -868,7 +913,9 @@ const dialogTitle = computed(() => {
                     @click="openLabelFilePicker"
                 >
                     <Camera :size="32" />
-                    <span class="font-sans text-sm">栄養成分表示を撮影 / 選択</span>
+                    <span class="font-sans text-sm"
+                        >栄養成分表示を撮影 / 選択</span
+                    >
                 </button>
 
                 <div class="flex gap-2">
@@ -891,7 +938,10 @@ const dialogTitle = computed(() => {
                 </div>
             </div>
 
-            <div v-if="step === 'polling'" class="flex flex-col items-center gap-4 py-8">
+            <div
+                v-if="step === 'polling'"
+                class="flex flex-col items-center gap-4 py-8"
+            >
                 <Loader2 :size="32" class="animate-spin text-primary" />
                 <p class="font-sans text-sm text-cd-ink-muted">
                     {{
@@ -903,7 +953,11 @@ const dialogTitle = computed(() => {
             </div>
 
             <div
-                v-if="step === 'confirm' || step === 'manual' || step === 'one_off'"
+                v-if="
+                    step === 'confirm' ||
+                    step === 'manual' ||
+                    step === 'one_off'
+                "
                 class="flex flex-col gap-3"
             >
                 <p
@@ -938,7 +992,11 @@ const dialogTitle = computed(() => {
                         <Label class="font-sans text-xs">
                             商品名 <span class="text-destructive">*</span>
                         </Label>
-                        <Input v-model="confirmForm.name" type="text" maxlength="100" />
+                        <Input
+                            v-model="confirmForm.name"
+                            type="text"
+                            maxlength="100"
+                        />
                     </div>
                     <div
                         v-if="step !== 'one_off'"
@@ -947,7 +1005,11 @@ const dialogTitle = computed(() => {
                         <Label class="font-sans text-xs">
                             ブランド・メーカー（任意）
                         </Label>
-                        <Input v-model="confirmForm.brand" type="text" maxlength="100" />
+                        <Input
+                            v-model="confirmForm.brand"
+                            type="text"
+                            maxlength="100"
+                        />
                     </div>
                     <div
                         v-if="step !== 'one_off'"
@@ -956,7 +1018,11 @@ const dialogTitle = computed(() => {
                         <Label class="font-sans text-xs">
                             1サービング <span class="text-destructive">*</span>
                         </Label>
-                        <Input v-model="confirmForm.serving_label" type="text" maxlength="50" />
+                        <Input
+                            v-model="confirmForm.serving_label"
+                            type="text"
+                            maxlength="50"
+                        />
                     </div>
                     <div
                         v-if="step !== 'one_off'"
@@ -976,7 +1042,9 @@ const dialogTitle = computed(() => {
                         v-if="step !== 'one_off'"
                         class="col-span-2 flex flex-col gap-1"
                     >
-                        <Label class="font-sans text-xs">バーコード（任意）</Label>
+                        <Label class="font-sans text-xs"
+                            >バーコード（任意）</Label
+                        >
                         <Input
                             v-model="confirmForm.barcode"
                             type="text"
@@ -1059,20 +1127,33 @@ const dialogTitle = computed(() => {
                             {{ quantityHint }}
                         </p>
                     </div>
-                    <div class="col-span-2 rounded-lg bg-muted/40 px-3 py-2 font-sans text-xs text-cd-ink-muted">
+                    <div
+                        class="col-span-2 rounded-lg bg-muted/40 px-3 py-2 font-sans text-xs text-cd-ink-muted"
+                    >
                         記録予定:
-                        {{ previewTotals.kcal }} kcal · P {{ previewTotals.protein_g }}g · F
-                        {{ previewTotals.fat_g }}g · C {{ previewTotals.carb_g }}g
+                        {{ previewTotals.kcal }} kcal · P
+                        {{ previewTotals.protein_g }}g · F
+                        {{ previewTotals.fat_g }}g · C
+                        {{ previewTotals.carb_g }}g
                     </div>
                     <div class="col-span-2 flex flex-col gap-1">
                         <Label class="font-sans text-xs">メモ（任意）</Label>
-                        <Input v-model="confirmForm.note" type="text" maxlength="500" />
+                        <Input
+                            v-model="confirmForm.note"
+                            type="text"
+                            maxlength="500"
+                        />
                     </div>
                 </div>
             </div>
 
-            <div v-if="step === 'hit' && hitFood" class="flex flex-col gap-3 py-2">
-                <div class="rounded-xl border border-cd-line bg-muted/30 px-4 py-3">
+            <div
+                v-if="step === 'hit' && hitFood"
+                class="flex flex-col gap-3 py-2"
+            >
+                <div
+                    class="rounded-xl border border-cd-line bg-muted/30 px-4 py-3"
+                >
                     <p class="font-sans text-sm font-semibold text-cd-ink">
                         {{ hitFood.name }}
                     </p>
@@ -1080,11 +1161,17 @@ const dialogTitle = computed(() => {
                         {{ hitFood.serving_label }} · {{ hitFood.kcal }} kcal
                     </p>
                     <p class="mt-1 font-sans text-xs">
-                        <span class="text-cd-pfc-p">P {{ hitFood.protein_g }}g</span>
+                        <span class="text-cd-pfc-p"
+                            >P {{ hitFood.protein_g }}g</span
+                        >
                         ·
-                        <span class="text-cd-pfc-f">F {{ hitFood.fat_g }}g</span>
+                        <span class="text-cd-pfc-f"
+                            >F {{ hitFood.fat_g }}g</span
+                        >
                         ·
-                        <span class="text-cd-pfc-c">C {{ hitFood.carb_g }}g</span>
+                        <span class="text-cd-pfc-c"
+                            >C {{ hitFood.carb_g }}g</span
+                        >
                     </p>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -1110,7 +1197,8 @@ const dialogTitle = computed(() => {
                             step="0.1"
                         />
                         <p class="font-sans text-[11px] text-cd-ink-muted">
-                            {{ hitFood.serving_label }} × {{ confirmForm.quantity }}
+                            {{ hitFood.serving_label }} ×
+                            {{ confirmForm.quantity }}
                         </p>
                     </div>
                 </div>
@@ -1124,7 +1212,11 @@ const dialogTitle = computed(() => {
                     type="button"
                     class="w-full font-sans"
                     :disabled="saving || !canConfirm"
-                    @click="step === 'manual' ? saveManual(true) : confirmAndSave(true)"
+                    @click="
+                        step === 'manual'
+                            ? saveManual(true)
+                            : confirmAndSave(true)
+                    "
                 >
                     保存して食事に追加
                 </Button>
@@ -1133,7 +1225,11 @@ const dialogTitle = computed(() => {
                     variant="outline"
                     class="w-full font-sans"
                     :disabled="saving || !canConfirm"
-                    @click="step === 'manual' ? saveManual(false) : confirmAndSave(false)"
+                    @click="
+                        step === 'manual'
+                            ? saveManual(false)
+                            : confirmAndSave(false)
+                    "
                 >
                     マイ食品にだけ保存
                 </Button>
@@ -1147,7 +1243,10 @@ const dialogTitle = computed(() => {
                 </Button>
             </DialogFooter>
 
-            <DialogFooter v-if="step === 'one_off'" class="flex-col gap-2 sm:flex-col">
+            <DialogFooter
+                v-if="step === 'one_off'"
+                class="flex-col gap-2 sm:flex-col"
+            >
                 <Button
                     type="button"
                     class="w-full font-sans"
@@ -1166,7 +1265,10 @@ const dialogTitle = computed(() => {
                 </Button>
             </DialogFooter>
 
-            <DialogFooter v-if="step === 'hit'" class="flex-col gap-2 sm:flex-col">
+            <DialogFooter
+                v-if="step === 'hit'"
+                class="flex-col gap-2 sm:flex-col"
+            >
                 <Button
                     type="button"
                     class="w-full font-sans"
@@ -1183,13 +1285,23 @@ const dialogTitle = computed(() => {
                 >
                     詳細を編集して使う
                 </Button>
-                <Button type="button" variant="ghost" class="w-full font-sans" @click="close">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    class="w-full font-sans"
+                    @click="close"
+                >
                     キャンセル
                 </Button>
             </DialogFooter>
 
             <DialogFooter v-if="step === 'scan' || step === 'not_found'">
-                <Button type="button" variant="outline" class="font-sans" @click="close">
+                <Button
+                    type="button"
+                    variant="outline"
+                    class="font-sans"
+                    @click="close"
+                >
                     閉じる
                 </Button>
             </DialogFooter>

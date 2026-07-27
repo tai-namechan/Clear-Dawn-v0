@@ -16,7 +16,8 @@ type AiUsageBanner = {
 const page = usePage();
 
 const banner = computed(
-    () => (page.props.aiUsageBanner as AiUsageBanner | null | undefined) ?? null,
+    () =>
+        (page.props.aiUsageBanner as AiUsageBanner | null | undefined) ?? null,
 );
 
 const message = computed(() => {

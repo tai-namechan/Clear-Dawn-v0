@@ -38,10 +38,12 @@ const todayIso = [
 
 <template>
     <header
-        class="cd-app-header sticky top-0 z-30 flex min-h-16 shrink-0 items-center justify-between gap-2 px-4 py-3 transition-[width,height] ease-linear landscape-compact:min-h-12 landscape-compact:py-2 md:static md:z-auto md:px-6 md:py-4 landscape-compact:md:py-2"
+        class="cd-app-header sticky top-0 z-30 flex min-h-16 shrink-0 items-center justify-between gap-2 px-4 py-3 transition-[width,height] ease-linear md:static md:z-auto md:px-6 md:py-4 landscape-compact:min-h-12 landscape-compact:py-2 landscape-compact:md:py-2"
     >
         <div class="flex min-w-0 flex-1 items-center gap-2 md:gap-4">
-            <SidebarTrigger class="shrink-0 text-cd-ink-muted hover:bg-muted/40 hover:text-[var(--cd-header-text)] max-md:hover:bg-white/10" />
+            <SidebarTrigger
+                class="shrink-0 text-cd-ink-muted hover:bg-muted/40 hover:text-[var(--cd-header-text)] max-md:hover:bg-white/10"
+            />
             <h1
                 class="cd-app-header-title hidden truncate font-serif text-[2rem] leading-none font-normal tracking-[0.16em] md:block md:text-[2.5rem] landscape-compact:md:text-[1.65rem] landscape-compact:md:tracking-[0.12em]"
             >
@@ -56,7 +58,7 @@ const todayIso = [
         <div class="flex shrink-0 items-center gap-2 md:gap-3">
             <div
                 v-if="onDashboard"
-                class="cd-header-control hidden items-center gap-3 rounded-full px-4 py-2 sm:flex landscape-compact:gap-2 landscape-compact:px-3 landscape-compact:py-1 md:gap-4 md:px-5"
+                class="cd-header-control hidden items-center gap-3 rounded-full px-4 py-2 sm:flex md:gap-4 md:px-5 landscape-compact:gap-2 landscape-compact:px-3 landscape-compact:py-1"
             >
                 <time
                     :datetime="todayIso"

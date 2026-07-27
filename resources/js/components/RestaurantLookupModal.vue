@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { Camera, ChefHat, Loader2, RotateCcw, Store, Utensils } from '@lucide/vue';
+import {
+    Camera,
+    ChefHat,
+    Loader2,
+    RotateCcw,
+    Store,
+    Utensils,
+} from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,7 +46,10 @@ interface Emits {
     (e: 'update:open', value: boolean): void;
     (e: 'food-registered', food: FoodItem): void;
     (e: 'food-hit', food: FoodItem): void;
-    (e: 'meal-added', payload: { food: FoodItem | null; entry: MealEntry }): void;
+    (
+        e: 'meal-added',
+        payload: { food: FoodItem | null; entry: MealEntry },
+    ): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -268,7 +278,9 @@ async function submitPhoto(): Promise<void> {
                 errors?: Record<string, string[]>;
             };
             errorMessage.value =
-                body.errors?.image?.[0] ?? body.message ?? '画像を確認してください。';
+                body.errors?.image?.[0] ??
+                body.message ??
+                '画像を確認してください。';
         } else {
             errorMessage.value = '送信に失敗しました。もう一度お試しください。';
         }
@@ -290,16 +302,13 @@ async function submitMenu(): Promise<void> {
             status: string;
             lookup_id?: string;
             food?: FoodItem;
-        }>(
-            '/meals/menu-estimate',
-            {
-                method: 'POST',
-                body: JSON.stringify({
-                    store_name: menuForm.value.store_name.trim(),
-                    menu_name: menuForm.value.menu_name.trim(),
-                }),
-            },
-        );
+        }>('/meals/menu-estimate', {
+            method: 'POST',
+            body: JSON.stringify({
+                store_name: menuForm.value.store_name.trim(),
+                menu_name: menuForm.value.menu_name.trim(),
+            }),
+        });
 
         estimateSource.value = 'menu';
         submittedMenu.value = {
@@ -462,12 +471,14 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
         } else {
             emit('food-registered', data.food);
         }
+
         close();
     } catch (e) {
         if (e instanceof ApiError && e.status === 422) {
             const body = e.body as { errors?: Record<string, string[]> };
             const firstErr = Object.values(body.errors ?? {})[0];
-            errorMessage.value = firstErr?.[0] ?? '入力内容を確認してください。';
+            errorMessage.value =
+                firstErr?.[0] ?? '入力内容を確認してください。';
         } else {
             errorMessage.value = '保存に失敗しました。';
         }
@@ -481,7 +492,7 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
     <Dialog :open="open" @update:open="(v) => emit('update:open', v)">
         <DialogContent
             class="max-h-[90dvh] overflow-y-auto bg-cd-surface sm:max-w-lg"
-            :class="step === 'confirm' ? 'p-0 gap-0' : ''"
+            :class="step === 'confirm' ? 'gap-0 p-0' : ''"
         >
             <!-- Header for non-confirm steps -->
             <DialogHeader v-if="step !== 'confirm'">
@@ -523,11 +534,19 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
                     class="flex items-center gap-4 rounded-xl border border-cd-line px-4 py-4 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
                     @click="step = 'photo_capture'"
                 >
-                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                        <Camera :size="22" :stroke-width="1.6" class="text-primary" />
+                    <div
+                        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10"
+                    >
+                        <Camera
+                            :size="22"
+                            :stroke-width="1.6"
+                            class="text-primary"
+                        />
                     </div>
                     <div>
-                        <p class="font-sans text-sm font-semibold text-cd-ink">料理の写真</p>
+                        <p class="font-sans text-sm font-semibold text-cd-ink">
+                            料理の写真
+                        </p>
                         <p class="mt-0.5 font-sans text-xs text-cd-ink-muted">
                             撮影またはフォルダから選択して AI が推定
                         </p>
@@ -538,11 +557,19 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
                     class="flex items-center gap-4 rounded-xl border border-cd-line px-4 py-4 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
                     @click="step = 'menu_input'"
                 >
-                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                        <Store :size="22" :stroke-width="1.6" class="text-primary" />
+                    <div
+                        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10"
+                    >
+                        <Store
+                            :size="22"
+                            :stroke-width="1.6"
+                            class="text-primary"
+                        />
                     </div>
                     <div>
-                        <p class="font-sans text-sm font-semibold text-cd-ink">店名・メニュー名で検索</p>
+                        <p class="font-sans text-sm font-semibold text-cd-ink">
+                            店名・メニュー名で検索
+                        </p>
                         <p class="mt-0.5 font-sans text-xs text-cd-ink-muted">
                             店舗名とメニュー名から栄養成分を推定します
                         </p>
@@ -579,7 +606,9 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
                     @click="openPhotoPicker"
                     @keydown.enter="openPhotoPicker"
                 >
-                    <div class="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                    <div
+                        class="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10"
+                    >
                         <Camera :size="28" class="text-primary" />
                     </div>
                     <div class="text-center">
@@ -616,7 +645,11 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
                             :disabled="saving"
                             @click="submitPhoto"
                         >
-                            <Loader2 v-if="saving" :size="14" class="animate-spin" />
+                            <Loader2
+                                v-if="saving"
+                                :size="14"
+                                class="animate-spin"
+                            />
                             <Utensils v-else :size="14" :stroke-width="1.6" />
                             AI で推定する
                         </Button>
@@ -660,7 +693,11 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
                         :disabled="saving || !canSubmitMenu"
                         @click="submitMenu"
                     >
-                        <Loader2 v-if="saving" :size="14" class="animate-spin" />
+                        <Loader2
+                            v-if="saving"
+                            :size="14"
+                            class="animate-spin"
+                        />
                         <ChefHat v-else :size="14" :stroke-width="1.6" />
                         AI で推定する
                     </Button>
@@ -668,10 +705,18 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
             </div>
 
             <!-- Polling step -->
-            <div v-if="step === 'polling'" class="flex flex-col items-center gap-5 py-10">
+            <div
+                v-if="step === 'polling'"
+                class="flex flex-col items-center gap-5 py-10"
+            >
                 <div class="relative">
-                    <div class="h-16 w-16 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
-                    <Utensils :size="20" class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-primary" />
+                    <div
+                        class="h-16 w-16 animate-spin rounded-full border-4 border-primary/20 border-t-primary"
+                    />
+                    <Utensils
+                        :size="20"
+                        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary"
+                    />
                 </div>
                 <div class="text-center">
                     <p class="font-sans text-sm font-medium text-cd-ink">
@@ -695,9 +740,13 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
                         alt="推定した料理"
                         class="max-h-52 w-full object-cover"
                     />
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                    <div class="absolute bottom-0 left-0 right-0 px-5 pb-4">
-                        <p class="font-sans text-lg font-bold text-white drop-shadow-sm">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"
+                    />
+                    <div class="absolute right-0 bottom-0 left-0 px-5 pb-4">
+                        <p
+                            class="font-sans text-lg font-bold text-white drop-shadow-sm"
+                        >
                             {{ confirmForm.name || '料理名' }}
                         </p>
                         <p class="font-sans text-xs text-white/80">
@@ -711,15 +760,24 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
                     class="bg-gradient-to-br from-primary/10 to-primary/5 px-5 py-5"
                 >
                     <div class="flex items-center gap-3">
-                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/15">
-                            <Store :size="24" :stroke-width="1.5" class="text-primary" />
+                        <div
+                            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/15"
+                        >
+                            <Store
+                                :size="24"
+                                :stroke-width="1.5"
+                                class="text-primary"
+                            />
                         </div>
                         <div class="min-w-0">
                             <p class="font-sans text-lg font-bold text-cd-ink">
-                                {{ confirmForm.name || submittedMenu.menu_name }}
+                                {{
+                                    confirmForm.name || submittedMenu.menu_name
+                                }}
                             </p>
                             <p class="font-sans text-xs text-cd-ink-muted">
-                                {{ submittedMenu.store_name }} · {{ confirmForm.serving_label }}
+                                {{ submittedMenu.store_name }} ·
+                                {{ confirmForm.serving_label }}
                             </p>
                         </div>
                     </div>
@@ -727,12 +785,18 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
 
                 <!-- Kcal hero -->
                 <div class="flex flex-col items-center gap-1 px-5 pt-5 pb-3">
-                    <p class="font-sans text-xs font-medium tracking-wider text-cd-ink-muted">
+                    <p
+                        class="font-sans text-xs font-medium tracking-wider text-cd-ink-muted"
+                    >
                         合計
                     </p>
-                    <p class="font-sans text-4xl font-extrabold tabular-nums text-cd-ink">
+                    <p
+                        class="font-sans text-4xl font-extrabold text-cd-ink tabular-nums"
+                    >
                         {{ formatNum(confirmForm.kcal || '0') }}
-                        <span class="text-lg font-semibold text-cd-ink-muted">kcal</span>
+                        <span class="text-lg font-semibold text-cd-ink-muted"
+                            >kcal</span
+                        >
                     </p>
                 </div>
 
@@ -754,25 +818,55 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
 
                 <!-- PFC numbers -->
                 <div class="mx-5 mt-3 grid grid-cols-3 gap-2">
-                    <div class="rounded-xl bg-cd-pfc-p/10 px-3 py-3 text-center">
-                        <p class="font-sans text-[11px] font-semibold text-cd-pfc-p">P</p>
-                        <p class="mt-0.5 font-sans text-lg font-bold tabular-nums text-cd-ink">
+                    <div
+                        class="rounded-xl bg-cd-pfc-p/10 px-3 py-3 text-center"
+                    >
+                        <p
+                            class="font-sans text-[11px] font-semibold text-cd-pfc-p"
+                        >
+                            P
+                        </p>
+                        <p
+                            class="mt-0.5 font-sans text-lg font-bold text-cd-ink tabular-nums"
+                        >
                             {{ formatNum(confirmForm.protein_g || '0') }}
-                            <span class="text-xs font-medium text-cd-ink-muted">g</span>
+                            <span class="text-xs font-medium text-cd-ink-muted"
+                                >g</span
+                            >
                         </p>
                     </div>
-                    <div class="rounded-xl bg-cd-pfc-f/10 px-3 py-3 text-center">
-                        <p class="font-sans text-[11px] font-semibold text-cd-pfc-f">F</p>
-                        <p class="mt-0.5 font-sans text-lg font-bold tabular-nums text-cd-ink">
+                    <div
+                        class="rounded-xl bg-cd-pfc-f/10 px-3 py-3 text-center"
+                    >
+                        <p
+                            class="font-sans text-[11px] font-semibold text-cd-pfc-f"
+                        >
+                            F
+                        </p>
+                        <p
+                            class="mt-0.5 font-sans text-lg font-bold text-cd-ink tabular-nums"
+                        >
                             {{ formatNum(confirmForm.fat_g || '0') }}
-                            <span class="text-xs font-medium text-cd-ink-muted">g</span>
+                            <span class="text-xs font-medium text-cd-ink-muted"
+                                >g</span
+                            >
                         </p>
                     </div>
-                    <div class="rounded-xl bg-cd-pfc-c/10 px-3 py-3 text-center">
-                        <p class="font-sans text-[11px] font-semibold text-cd-pfc-c">C</p>
-                        <p class="mt-0.5 font-sans text-lg font-bold tabular-nums text-cd-ink">
+                    <div
+                        class="rounded-xl bg-cd-pfc-c/10 px-3 py-3 text-center"
+                    >
+                        <p
+                            class="font-sans text-[11px] font-semibold text-cd-pfc-c"
+                        >
+                            C
+                        </p>
+                        <p
+                            class="mt-0.5 font-sans text-lg font-bold text-cd-ink tabular-nums"
+                        >
                             {{ formatNum(confirmForm.carb_g || '0') }}
-                            <span class="text-xs font-medium text-cd-ink-muted">g</span>
+                            <span class="text-xs font-medium text-cd-ink-muted"
+                                >g</span
+                            >
                         </p>
                     </div>
                 </div>
@@ -782,7 +876,9 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
                     v-if="lookupSource === 'nutrition_db'"
                     class="mx-5 mt-4 rounded-lg border border-emerald-200 bg-emerald-50/80 px-3 py-2 dark:border-emerald-800 dark:bg-emerald-950/30"
                 >
-                    <p class="font-sans text-[11px] leading-relaxed text-emerald-700 dark:text-emerald-400">
+                    <p
+                        class="font-sans text-[11px] leading-relaxed text-emerald-700 dark:text-emerald-400"
+                    >
                         外部栄養DBの参考値です。実際の店舗メニューと異なる場合があります。
                     </p>
                 </div>
@@ -790,7 +886,9 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
                     v-else
                     class="mx-5 mt-4 rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/30"
                 >
-                    <p class="font-sans text-[11px] leading-relaxed text-amber-700 dark:text-amber-400">
+                    <p
+                        class="font-sans text-[11px] leading-relaxed text-amber-700 dark:text-amber-400"
+                    >
                         AI推定値です。外食の油脂・調味料を考慮して推定していますが、実際と異なる場合があります。
                     </p>
                 </div>
@@ -812,7 +910,11 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
                     <div class="grid grid-cols-2 gap-3">
                         <div class="col-span-2 flex flex-col gap-1">
                             <Label class="font-sans text-xs">名前</Label>
-                            <Input v-model="confirmForm.name" type="text" maxlength="100" />
+                            <Input
+                                v-model="confirmForm.name"
+                                type="text"
+                                maxlength="100"
+                            />
                         </div>
                         <div class="flex flex-col gap-1">
                             <Label class="font-sans text-xs">サービング</Label>
@@ -834,7 +936,9 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
                     </div>
                     <div class="grid grid-cols-3 gap-3">
                         <div class="flex flex-col gap-1">
-                            <Label class="font-sans text-xs text-cd-pfc-p">P (g)</Label>
+                            <Label class="font-sans text-xs text-cd-pfc-p"
+                                >P (g)</Label
+                            >
                             <Input
                                 v-model="confirmForm.protein_g"
                                 type="number"
@@ -843,7 +947,9 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
                             />
                         </div>
                         <div class="flex flex-col gap-1">
-                            <Label class="font-sans text-xs text-cd-pfc-f">F (g)</Label>
+                            <Label class="font-sans text-xs text-cd-pfc-f"
+                                >F (g)</Label
+                            >
                             <Input
                                 v-model="confirmForm.fat_g"
                                 type="number"
@@ -852,7 +958,9 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
                             />
                         </div>
                         <div class="flex flex-col gap-1">
-                            <Label class="font-sans text-xs text-cd-pfc-c">C (g)</Label>
+                            <Label class="font-sans text-xs text-cd-pfc-c"
+                                >C (g)</Label
+                            >
                             <Input
                                 v-model="confirmForm.carb_g"
                                 type="number"
@@ -926,7 +1034,11 @@ async function confirmAndSave(addToMeal: boolean): Promise<void> {
                             :disabled="saving || !canConfirm"
                             @click="confirmAndSave(true)"
                         >
-                            <Loader2 v-if="saving" :size="14" class="animate-spin" />
+                            <Loader2
+                                v-if="saving"
+                                :size="14"
+                                class="animate-spin"
+                            />
                             保存して食事に追加
                         </Button>
                     </div>

@@ -21,10 +21,7 @@ const statusLabels: Record<string, string> = {
 };
 
 function programStatusClass(status: string): string {
-    return (
-        programStatusBadgeClasses[status] ??
-        programStatusBadgeClasses.draft
-    );
+    return programStatusBadgeClasses[status] ?? programStatusBadgeClasses.draft;
 }
 </script>
 

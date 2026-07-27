@@ -23,7 +23,7 @@ function toggleCompletion(item: MatrixCellItem): void {
 <template>
     <section
         aria-label="TOP Matrix"
-        class="cd-shadow-soft flex min-h-[30rem] w-full flex-1 flex-col overflow-hidden rounded-[1.25rem] border border-cd-matrix-line bg-cd-matrix-surface landscape-compact:min-h-0 landscape-compact:overflow-auto md:min-h-[34rem] landscape-compact:md:min-h-0"
+        class="cd-shadow-soft flex min-h-[30rem] w-full flex-1 flex-col overflow-hidden rounded-[1.25rem] border border-cd-matrix-line bg-cd-matrix-surface md:min-h-[34rem] landscape-compact:min-h-0 landscape-compact:overflow-auto landscape-compact:md:min-h-0"
     >
         <table class="h-full w-full table-fixed border-collapse">
             <thead>
@@ -32,7 +32,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                 >
                     <th
                         scope="col"
-                        class="w-40 bg-cd-matrix-column-header px-4 py-4 landscape-compact:w-28 landscape-compact:px-2 landscape-compact:py-2 md:w-56 landscape-compact:md:w-28"
+                        class="w-40 bg-cd-matrix-column-header px-4 py-4 md:w-56 landscape-compact:w-28 landscape-compact:px-2 landscape-compact:py-2 landscape-compact:md:w-28"
                     ></th>
                     <th
                         v-for="area in areas"
@@ -41,7 +41,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                         class="border-l border-cd-matrix-line bg-cd-matrix-column-header px-3 py-4 text-center align-middle font-normal landscape-compact:px-1.5 landscape-compact:py-2"
                     >
                         <span
-                            class="font-serif text-base tracking-[0.14em] text-cd-matrix-header-foreground landscape-compact:text-sm landscape-compact:tracking-[0.1em] md:text-lg landscape-compact:md:text-sm"
+                            class="font-serif text-base tracking-[0.14em] text-cd-matrix-header-foreground md:text-lg landscape-compact:text-sm landscape-compact:tracking-[0.1em] landscape-compact:md:text-sm"
                         >
                             {{ area.name }}
                         </span>
@@ -65,7 +65,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                         "
                     >
                         <span
-                            class="inline-flex items-center justify-center gap-2 font-matrix text-base leading-snug lining-nums landscape-compact:gap-1 landscape-compact:text-sm landscape-compact:leading-tight md:text-lg landscape-compact:md:text-sm"
+                            class="inline-flex items-center justify-center gap-2 font-matrix text-base leading-snug lining-nums md:text-lg landscape-compact:gap-1 landscape-compact:text-sm landscape-compact:leading-tight landscape-compact:md:text-sm"
                         >
                             <Sunrise
                                 v-if="row.key === 'current'"
@@ -108,7 +108,7 @@ function toggleCompletion(item: MatrixCellItem): void {
                             <li
                                 v-for="item in cell.items"
                                 :key="item.id"
-                                class="flex items-start gap-3 text-[17px] leading-relaxed lining-nums landscape-compact:gap-2 landscape-compact:text-sm landscape-compact:leading-snug md:text-lg landscape-compact:md:text-sm"
+                                class="flex items-start gap-3 text-[17px] leading-relaxed lining-nums md:text-lg landscape-compact:gap-2 landscape-compact:text-sm landscape-compact:leading-snug landscape-compact:md:text-sm"
                             >
                                 <button
                                     v-if="row.is_checkable"
