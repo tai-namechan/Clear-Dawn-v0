@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -29,10 +29,15 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property int $memory_version
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ *
+ * MustVerifyEmail は必須。Illuminate\Auth\Middleware\EnsureEmailIsVerified は
+ * `$user instanceof MustVerifyEmail` を条件に判定するため、これを外すと
+ * 全ルートに付与された 'verified' ミドルウェアが黙って no-op になり、
+ * 確認メールの送信も止まる（docs/audit/2026-07-26-pre-release-audit.md C-1）。
  */
 #[Fillable(['name', 'email', 'password', 'timezone'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable implements PasskeyUser
+class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
