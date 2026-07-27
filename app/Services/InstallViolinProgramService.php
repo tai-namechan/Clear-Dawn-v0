@@ -432,8 +432,8 @@ class InstallViolinProgramService
             purpose: '予定を実行できない日の短縮モード。失敗ではなく、同じ日の別の形。',
             gate: '1音＋1調＋1フレーズ＋1行。これも『接触日』として数える',
             isOptional: true,
-            note: '曜日固定DAYが全曜日を埋めているため自動生成では選ばれない。'
-                .'疲労・残業・睡眠不足の日に手動で使うか、曜日DAYを無効化したときのフォールバックとして残す。');
+            note: '疲労・残業・睡眠不足の日に、その日のDAYと差し替えて使う（V7）。'
+                .'疲労は自動判定できないため自動生成では選ばれない（assignment_mode=fallback）。何度でも使える。');
         $this->addStep($day, '身体＋調弦', ProgramStepKind::Preparation, 1, $items['身体＋調弦'], 2,
             '痛みチェック。Redなら弾かない', RequiredLevel::Required, ['cue']);
         $this->addStep($day, '開放弦', ProgramStepKind::Technique, 2, $items['開放弦'], 2,
@@ -466,7 +466,7 @@ class InstallViolinProgramService
             'code' => $code,
             'name' => $name,
             'priority_tier' => $tier,
-            'assignment_mode' => $weekday === null ? DayAssignmentMode::Sequential : DayAssignmentMode::WeekdayFixed,
+            'assignment_mode' => $weekday === null ? DayAssignmentMode::Fallback : DayAssignmentMode::WeekdayFixed,
             'fixed_weekday' => $weekday,
             'estimated_minutes_min' => $minMinutes,
             'estimated_minutes_max' => $maxMinutes,

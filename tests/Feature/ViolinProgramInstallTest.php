@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\DayAssignmentMode;
 use App\Enums\RoutinePlanStatus;
 use App\Models\Program;
 use App\Models\ProgramWeekItemPrescription;
@@ -78,7 +79,7 @@ class ViolinProgramInstallTest extends TestCase
         $this->assertSame(0, Program::query()->count());
     }
 
-    public function test_the_fallback_day_is_sequential_and_never_wins_over_a_weekday_fixed_day(): void
+    public function test_the_fallback_day_is_never_picked_by_automatic_generation(): void
     {
         $user = User::factory()->create();
         $this->artisan('cleardawn:install-violin-program', ['userId' => $user->id])->assertSuccessful();
@@ -88,6 +89,7 @@ class ViolinProgramInstallTest extends TestCase
 
         $this->assertNull($fallback->fixed_weekday);
         $this->assertTrue($fallback->is_optional);
+        $this->assertSame(DayAssignmentMode::Fallback, $fallback->assignment_mode);
 
         // 月〜日はすべて曜日固定DAYで埋まっているのでフォールバックは選ばれない
         foreach (range(0, 6) as $offset) {
@@ -97,6 +99,34 @@ class ViolinProgramInstallTest extends TestCase
             $this->assertNotNull($plan);
             $this->assertNotSame($fallback->id, $plan->program_day_template_id);
         }
+    }
+
+    /**
+     * 疲労は自動判定できないので、フォールバックDAYは曜日DAYが無効でも自動生成しない。
+     *
+     * sequential にすると「版の中で1回だけ消費される」ため、最初の1日だけ生成されて
+     * 以降そのプログラムのプランが二度と作られなくなる（消費されるモードにしない）。
+     */
+    public function test_disabling_a_weekday_day_does_not_consume_the_fallback_day(): void
+    {
+        $user = User::factory()->create();
+        $this->artisan('cleardawn:install-violin-program', ['userId' => $user->id])->assertSuccessful();
+
+        $version = Program::query()->where('user_id', $user->id)->firstOrFail()->versions()->firstOrFail();
+        $version->dayTemplates()->where('code', 'VIOLIN-A')->update(['is_active' => false]);
+
+        // 月曜（DAY A を無効化済み）はどの週もプランなし。フォールバックへ流れ込まない
+        foreach (['2026-07-27', '2026-08-03', '2026-08-10'] as $monday) {
+            $plans = app(GenerateProgramDayPlansService::class)->handle($user, Carbon::parse($monday));
+
+            $this->assertCount(0, $plans, "{$monday} に自動生成されたプランがある");
+        }
+
+        $this->assertSame(0, RoutinePlan::query()->where('user_id', $user->id)->count());
+
+        // 他の曜日は影響を受けない
+        $tuesday = app(GenerateProgramDayPlansService::class)->handle($user, Carbon::parse('2026-07-28'))->first();
+        $this->assertSame('VIOLIN-B · ミニ技術', $tuesday->title);
     }
 
     public function test_monday_plan_snapshots_the_week_one_prescription_into_routine_steps(): void

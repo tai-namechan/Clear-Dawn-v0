@@ -125,6 +125,8 @@ class GenerateProgramDayPlansService
             ->pluck('program_day_template_id')
             ->all();
 
+        // fallback は自動生成の対象外（手動で差し替えるための短縮版 DAY）。
+        // sequential は版の中で1回だけ消費される。
         return $version->dayTemplates
             ->filter(fn (ProgramDayTemplate $day): bool => $day->is_active
                 && $day->assignment_mode === DayAssignmentMode::Sequential
