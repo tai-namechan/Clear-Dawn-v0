@@ -10,6 +10,7 @@ use App\Models\MatrixCellItem;
 use App\Models\RoutineSession;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -67,6 +68,21 @@ class AppServiceProvider extends ServiceProvider
         DB::prohibitDestructiveCommands(
             app()->isProduction(),
         );
+
+        // N+1 と fillable 漏れをローカル開発時点で検出する（監査 M-2）。
+        // .cursor/rules/sql-memory-performance.mdc が N+1 防止を規約として
+        // 掲げている一方、それを機械的に強制する仕組みが無かった。
+        //
+        // 有効化の範囲を local に限定している理由:
+        //   - 本番: 未検出の遅延ロードが 500 としてユーザーに到達するより、
+        //     従来どおり動作させる方が安全
+        //   - testing: 既存 904 テストに潜在 N+1 があると一斉に落ち、
+        //     本監査の Critical 修正の検証結果が埋もれる。CI 稼働後、
+        //     影響を確認できる状態で testing へ広げる（ロードマップ Phase 6）
+        $strictModels = app()->environment('local');
+
+        Model::preventLazyLoading($strictModels);
+        Model::preventSilentlyDiscardingAttributes($strictModels);
 
         Password::defaults(fn (): ?Password => app()->isProduction()
             ? Password::min(12)
