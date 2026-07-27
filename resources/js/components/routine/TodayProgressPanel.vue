@@ -154,7 +154,9 @@ function onDatePicked(event: Event): void {
                         class="flex size-3.5 items-center justify-center rounded-full border-[1.5px] border-primary/35"
                         aria-hidden="true"
                     >
-                        <span class="block size-1.5 rounded-full bg-primary/50" />
+                        <span
+                            class="block size-1.5 rounded-full bg-primary/50"
+                        />
                     </span>
                     <p class="mt-1 font-sans text-sm font-semibold text-cd-ink">
                         {{ completionRate }}%

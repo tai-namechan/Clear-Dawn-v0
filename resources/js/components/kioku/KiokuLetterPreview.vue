@@ -36,9 +36,7 @@ const props = withDefaults(
 );
 
 const latest = computed(() => props.letters[0] ?? null);
-const past = computed(() =>
-    props.letters.slice(1, 1 + props.compactPastLimit),
-);
+const past = computed(() => props.letters.slice(1, 1 + props.compactPastLimit));
 const homeMode = computed(() =>
     kiokuLetterHomeMode(latest.value, props.letterSchedule),
 );
@@ -172,14 +170,19 @@ function dateLabel(letter: KiokuLetterSummary): string {
                 </div>
             </template>
 
-            <div v-if="past.length" class="mt-3 space-y-0.5 border-t border-os-line pt-2.5">
+            <div
+                v-if="past.length"
+                class="mt-3 space-y-0.5 border-t border-os-line pt-2.5"
+            >
                 <Link
                     v-for="letter in past"
                     :key="letter.id"
                     :href="show.url(letter.id)"
                     class="flex items-center justify-between gap-2 py-1.5 text-[11.5px] text-os-sub hover:text-os-ink"
                 >
-                    <span class="min-w-0 truncate">{{ dateLabel(letter) }}</span>
+                    <span class="min-w-0 truncate">{{
+                        dateLabel(letter)
+                    }}</span>
                     <span class="shrink-0">{{
                         kiokuLetterPreviewLabel(letter)
                     }}</span>
@@ -200,11 +203,9 @@ function dateLabel(letter: KiokuLetterSummary): string {
         <!-- Test letters are isolated from the live frame. -->
         <section
             v-if="tests.length"
-            class="rounded-2xl border border-dashed border-os-line bg-os-surface p-4"
+            class="bg-os-surface rounded-2xl border border-dashed border-os-line p-4"
         >
-            <div
-                class="mb-2 text-[11.5px] font-bold tracking-wide text-os-sub"
-            >
+            <div class="mb-2 text-[11.5px] font-bold tracking-wide text-os-sub">
                 [テスト便り]
             </div>
             <ul class="space-y-2">

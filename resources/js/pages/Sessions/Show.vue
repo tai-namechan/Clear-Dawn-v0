@@ -68,15 +68,12 @@ const completedCount = computed(
 const resolvedCount = computed(
     () =>
         steps.value.filter(
-            (step) =>
-                step.status === 'completed' || step.status === 'skipped',
+            (step) => step.status === 'completed' || step.status === 'skipped',
         ).length,
 );
 
 const allStepsResolved = computed(
-    () =>
-        steps.value.length > 0 &&
-        resolvedCount.value >= steps.value.length,
+    () => steps.value.length > 0 && resolvedCount.value >= steps.value.length,
 );
 
 const progressPercent = computed(() => {
@@ -89,9 +86,7 @@ const progressPercent = computed(() => {
 
 const targetBlocks = computed(() => currentStep.value?.target_blocks ?? 0);
 
-const planHref = computed(
-    () => `/plans/${props.session.routine_plan_id}`,
-);
+const planHref = computed(() => `/plans/${props.session.routine_plan_id}`);
 
 const isSessionFinished = computed(
     () =>
@@ -302,8 +297,10 @@ const metrics = computed((): MetricChip[] => {
             ? {
                   label: '回数',
                   value:
-                      formatAmountTarget(step.target_amount, step.amount_unit) ??
-                      '—',
+                      formatAmountTarget(
+                          step.target_amount,
+                          step.amount_unit,
+                      ) ?? '—',
                   icon: 'hash',
               }
             : null,
@@ -385,8 +382,7 @@ const metrics = computed((): MetricChip[] => {
                             >
                                 <span>進捗</span>
                                 <span>
-                                    {{ resolvedCount }} /
-                                    {{ steps.length }}（{{
+                                    {{ resolvedCount }} / {{ steps.length }}（{{
                                         progressPercent
                                     }}%）
                                 </span>
@@ -410,9 +406,7 @@ const metrics = computed((): MetricChip[] => {
                 </div>
             </PageSectionCard>
 
-            <div
-                class="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px]"
-            >
+            <div class="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
                 <section
                     v-if="allStepsResolved && !isSessionFinished"
                     aria-label="実行のまとめ"
@@ -450,11 +444,7 @@ const metrics = computed((): MetricChip[] => {
                             @click="completeSession"
                         >
                             <Check :size="16" :stroke-width="1.8" />
-                            {{
-                                completing
-                                    ? '完了処理中…'
-                                    : '実行を完了する'
-                            }}
+                            {{ completing ? '完了処理中…' : '実行を完了する' }}
                         </Button>
                     </div>
                 </section>
@@ -465,9 +455,7 @@ const metrics = computed((): MetricChip[] => {
                     class="cd-panel flex flex-col px-5 py-8"
                 >
                     <div class="mx-auto max-w-md text-center">
-                        <h2
-                            class="font-sans text-xl font-semibold text-cd-ink"
-                        >
+                        <h2 class="font-sans text-xl font-semibold text-cd-ink">
                             {{
                                 session.status === 'completed'
                                     ? 'この実行は完了済みです'
@@ -552,7 +540,7 @@ const metrics = computed((): MetricChip[] => {
                                         {{ metric.label }}
                                     </p>
                                     <p
-                                        class="mt-1 font-sans text-sm font-medium leading-none text-cd-ink"
+                                        class="mt-1 font-sans text-sm leading-none font-medium text-cd-ink"
                                     >
                                         {{ metric.value }}
                                     </p>
@@ -589,9 +577,7 @@ const metrics = computed((): MetricChip[] => {
                                     :load-unit="currentStep.load_unit"
                                     :amount-unit="currentStep.amount_unit"
                                     :default-load="currentStep.target_load"
-                                    :default-amount="
-                                        currentStep.target_amount
-                                    "
+                                    :default-amount="currentStep.target_amount"
                                     :logging="logging || isSessionFinished"
                                     @log="logBlock"
                                     @unlog="unlogBlock"
@@ -734,8 +720,7 @@ const metrics = computed((): MetricChip[] => {
                             type="button"
                             class="w-full"
                             :disabled="
-                                !currentStep ||
-                                currentStep.status !== 'pending'
+                                !currentStep || currentStep.status !== 'pending'
                             "
                             @click="completeStep"
                         >
@@ -750,11 +735,7 @@ const metrics = computed((): MetricChip[] => {
                             @click="completeSession"
                         >
                             <Check :size="16" :stroke-width="1.8" />
-                            {{
-                                completing
-                                    ? '完了処理中…'
-                                    : '実行を完了する'
-                            }}
+                            {{ completing ? '完了処理中…' : '実行を完了する' }}
                         </Button>
 
                         <Button

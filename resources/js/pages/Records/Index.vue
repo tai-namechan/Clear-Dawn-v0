@@ -397,9 +397,7 @@ const conditionChartOption = computed<EChartsCoreOption>(() => {
                 data: dates.map((date) => weightMap.get(date) ?? null),
                 tooltip: {
                     valueFormatter: (value: unknown) =>
-                        value == null || value === ''
-                            ? '—'
-                            : `${value} kg`,
+                        value == null || value === '' ? '—' : `${value} kg`,
                 },
             },
             {
@@ -411,9 +409,7 @@ const conditionChartOption = computed<EChartsCoreOption>(() => {
                 data: dates.map((date) => sleepHoursMap.get(date) ?? null),
                 tooltip: {
                     valueFormatter: (value: unknown) =>
-                        value == null || value === ''
-                            ? '—'
-                            : `${value} 時間`,
+                        value == null || value === '' ? '—' : `${value} 時間`,
                 },
             },
         ],
@@ -666,9 +662,7 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                             aria-label="食事の直近7日推移"
                         >
                             <div>
-                                <div
-                                    class="mb-1 flex min-h-7 items-center"
-                                >
+                                <div class="mb-1 flex min-h-7 items-center">
                                     <p
                                         class="font-sans text-xs text-cd-ink-muted"
                                     >
@@ -681,9 +675,7 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                                 />
                             </div>
                             <div>
-                                <div
-                                    class="mb-1 flex min-h-7 items-center"
-                                >
+                                <div class="mb-1 flex min-h-7 items-center">
                                     <p
                                         class="font-sans text-xs text-cd-ink-muted"
                                     >
@@ -740,9 +732,7 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                             aria-label="コンディションの直近7日推移"
                         >
                             <div aria-label="体重・睡眠の直近7日推移">
-                                <div
-                                    class="mb-1 flex min-h-7 items-center"
-                                >
+                                <div class="mb-1 flex min-h-7 items-center">
                                     <p
                                         class="font-sans text-xs text-cd-ink-muted"
                                     >

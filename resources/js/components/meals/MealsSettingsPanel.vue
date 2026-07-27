@@ -29,27 +29,17 @@ function formatNum(value: number | string): string {
                 <p class="mt-1 font-sans text-sm text-cd-ink-muted">
                     1 日あたりの目標値。残り kcal / PFC の基準になります。
                 </p>
-                <p
-                    v-if="goal"
-                    class="mt-3 font-sans text-sm text-cd-ink"
-                >
+                <p v-if="goal" class="mt-3 font-sans text-sm text-cd-ink">
                     現在: {{ formatNum(goal.kcal) }} kcal / P
                     {{ formatNum(goal.protein_g) }}g / F
                     {{ formatNum(goal.fat_g) }}g / C
                     {{ formatNum(goal.carb_g) }}g
                 </p>
-                <p
-                    v-else
-                    class="mt-3 font-sans text-sm text-cd-ink-muted"
-                >
+                <p v-else class="mt-3 font-sans text-sm text-cd-ink-muted">
                     まだ目標がありません。
                 </p>
             </div>
-            <Button
-                type="button"
-                class="font-sans"
-                @click="emit('edit-goal')"
-            >
+            <Button type="button" class="font-sans" @click="emit('edit-goal')">
                 目標を設定
             </Button>
         </div>

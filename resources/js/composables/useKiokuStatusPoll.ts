@@ -1,12 +1,5 @@
 import { router } from '@inertiajs/vue3';
-import {
-    computed,
-    onMounted,
-    onUnmounted,
-    ref,
-    toValue,
-    watch,
-} from 'vue';
+import { computed, onMounted, onUnmounted, ref, toValue, watch } from 'vue';
 import type { MaybeRefOrGetter, Ref } from 'vue';
 import { apiFetch } from '@/lib/apiFetch';
 import {

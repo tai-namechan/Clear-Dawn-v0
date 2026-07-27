@@ -125,7 +125,11 @@ function addSet(): void {
 }
 
 function submitActiveBlock(): void {
-    if (props.logging || allBlocksLogged.value || props.trackingType === 'check') {
+    if (
+        props.logging ||
+        allBlocksLogged.value ||
+        props.trackingType === 'check'
+    ) {
         return;
     }
 
@@ -219,13 +223,10 @@ function rowState(blockNumber: number): 'done' | 'active' | 'upcoming' {
                     </colgroup>
                     <thead>
                         <tr
-                            class="border-b border-cd-line/60 bg-cd-cream/40 text-[10px] tracking-[0.06em] text-cd-ink-muted"
+                            class="bg-cd-cream/40 border-b border-cd-line/60 text-[10px] tracking-[0.06em] text-cd-ink-muted"
                         >
                             <th class="px-2.5 py-1.5 font-medium">セット</th>
-                            <th
-                                v-if="showLoad"
-                                class="px-2 py-1.5 font-medium"
-                            >
+                            <th v-if="showLoad" class="px-2 py-1.5 font-medium">
                                 重量
                             </th>
                             <th

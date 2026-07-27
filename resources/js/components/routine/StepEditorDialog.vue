@@ -127,9 +127,7 @@ const amountUnitCustom = ref('');
 const loadUnitCustom = ref('');
 const amountUnitSelect = ref<string>(amountUnitPresets[0] ?? '回');
 const loadUnitSelect = ref<string>(loadUnitPresets[0] ?? 'kg');
-const blockRows = ref<BlockTargetRow[]>([
-    { load: '', amount: '10', memo: '' },
-]);
+const blockRows = ref<BlockTargetRow[]>([{ load: '', amount: '10', memo: '' }]);
 const videos = ref<Video[]>([...props.videos]);
 const creatingItem = ref(false);
 const fieldErrors = ref<FieldErrors>({});
@@ -744,7 +742,9 @@ defineExpose({
             class="flex max-h-[92vh] w-[calc(100%-1.5rem)] max-w-[calc(100%-1.5rem)] flex-col overflow-hidden bg-[#fffcf8] sm:max-w-5xl"
         >
             <DialogHeader>
-                <DialogTitle class="font-sans text-lg font-semibold text-cd-ink">
+                <DialogTitle
+                    class="font-sans text-lg font-semibold text-cd-ink"
+                >
                     {{ isEditing ? 'ステップを編集' : 'ステップを追加' }}
                 </DialogTitle>
                 <p class="font-sans text-sm text-cd-ink-muted">
@@ -794,12 +794,23 @@ defineExpose({
                             :aria-invalid="Boolean(fieldErrors.name)"
                             @input="fieldErrors.name = undefined"
                         />
-                        <div v-else-if="isEditing && selectedItem" class="rounded-xl border border-primary/25 bg-primary/5 px-3 py-3">
-                            <p class="font-sans text-sm font-semibold text-cd-ink">
+                        <div
+                            v-else-if="isEditing && selectedItem"
+                            class="rounded-xl border border-primary/25 bg-primary/5 px-3 py-3"
+                        >
+                            <p
+                                class="font-sans text-sm font-semibold text-cd-ink"
+                            >
                                 {{ selectedItem.name }}
                             </p>
-                            <p class="mt-0.5 font-sans text-xs text-cd-ink-muted">
-                                {{ routineItemCategoryLabels[selectedItem.category] }}
+                            <p
+                                class="mt-0.5 font-sans text-xs text-cd-ink-muted"
+                            >
+                                {{
+                                    routineItemCategoryLabels[
+                                        selectedItem.category
+                                    ]
+                                }}
                             </p>
                         </div>
                         <div v-else class="space-y-3">
@@ -807,7 +818,7 @@ defineExpose({
                                 <Search
                                     :size="16"
                                     :stroke-width="1.7"
-                                    class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-cd-ink-muted"
+                                    class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-cd-ink-muted"
                                 />
                                 <Input
                                     v-model="itemSearch"
@@ -846,7 +857,9 @@ defineExpose({
                                 </button>
                             </div>
 
-                            <div class="max-h-56 space-y-1.5 overflow-y-auto rounded-xl border border-cd-line bg-white/50 p-2">
+                            <div
+                                class="max-h-56 space-y-1.5 overflow-y-auto rounded-xl border border-cd-line bg-white/50 p-2"
+                            >
                                 <button
                                     v-for="item in filteredRoutineItems"
                                     :key="item.id"
@@ -861,11 +874,19 @@ defineExpose({
                                     @click="selectedItemId = item.id"
                                 >
                                     <span class="min-w-0">
-                                        <span class="block truncate font-sans text-sm font-medium text-cd-ink">
+                                        <span
+                                            class="block truncate font-sans text-sm font-medium text-cd-ink"
+                                        >
                                             {{ item.name }}
                                         </span>
-                                        <span class="mt-0.5 block font-sans text-xs text-cd-ink-muted">
-                                            {{ routineItemCategoryLabels[item.category] }}
+                                        <span
+                                            class="mt-0.5 block font-sans text-xs text-cd-ink-muted"
+                                        >
+                                            {{
+                                                routineItemCategoryLabels[
+                                                    item.category
+                                                ]
+                                            }}
                                         </span>
                                     </span>
                                     <Check
@@ -884,8 +905,8 @@ defineExpose({
                             </div>
                         </div>
                         <p class="font-sans text-xs text-cd-ink-muted">
-                            カタログ名です。例: WGS / カノン Aパート / AWS IAM章 /
-                            スクワット
+                            カタログ名です。例: WGS / カノン Aパート / AWS IAM章
+                            / スクワット
                         </p>
                         <InputError :message="fieldErrors.name" />
                     </section>
@@ -1041,9 +1062,7 @@ defineExpose({
                                     placeholder="例: 小節 / BPM"
                                     maxlength="20"
                                     :disabled="saving"
-                                    @input="
-                                        fieldErrors.amount_unit = undefined
-                                    "
+                                    @input="fieldErrors.amount_unit = undefined"
                                 />
                                 <InputError
                                     :message="fieldErrors.amount_unit"
@@ -1052,10 +1071,7 @@ defineExpose({
                         </div>
                     </section>
 
-                    <section
-                        data-step-sets-section
-                        class="cd-step-section"
-                    >
+                    <section data-step-sets-section class="cd-step-section">
                         <div class="cd-step-section__label">
                             <span class="cd-step-section__num">5</span>
                             セット内容
@@ -1178,7 +1194,7 @@ defineExpose({
                             v-model="note"
                             rows="3"
                             placeholder="フォームのポイントや注意事項"
-                            class="border-input bg-white ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[80px] w-full rounded-md border px-3 py-2 font-sans text-sm text-cd-ink focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                            class="flex min-h-[80px] w-full rounded-md border border-input bg-white px-3 py-2 font-sans text-sm text-cd-ink ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                             :disabled="saving"
                         />
                     </section>
@@ -1193,10 +1209,14 @@ defineExpose({
                 </div>
 
                 <aside class="cd-panel-muted h-fit p-4 lg:sticky lg:top-0">
-                    <p class="font-sans text-xs font-semibold tracking-wide text-cd-ink-muted">
+                    <p
+                        class="font-sans text-xs font-semibold tracking-wide text-cd-ink-muted"
+                    >
                         プレビュー
                     </p>
-                    <p class="mt-3 font-sans text-base font-semibold text-cd-ink">
+                    <p
+                        class="mt-3 font-sans text-base font-semibold text-cd-ink"
+                    >
                         {{ stepName }}
                     </p>
                     <p

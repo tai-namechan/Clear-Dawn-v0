@@ -67,14 +67,18 @@ function openCellEditor(payload: { rowIndex: number; areaIndex: number }) {
     <Head title="ダッシュボード" />
 
     <div
-        class="flex h-full min-h-0 flex-1 flex-col p-4 landscape-compact:p-3 landscape-compact:pb-3 md:px-6 md:pb-8"
+        class="flex h-full min-h-0 flex-1 flex-col p-4 md:px-6 md:pb-8 landscape-compact:p-3 landscape-compact:pb-3"
     >
         <div
-            class="mx-auto flex w-full max-w-7xl min-h-0 flex-1 flex-col gap-6 landscape-compact:gap-3 md:gap-7"
+            class="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-6 md:gap-7 landscape-compact:gap-3"
         >
             <!-- Desktop / tablet: keep the classic matrix table -->
             <div class="hidden min-h-0 flex-1 flex-col md:flex">
-                <MatrixSheet :areas="areas" :rows="rows" @edit="openCellEditor" />
+                <MatrixSheet
+                    :areas="areas"
+                    :rows="rows"
+                    @edit="openCellEditor"
+                />
             </div>
 
             <!-- Phone only (< md): stacked area tabs + row cards -->

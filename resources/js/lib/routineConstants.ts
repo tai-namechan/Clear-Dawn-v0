@@ -100,9 +100,7 @@ export const stepTitlePlaceholders = [
     '例: 通常スクワット',
 ] as const;
 
-export const videoPlaceholders = [
-    '例: 通常スクワット動画',
-] as const;
+export const videoPlaceholders = ['例: 通常スクワット動画'] as const;
 
 /**
  * ステップ表示名: title があればそれ、なければ実施項目名。
@@ -339,11 +337,13 @@ export function formatStepTarget(step: {
     }
 
     const load = formatLoadTarget(step.target_load, step.load_unit);
+
     if (load) {
         parts.push(load);
     }
 
     const amount = formatAmountTarget(step.target_amount, step.amount_unit);
+
     if (amount) {
         parts.push(amount);
     }
@@ -360,11 +360,13 @@ export function formatBlockLog(log: {
     const parts: string[] = [];
 
     const load = formatLoadTarget(log.load_value, log.load_unit);
+
     if (load) {
         parts.push(load);
     }
 
     const amount = formatAmountTarget(log.amount_value, log.amount_unit);
+
     if (amount) {
         parts.push(amount);
     }
