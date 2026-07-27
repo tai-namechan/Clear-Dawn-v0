@@ -14,7 +14,6 @@ use Throwable;
  */
 final class CleanupUserYoyuMoneyFilesService
 {
-
     private const PATH_PREFIX = 'yoyu-money-imports';
 
     /**

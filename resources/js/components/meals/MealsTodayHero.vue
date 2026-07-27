@@ -51,10 +51,7 @@ const ringStyle = computed(() => ({
 </script>
 
 <template>
-    <div
-        class="grid gap-4 lg:grid-cols-2"
-        aria-label="残りの摂取目安"
-    >
+    <div class="grid gap-4 lg:grid-cols-2" aria-label="残りの摂取目安">
         <section
             class="rounded-2xl border border-cd-line bg-white p-5 shadow-sm md:p-6"
         >
@@ -70,7 +67,7 @@ const ringStyle = computed(() => ({
                             class="flex size-full flex-col items-center justify-center rounded-full bg-white"
                         >
                             <span
-                                class="font-sans text-2xl font-bold leading-none text-cd-ink"
+                                class="font-sans text-2xl leading-none font-bold text-cd-ink"
                             >
                                 {{ ringPercent }}%
                             </span>
@@ -117,9 +114,7 @@ const ringStyle = computed(() => ({
                                     :style="{ width: `${ringPercent}%` }"
                                 />
                             </div>
-                            <p
-                                class="mt-2 font-sans text-xs text-cd-ink-muted"
-                            >
+                            <p class="mt-2 font-sans text-xs text-cd-ink-muted">
                                 {{ formatNum(totalsKcal) }} /
                                 {{ formatNum(goalKcal) }} kcal（{{
                                     ringPercent
@@ -130,9 +125,7 @@ const ringStyle = computed(() => ({
                 </div>
             </template>
             <template v-else>
-                <p
-                    class="font-sans text-xs font-medium text-cd-ink-muted"
-                >
+                <p class="font-sans text-xs font-medium text-cd-ink-muted">
                     残りの摂取目安
                 </p>
                 <p class="mt-3 font-sans text-xl font-semibold text-cd-ink">
@@ -156,9 +149,7 @@ const ringStyle = computed(() => ({
                 残りの PFC
             </p>
             <div v-if="remaining" class="mt-3 grid grid-cols-3 gap-2.5">
-                <div
-                    class="rounded-2xl bg-[#E8F6EE] px-3 py-3 text-center"
-                >
+                <div class="rounded-2xl bg-[#E8F6EE] px-3 py-3 text-center">
                     <p class="font-sans text-xs font-semibold text-cd-pfc-p">
                         P
                     </p>
@@ -173,9 +164,7 @@ const ringStyle = computed(() => ({
                         目標 {{ formatNum(goalAmounts.protein_g) }} g
                     </p>
                 </div>
-                <div
-                    class="rounded-2xl bg-[#FFF1E4] px-3 py-3 text-center"
-                >
+                <div class="rounded-2xl bg-[#FFF1E4] px-3 py-3 text-center">
                     <p class="font-sans text-xs font-semibold text-cd-pfc-f">
                         F
                     </p>
@@ -190,9 +179,7 @@ const ringStyle = computed(() => ({
                         目標 {{ formatNum(goalAmounts.fat_g) }} g
                     </p>
                 </div>
-                <div
-                    class="rounded-2xl bg-[#E7F3FC] px-3 py-3 text-center"
-                >
+                <div class="rounded-2xl bg-[#E7F3FC] px-3 py-3 text-center">
                     <p class="font-sans text-xs font-semibold text-cd-pfc-c">
                         C
                     </p>

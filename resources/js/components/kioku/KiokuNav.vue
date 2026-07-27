@@ -10,10 +10,7 @@ defineProps<{
 </script>
 
 <template>
-    <nav
-        class="flex flex-wrap gap-1.5 text-sm"
-        aria-label="キオクメニュー"
-    >
+    <nav class="flex flex-wrap gap-1.5 text-sm" aria-label="キオクメニュー">
         <Link
             :href="home()"
             class="rounded-full px-3.5 py-1.5 font-medium transition-colors"

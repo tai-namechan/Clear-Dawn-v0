@@ -85,8 +85,13 @@ defineOptions({
         />
 
         <section
-            v-if="schedule && ['paused', 'halted', 'active', 'completed'].includes(schedule.state)"
-            class="rounded-2xl border border-os-line bg-os-surface px-4 py-3 text-[12.5px] leading-relaxed text-os-sub"
+            v-if="
+                schedule &&
+                ['paused', 'halted', 'active', 'completed'].includes(
+                    schedule.state,
+                )
+            "
+            class="bg-os-surface rounded-2xl border border-os-line px-4 py-3 text-[12.5px] leading-relaxed text-os-sub"
         >
             <span class="font-bold text-os-ink">実験状況</span>
             ·
@@ -142,11 +147,9 @@ defineOptions({
 
         <section
             v-if="tests.length"
-            class="rounded-2xl border border-dashed border-os-line bg-os-surface p-4"
+            class="bg-os-surface rounded-2xl border border-dashed border-os-line p-4"
         >
-            <div
-                class="mb-2 text-[11.5px] font-bold tracking-wide text-os-sub"
-            >
+            <div class="mb-2 text-[11.5px] font-bold tracking-wide text-os-sub">
                 [テスト便り] 通常履歴とは分離されています
             </div>
             <ul class="space-y-2">

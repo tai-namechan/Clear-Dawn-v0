@@ -32,7 +32,7 @@ CI を最後に回すと、Critical 修正が未検証のまま4つ積み上が�
 | --- | --- | --- | --- | --- |
 | 1 | 0 | 監査ドキュメント + ロードマップ + Rules/Skills 整理 | 完了 | `claude/pre-release-security-audit-svqt21` |
 | 2 | 5 | **C-5 CI パイプライン**（以降を機械検証するため先行） | 完了 | `claude/audit-phase1-ci` |
-| 3 | 1 | C-1 メール検証 / C-2 公開登録フラグ | 完了 | `claude/audit-phase2-auth` |
+| 3 | 1 | C-1 メール検証 / C-2b パスワード再設定の分離（**C-2 は取り下げ**） | 完了 | `claude/audit-phase2-auth` |
 | 4 | 2 | C-4 キュー重複実行 / C-3 Money インポート | 完了 | `claude/audit-phase3-queue-import` |
 | 5 | 3 | H-1〜H-5 | 完了 | `claude/audit-phase4-high` |
 | 6 | 4 | M-1〜M-6 / L-1〜L-7 | 完了 | `claude/audit-phase5-medium-low` |
@@ -100,12 +100,20 @@ Claude Code からは参照されない。**規約の半分がツールによっ
 
 ---
 
-## Phase 1 — 認証・登録の重大欠陥（C-1 / C-2）
+## Phase 1 — 認証の重大欠陥（C-1 / C-2b）
+
+> **C-2（公開登録の停止フラグ）は取り下げた。** 登録ポリシーを確認した結果、
+> 「UI に導線を出さないところまでが要件で、URL 直打ちは許容」が正しい仕様だった
+> （`docs/product/signup-policy.md`）。監査は `docs/` に記述が無いことを
+> 「非公開運用の意図」と読み替えてしまっており、その前提自体が誤りだった。
+> 詳細は監査レポートの C-2 節を参照。
 
 ### 何が守れるようになるか
 
 - **実在しないメールアドレスでのアカウント作成が成立しなくなる**
-- **`APP_PUBLIC_SIGNUP_ENABLED=false` が実際に登録を止める**（今までは UI から隠していただけ）
+- **URL 直打ちで登録されても、メール確認を通すまでアプリの中身に到達できない**
+  （C-2 が求めていた防御を C-1 が実質的に代替する）
+- **登録導線を隠したままでも既存ユーザーがパスワードを自力で復旧できる**（C-2b）
 - アカウント乗っ取り後のメール書き換えが、検証を挟まずには完了しなくなる
 
 ### 変更内容
@@ -114,19 +122,21 @@ Claude Code からは参照されない。**規約の半分がツールによっ
 | --- | --- |
 | `app/Models/User.php` | `MustVerifyEmail` を実装。`verified` ミドルウェアが実際のゲートになる |
 | `database/migrations/..._backfill_email_verified_at_for_existing_users.php` | 既存ユーザーの `email_verified_at` を `created_at` でバックフィル（ロックアウト防止） |
-| `config/fortify.php` | `Features::registration()` を `public_signup_enabled` で条件化 |
-| `routes/web.php` / `FortifyServiceProvider.php` | **C-2b**: パスワード再設定を公開登録フラグから分離 |
-| `phpunit.xml` | `APP_PUBLIC_SIGNUP_ENABLED=true` を明示（未設定だと登録系テストが全 skip する） |
+| `config/fortify.php` | `Features::registration()` は**無条件のまま**。フラグで出し分けると Wayfinder が `routes/register` を生成せずフロントのビルドが壊れる（実際に CI で発覚） |
+| `routes/web.php` / `FortifyServiceProvider.php` | **C-2b**: パスワード再設定を登録導線フラグから分離。`canRegister` は従来どおりフラグを見る |
 | `tests/Feature/Auth/EmailVerificationTest.php` | 未検証ユーザーが保護ルートで弾かれることを検証（従来欠けていた本質的なケース） |
-| `tests/Feature/Auth/ClosedSignupTest.php` | 新規。フラグ false で登録が 404、再設定とログインは生存 |
+| `tests/Feature/Auth/SignupPolicyTest.php` | 新規。現在の登録ポリシー（導線非表示 / URL 直打ちは許容 / 再設定は生存）を固定 |
 | `tests/Feature/Kioku/MemoryTagsUpdateTest.php` | 「MustVerifyEmail 実装後にカバーされる」と自らコメントしていた箇所を実際の検証に更新 |
 
-### phpunit.xml に `APP_PUBLIC_SIGNUP_ENABLED=true` を足した理由
+### phpunit.xml を触らなくてよくなった理由
 
-`tests/TestCase.php::skipUnlessFortifyHas()` は機能が無効なら `markTestSkipped()` する。
-フラグを未設定（= false）のままにすると、**既存の登録系テストが全て skip され、
-「緑だが何も検証していない」状態**になる。これは監査で指摘した
-「通っているのに守れていないテスト」（C-1 の `EmailVerificationTest`）と同じ失敗である。
+当初は `Features::registration()` をフラグで条件化したため、テストで
+`APP_PUBLIC_SIGNUP_ENABLED=true` を明示しないと `skipUnlessFortifyHas()` が
+登録系テストを全 skip してしまう問題があった（「緑だが何も検証していない」状態）。
+
+C-2 の取り下げにより `Features::registration()` が無条件に戻ったため、
+この対処ごと不要になった。フラグは request 時にしか読まれないので、
+`SignupPolicyTest` は `config()->set()` で両方の挙動を直接検証できる。
 
 そのためテスト既定は `true`（登録系テストが実際に走る）とし、
 フラグ false の挙動は `ClosedSignupTest` がアプリ生成前に環境変数を差し替えて個別に検証する。
@@ -309,7 +319,6 @@ GET が冪等であるべきという原則自体はまだ満たしていない�
 | **H-4** | `BelongsToUser` のフェイルクローズ化 | **前提作業あり。** 先に23箇所の呼び出し側へ `withoutUserScope()` を入れ切る必要がある（詳細は Phase 3 の「H-4 を見送った理由」）。順序を逆にすると letter 生成とブリーフィングが壊れる |
 | H-1 残 | GET から副作用を分離（`MoneyDashboardController` / `HomeController` / `TodayController`） | コントローラとサービスの責務再設計が必要。UX（初回表示時に何を見せるか）の判断を伴う |
 | M-7 | `processImport` のチャンク化 | トランザクション境界の再設計。部分再開の仕様策定が必要 |
-| L-3 | `MetricRecordController::destroy` の親子関係検証 | ルート設計（`{metric}/{metricRecord}`）自体の見直しが望ましい |
 | L-4 | アカウント削除のトランザクション化 | ストレージ削除と DB 削除の順序・補償処理の設計が必要 |
 | L-7 | `AiGateway` の 429/5xx リトライ | 課金ライフサイクル（reserve/settle/release）との整合設計が必要 |
 | 負債 | `app/Services/` 76クラスのフラット構造再編 | 大規模リネーム。CI 稼働後に実施すべき |

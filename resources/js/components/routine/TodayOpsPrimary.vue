@@ -167,9 +167,7 @@ function optionVariant(actionKey: string): 'default' | 'outline' {
                 class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
             >
                 <div class="min-w-0 flex-1">
-                    <p
-                        class="font-sans text-xs font-medium text-primary"
-                    >
+                    <p class="font-sans text-xs font-medium text-primary">
                         今日の作戦
                     </p>
                     <h2
@@ -216,7 +214,7 @@ function optionVariant(actionKey: string): 'default' | 'outline' {
                     >
                         <span
                             v-if="confidenceLabel.percent !== null"
-                            class="font-sans text-lg font-bold leading-none text-cd-ink"
+                            class="font-sans text-lg leading-none font-bold text-cd-ink"
                         >
                             {{ confidenceLabel.percent }}%
                         </span>

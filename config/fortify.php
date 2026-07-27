@@ -163,15 +163,23 @@ return [
     */
 
     'features' => [
-        // 公開登録は APP_PUBLIC_SIGNUP_ENABLED でルートごと止める。
-        // ここを無条件 Features::registration() にすると、フラグを false に
-        // しても UI からリンクが消えるだけで POST /register は稼働し続ける
-        // （docs/audit/2026-07-26-pre-release-audit.md C-2）。
-        // 「UI に出さない」と「機能を止める」は別物として扱う。
-        ...(config('app.public_signup_enabled') ? [Features::registration()] : []),
+        // registration は環境によらず常に登録する。
+        //
+        // APP_PUBLIC_SIGNUP_ENABLED=false は「UI に導線を出さない」ところまでが
+        // 現在の要件であり、URL 直打ちでの登録は許容している
+        // （docs/product/signup-policy.md）。
+        //
+        // ここをフラグで出し分けると、Wayfinder が resources/js/routes/register を
+        // 生成しなくなり、それを静的 import している AuthRegisterForm.vue /
+        // AuthLoginForm.vue が解決できずフロントのビルドごと失敗する。
+        // ビルド生成物の形が実行時フラグで変わる構造は持ち込まない。
+        //
+        // 登録自体を実際に塞ぐ必要が生じたら、ルートを消すのではなく
+        // ミドルウェアで拒否する（生成面を env に依存させないため）。
+        Features::registration(),
 
         // パスワード再設定は「既存ユーザーの復旧手段」であり、
-        // 新規登録の可否とは無関係。公開登録を閉じても常に有効にする。
+        // 新規登録の導線を出すかどうかとは無関係。常に有効にする。
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([

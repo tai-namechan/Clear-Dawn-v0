@@ -1,8 +1,4 @@
-import type {
-    RoutinePlan,
-    RoutineSession,
-    StepPurpose,
-} from '@/types/routine';
+import type { RoutinePlan, RoutineSession, StepPurpose } from '@/types/routine';
 
 export type TodayPlanRunStatus = 'completed' | 'in_progress' | 'not_started';
 

@@ -69,7 +69,9 @@ defineOptions({
         <Head title="キオク" />
 
         <header class="space-y-2">
-            <h2 class="font-serif text-2xl tracking-[0.08em] text-os-ink md:text-3xl">
+            <h2
+                class="font-serif text-2xl tracking-[0.08em] text-os-ink md:text-3xl"
+            >
                 キオク
             </h2>
             <p class="max-w-xl text-[13.5px] leading-relaxed text-os-sub">
