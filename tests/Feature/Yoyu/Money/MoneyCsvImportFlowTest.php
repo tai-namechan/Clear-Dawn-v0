@@ -5,9 +5,11 @@ namespace Tests\Feature\Yoyu\Money;
 use App\Domain\Yoyu\Money\Enums\MoneyAccountType;
 use App\Domain\Yoyu\Money\Enums\MoneyImportStatus;
 use App\Domain\Yoyu\Money\Models\MoneyAccount;
+use App\Domain\Yoyu\Money\Models\MoneyAuditEvent;
 use App\Domain\Yoyu\Money\Models\MoneyImport;
 use App\Domain\Yoyu\Money\Models\MoneyImportRow;
 use App\Domain\Yoyu\Money\Models\MoneyTransaction;
+use App\Domain\Yoyu\Money\Services\MoneyCsvImportService;
 use App\Domain\Yoyu\Money\Services\MoneySetupService;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -151,6 +153,94 @@ class MoneyCsvImportFlowTest extends TestCase
                 ->whereNull('voided_at')
                 ->count(),
         );
+    }
+
+    /**
+     * 監査 C-4 の回帰テスト。
+     *
+     * retry_after < ジョブ timeout のとき、実行中のジョブがキューに再可視化され
+     * 同じ import が二重に処理されうる（ShouldBeUnique は dispatch 時のロックなので
+     * これを防げない）。二重処理されると同じ CSV 行から2件の取引が作られ、
+     * 金額が二重計上される。
+     *
+     * processImport() はキュー設定に依存せず、それ自体が冪等でなければならない。
+     */
+    public function test_process_import_is_idempotent_when_executed_twice(): void
+    {
+        [$user, $account] = $this->createUserWithAccount();
+
+        $import = $this->runImportFlow($user, $account);
+        $this->assertSame(MoneyImportStatus::Completed, $import->status);
+
+        $transactionsAfterFirst = MoneyTransaction::query()
+            ->withoutUserScope()
+            ->where('import_id', $import->id)
+            ->count();
+        $this->assertSame(2, $transactionsAfterFirst);
+
+        // 二重取得されたワーカーの再実行を模す。
+        app(MoneyCsvImportService::class)->processImport($import->refresh());
+
+        $this->assertSame(
+            $transactionsAfterFirst,
+            MoneyTransaction::query()->withoutUserScope()->where('import_id', $import->id)->count(),
+            '完了済み import の再処理で取引が増えてはならない（二重計上）。',
+        );
+
+        $this->assertSame(
+            2,
+            MoneyImportRow::query()->withoutUserScope()->where('import_id', $import->id)->count(),
+        );
+
+        $import->refresh();
+        $this->assertSame(MoneyImportStatus::Completed, $import->status);
+        $this->assertSame(2, (int) $import->accepted_count);
+        $this->assertSame(
+            1,
+            MoneyAuditEvent::query()
+                ->withoutUserScope()
+                ->where('event_type', 'money_import.completed')
+                ->where('subject_id', $import->id)
+                ->count(),
+            '完了済み import の再処理で監査イベントが重複してはならない。',
+        );
+    }
+
+    /**
+     * 監査 C-3 の回帰テスト（ディスク設定の外出し部分）。
+     *
+     * 以前は private const DISK = 'local' のハードコードで、env による差し替えが
+     * できなかった。Laravel Cloud では Web とキューがファイルシステムを共有しないため、
+     * 本番では取り込みが必ず失敗していた。
+     *
+     * 注意: Storage::fake() はローカルドライバのため、本テストは
+     * 「path() を持たないディスクでも動くこと」までは証明しない。
+     * そちらは Storage::path() / SplFileObject への依存をコードから完全に除去し、
+     * readStream() + fgetcsv() に置き換えたという構造的変更で担保している
+     * （grep で self::DISK / SplFileObject が 0 件であることを確認済み）。
+     *
+     * 本テストが固定するのは「ディスクが設定で差し替わり、
+     * 既定の local へフォールバックしないこと」である。
+     */
+    public function test_import_uses_the_configured_disk_instead_of_hardcoded_local(): void
+    {
+        Storage::fake('object-storage');
+        config()->set('yoyu.money.import.disk', 'object-storage');
+
+        [$user, $account] = $this->createUserWithAccount();
+
+        $import = $this->runImportFlow($user, $account);
+
+        $this->assertSame(MoneyImportStatus::Completed, $import->status);
+        $this->assertSame(2, (int) $import->accepted_count);
+        $this->assertSame(
+            2,
+            MoneyTransaction::query()->withoutUserScope()->where('import_id', $import->id)->count(),
+        );
+
+        // 原本が指定ディスク側に置かれ、local には置かれていないこと。
+        Storage::disk('object-storage')->assertExists((string) $import->source_storage_path);
+        Storage::disk('local')->assertMissing((string) $import->source_storage_path);
     }
 
     public function test_user_cannot_configure_another_users_import(): void
