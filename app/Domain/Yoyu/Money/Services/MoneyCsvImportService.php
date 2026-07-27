@@ -666,7 +666,10 @@ final class MoneyCsvImportService
         $dataRowNumber = 0;
 
         try {
-            while (($csvRow = fgetcsv($handle, 0, $delimiter)) !== false) {
+            // enclosure / escape は明示する。PHP 8.4 で escape 省略は非推奨になり、
+            // 省略すると CSV の1行ごとに Deprecation が出る。値は SplFileObject の
+            // 既定（setCsvControl の第2/第3引数）と同じにして挙動を維持する。
+            while (($csvRow = fgetcsv($handle, 0, $delimiter, '"', '\\')) !== false) {
                 /** @var list<string|null> $csvRow */
                 if ($this->isEmptyCsvRow($csvRow)) {
                     continue;
