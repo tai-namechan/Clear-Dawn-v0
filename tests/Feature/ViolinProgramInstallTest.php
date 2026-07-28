@@ -286,6 +286,42 @@ class ViolinProgramInstallTest extends TestCase
         $this->assertSame('bpm', $scale->load_unit);
     }
 
+    /**
+     * 1つのステップに複数の週次変数が乗る場合でも、実行画面の各行がラベルを保つこと。
+     *
+     * 実行画面は note を ' / ' で分割して1行ずつ表示する。ラベルをまとめて連結すると
+     * 2件目以降がラベルなしの行になり、1件目のラベルが両方の内容に付いて見える。
+     */
+    public function test_a_step_with_two_week_variables_labels_every_displayed_line(): void
+    {
+        $user = User::factory()->create();
+        $this->artisan('cleardawn:install-violin-program', ['userId' => $user->id])->assertSuccessful();
+
+        // 木曜 DAY B2 の開放弦は「今週のCUE」と「音・身体」の2つを持つ
+        $thursday = app(GenerateProgramDayPlansService::class)
+            ->handle($user, Carbon::parse('2026-07-30'))
+            ->firstOrFail();
+        $openString = $thursday->steps->firstWhere('title', '開放弦');
+
+        $this->assertSame([
+            '弓の直進と均一な音。返しの瞬間を速めない',
+            '今週のCUE：音を出す前に、出した後の響きまで想像する',
+            '音・身体：開放弦。弓を置く、肩を落とす、まっすぐ運ぶ',
+        ], explode(' / ', (string) $openString->note));
+
+        // 日曜 DAY F の音階テストは「音階」と「週末テスト」の2つを持つ
+        $sunday = app(GenerateProgramDayPlansService::class)
+            ->handle($user, Carbon::parse('2026-08-02'))
+            ->firstOrFail();
+        $scaleTest = $sunday->steps->firstWhere('title', '音階テスト');
+
+        $this->assertSame([
+            '3回連続で止まらず弾けたか。調と開始bpmを記録',
+            '音階：G長調 1oct',
+            '週末テスト：30秒動画：開放弦＋G音階＋カノン冒頭。良否を判断せず保存',
+        ], explode(' / ', (string) $scaleTest->note));
+    }
+
     public function test_generation_is_idempotent_for_the_violin_program(): void
     {
         $user = User::factory()->create();
