@@ -71,7 +71,13 @@ return new class extends Migration
 
         $this->normalizeUnstartedPlanSteps(
             $row->program_step_item_id,
-            $row->intent.'：'.$row->note,
+            [
+                // この変更より前の composeNote は intent と note を別要素として
+                // ' / ' で連結していた。既存プランのほとんどはこの形。
+                $row->intent.' / '.$row->note,
+                // 新コード配備後・この移行前に生成された分（デプロイの隙間）
+                $row->intent.'：'.$row->note,
+            ],
             $relabeled,
         );
     }
@@ -82,8 +88,10 @@ return new class extends Migration
      * プラン生成時に合成された文字列が分かっているので、その文字列に一致する箇所
      * だけを置換する（自由文の解析はしない）。セッションが1件でもあるプランは
      * 実行の記録なので対象外。
+     *
+     * @param  list<string>  $candidates  合成され得る旧形式の文字列
      */
-    private function normalizeUnstartedPlanSteps(string $stepItemId, string $before, string $after): void
+    private function normalizeUnstartedPlanSteps(string $stepItemId, array $candidates, string $after): void
     {
         DB::table('routine_plan_steps')
             ->where('program_step_item_id', $stepItemId)
@@ -92,14 +100,20 @@ return new class extends Migration
                 ->from('routine_sessions')
                 ->whereColumn('routine_sessions.routine_plan_id', 'routine_plan_steps.routine_plan_id'))
             ->get(['id', 'note'])
-            ->each(function (object $step) use ($before, $after): void {
-                if (! str_contains((string) $step->note, $before)) {
+            ->each(function (object $step) use ($candidates, $after): void {
+                $note = (string) $step->note;
+
+                foreach ($candidates as $before) {
+                    if (! str_contains($note, $before)) {
+                        continue;
+                    }
+
+                    DB::table('routine_plan_steps')
+                        ->where('id', $step->id)
+                        ->update(['note' => str_replace($before, $after, $note)]);
+
                     return;
                 }
-
-                DB::table('routine_plan_steps')
-                    ->where('id', $step->id)
-                    ->update(['note' => str_replace($before, $after, (string) $step->note)]);
             });
     }
 };
