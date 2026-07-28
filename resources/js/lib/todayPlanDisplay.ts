@@ -1,4 +1,5 @@
 import type {
+    RoutineItemCategory,
     RoutinePlan,
     RoutineSession,
     StepPurpose,
@@ -153,4 +154,42 @@ export function planDescription(plan: RoutinePlan): string {
 
 export function primaryStepPurpose(plan: RoutinePlan): StepPurpose | null {
     return plan.steps?.find((step) => step.purpose)?.purpose ?? null;
+}
+
+/**
+ * プランの性格を表すカテゴリ（最も多いステップのカテゴリ）。
+ *
+ * 先頭ステップだけを見ると、どのプランも準備運動から始まるため同じ判定になる。
+ * 同数のときは先に現れたカテゴリを採る。`other` は内容を表さないので、
+ * 他のカテゴリが1つでもあればそちらを優先する。
+ */
+export function dominantItemCategory(
+    plan: RoutinePlan,
+): RoutineItemCategory | null {
+    const counts = new Map<RoutineItemCategory, number>();
+
+    for (const step of plan.steps ?? []) {
+        const category = step.routine_item?.category;
+
+        if (!category) {
+            continue;
+        }
+
+        counts.set(category, (counts.get(category) ?? 0) + 1);
+    }
+
+    const meaningful = [...counts].filter(([category]) => category !== 'other');
+    const ranked = meaningful.length > 0 ? meaningful : [...counts];
+
+    let dominant: RoutineItemCategory | null = null;
+    let dominantCount = 0;
+
+    for (const [category, count] of ranked) {
+        if (count > dominantCount) {
+            dominant = category;
+            dominantCount = count;
+        }
+    }
+
+    return dominant;
 }

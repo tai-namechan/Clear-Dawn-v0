@@ -5,8 +5,8 @@ import {
     Check,
     CirclePlay,
     Clock3,
+    Dumbbell,
     EllipsisVertical,
-    Footprints,
     HeartPulse,
     Music,
     NotebookPen,
@@ -22,9 +22,11 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { apiFetch } from '@/lib/apiFetch';
+import { categoryIcon } from '@/lib/categoryIcon';
 import { planRunStatusBadgeClasses } from '@/lib/statusBadge';
 import {
     displayDurationMinutes,
+    dominantItemCategory,
     formatClockRange,
     formatMinutesJa,
     latestSession,
@@ -86,22 +88,28 @@ const statusMeta: Record<TodayPlanRunStatus, { label: string; className: string 
 };
 
 const iconComponent = computed((): Component => {
-    const purpose = primaryStepPurpose(props.plan);
-    const category = props.plan.steps?.[0]?.routine_item?.category;
+    const category = dominantItemCategory(props.plan);
 
-    if (purpose === 'strength' || purpose === 'power' || category === 'strength') {
-        return Footprints;
+    if (category !== null) {
+        return categoryIcon(category);
     }
 
-    if (purpose === 'practice' || category === 'music') {
+    // ステップが無いプラン（選択待ちなど）は目的から推測する
+    const purpose = primaryStepPurpose(props.plan);
+
+    if (purpose === 'strength' || purpose === 'power') {
+        return Dumbbell;
+    }
+
+    if (purpose === 'practice') {
         return Music;
     }
 
-    if (purpose === 'study' || purpose === 'review' || category === 'study') {
+    if (purpose === 'study' || purpose === 'review') {
         return BookOpen;
     }
 
-    if (purpose === 'care' || category === 'care' || category === 'mobility') {
+    if (purpose === 'care') {
         return HeartPulse;
     }
 
