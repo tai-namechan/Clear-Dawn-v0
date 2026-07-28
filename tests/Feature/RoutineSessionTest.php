@@ -125,6 +125,44 @@ class RoutineSessionTest extends TestCase
         ]);
     }
 
+    public function test_start_snapshots_the_step_cue_so_the_session_screen_can_show_it(): void
+    {
+        $user = User::factory()->create();
+        $routineItem = RoutineItem::factory()->create([
+            'user_id' => $user->id,
+            'name' => '開放弦',
+        ]);
+        $plan = RoutinePlan::factory()->ready()->create(['user_id' => $user->id]);
+        RoutinePlanStep::factory()->forPlan($plan)->create([
+            'routine_item_id' => $routineItem->id,
+            'sort_order' => 1,
+            'note' => '全弓4拍×各弦4往復 / 今週のCUE：音を出す前に、出した後の響きまで想像する',
+        ]);
+
+        $this->actingAs($user)->postJson(route('routine-sessions.start', $plan))->assertOk();
+
+        $this->assertDatabaseHas('routine_session_steps', [
+            'routine_item_id' => $routineItem->id,
+            'note' => '全弓4拍×各弦4往復 / 今週のCUE：音を出す前に、出した後の響きまで想像する',
+        ]);
+    }
+
+    public function test_editing_a_plan_cue_after_start_does_not_change_session_steps(): void
+    {
+        $user = User::factory()->create();
+        ['plan' => $plan, 'routineItem' => $routineItem] = $this->readyPlanWithStep($user, 'スクワット');
+        $plan->steps()->update(['note' => '開始時のキュー']);
+
+        $this->actingAs($user)->postJson(route('routine-sessions.start', $plan))->assertOk();
+
+        $plan->steps()->update(['note' => '後から書き換えたキュー']);
+
+        $this->assertDatabaseHas('routine_session_steps', [
+            'routine_item_id' => $routineItem->id,
+            'note' => '開始時のキュー',
+        ]);
+    }
+
     public function test_editing_a_plan_after_start_does_not_change_session_steps(): void
     {
         $user = User::factory()->create();

@@ -10,6 +10,7 @@ use App\Models\RoutinePlan;
 use App\Models\User;
 use App\Services\GenerateProgramDayPlansService;
 use App\Services\InstallViolinProgramService;
+use App\Services\StartRoutineSessionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
@@ -253,6 +254,36 @@ class ViolinProgramInstallTest extends TestCase
 
         $this->assertSame('music', $dominantFor('VIOLIN-B · ミニ技術'));
         $this->assertSame('strength', $dominantFor('DAY1 · 胸・ベンチ＋アームケア'));
+    }
+
+    /**
+     * プログラム → プラン → 実行セッションまでキューが落ちずに届くこと。
+     * 実行画面はセッションステップの note を1行ずつ表示する。
+     */
+    public function test_the_week_cue_reaches_the_running_session_step(): void
+    {
+        $user = User::factory()->create();
+        $this->artisan('cleardawn:install-violin-program', ['userId' => $user->id])->assertSuccessful();
+
+        // 2026-07-27 = 月曜 = W1 = DAY A
+        $plan = app(GenerateProgramDayPlansService::class)
+            ->handle($user, Carbon::parse('2026-07-27'))
+            ->firstOrFail();
+
+        $session = app(StartRoutineSessionService::class)->handle($user, $plan);
+
+        $opening = $session->steps->sortBy('sort_order')->first();
+        $this->assertSame('身体＋調弦', $opening->item_name);
+        $this->assertStringContainsString('楽器なしで準備してから構える', (string) $opening->note);
+        $this->assertStringContainsString(
+            '今週のCUE：音を出す前に、出した後の響きまで想像する',
+            (string) $opening->note,
+        );
+
+        $scale = $session->steps->firstWhere('item_name', '音階（小野アンナ）');
+        $this->assertStringContainsString('音階：G長調 1oct', (string) $scale->note);
+        $this->assertSame('50.00', $scale->target_load);
+        $this->assertSame('bpm', $scale->load_unit);
     }
 
     public function test_generation_is_idempotent_for_the_violin_program(): void

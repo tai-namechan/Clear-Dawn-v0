@@ -74,7 +74,10 @@ DAYテンプレートからプランを生成するときに各ステップへ�
 | `fixed_load` / `percent_of_reference` | `target_load`（比率は1RM×比率を1.25kg丸め） |
 | `sets` | `target_blocks` |
 | `reps` | `target_amount` |
-| `intent` / `note` | `note` に合成（種目のキュー・RPE等と `/` 区切りで連結） |
+| `intent` / `note` | `note` に合成（`intent：note` を1行にし、種目のキュー・RPE等と ` / ` 区切りで連結） |
+
+この `note` はセッション開始時に `routine_session_steps.note` へスナップショットされ、
+実行画面の「ポイント」カードに1行ずつ表示される（[routines.md](./routines.md)）。
 
 `intent` / `note` を載せることで、**週ごとに文言が変わる処方**（音階の調、カノンの到達小節、
 今週のPRACTICE CUE、進級条件など）がその日のルーティンステップにそのまま現れる。
