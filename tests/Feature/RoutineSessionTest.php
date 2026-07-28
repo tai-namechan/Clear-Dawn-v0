@@ -147,6 +147,38 @@ class RoutineSessionTest extends TestCase
         ]);
     }
 
+    /**
+     * 実行画面はこのキューを「ポイント」カードに表示する。
+     * DB に入っていてもレスポンスに載らなければ画面には出ないため、Inertia の中身まで見る。
+     */
+    public function test_session_response_exposes_the_step_cue_to_the_screen(): void
+    {
+        $user = User::factory()->create();
+        $routineItem = RoutineItem::factory()->create([
+            'user_id' => $user->id,
+            'name' => '開放弦',
+        ]);
+        $plan = RoutinePlan::factory()->ready()->create(['user_id' => $user->id]);
+        RoutinePlanStep::factory()->forPlan($plan)->create([
+            'routine_item_id' => $routineItem->id,
+            'sort_order' => 1,
+            'note' => '全弓4拍×各弦4往復 / 今週のCUE：音を出す前に、出した後の響きまで想像する',
+        ]);
+
+        $this->actingAs($user)->postJson(route('routine-sessions.start', $plan))->assertOk();
+        $session = RoutineSession::query()->where('routine_plan_id', $plan->id)->sole();
+
+        $this->actingAs($user)
+            ->get(route('routine-sessions.show', $session))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->where(
+                    'session.steps.0.note',
+                    '全弓4拍×各弦4往復 / 今週のCUE：音を出す前に、出した後の響きまで想像する',
+                )
+            );
+    }
+
     public function test_editing_a_plan_cue_after_start_does_not_change_session_steps(): void
     {
         $user = User::factory()->create();
