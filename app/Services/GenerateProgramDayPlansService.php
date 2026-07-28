@@ -338,10 +338,15 @@ class GenerateProgramDayPlansService
      */
     private function composeNote(ProgramStepItem $item, array $resolved): ?string
     {
-        $parts = array_filter([
-            $item->cues,
+        // その週の処方は「ラベル：内容」で1行にまとめる（実行画面で1項目として読める）
+        $prescription = array_filter([
             $resolved['prescription_intent'],
             $resolved['prescription_note'],
+        ]);
+
+        $parts = array_filter([
+            $item->cues,
+            $prescription === [] ? null : implode('：', $prescription),
             $item->tempo !== null ? 'tempo '.$item->tempo : null,
             $item->side !== null ? 'side '.$item->side : null,
             $resolved['percent_of_reference'] !== null && $resolved['target_load'] === null

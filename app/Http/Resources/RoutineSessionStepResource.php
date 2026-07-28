@@ -23,6 +23,7 @@ class RoutineSessionStepResource extends JsonResource
             'item_name' => $this->item_name,
             'video_id' => $this->video_id,
             'purpose' => $this->purpose?->value,
+            'note' => $this->note,
             'sort_order' => $this->sort_order,
             'target_load' => $this->target_load !== null ? (string) $this->target_load : null,
             'load_unit' => $this->load_unit,

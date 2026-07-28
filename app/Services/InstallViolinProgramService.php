@@ -575,12 +575,24 @@ class InstallViolinProgramService
             }
 
             foreach ($rows as $row) {
+                // タグが1つなら intent=ラベル / note=内容 に分ける（プラン生成時に
+                // 「ラベル：内容」へ合成される）。複数タグをそのまま連結すると
+                // ラベルと内容が1対1で対応しなくなるため、処方の中でラベルを付けて
+                // 1項目ずつに分けておく。
+                $isSingle = count($row['labels']) === 1;
+
                 $week->itemPrescriptions()->create([
                     'program_step_item_id' => $row['item']->id,
                     'fixed_load' => $row['bpm'],
                     'is_test' => $row['isTest'],
-                    'intent' => implode('／', $row['labels']),
-                    'note' => implode(' / ', $row['notes']),
+                    'intent' => $isSingle ? $row['labels'][0] : null,
+                    'note' => $isSingle
+                        ? $row['notes'][0]
+                        : implode(' / ', array_map(
+                            static fn (string $label, string $text): string => $label.'：'.$text,
+                            $row['labels'],
+                            $row['notes'],
+                        )),
                 ]);
             }
         }

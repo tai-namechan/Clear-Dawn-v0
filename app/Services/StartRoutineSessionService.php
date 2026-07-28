@@ -19,6 +19,7 @@ class StartRoutineSessionService
      *
      * item_name = plan_step.title ?? routine_item.name
      * video_id = plan_step.video_id ?? routine_item.default_video_id
+     * note = plan_step.note（キュー・今週の処方。実行画面で読む文言を実行時点で固定する）
      */
     public function handle(User $user, RoutinePlan $plan): RoutineSession
     {
@@ -44,6 +45,7 @@ class StartRoutineSessionService
                     'item_name' => $resolved['display_name'],
                     'video_id' => $resolved['video_id'],
                     'purpose' => $planStep->purpose,
+                    'note' => $planStep->note,
                     'sort_order' => $planStep->sort_order,
                     'target_load' => $planStep->target_load,
                     'load_unit' => $planStep->load_unit,

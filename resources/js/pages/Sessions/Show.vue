@@ -61,6 +61,25 @@ const trackingType = computed<TrackingType | null>(
     () => currentStep.value?.routine_item?.tracking_type ?? null,
 );
 
+/**
+ * ステップのキューを1行ずつに分ける。
+ *
+ * note はプラン生成時に「種目のキュー / 今週の処方 / RPE …」を ' / ' で連結した文字列
+ * （GenerateProgramDayPlansService::composeNote）。練習中に読めるよう1項目ずつ表示する。
+ */
+const cueLines = computed((): string[] => {
+    const note = currentStep.value?.note;
+
+    if (!note) {
+        return [];
+    }
+
+    return note
+        .split(' / ')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+});
+
 const completedCount = computed(
     () => steps.value.filter((step) => step.status === 'completed').length,
 );
@@ -601,6 +620,7 @@ const metrics = computed((): MetricChip[] => {
 
                         <div
                             v-if="
+                                cueLines.length > 0 ||
                                 currentStep.memo ||
                                 currentStep.video?.description
                             "
@@ -611,14 +631,48 @@ const metrics = computed((): MetricChip[] => {
                             >
                                 ポイント
                             </p>
-                            <p
+
+                            <div v-if="cueLines.length > 0" class="space-y-2">
+                                <p
+                                    class="font-sans text-[0.95rem] leading-relaxed font-medium text-cd-ink"
+                                >
+                                    {{ cueLines[0] }}
+                                </p>
+                                <ul
+                                    v-if="cueLines.length > 1"
+                                    class="space-y-1.5"
+                                >
+                                    <li
+                                        v-for="line in cueLines.slice(1)"
+                                        :key="line"
+                                        class="border-l-2 border-cd-line pl-2.5 font-sans text-sm leading-relaxed text-cd-ink-muted"
+                                    >
+                                        {{ line }}
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div
                                 v-if="currentStep.memo"
-                                class="font-sans text-sm leading-relaxed text-cd-ink"
+                                :class="cueLines.length > 0 ? 'mt-3' : undefined"
                             >
-                                {{ currentStep.memo }}
-                            </p>
+                                <p
+                                    class="mb-1 font-sans text-xs tracking-[0.08em] text-cd-ink-muted"
+                                >
+                                    メモ
+                                </p>
+                                <p
+                                    class="font-sans text-sm leading-relaxed text-cd-ink"
+                                >
+                                    {{ currentStep.memo }}
+                                </p>
+                            </div>
+
                             <p
-                                v-else-if="currentStep.video?.description"
+                                v-else-if="
+                                    cueLines.length === 0 &&
+                                    currentStep.video?.description
+                                "
                                 class="font-sans text-sm leading-relaxed text-cd-ink"
                             >
                                 {{ currentStep.video.description }}
