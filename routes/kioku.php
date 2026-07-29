@@ -2,6 +2,7 @@
 
 use App\Domain\Kioku\Models\Memory;
 use App\Http\Controllers\Kioku\CaptureController;
+use App\Http\Controllers\Kioku\CaptureTokenController;
 use App\Http\Controllers\Kioku\LetterController;
 use App\Http\Controllers\Kioku\MemoryController;
 use App\Http\Controllers\Kioku\RecallController;
@@ -56,5 +57,11 @@ Route::middleware(['auth', 'verified'])->prefix('kioku')->name('kioku.')->group(
             'sourceCounts' => $counts,
         ]);
     })->name('sources');
-    Route::get('/settings', fn () => inertia('Kioku/Settings'))->name('settings');
+    Route::get('/settings', [CaptureTokenController::class, 'index'])->name('settings');
+    Route::post('/settings/capture-tokens', [CaptureTokenController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('settings.capture-tokens.store');
+    Route::delete('/settings/capture-tokens/{token}', [CaptureTokenController::class, 'destroy'])
+        ->middleware('throttle:10,1')
+        ->name('settings.capture-tokens.destroy');
 });
