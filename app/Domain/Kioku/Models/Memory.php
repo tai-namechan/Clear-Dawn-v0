@@ -2,6 +2,7 @@
 
 namespace App\Domain\Kioku\Models;
 
+use App\Domain\Kioku\Embedding\VectorStore;
 use App\Domain\Shared\Models\BelongsToUser;
 use Database\Factories\Domain\Kioku\MemoryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -103,6 +104,13 @@ class Memory extends Model
                     'Memory raw_content is immutable after creation. '
                     .'Set allowRawContentMutation for explicit data repair only.',
                 );
+            }
+        });
+
+        static::updated(function (Memory $memory): void {
+            if ($memory->wasChanged('sensitive') && $memory->sensitive === true) {
+                app(VectorStore::class)
+                    ->deleteForMemory($memory->id, (int) $memory->user_id);
             }
         });
 

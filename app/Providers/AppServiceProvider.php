@@ -15,6 +15,12 @@ use App\Domain\Kioku\Capture\Normalizers\RawNormalizerRegistry;
 use App\Domain\Kioku\Capture\Normalizers\TextRawNormalizer;
 use App\Domain\Kioku\Capture\Normalizers\UrlContentNormalizer;
 use App\Domain\Kioku\Capture\Store\EloquentCanonicalRawStore;
+use App\Domain\Kioku\Embedding\EmbeddingGateway;
+use App\Domain\Kioku\Embedding\FakeEmbeddingGateway;
+use App\Domain\Kioku\Embedding\NullEmbeddingGateway;
+use App\Domain\Kioku\Embedding\OpenAiEmbeddingGateway;
+use App\Domain\Kioku\Embedding\Store\MysqlJsonVectorStore;
+use App\Domain\Kioku\Embedding\VectorStore;
 use App\Domain\Kioku\Transcription\FakeTranscriptionGateway;
 use App\Domain\Kioku\Transcription\NullTranscriptionGateway;
 use App\Domain\Kioku\Transcription\OpenAiTranscriptionGateway;
@@ -69,6 +75,26 @@ class AppServiceProvider extends ServiceProvider
             new AudioTranscriptionNormalizer,
             new UrlContentNormalizer,
         ]));
+
+        $this->app->bind(EmbeddingGateway::class, function (Application $app): EmbeddingGateway {
+            if (! config('kioku.embedding.enabled', false)) {
+                return new NullEmbeddingGateway;
+            }
+
+            $provider = (string) config('kioku.embedding.provider', 'none');
+
+            return match ($provider) {
+                'none' => new NullEmbeddingGateway,
+                'fake' => $app->make(FakeEmbeddingGateway::class),
+                'openai' => $app->make(OpenAiEmbeddingGateway::class),
+                default => throw new RuntimeException(
+                    "Unknown embedding provider [{$provider}] (KIOKU_EMBEDDING_PROVIDER)."
+                ),
+            };
+        });
+
+        $this->app->singleton(FakeEmbeddingGateway::class);
+        $this->app->singleton(VectorStore::class, MysqlJsonVectorStore::class);
     }
 
     /**
