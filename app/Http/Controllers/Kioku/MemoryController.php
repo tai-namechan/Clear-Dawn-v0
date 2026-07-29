@@ -53,6 +53,7 @@ class MemoryController extends Controller
         return Inertia::render('Kioku/Index', [
             'memories' => MemoryResource::collection($recent)->resolve(),
             'transcriptionEnabled' => config('kioku.transcription.provider', 'none') !== 'none',
+            'audioImportEnabled' => (bool) config('kioku.audio_import.enabled', false),
             'letters' => $this->letterSummaries($userId, KiokuLetterMode::Live, 4),
             'letterSchedule' => $this->letterScheduleSummary($userId),
         ]);

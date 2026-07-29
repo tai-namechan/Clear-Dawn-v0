@@ -16,6 +16,9 @@ Route::middleware(['auth', 'verified'])->prefix('kioku')->name('kioku.')->group(
     Route::post('/captures/voice', [CaptureController::class, 'voice'])
         ->middleware('throttle:60,1')
         ->name('captures.voice');
+    Route::post('/captures/audio-import', [CaptureController::class, 'audioImport'])
+        ->middleware('throttle:30,1')
+        ->name('captures.audio-import');
     Route::post('/captures/events', [CaptureController::class, 'event'])
         ->middleware('throttle:120,1')
         ->name('captures.events');

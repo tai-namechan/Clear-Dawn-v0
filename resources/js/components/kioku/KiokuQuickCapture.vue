@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { CloudOff, Mic, Send } from '@lucide/vue';
+import { CloudOff, FileAudio, Mic, Send } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import VoiceCaptureOverlay from '@/components/kioku/VoiceCaptureOverlay.vue';
 import { Button } from '@/components/ui/button';
 import { useAudioRecorder } from '@/composables/useAudioRecorder';
 import type { RecordedAudio } from '@/composables/useAudioRecorder';
 import { useKiokuCaptureQueue } from '@/composables/useKiokuCaptureQueue';
+import { apiFetch } from '@/lib/apiFetch';
 import { KIOKU_MAX_RECORDING_MS } from '@/lib/kiokuAudioRecorder.mjs';
 import { buildCaptureQueueItem } from '@/lib/kiokuCaptureQueue.mjs';
+import { audioImport } from '@/routes/kioku/captures';
 
 const props = defineProps<{
     /** client_capture_id values already present on the server response */
     serverCaptureIds: Set<string>;
+    audioImportEnabled?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -22,6 +25,12 @@ const draft = ref('');
 const saving = ref(false);
 const captureError = ref<string | null>(null);
 let captureStartedAtMs: number | null = null;
+
+const fileInput = ref<HTMLInputElement | null>(null);
+const importing = ref(false);
+const importProgress = ref(0);
+const importError = ref<string | null>(null);
+const importStatus = ref<string | null>(null);
 
 const {
     pendingCaptures,
@@ -128,6 +137,62 @@ function discardRecording(): void {
     voiceCaptureStartedAtMs = null;
 }
 
+function openFilePicker(): void {
+    importError.value = null;
+    importStatus.value = null;
+    fileInput.value?.click();
+}
+
+async function onAudioFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+
+    if (file === null || importing.value) {
+        return;
+    }
+
+    const maxBytes = 24 * 1024 * 1024;
+    if (file.size > maxBytes) {
+        importError.value = '音声ファイルが上限サイズ（24MB）を超えています。';
+
+        return;
+    }
+
+    importing.value = true;
+    importProgress.value = 10;
+    importStatus.value = `${file.name}（${(file.size / (1024 * 1024)).toFixed(1)}MB）を保存中`;
+    importError.value = null;
+
+    try {
+        const formData = new FormData();
+        formData.append('client_capture_id', crypto.randomUUID());
+        formData.append('audio', file, file.name);
+        formData.append('duration_ms', '1');
+        formData.append('captured_at', new Date().toISOString());
+
+        importProgress.value = 40;
+
+        await apiFetch(audioImport.url(), {
+            method: 'POST',
+            body: formData,
+        });
+
+        importProgress.value = 100;
+        importStatus.value =
+            '原音声を保存しました。文字起こしはあとから行います';
+        emit('synced');
+    } catch (error) {
+        importError.value =
+            error instanceof Error
+                ? error.message
+                : '音声ファイルの取り込みに失敗しました。';
+        importStatus.value = null;
+    } finally {
+        importing.value = false;
+    }
+}
+
 async function submitDraft(): Promise<void> {
     const content = draft.value.trim();
 
@@ -214,11 +279,26 @@ defineExpose({
                 >
                     {{ captureError }}
                 </p>
+                <p
+                    v-if="importStatus"
+                    class="text-xs leading-relaxed text-os-kioku"
+                    role="status"
+                >
+                    {{ importStatus }}
+                    <span v-if="importing">（{{ importProgress }}%）</span>
+                </p>
+                <p
+                    v-if="importError"
+                    class="text-xs leading-relaxed text-[#C05A48]"
+                    role="alert"
+                >
+                    {{ importError }}
+                </p>
                 <p class="text-[11.5px] leading-relaxed text-os-sub">
                     保存は即時。AI整理はあとから行います。
                 </p>
                 <div
-                    class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end"
+                    class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end"
                 >
                     <Button
                         type="button"
@@ -230,6 +310,17 @@ defineExpose({
                         音声で残す
                     </Button>
                     <Button
+                        v-if="audioImportEnabled"
+                        type="button"
+                        variant="outline"
+                        class="h-12 w-full gap-2 rounded-xl border-os-kioku/30 text-[13.5px] font-bold text-os-kioku sm:h-11 sm:w-auto sm:min-w-36"
+                        :disabled="importing"
+                        @click="openFilePicker"
+                    >
+                        <FileAudio :size="15" />
+                        音声ファイルを取り込む
+                    </Button>
+                    <Button
                         type="submit"
                         class="h-12 w-full gap-2 rounded-xl bg-os-kioku text-[13.5px] font-bold text-white shadow-[0_3px_10px_rgba(62,86,136,0.28)] hover:bg-os-kioku/90 sm:h-11 sm:w-auto sm:min-w-36"
                         :disabled="saving || !draft.trim()"
@@ -239,6 +330,13 @@ defineExpose({
                         保存する
                     </Button>
                 </div>
+                <input
+                    ref="fileInput"
+                    type="file"
+                    class="hidden"
+                    accept="audio/*,video/mp4,.mp3,.m4a,.wav,.webm,.mp4,.mpeg,.mpga"
+                    @change="onAudioFileSelected"
+                />
             </form>
         </section>
 
