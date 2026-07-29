@@ -151,6 +151,7 @@ export type RoutineSessionStep = {
     item_name: string;
     video_id: string | null;
     purpose: StepPurpose | null;
+    note: string | null;
     sort_order: number;
     target_blocks: number | null;
     target_load: string | null;

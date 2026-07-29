@@ -47,14 +47,9 @@ class SidebarSpacingContractTest extends TestCase
         $source = $this->componentSource('resources/js/components/AppSidebarHeader.vue');
 
         $this->assertStringContainsString(
-            'flex min-w-0 flex-1 items-center gap-3 md:gap-4',
+            'flex min-w-0 flex-1 items-center gap-2 md:gap-4',
             $source,
-            'Clear Dawn header trigger/title/switcher need relaxed horizontal gaps',
-        );
-        $this->assertStringNotContainsString(
-            'flex min-w-0 flex-1 items-center gap-2 md:gap-3',
-            $source,
-            'Regression guard: tighter left-header gaps make Clear Dawn feel cramped',
+            'Mobile header keeps trigger+switcher tight; desktop restores title breathing room',
         );
         $this->assertStringNotContainsString(
             'SidebarTrigger class="-ml-1',
@@ -77,9 +72,14 @@ class SidebarSpacingContractTest extends TestCase
             'Desktop header returns to normal document flow',
         );
         $this->assertStringContainsString(
-            'cd-app-header-title',
+            'cd-app-header-title hidden',
             $source,
-            'Clear Dawn title uses the shared header title class',
+            'System name is hidden on mobile so only the product switcher sits beside the sidebar trigger',
+        );
+        $this->assertStringContainsString(
+            'md:block',
+            $source,
+            'System name returns on md+ beside the product switcher',
         );
         $this->assertStringNotContainsString(
             'max-md:bg-primary',
