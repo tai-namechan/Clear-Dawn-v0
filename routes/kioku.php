@@ -4,6 +4,7 @@ use App\Domain\Kioku\Models\Memory;
 use App\Http\Controllers\Kioku\CaptureController;
 use App\Http\Controllers\Kioku\LetterController;
 use App\Http\Controllers\Kioku\MemoryController;
+use App\Http\Controllers\Kioku\RecallController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->prefix('kioku')->name('kioku.')->group(function () {
@@ -25,6 +26,12 @@ Route::middleware(['auth', 'verified'])->prefix('kioku')->name('kioku.')->group(
     Route::get('/memories/status', [MemoryController::class, 'status'])
         ->middleware('throttle:60,1')
         ->name('memories.status');
+    Route::get('/recall', [RecallController::class, 'search'])
+        ->middleware('throttle:60,1')
+        ->name('recall.search');
+    Route::post('/recall/feedback', [RecallController::class, 'feedback'])
+        ->middleware('throttle:60,1')
+        ->name('recall.feedback');
     Route::get('/memories/{memory}', [MemoryController::class, 'show'])->name('memories.show');
     Route::get('/memories/{memory}/audio', [MemoryController::class, 'audio'])->name('memories.audio');
     Route::post('/memories/{memory}/reenrich', [MemoryController::class, 'reenrich'])->name('memories.reenrich');

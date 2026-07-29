@@ -5,6 +5,7 @@ import { computed, ref, watch } from 'vue';
 import MemoryCard from '@/components/kioku/MemoryCard.vue';
 import { Button } from '@/components/ui/button';
 import { useKiokuStatusPoll } from '@/composables/useKiokuStatusPoll';
+import { apiFetch } from '@/lib/apiFetch';
 import { MEMORY_TYPES } from '@/lib/kiokuMeta';
 import type { MemoryTypeKey } from '@/lib/kiokuMeta';
 import {
@@ -14,6 +15,7 @@ import {
     toggleTagFilter,
 } from '@/lib/kiokuTags.mjs';
 import { index as memoriesIndex } from '@/routes/kioku/memories';
+import { search as recallSearch, feedback as recallFeedback } from '@/routes/kioku/recall';
 import type {
     KiokuHomeFilters,
     KiokuMemory,
@@ -33,6 +35,8 @@ interface Props {
     tagCounts: KiokuTagCount[];
     totalCount: number;
     transcriptionEnabled: boolean;
+    semanticSearchEnabled?: boolean;
+    recallFeedbackEnabled?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -43,6 +47,20 @@ const selectedTags = ref<string[]>([...(props.filters.tags ?? [])]);
 const tagMode = ref<KiokuTagMode>(normalizeTagMode(props.filters.tag_mode));
 const viewMode = ref<LibraryViewMode>('timeline');
 const filtersOpen = ref(false);
+const searchMode = ref<'filter' | 'recall'>('filter');
+const recallResults = ref<
+    Array<{
+        rank: number;
+        reason: string;
+        score: number;
+        memory: KiokuMemory;
+        session_id?: string;
+    }>
+>([]);
+const recallSessionId = ref<string | null>(null);
+const recallQueryHash = ref<string | null>(null);
+const recallBusy = ref(false);
+const recallError = ref<string | null>(null);
 
 watch(
     () => props.filters,
@@ -119,6 +137,12 @@ const activeFilterChips = computed(() => {
 });
 
 function applyFilters(): void {
+    if (searchMode.value === 'recall' && props.semanticSearchEnabled) {
+        void runRecall();
+
+        return;
+    }
+
     router.get(
         memoriesIndex.url({
             query: buildKiokuHomeQuery({
@@ -131,6 +155,73 @@ function applyFilters(): void {
         {},
         { preserveState: true, replace: true },
     );
+}
+
+async function runRecall(): Promise<void> {
+    if (!q.value.trim() || recallBusy.value) {
+        return;
+    }
+
+    recallBusy.value = true;
+    recallError.value = null;
+
+    try {
+        const data = await apiFetch<{
+            session_id: string;
+            query_hash: string;
+            results: Array<{
+                rank: number;
+                reason: string;
+                score: number;
+                memory: KiokuMemory;
+            }>;
+        }>(
+            recallSearch.url({
+                query: {
+                    q: q.value,
+                    semantic: 1,
+                    tags: selectedTags.value,
+                    tag_mode: tagMode.value,
+                },
+            }),
+        );
+
+        recallSessionId.value = data.session_id;
+        recallQueryHash.value = data.query_hash;
+        recallResults.value = data.results;
+    } catch (error) {
+        recallError.value =
+            error instanceof Error ? error.message : '想起検索に失敗しました。';
+        recallResults.value = [];
+    } finally {
+        recallBusy.value = false;
+    }
+}
+
+async function sendFeedback(
+    verdict: 'hit' | 'related' | 'miss',
+    row: {
+        rank: number;
+        score: number;
+        memory: KiokuMemory;
+    },
+): Promise<void> {
+    if (!props.recallFeedbackEnabled || !recallSessionId.value || !recallQueryHash.value) {
+        return;
+    }
+
+    await apiFetch(recallFeedback.url(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+            search_session_id: recallSessionId.value,
+            query_hash: recallQueryHash.value,
+            memory_id: row.memory.id,
+            shown_rank: row.rank,
+            final_score: row.score,
+            verdict,
+        }),
+    });
 }
 
 function toggleType(key: string): void {
@@ -239,7 +330,11 @@ defineOptions({
                 <Search :size="16" class="shrink-0 text-os-faint" />
                 <input
                     v-model="q"
-                    placeholder="記憶を検索（例: Vite / 転職 / ヨガ）"
+                    :placeholder="
+                        searchMode === 'recall'
+                            ? 'あれなんだっけ…あいまいな手がかりで想起'
+                            : '記憶を検索（例: Vite / 転職 / ヨガ）'
+                    "
                     class="min-w-0 flex-1 bg-transparent text-[13.5px] text-os-ink outline-none placeholder:text-[#B3AC99]"
                     @keydown.enter.prevent="applyFilters"
                 />
@@ -266,6 +361,99 @@ defineOptions({
                     絞り込み
                 </Button>
             </div>
+            <div
+                v-if="semanticSearchEnabled"
+                class="mt-3 flex flex-wrap gap-2"
+            >
+                <Button
+                    type="button"
+                    variant="outline"
+                    class="h-9 rounded-xl px-3 text-xs"
+                    :class="
+                        searchMode === 'filter'
+                            ? 'border-os-kioku/40 text-os-kioku'
+                            : 'border-os-line text-os-sub'
+                    "
+                    @click="searchMode = 'filter'"
+                >
+                    絞り込み検索
+                </Button>
+                <Button
+                    type="button"
+                    variant="outline"
+                    class="h-9 rounded-xl px-3 text-xs"
+                    :class="
+                        searchMode === 'recall'
+                            ? 'border-os-kioku/40 text-os-kioku'
+                            : 'border-os-line text-os-sub'
+                    "
+                    @click="searchMode = 'recall'"
+                >
+                    あれなんだっけ
+                </Button>
+            </div>
+            <p
+                v-if="recallError"
+                class="mt-2 text-xs text-[#C05A48]"
+                role="alert"
+            >
+                {{ recallError }}
+            </p>
+            <div
+                v-if="searchMode === 'recall' && recallResults.length > 0"
+                class="mt-3 space-y-3"
+            >
+                <article
+                    v-for="row in recallResults"
+                    :key="row.memory.id"
+                    class="rounded-xl border border-os-line bg-os-kioku-bg p-3"
+                >
+                    <p class="text-[11px] font-bold text-os-kioku">
+                        #{{ row.rank }} · {{ row.reason }}
+                    </p>
+                    <h4 class="mt-1 text-[14px] font-bold text-os-ink">
+                        {{ row.memory.title }}
+                    </h4>
+                    <p class="mt-1 line-clamp-2 text-[12.5px] text-os-sub">
+                        {{ row.memory.summary }}
+                    </p>
+                    <div
+                        v-if="recallFeedbackEnabled"
+                        class="mt-2 flex flex-wrap gap-2"
+                    >
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="h-8 rounded-lg px-2 text-[11px]"
+                            @click="sendFeedback('hit', row)"
+                        >
+                            これこれ！
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="h-8 rounded-lg px-2 text-[11px]"
+                            @click="sendFeedback('related', row)"
+                        >
+                            少し関係ある
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="h-8 rounded-lg px-2 text-[11px]"
+                            @click="sendFeedback('miss', row)"
+                        >
+                            違う
+                        </Button>
+                    </div>
+                </article>
+            </div>
+            <p
+                v-else-if="searchMode === 'recall' && recallBusy"
+                class="mt-2 text-xs text-os-sub"
+            >
+                想起中…
+            </p>
 
             <div
                 v-if="activeFilterChips.length"

@@ -123,6 +123,8 @@ class MemoryController extends Controller
             'tagCounts' => $tagCounts,
             'totalCount' => $owned->count(),
             'transcriptionEnabled' => config('kioku.transcription.provider', 'none') !== 'none',
+            'semanticSearchEnabled' => (bool) config('kioku.semantic_search.enabled', false),
+            'recallFeedbackEnabled' => (bool) config('kioku.recall_feedback.enabled', false),
         ]);
     }
 
