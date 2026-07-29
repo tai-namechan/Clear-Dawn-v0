@@ -4,6 +4,10 @@ import type {
     RoutineSession,
     StepPurpose,
 } from '@/types/routine';
+export {
+    displayDurationMinutes,
+    estimatePlanMinutes,
+} from './todayPlanDuration.mjs';
 
 export type TodayPlanRunStatus = 'completed' | 'in_progress' | 'not_started';
 
@@ -23,33 +27,6 @@ export function planRunStatus(plan: RoutinePlan): TodayPlanRunStatus {
     }
 
     return 'not_started';
-}
-
-/** Rough planned minutes from step blocks + rest (no dedicated duration column). */
-export function estimatePlanMinutes(plan: RoutinePlan): number | null {
-    const steps = plan.steps ?? [];
-
-    if (steps.length === 0) {
-        return null;
-    }
-
-    let seconds = 0;
-
-    for (const step of steps) {
-        const blocks = Math.max(1, step.target_blocks ?? 1);
-        // ~2 min effort per block when no duration tracking
-        seconds += blocks * 120;
-
-        if (step.rest_seconds && blocks > 1) {
-            seconds += step.rest_seconds * (blocks - 1);
-        }
-    }
-
-    return Math.max(1, Math.round(seconds / 60));
-}
-
-export function displayDurationMinutes(plan: RoutinePlan): number | null {
-    return estimatePlanMinutes(plan);
 }
 
 export function formatMinutesJa(totalMinutes: number): string {

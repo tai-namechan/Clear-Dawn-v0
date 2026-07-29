@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import {
     displayDurationMinutes,
     estimatePlanMinutes,
-} from '../../resources/js/lib/todayPlanDisplay.ts';
+} from '../../resources/js/lib/todayPlanDuration.mjs';
 
 function planWithSession(session) {
     return {
