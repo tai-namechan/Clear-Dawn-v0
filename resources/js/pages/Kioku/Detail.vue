@@ -86,6 +86,12 @@ const displayTitle = computed(() => kiokuMemoryDisplayTitle(props.memory));
 
 const canReenrich = computed(() => canKiokuMemoryReenrich(props.memory));
 
+function downloadObsidianZip(): void {
+    globalThis.location.href = obsidianExport.url({
+        query: { memory_ids: [props.memory.id] },
+    });
+}
+
 const titleClass = computed(
     () => sourceTypeMeta(props.memory.source_type).titleClass ?? 'text-os-ink',
 );
@@ -640,11 +646,7 @@ defineOptions({
                     type="button"
                     variant="outline"
                     class="gap-1.5 rounded-full border border-os-line text-os-sub"
-                    @click="
-                        window.location.href = obsidianExport.url({
-                            query: { memory_ids: [memory.id] },
-                        })
-                    "
+                    @click="downloadObsidianZip"
                 >
                     Obsidian ZIP
                 </Button>

@@ -37,6 +37,9 @@ class KiokuRecallFeedback extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<Memory, $this>
+     */
     public function memory(): BelongsTo
     {
         return $this->belongsTo(Memory::class);

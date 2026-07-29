@@ -83,11 +83,12 @@ class MemoryEmbedding extends Model
     }
 
     /**
-     * @param  list<float>  $vector
+     * @param  list<float>|array<int, float>  $vector
      */
     public function setVectorArray(array $vector): void
     {
-        $this->vector = json_encode(array_values($vector), JSON_THROW_ON_ERROR);
-        $this->dimensions = count($vector);
+        $list = array_values($vector);
+        $this->vector = json_encode($list, JSON_THROW_ON_ERROR);
+        $this->dimensions = count($list);
     }
 }

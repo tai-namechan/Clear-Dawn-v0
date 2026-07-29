@@ -35,7 +35,7 @@ class MemoryExportController extends Controller
             ->orderByDesc('captured_at')
             ->limit(500);
 
-        $memories = $query->get()->all();
+        $memories = array_values($query->get()->all());
         $files = $exporter->exportMany($memories, $includeTranscript, $includeSensitive);
 
         $tmp = tempnam(sys_get_temp_dir(), 'kioku-obsidian-');

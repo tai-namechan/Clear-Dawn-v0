@@ -153,6 +153,7 @@ async function onAudioFileSelected(event: Event): Promise<void> {
     }
 
     const maxBytes = 24 * 1024 * 1024;
+
     if (file.size > maxBytes) {
         importError.value = '音声ファイルが上限サイズ（24MB）を超えています。';
 

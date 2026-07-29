@@ -29,7 +29,7 @@ final class HybridSearchService
 
     /**
      * @param  array{types?: list<string>, tags?: list<string>, tag_mode?: string, semantic?: bool}  $filters
-     * @return array{mode: string, session_id: string, results: list<array<string, mixed>>}
+     * @return array{mode: string, session_id: string, query_hash: string, results: list<array<string, mixed>>}
      */
     public function recall(int $userId, string $query, array $filters = [], int $limit = 4): array
     {

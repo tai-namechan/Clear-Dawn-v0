@@ -35,10 +35,11 @@ final class MemoryMarkdownExporter
         $insight = (string) ($structured['insight'] ?? '');
         $next = (string) ($structured['next_action'] ?? '');
 
+        $createdAt = $memory->captured_at->toIso8601String();
         $front = <<<YAML
 ---
 kioku_id: {$memory->id}
-created_at: {$memory->captured_at?->toIso8601String()}
+created_at: {$createdAt}
 type: {$memory->memory_type}
 tags:{$tagYaml}
 source: {$memory->source_type}

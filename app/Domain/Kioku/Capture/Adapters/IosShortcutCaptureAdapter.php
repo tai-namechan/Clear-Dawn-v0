@@ -47,21 +47,30 @@ final class IosShortcutCaptureAdapter implements CaptureAdapter
                 sensitive: $command->sensitive,
                 metadata: $command->metadata,
             ),
-            'audio' => new AudioRaw(
-                userId: (int) $command->user->id,
-                clientCaptureId: $command->clientCaptureId,
-                captureChannel: CaptureChannel::IosShortcut,
-                capturedAt: $capturedAt,
-                uploadedFile: $command->audio ?? throw new InvalidArgumentException('iOS audio capture requires a file.'),
-                serverDetectedMime: $command->serverDetectedMime
-                    ?? $command->audio?->getMimeType()
-                    ?? 'application/octet-stream',
-                originalFilename: $command->originalFilename ?? $command->audio?->getClientOriginalName(),
-                declaredDurationMs: $command->declaredDurationMs,
-                sensitive: $command->sensitive,
-                metadata: $command->metadata,
-            ),
-            default => throw new InvalidArgumentException("Unsupported iOS Shortcut kind [{$command->kind}]."),
+            'audio' => $this->audioRaw($command, $capturedAt),
         };
+    }
+
+    private function audioRaw(CaptureCommand $command, CarbonImmutable $capturedAt): AudioRaw
+    {
+        $audio = $command->audio;
+        if ($audio === null) {
+            throw new InvalidArgumentException('iOS audio capture requires a file.');
+        }
+
+        return new AudioRaw(
+            userId: (int) $command->user->id,
+            clientCaptureId: $command->clientCaptureId,
+            captureChannel: CaptureChannel::IosShortcut,
+            capturedAt: $capturedAt,
+            uploadedFile: $audio,
+            serverDetectedMime: $command->serverDetectedMime
+                ?? $audio->getMimeType()
+                ?? 'application/octet-stream',
+            originalFilename: $command->originalFilename ?? $audio->getClientOriginalName(),
+            declaredDurationMs: $command->declaredDurationMs,
+            sensitive: $command->sensitive,
+            metadata: $command->metadata,
+        );
     }
 }
