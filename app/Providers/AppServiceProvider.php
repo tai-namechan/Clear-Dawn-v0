@@ -2,6 +2,19 @@
 
 namespace App\Providers;
 
+use App\Domain\Kioku\Capture\Adapters\AudioFileImportCaptureAdapter;
+use App\Domain\Kioku\Capture\Adapters\BrowserVoiceCaptureAdapter;
+use App\Domain\Kioku\Capture\Adapters\CaptureAdapterRegistry;
+use App\Domain\Kioku\Capture\Adapters\IosShortcutCaptureAdapter;
+use App\Domain\Kioku\Capture\Adapters\WebTextCaptureAdapter;
+use App\Domain\Kioku\Capture\CanonicalRawStore;
+use App\Domain\Kioku\Capture\DefaultMemoryProcessingPipeline;
+use App\Domain\Kioku\Capture\MemoryProcessingPipeline;
+use App\Domain\Kioku\Capture\Normalizers\AudioTranscriptionNormalizer;
+use App\Domain\Kioku\Capture\Normalizers\RawNormalizerRegistry;
+use App\Domain\Kioku\Capture\Normalizers\TextRawNormalizer;
+use App\Domain\Kioku\Capture\Normalizers\UrlContentNormalizer;
+use App\Domain\Kioku\Capture\Store\EloquentCanonicalRawStore;
 use App\Domain\Kioku\Transcription\FakeTranscriptionGateway;
 use App\Domain\Kioku\Transcription\NullTranscriptionGateway;
 use App\Domain\Kioku\Transcription\OpenAiTranscriptionGateway;
@@ -40,6 +53,22 @@ class AppServiceProvider extends ServiceProvider
                 ),
             };
         });
+
+        $this->app->singleton(CaptureAdapterRegistry::class, fn (): CaptureAdapterRegistry => new CaptureAdapterRegistry([
+            // More specific adapters first.
+            new IosShortcutCaptureAdapter,
+            new AudioFileImportCaptureAdapter,
+            new BrowserVoiceCaptureAdapter,
+            new WebTextCaptureAdapter,
+        ]));
+
+        $this->app->singleton(CanonicalRawStore::class, EloquentCanonicalRawStore::class);
+        $this->app->singleton(MemoryProcessingPipeline::class, DefaultMemoryProcessingPipeline::class);
+        $this->app->singleton(RawNormalizerRegistry::class, fn (): RawNormalizerRegistry => new RawNormalizerRegistry([
+            new TextRawNormalizer,
+            new AudioTranscriptionNormalizer,
+            new UrlContentNormalizer,
+        ]));
     }
 
     /**

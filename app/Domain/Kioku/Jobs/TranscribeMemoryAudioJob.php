@@ -43,7 +43,7 @@ class TranscribeMemoryAudioJob implements ShouldBeUnique, ShouldQueue
     public function handle(TranscriptionGateway $gateway): void
     {
         $memory = Memory::query()->withoutUserScope()->find($this->memoryId);
-        if ($memory === null || $memory->source_type !== 'voice') {
+        if ($memory === null || ! $memory->isAudioRaw()) {
             return;
         }
 

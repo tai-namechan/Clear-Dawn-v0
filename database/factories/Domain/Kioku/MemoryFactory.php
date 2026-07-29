@@ -21,6 +21,8 @@ class MemoryFactory extends Factory
         return [
             'user_id' => User::factory(),
             'source_type' => 'manual',
+            'raw_kind' => 'text',
+            'capture_channel' => 'web_text',
             'memory_type' => 'thought',
             'title' => fake()->sentence(3),
             'raw_content' => fake()->paragraph(),
@@ -58,6 +60,8 @@ class MemoryFactory extends Factory
     {
         return $this->state(fn () => [
             'source_type' => 'voice',
+            'raw_kind' => 'audio',
+            'capture_channel' => 'browser_voice',
             'memory_type' => null,
             'raw_content' => null,
             'summary' => null,
