@@ -5,6 +5,7 @@ use App\Http\Controllers\Kioku\CaptureController;
 use App\Http\Controllers\Kioku\CaptureTokenController;
 use App\Http\Controllers\Kioku\LetterController;
 use App\Http\Controllers\Kioku\MemoryController;
+use App\Http\Controllers\Kioku\MemoryExportController;
 use App\Http\Controllers\Kioku\RecallController;
 use Illuminate\Support\Facades\Route;
 
@@ -38,6 +39,15 @@ Route::middleware(['auth', 'verified'])->prefix('kioku')->name('kioku.')->group(
     Route::post('/memories/{memory}/reenrich', [MemoryController::class, 'reenrich'])->name('memories.reenrich');
     Route::post('/memories/{memory}/retry-transcription', [MemoryController::class, 'retryTranscription'])->name('memories.retry-transcription');
     Route::put('/memories/{memory}/tags', [MemoryController::class, 'updateTags'])->name('memories.tags.update');
+    Route::get('/export/obsidian.zip', [MemoryExportController::class, 'obsidianZip'])
+        ->middleware('throttle:10,1')
+        ->name('export.obsidian');
+    Route::post('/memories/{memory}/export/yoyu', [MemoryExportController::class, 'sendToYoyu'])
+        ->middleware('throttle:30,1')
+        ->name('memories.export.yoyu');
+    Route::post('/memories/{memory}/export/clear-dawn', [MemoryExportController::class, 'sendToClearDawn'])
+        ->middleware('throttle:30,1')
+        ->name('memories.export.clear-dawn');
     Route::get('/letters', [LetterController::class, 'index'])->name('letters.index');
     Route::get('/letters/preview', [LetterController::class, 'preview'])->name('letters.preview');
     Route::get('/letters/{letter}', [LetterController::class, 'show'])->name('letters.show');

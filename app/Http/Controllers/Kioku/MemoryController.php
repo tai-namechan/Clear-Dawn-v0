@@ -426,6 +426,8 @@ class MemoryController extends Controller
             'memory' => (new MemoryResource($memory))->resolve(),
             'related' => MemoryResource::collection($related)->resolve(),
             'transcriptionEnabled' => config('kioku.transcription.provider', 'none') !== 'none',
+            'obsidianExportEnabled' => (bool) config('kioku.obsidian_export.enabled', false),
+            'actionExportEnabled' => (bool) config('kioku.action_export.enabled', false),
         ]);
     }
 }
