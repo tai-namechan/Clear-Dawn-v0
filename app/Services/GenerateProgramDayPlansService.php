@@ -198,10 +198,14 @@ class GenerateProgramDayPlansService
         $plan->steps()->delete();
         $this->snapshotSteps($user, $plan, $dayTemplate, $week, $choiceOptionId);
 
+        $isSkippedChoice = ! $dayTemplate->steps->contains(
+            fn (ProgramDayStep $step): bool => $step->program_choice_option_id === $choiceOptionId,
+        );
+
         $plan->update([
             'choice_option_id' => $choiceOptionId,
-            'status' => RoutinePlanStatus::Ready,
-            'note' => null,
+            'status' => $isSkippedChoice ? RoutinePlanStatus::Archived : RoutinePlanStatus::Ready,
+            'note' => $isSkippedChoice ? '選択日を省略' : null,
         ]);
 
         return $plan->refresh()->load('steps');

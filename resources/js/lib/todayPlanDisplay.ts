@@ -1,8 +1,4 @@
-import type {
-    RoutinePlan,
-    RoutineSession,
-    StepPurpose,
-} from '@/types/routine';
+import type { RoutinePlan, RoutineSession, StepPurpose } from '@/types/routine';
 
 export type TodayPlanRunStatus = 'completed' | 'in_progress' | 'not_started';
 
@@ -47,33 +43,7 @@ export function estimatePlanMinutes(plan: RoutinePlan): number | null {
     return Math.max(1, Math.round(seconds / 60));
 }
 
-export function sessionDurationMinutes(
-    session: RoutineSession | null,
-): number | null {
-    if (!session?.started_at) {
-        return null;
-    }
-
-    const start = Date.parse(session.started_at);
-    const end = session.finished_at
-        ? Date.parse(session.finished_at)
-        : Date.now();
-
-    if (Number.isNaN(start) || Number.isNaN(end) || end <= start) {
-        return null;
-    }
-
-    return Math.max(1, Math.round((end - start) / 60_000));
-}
-
 export function displayDurationMinutes(plan: RoutinePlan): number | null {
-    const session = latestSession(plan);
-    const status = planRunStatus(plan);
-
-    if (status === 'completed' || status === 'in_progress') {
-        return sessionDurationMinutes(session) ?? estimatePlanMinutes(plan);
-    }
-
     return estimatePlanMinutes(plan);
 }
 

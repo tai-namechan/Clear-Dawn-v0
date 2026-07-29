@@ -12,6 +12,7 @@ import {
     NotebookPen,
     Sparkles,
 } from '@lucide/vue';
+import { IconBarbell, IconBed, IconRun, IconYoga } from '@tabler/icons-vue';
 import { computed, ref } from 'vue';
 import type { Component } from 'vue';
 import { Button } from '@/components/ui/button';
@@ -34,23 +35,31 @@ import {
 } from '@/lib/todayPlanDisplay';
 import type { TodayPlanRunStatus } from '@/lib/todayPlanDisplay';
 import type { RoutinePlan } from '@/types/routine';
+import type { TodayOpsProgramContext } from '@/types/todayOps';
 
 interface Props {
     plan: RoutinePlan;
+    date: string;
+    choiceContext?: TodayOpsProgramContext;
 }
 
 const props = defineProps<Props>();
 const starting = ref(false);
+const selectingChoiceId = ref<string | null>(null);
 const status = computed(() => planRunStatus(props.plan));
+const needsChoice = computed(() => props.choiceContext?.needs_choice === true);
 const session = computed(() => latestSession(props.plan));
 const description = computed(() => planDescription(props.plan));
 const durationMinutes = computed(() => displayDurationMinutes(props.plan));
 const clockRange = computed(() => {
     if (status.value === 'not_started') {
-return null;
-}
+        return null;
+    }
 
-    return formatClockRange(session.value?.started_at, session.value?.finished_at);
+    return formatClockRange(
+        session.value?.started_at,
+        session.value?.finished_at,
+    );
 });
 
 const primaryHref = computed(() => {
@@ -63,18 +72,24 @@ const primaryHref = computed(() => {
 
 const primaryLabel = computed(() => {
     if (status.value === 'in_progress') {
-return '続ける';
-}
+        return '続ける';
+    }
 
     if (status.value === 'completed') {
-return '結果';
-}
+        return '結果';
+    }
 
     return '開始';
 });
 
-const statusMeta: Record<TodayPlanRunStatus, { label: string; className: string }> = {
-    completed: { label: '完了', className: planRunStatusBadgeClasses.completed },
+const statusMeta: Record<
+    TodayPlanRunStatus,
+    { label: string; className: string }
+> = {
+    completed: {
+        label: '完了',
+        className: planRunStatusBadgeClasses.completed,
+    },
     in_progress: {
         label: '進行中',
         className: planRunStatusBadgeClasses.in_progress,
@@ -89,7 +104,11 @@ const iconComponent = computed((): Component => {
     const purpose = primaryStepPurpose(props.plan);
     const category = props.plan.steps?.[0]?.routine_item?.category;
 
-    if (purpose === 'strength' || purpose === 'power' || category === 'strength') {
+    if (
+        purpose === 'strength' ||
+        purpose === 'power' ||
+        category === 'strength'
+    ) {
         return Footprints;
     }
 
@@ -112,10 +131,26 @@ const iconComponent = computed((): Component => {
     return NotebookPen;
 });
 
-async function startSession(): Promise<void> {
-    if (starting.value || status.value !== 'not_started') {
-return;
+function choiceIcon(label: string): Component {
+    if (label.includes('ヨガ')) {
+        return IconYoga;
+    }
+
+    if (label.includes('ロードワーク')) {
+        return IconRun;
+    }
+
+    if (label.includes('休養')) {
+        return IconBed;
+    }
+
+    return IconBarbell;
 }
+
+async function startSession(): Promise<void> {
+    if (starting.value || needsChoice.value || status.value !== 'not_started') {
+        return;
+    }
 
     starting.value = true;
 
@@ -129,6 +164,27 @@ return;
         starting.value = false;
     }
 }
+
+async function selectChoice(choiceOptionId: string): Promise<void> {
+    if (selectingChoiceId.value !== null) {
+        return;
+    }
+
+    selectingChoiceId.value = choiceOptionId;
+
+    try {
+        await apiFetch('/today/program-choice', {
+            method: 'POST',
+            body: JSON.stringify({
+                date: props.date,
+                choice_option_id: choiceOptionId,
+            }),
+        });
+        await router.reload({ only: ['ops', 'plans'] });
+    } finally {
+        selectingChoiceId.value = null;
+    }
+}
 </script>
 
 <template>
@@ -139,11 +195,7 @@ return;
             <div
                 class="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#F3F1F8] text-primary"
             >
-                <component
-                    :is="iconComponent"
-                    :size="20"
-                    :stroke-width="1.6"
-                />
+                <component :is="iconComponent" :size="20" :stroke-width="1.6" />
             </div>
 
             <div class="min-w-0 flex-1 overflow-hidden">
@@ -195,7 +247,7 @@ return;
                 </div>
 
                 <Button
-                    v-if="status === 'not_started'"
+                    v-if="status === 'not_started' && !needsChoice"
                     type="button"
                     size="sm"
                     class="rounded-full px-3.5 font-sans"
@@ -227,17 +279,12 @@ return;
                             class="text-cd-ink-muted sm:inline-flex"
                             :aria-label="`${plan.title} のメニュー`"
                         >
-                            <EllipsisVertical
-                                :size="16"
-                                :stroke-width="1.6"
-                            />
+                            <EllipsisVertical :size="16" :stroke-width="1.6" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" class="min-w-40">
                         <DropdownMenuItem as-child>
-                            <Link :href="`/plans/${plan.id}`"
-                                >プラン詳細</Link
-                            >
+                            <Link :href="`/plans/${plan.id}`">プラン詳細</Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem
                             v-if="status === 'in_progress'"
@@ -247,6 +294,46 @@ return;
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
+            </div>
+        </div>
+
+        <div
+            v-if="needsChoice && choiceContext"
+            class="mt-3 border-t border-cd-line pt-3 sm:ml-14"
+        >
+            <p class="font-sans text-xs font-medium text-cd-ink">
+                今日行う内容を選択してください
+            </p>
+            <div class="mt-2 flex flex-wrap gap-2">
+                <Button
+                    v-for="option in choiceContext.choice_options"
+                    :key="option.id"
+                    type="button"
+                    size="sm"
+                    :variant="
+                        option.estimated_minutes === 0 ? 'ghost' : 'outline'
+                    "
+                    class="font-sans"
+                    :disabled="selectingChoiceId !== null"
+                    @click="selectChoice(option.id)"
+                >
+                    <component
+                        :is="choiceIcon(option.label)"
+                        :size="16"
+                        :stroke-width="1.7"
+                    />
+                    {{
+                        selectingChoiceId === option.id
+                            ? '選択中…'
+                            : option.label
+                    }}
+                    <span
+                        v-if="option.estimated_minutes"
+                        class="text-cd-ink-muted"
+                    >
+                        {{ option.estimated_minutes }}分
+                    </span>
+                </Button>
             </div>
         </div>
     </li>
