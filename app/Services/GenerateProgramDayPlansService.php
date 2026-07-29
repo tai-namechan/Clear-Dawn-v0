@@ -157,20 +157,29 @@ class GenerateProgramDayPlansService
         }
 
         $needsChoice = $dayTemplate->choiceGroup !== null && $choiceOptionId === null;
+        $isSkippedChoice = $this->isSkippedChoice($dayTemplate, $choiceOptionId);
 
         $plan = $user->routinePlans()->create([
             'title' => sprintf('%s · %s', $dayTemplate->code, $dayTemplate->name),
             'scheduled_on' => $date->toDateString(),
-            'status' => $needsChoice ? RoutinePlanStatus::Draft : RoutinePlanStatus::Ready,
+            'status' => match (true) {
+                $needsChoice => RoutinePlanStatus::Draft,
+                $isSkippedChoice => RoutinePlanStatus::Archived,
+                default => RoutinePlanStatus::Ready,
+            },
             'program_version_id' => $version->id,
             'program_week_id' => $week->id,
             'program_day_template_id' => $dayTemplate->id,
             'generation_source' => PlanGenerationSource::Program->value,
             'choice_option_id' => $choiceOptionId,
-            'note' => $needsChoice ? '選択メニューの選択待ち' : null,
+            'note' => match (true) {
+                $needsChoice => '選択メニューの選択待ち',
+                $isSkippedChoice => '選択日を省略',
+                default => null,
+            },
         ]);
 
-        if (! $needsChoice) {
+        if (! $needsChoice && ! $isSkippedChoice) {
             $this->snapshotSteps($user, $plan, $dayTemplate, $week, $choiceOptionId);
             $plan->update(['status' => RoutinePlanStatus::Ready]);
         }
@@ -201,13 +210,23 @@ class GenerateProgramDayPlansService
         $plan->steps()->delete();
         $this->snapshotSteps($user, $plan, $dayTemplate, $week, $choiceOptionId);
 
+        $isSkippedChoice = $this->isSkippedChoice($dayTemplate, $choiceOptionId);
+
         $plan->update([
             'choice_option_id' => $choiceOptionId,
-            'status' => RoutinePlanStatus::Ready,
-            'note' => null,
+            'status' => $isSkippedChoice ? RoutinePlanStatus::Archived : RoutinePlanStatus::Ready,
+            'note' => $isSkippedChoice ? '選択日を省略' : null,
         ]);
 
         return $plan->refresh()->load('steps');
+    }
+
+    private function isSkippedChoice(ProgramDayTemplate $dayTemplate, ?string $choiceOptionId): bool
+    {
+        return $choiceOptionId !== null
+            && ! $dayTemplate->steps->contains(
+                fn (ProgramDayStep $step): bool => $step->program_choice_option_id === $choiceOptionId,
+            );
     }
 
     /**

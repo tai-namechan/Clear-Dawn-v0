@@ -179,6 +179,37 @@ class RoutinesHubTabsContractTest extends TestCase
         );
     }
 
+    public function test_choice_days_are_selected_from_the_session_card(): void
+    {
+        $index = $this->pageSource('resources/js/pages/Routines/Index.vue');
+        $planCard = $this->pageSource(
+            'resources/js/components/routine/TodayPlanCard.vue',
+        );
+        $ops = $this->pageSource(
+            'resources/js/components/routine/TodayOpsPrimary.vue',
+        );
+
+        $this->assertStringContainsString(
+            ':choice-context="choiceContextFor(plan.id)"',
+            $index,
+        );
+        $this->assertStringContainsString(
+            '今日行う内容を選択してください',
+            $planCard,
+        );
+        $this->assertStringContainsString(
+            'status === \'not_started\' && !needsChoice',
+            $planCard,
+        );
+        foreach (['IconBarbell', 'IconYoga', 'IconRun', 'IconBed'] as $icon) {
+            $this->assertStringContainsString($icon, $planCard);
+        }
+        $this->assertStringNotContainsString(
+            '今日のプログラム選択',
+            $ops,
+        );
+    }
+
     public function test_today_ops_primary_skips_checkin_nudge_cards(): void
     {
         $source = $this->pageSource(

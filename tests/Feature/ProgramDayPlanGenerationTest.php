@@ -209,6 +209,47 @@ class ProgramDayPlanGenerationTest extends TestCase
         }
     }
 
+    public function test_zero_step_choice_archives_the_optional_day_instead_of_creating_an_empty_session_plan(): void
+    {
+        $user = User::factory()->create();
+        $this->artisan('cleardawn:install-program', ['userId' => $user->id])->assertSuccessful();
+
+        $date = Carbon::parse('2026-07-22');
+        $service = app(GenerateProgramDayPlansService::class);
+        $service->handle($user, $date);
+
+        $restOption = ProgramChoiceOption::query()
+            ->where('label', '完全休養')
+            ->firstOrFail();
+
+        $plan = $service->handle($user, $date, $restOption->id)->firstOrFail();
+
+        $this->assertSame(RoutinePlanStatus::Archived, $plan->status);
+        $this->assertSame($restOption->id, $plan->choice_option_id);
+        $this->assertSame('選択日を省略', $plan->note);
+        $this->assertCount(0, $plan->steps);
+        $this->assertFalse($plan->sessions()->exists());
+    }
+
+    public function test_initial_zero_step_choice_archives_the_optional_day(): void
+    {
+        $user = User::factory()->create();
+        $this->artisan('cleardawn:install-program', ['userId' => $user->id])->assertSuccessful();
+
+        $restOption = ProgramChoiceOption::query()
+            ->where('label', '完全休養')
+            ->firstOrFail();
+
+        $plan = app(GenerateProgramDayPlansService::class)
+            ->handle($user, Carbon::parse('2026-07-22'), $restOption->id)
+            ->firstOrFail();
+
+        $this->assertSame(RoutinePlanStatus::Archived, $plan->status);
+        $this->assertSame($restOption->id, $plan->choice_option_id);
+        $this->assertSame('選択日を省略', $plan->note);
+        $this->assertCount(0, $plan->steps);
+    }
+
     public function test_today_index_auto_generates_program_plans(): void
     {
         $user = User::factory()->create();
