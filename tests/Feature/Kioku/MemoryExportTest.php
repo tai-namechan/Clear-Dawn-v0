@@ -98,6 +98,36 @@ class MemoryExportTest extends TestCase
         $this->assertSame(1, KiokuActionExport::query()->withoutUserScope()->where('memory_id', $memory->id)->count());
     }
 
+    public function test_send_to_clear_dawn_marks_without_duplicating(): void
+    {
+        $user = User::factory()->create();
+        $memory = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'sensitive' => false,
+            'title' => '相談したいこと',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('kioku.memories.export.clear-dawn', $memory))
+            ->assertRedirect()
+            ->assertSessionHas('success', 'Clear Dawn用にマークしました');
+
+        $this->actingAs($user)
+            ->post(route('kioku.memories.export.clear-dawn', $memory))
+            ->assertRedirect()
+            ->assertSessionHas('success', '既に Clear Dawn用にマーク済みです');
+
+        $this->assertSame(
+            1,
+            KiokuActionExport::query()
+                ->withoutUserScope()
+                ->where('memory_id', $memory->id)
+                ->where('target', 'clear_dawn_context')
+                ->count(),
+        );
+    }
+
     public function test_flag_off_blocks_exports(): void
     {
         config([

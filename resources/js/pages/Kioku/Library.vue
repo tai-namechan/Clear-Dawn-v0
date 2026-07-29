@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import { Filter, Search, X } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import MemoryCard from '@/components/kioku/MemoryCard.vue';
 import { Button } from '@/components/ui/button';
 import { useKiokuStatusPoll } from '@/composables/useKiokuStatusPoll';
 import { apiFetch } from '@/lib/apiFetch';
-import { MEMORY_TYPES } from '@/lib/kiokuMeta';
+import { formatAgo, MEMORY_TYPES } from '@/lib/kiokuMeta';
 import type { MemoryTypeKey } from '@/lib/kiokuMeta';
 import {
     buildKiokuHomeQuery,
@@ -14,7 +14,7 @@ import {
     normalizeTagMode,
     toggleTagFilter,
 } from '@/lib/kiokuTags.mjs';
-import { index as memoriesIndex } from '@/routes/kioku/memories';
+import { index as memoriesIndex, show as memoryShow } from '@/routes/kioku/memories';
 import { search as recallSearch, feedback as recallFeedback } from '@/routes/kioku/recall';
 import type {
     KiokuHomeFilters,
@@ -412,11 +412,34 @@ defineOptions({
                         #{{ row.rank }} · {{ row.reason }}
                     </p>
                     <h4 class="mt-1 text-[14px] font-bold text-os-ink">
-                        {{ row.memory.title }}
+                        <Link
+                            :href="memoryShow.url(row.memory.id)"
+                            class="underline-offset-2 hover:underline"
+                        >
+                            {{ row.memory.title }}
+                        </Link>
                     </h4>
+                    <p
+                        v-if="row.memory.captured_at"
+                        class="mt-1 text-[11px] text-os-faint"
+                    >
+                        {{ formatAgo(row.memory.captured_at) }}
+                    </p>
                     <p class="mt-1 line-clamp-2 text-[12.5px] text-os-sub">
                         {{ row.memory.summary }}
                     </p>
+                    <div
+                        v-if="row.memory.tags?.length"
+                        class="mt-2 flex flex-wrap gap-1"
+                    >
+                        <span
+                            v-for="tag in row.memory.tags"
+                            :key="tag"
+                            class="rounded-full bg-os-kioku-soft px-2 py-0.5 text-[11px] font-bold text-os-kioku"
+                        >
+                            #{{ tag }}
+                        </span>
+                    </div>
                     <div
                         v-if="recallFeedbackEnabled"
                         class="mt-2 flex flex-wrap gap-2"

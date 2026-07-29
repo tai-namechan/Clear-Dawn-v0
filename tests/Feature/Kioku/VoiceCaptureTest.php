@@ -72,7 +72,8 @@ class VoiceCaptureTest extends TestCase
 
         $asset = MemoryAsset::query()->where('memory_id', $memory->id)->sole();
         $this->assertSame('audio_original', $asset->kind);
-        $this->assertSame(12000, $asset->duration_ms);
+        // Server probe wins over client declaration when measurable (2048B @ 8kHz ≈ 256ms).
+        $this->assertSame(256, $asset->duration_ms);
         $this->assertNotNull($asset->checksum);
         Storage::disk('local')->assertExists($asset->path);
         $this->assertStringStartsWith('kioku-audio/'.$user->id.'/', $asset->path);

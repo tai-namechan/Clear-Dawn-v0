@@ -169,7 +169,6 @@ async function onAudioFileSelected(event: Event): Promise<void> {
         const formData = new FormData();
         formData.append('client_capture_id', crypto.randomUUID());
         formData.append('audio', file, file.name);
-        formData.append('duration_ms', '1');
         formData.append('captured_at', new Date().toISOString());
 
         importProgress.value = 40;

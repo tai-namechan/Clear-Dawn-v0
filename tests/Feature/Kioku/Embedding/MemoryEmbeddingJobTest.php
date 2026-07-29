@@ -2,6 +2,9 @@
 
 namespace Tests\Feature\Kioku\Embedding;
 
+use App\Domain\Kioku\Embedding\EmbeddingGateway;
+use App\Domain\Kioku\Embedding\EmbeddingRequest;
+use App\Domain\Kioku\Embedding\EmbeddingResult;
 use App\Domain\Kioku\Embedding\FakeEmbeddingGateway;
 use App\Domain\Kioku\Embedding\SearchDocumentBuilder;
 use App\Domain\Kioku\Embedding\VectorStore;
@@ -10,6 +13,7 @@ use App\Domain\Kioku\Models\Memory;
 use App\Domain\Kioku\Models\MemoryEmbedding;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -209,5 +213,90 @@ class MemoryEmbeddingJobTest extends TestCase
             '--user' => $user->id,
             '--dry-run' => true,
         ])->assertSuccessful();
+    }
+
+    public function test_stale_hash_after_tag_change_does_not_publish_old_vector(): void
+    {
+        $user = User::factory()->create();
+        $memory = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'sensitive' => false,
+            'title' => '試合メモ',
+            'summary' => '要約',
+            'tags' => ['野球'],
+        ]);
+
+        $gateway = new class implements EmbeddingGateway
+        {
+            public function embed(EmbeddingRequest $request): EmbeddingResult
+            {
+                $memoryId = $request->memoryId;
+                Memory::query()->withoutUserScope()->whereKey($memoryId)->update(['tags' => ['仕事']]);
+
+                $dims = max(2, min($request->dimensions ?? 8, 32));
+
+                return new EmbeddingResult(
+                    vector: array_fill(0, $dims, 0.1),
+                    model: $request->model,
+                    dimensions: $dims,
+                    inputTokens: 3,
+                    requestId: 'mutating-fake',
+                    actualUsd: '0.000001',
+                    provider: 'fake',
+                );
+            }
+        };
+
+        Bus::fake([GenerateMemoryEmbeddingJob::class]);
+
+        (new GenerateMemoryEmbeddingJob($memory->id))->handle(
+            $gateway,
+            app(SearchDocumentBuilder::class),
+            app(VectorStore::class),
+        );
+
+        $embedding = MemoryEmbedding::query()->withoutUserScope()->where('memory_id', $memory->id)->sole();
+        $this->assertSame('pending', $embedding->status);
+        $this->assertNull($embedding->vector);
+        Bus::assertDispatched(GenerateMemoryEmbeddingJob::class);
+    }
+
+    public function test_nearest_ignores_embeddings_from_other_schema_or_model(): void
+    {
+        $user = User::factory()->create();
+        $memory = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'title' => '現行',
+            'summary' => '現行モデル',
+            'tags' => ['now'],
+        ]);
+
+        /** @var FakeEmbeddingGateway $fake */
+        $fake = app(FakeEmbeddingGateway::class);
+        (new GenerateMemoryEmbeddingJob($memory->id))->handle(
+            $fake,
+            app(SearchDocumentBuilder::class),
+            app(VectorStore::class),
+        );
+
+        $current = MemoryEmbedding::query()->withoutUserScope()->where('memory_id', $memory->id)->sole();
+        MemoryEmbedding::query()->withoutUserScope()->create([
+            'user_id' => $user->id,
+            'memory_id' => $memory->id,
+            'provider' => 'openai',
+            'model' => 'text-embedding-3-large',
+            'schema_version' => 'v0-old',
+            'status' => 'ready',
+            'content_hash' => 'old',
+            'vector' => json_encode(array_fill(0, 8, 0.9), JSON_THROW_ON_ERROR),
+            'dimensions' => 8,
+            'embedded_at' => now(),
+        ]);
+
+        $hits = app(VectorStore::class)->nearest((int) $user->id, $current->vectorArray(), 10);
+        $this->assertCount(1, $hits);
+        $this->assertSame($memory->id, $hits[0]['memory_id']);
     }
 }

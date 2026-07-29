@@ -639,7 +639,7 @@ defineOptions({
                         )
                     "
                 >
-                    Clear Dawnへ送る
+                    Clear Dawn用にマーク
                 </Button>
                 <Button
                     v-if="obsidianExportEnabled"

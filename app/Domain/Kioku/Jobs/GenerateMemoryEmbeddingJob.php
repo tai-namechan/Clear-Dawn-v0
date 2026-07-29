@@ -109,12 +109,41 @@ class GenerateMemoryEmbeddingJob implements ShouldBeUnique, ShouldQueue
                 dimensions: (int) config('kioku.embedding.dimensions', 1536),
             ));
 
-            // Stale write guard: only the claimed row with matching hash may publish.
+            // Stale write guard: re-read Memory and recompute hash before publish.
+            // Tag/title edits during the API call must not leave an outdated vector ready.
+            $fresh = Memory::query()->withoutUserScope()->find($this->memoryId);
+            if ($fresh === null) {
+                return;
+            }
+
+            $rebuilt = $builder->build($fresh);
+            if ($rebuilt === null || $rebuilt['content_hash'] !== $built['content_hash']) {
+                MemoryEmbedding::query()
+                    ->withoutUserScope()
+                    ->whereKey($embedding->id)
+                    ->where('status', 'processing')
+                    ->update([
+                        'status' => 'pending',
+                        'content_hash' => $rebuilt['content_hash'] ?? $built['content_hash'],
+                        'error_code' => null,
+                    ]);
+
+                Log::info('GenerateMemoryEmbeddingJob stale content rejected before publish', [
+                    'memory_id' => $this->memoryId,
+                ]);
+
+                if ($rebuilt !== null && ! $fresh->sensitive) {
+                    self::dispatch($this->memoryId);
+                }
+
+                return;
+            }
+
             $updated = MemoryEmbedding::query()
                 ->withoutUserScope()
                 ->whereKey($embedding->id)
                 ->where('status', 'processing')
-                ->where('content_hash', $built['content_hash'])
+                ->where('content_hash', $rebuilt['content_hash'])
                 ->update([
                     'vector' => json_encode($result->vector, JSON_THROW_ON_ERROR),
                     'dimensions' => $result->dimensions,

@@ -84,7 +84,7 @@ final class HybridSearchService
         $this->accumulate($scores, $reasons, $fulltext, 1.0, 'fulltext');
         $this->accumulate($scores, $reasons, $links, 1.3, 'link');
 
-        $this->applyFeedbackBoost($userId, $scores);
+        $this->applyFeedbackBoost($userId, hash('sha256', mb_strtolower($query)), $scores);
 
         arsort($scores);
         $topIds = array_slice(array_keys($scores), 0, $limit);
@@ -259,9 +259,9 @@ final class HybridSearchService
     /**
      * @param  array<string, float>  $scores
      */
-    private function applyFeedbackBoost(int $userId, array &$scores): void
+    private function applyFeedbackBoost(int $userId, string $queryHash, array &$scores): void
     {
-        if (! config('kioku.recall_feedback.enabled', false) || $scores === []) {
+        if (! config('kioku.recall_feedback.enabled', false) || $scores === [] || $queryHash === '') {
             return;
         }
 
@@ -269,22 +269,28 @@ final class HybridSearchService
         $rows = KiokuRecallFeedback::query()
             ->withoutUserScope()
             ->where('user_id', $userId)
+            ->where('query_hash', $queryHash)
             ->whereIn('memory_id', $ids)
             ->whereIn('verdict', ['hit', 'related', 'miss'])
             ->get(['memory_id', 'verdict']);
 
+        $hit = (float) config('kioku.recall_feedback.hit_boost', 0.01);
+        $related = (float) config('kioku.recall_feedback.related_boost', 0.005);
+        $miss = (float) config('kioku.recall_feedback.miss_penalty', -0.01);
+        $maxAbs = (float) config('kioku.recall_feedback.max_abs_boost', 0.03);
+
         $delta = [];
         foreach ($rows as $row) {
             $delta[$row->memory_id] = ($delta[$row->memory_id] ?? 0.0) + match ($row->verdict) {
-                'hit' => 0.05,
-                'related' => 0.02,
-                'miss' => -0.05,
+                'hit' => $hit,
+                'related' => $related,
+                'miss' => $miss,
                 default => 0.0,
             };
         }
 
         foreach ($delta as $id => $boost) {
-            $clamped = max(-0.15, min(0.15, $boost));
+            $clamped = max(-$maxAbs, min($maxAbs, $boost));
             $scores[$id] = ($scores[$id] ?? 0.0) + $clamped;
         }
     }

@@ -90,11 +90,13 @@ class IosCaptureController extends Controller
         }
 
         $audio = $request->file('audio');
+        $declaredDuration = $request->input('duration_ms');
+
         $result = $service->captureVoice(
             user: $request->user(),
             audio: $audio,
             clientCaptureId: $idempotency,
-            durationMs: (int) ($request->input('duration_ms') ?? 1),
+            durationMs: is_numeric($declaredDuration) ? (int) $declaredDuration : null,
             capturedAt: $request->input('captured_at'),
             sensitive: (bool) $request->boolean('sensitive'),
             channel: CaptureChannel::IosShortcut,

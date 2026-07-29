@@ -88,10 +88,11 @@ class HybridRecallTest extends TestCase
     {
         $user = User::factory()->create();
         $memory = Memory::factory()->create(['user_id' => $user->id, 'status' => 'ready']);
+        $sessionId = (string) Str::uuid();
 
         $this->actingAs($user)
             ->postJson(route('kioku.recall.feedback'), [
-                'search_session_id' => (string) Str::uuid(),
+                'search_session_id' => $sessionId,
                 'query_hash' => str_repeat('b', 64),
                 'memory_id' => $memory->id,
                 'shown_rank' => 1,
@@ -99,7 +100,18 @@ class HybridRecallTest extends TestCase
             ])
             ->assertCreated();
 
+        $this->actingAs($user)
+            ->postJson(route('kioku.recall.feedback'), [
+                'search_session_id' => $sessionId,
+                'query_hash' => str_repeat('b', 64),
+                'memory_id' => $memory->id,
+                'shown_rank' => 1,
+                'verdict' => 'miss',
+            ])
+            ->assertOk();
+
         $this->assertSame(1, KiokuRecallFeedback::query()->withoutUserScope()->where('user_id', $user->id)->count());
+        $this->assertSame('miss', KiokuRecallFeedback::query()->withoutUserScope()->where('user_id', $user->id)->value('verdict'));
     }
 
     public function test_legacy_library_search_still_works_when_semantic_off(): void

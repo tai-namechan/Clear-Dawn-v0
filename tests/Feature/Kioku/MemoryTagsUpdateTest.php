@@ -3,6 +3,7 @@
 namespace Tests\Feature\Kioku;
 
 use App\Domain\Kioku\Jobs\EnrichMemoryJob;
+use App\Domain\Kioku\Jobs\GenerateMemoryEmbeddingJob;
 use App\Domain\Kioku\Models\Memory;
 use App\Domain\Kioku\Models\MemoryAsset;
 use App\Domain\Kioku\Models\MemoryLink;
@@ -19,8 +20,13 @@ class MemoryTagsUpdateTest extends TestCase
 
     public function test_owner_can_update_tags_through_normalizer(): void
     {
-        Bus::fake([EnrichMemoryJob::class]);
+        Bus::fake([EnrichMemoryJob::class, GenerateMemoryEmbeddingJob::class]);
         Http::fake();
+
+        config([
+            'kioku.embedding.enabled' => true,
+            'kioku.embedding.provider' => 'fake',
+        ]);
 
         $user = User::factory()->create();
         $memory = Memory::factory()->create([
@@ -45,6 +51,7 @@ class MemoryTagsUpdateTest extends TestCase
         $this->assertSame('要約は触らない', $memory->summary);
 
         Bus::assertNotDispatched(EnrichMemoryJob::class);
+        Bus::assertDispatched(GenerateMemoryEmbeddingJob::class, fn (GenerateMemoryEmbeddingJob $job) => $job->memoryId === $memory->id);
         Http::assertNothingSent();
     }
 

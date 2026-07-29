@@ -176,4 +176,60 @@ class AudioFileImportTest extends TestCase
             ->get(route('kioku.memories.audio', $memoryId))
             ->assertNotFound();
     }
+
+    public function test_server_probes_wav_duration_and_ignores_client_placeholder(): void
+    {
+        Bus::fake([EnrichMemoryJob::class, TranscribeMemoryAudioJob::class]);
+        $user = User::factory()->create();
+
+        // 2048 bytes @ 8kHz 8-bit mono ≈ 256ms
+        $this->actingAs($user)
+            ->postJson(route('kioku.captures.audio-import'), [
+                'client_capture_id' => (string) Str::uuid(),
+                'audio' => $this->fakeWavFile(2048),
+                'duration_ms' => 1,
+            ])
+            ->assertCreated();
+
+        $asset = MemoryAsset::query()->sole();
+        $this->assertNotSame(1, $asset->duration_ms);
+        $this->assertGreaterThanOrEqual(200, (int) $asset->duration_ms);
+        $this->assertLessThanOrEqual(400, (int) $asset->duration_ms);
+    }
+
+    public function test_omitted_duration_still_imports_with_probed_length(): void
+    {
+        Bus::fake([EnrichMemoryJob::class, TranscribeMemoryAudioJob::class]);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->postJson(route('kioku.captures.audio-import'), [
+                'client_capture_id' => (string) Str::uuid(),
+                'audio' => $this->fakeWavFile(4096),
+            ])
+            ->assertCreated();
+
+        $asset = MemoryAsset::query()->sole();
+        $this->assertNotNull($asset->duration_ms);
+        $this->assertGreaterThan(1, (int) $asset->duration_ms);
+    }
+
+    public function test_probed_duration_over_import_max_is_rejected(): void
+    {
+        config(['kioku.audio_import.max_duration_ms' => 1000]);
+        Bus::fake([EnrichMemoryJob::class, TranscribeMemoryAudioJob::class]);
+        $user = User::factory()->create();
+
+        // 16_000 bytes @ 8kHz 8-bit mono = 2 seconds > 1s max
+        $this->actingAs($user)
+            ->postJson(route('kioku.captures.audio-import'), [
+                'client_capture_id' => (string) Str::uuid(),
+                'audio' => $this->fakeWavFile(16_000),
+                'duration_ms' => 1,
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['audio']);
+
+        $this->assertSame(0, Memory::query()->withoutUserScope()->where('user_id', $user->id)->count());
+    }
 }

@@ -66,11 +66,13 @@ class CaptureController extends Controller
             ?? $audio->getMimeType()
             ?? 'application/octet-stream');
 
+        $declaredDuration = $request->validated('duration_ms');
+
         $result = $service->captureVoice(
             user: $request->user(),
             audio: $audio,
             clientCaptureId: (string) $request->validated('client_capture_id'),
-            durationMs: (int) ($request->validated('duration_ms') ?? 1),
+            durationMs: $declaredDuration !== null ? (int) $declaredDuration : null,
             capturedAt: $request->validated('captured_at'),
             sensitive: (bool) ($request->validated('sensitive') ?? false),
             channel: CaptureChannel::AudioFileImport,

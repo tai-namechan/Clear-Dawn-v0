@@ -83,8 +83,8 @@ class MemoryExportController extends Controller
         return redirect()
             ->route('kioku.memories.show', $memory)
             ->with('success', $result['created']
-                ? 'Clear Dawn 相談文脈として記録しました'
-                : '既に Clear Dawn へ送済みです（重複作成しませんでした）')
+                ? 'Clear Dawn用にマークしました'
+                : '既に Clear Dawn用にマーク済みです')
             ->with('clear_dawn_preview', $result['preview']);
     }
 

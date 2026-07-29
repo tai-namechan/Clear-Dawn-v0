@@ -60,7 +60,13 @@ class StoreAudioFileImportRequest extends FormRequest
                 'mimetypes:'.implode(',', self::ALLOWED_MIME_TYPES),
             ],
             'server_detected_mime' => ['nullable', 'string', 'in:'.implode(',', self::ALLOWED_MIME_TYPES)],
-            'duration_ms' => ['nullable', 'integer', 'min:1', 'max:7200000'],
+            // Client hint only — CaptureMemoryService probes duration server-side.
+            'duration_ms' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'max:'.((int) config('kioku.audio_import.max_duration_ms', 7_200_000)),
+            ],
             'captured_at' => ['nullable', 'date'],
             'sensitive' => ['nullable', 'boolean'],
         ];

@@ -10,7 +10,7 @@ use App\Domain\Kioku\Models\KiokuLetter;
 use App\Domain\Kioku\Models\Memory;
 use App\Domain\Kioku\Services\CaptureMemoryService;
 use App\Domain\Kioku\Services\KiokuSearchService;
-use App\Domain\Kioku\Services\KiokuTagNormalizer;
+use App\Domain\Kioku\Services\MemorySearchDocumentSyncService;
 use App\Domain\Kioku\Services\RelatedMemoryService;
 use App\Domain\Kioku\Types\MemoryTypeRegistry;
 use App\Http\Controllers\Controller;
@@ -326,21 +326,17 @@ class MemoryController extends Controller
      * Owner-only edit of the derived tag list (interpretation layer,
      * docs/architecture/kioku-knowledge-retrieval.md §2). Facts stay
      * untouched — raw_content, transcript_text and audio assets are never
-     * written here — and no AI re-enrichment is triggered. The cached
-     * related links are recomputed because their score uses tags.
+     * written here — and no AI re-enrichment is triggered. Related links and
+     * embeddings are refreshed because both use tags.
      */
     public function updateTags(
         UpdateMemoryTagsRequest $request,
         Memory $memory,
-        KiokuTagNormalizer $normalizer,
-        RelatedMemoryService $relatedMemoryService,
+        MemorySearchDocumentSyncService $searchDocumentSync,
     ): RedirectResponse {
         abort_unless((int) $memory->user_id === (int) $request->user()->id, 404);
 
-        $tags = $normalizer->normalize($request->validated('tags') ?? []);
-
-        $memory->update(['tags' => $tags === [] ? null : $tags]);
-        $relatedMemoryService->cacheRelated($memory);
+        $searchDocumentSync->updateTags($memory, $request->validated('tags') ?? []);
 
         Inertia::flash('toast', [
             'type' => 'success',

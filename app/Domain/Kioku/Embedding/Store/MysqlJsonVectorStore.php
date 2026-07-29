@@ -30,11 +30,17 @@ final class MysqlJsonVectorStore implements VectorStore
     {
         $topK = max(1, min($topK, (int) config('kioku.semantic_search.top_k', 40)));
         $cap = (int) config('kioku.embedding.max_memories_per_user', 1000);
+        $provider = (string) config('kioku.embedding.provider', 'openai');
+        $model = (string) config('kioku.embedding.model', 'text-embedding-3-small');
+        $schema = (string) config('kioku.embedding.schema_version', 'v1');
 
         $rows = MemoryEmbedding::query()
             ->withoutUserScope()
             ->where('user_id', $userId)
             ->where('status', 'ready')
+            ->where('provider', $provider === 'fake' ? 'fake' : 'openai')
+            ->where('model', $model)
+            ->where('schema_version', $schema)
             ->orderByDesc('embedded_at')
             ->limit($cap)
             ->get(['memory_id', 'vector', 'dimensions']);

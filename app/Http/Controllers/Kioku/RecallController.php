@@ -77,21 +77,28 @@ class RecallController extends Controller
             }
         }
 
-        $feedback = KiokuRecallFeedback::query()->create([
-            'user_id' => $userId,
-            ...$request->safe()->only([
-                'search_session_id',
-                'query_hash',
-                'memory_id',
-                'shown_rank',
-                'tag_rank',
-                'fulltext_rank',
-                'vector_rank',
-                'final_score',
-                'verdict',
-            ]),
+        $payload = $request->safe()->only([
+            'search_session_id',
+            'query_hash',
+            'memory_id',
+            'shown_rank',
+            'tag_rank',
+            'fulltext_rank',
+            'vector_rank',
+            'final_score',
+            'verdict',
         ]);
 
-        return response()->json(['id' => $feedback->id], 201);
+        // One verdict per memory within a search session — repeated taps update, not stack.
+        $feedback = KiokuRecallFeedback::query()->updateOrCreate(
+            [
+                'user_id' => $userId,
+                'search_session_id' => $payload['search_session_id'],
+                'memory_id' => $payload['memory_id'] ?? null,
+            ],
+            $payload,
+        );
+
+        return response()->json(['id' => $feedback->id], $feedback->wasRecentlyCreated ? 201 : 200);
     }
 }
