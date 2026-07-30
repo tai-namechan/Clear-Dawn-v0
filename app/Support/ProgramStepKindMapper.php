@@ -17,6 +17,9 @@ class ProgramStepKindMapper
             ProgramStepKind::Strength, ProgramStepKind::Accessory => StepPurpose::Strength,
             ProgramStepKind::ArmCare => StepPurpose::Care,
             ProgramStepKind::Conditioning, ProgramStepKind::Cooldown => StepPurpose::Other,
+            ProgramStepKind::Technique, ProgramStepKind::Repertoire => StepPurpose::Practice,
+            ProgramStepKind::Reading => StepPurpose::Study,
+            ProgramStepKind::Review => StepPurpose::Review,
         };
     }
 }

@@ -1,8 +1,13 @@
 import type {
+    RoutineItemCategory,
     RoutinePlan,
     RoutineSession,
     StepPurpose,
 } from '@/types/routine';
+export {
+    displayDurationMinutes,
+    estimatePlanMinutes,
+} from './todayPlanDuration.mjs';
 
 export type TodayPlanRunStatus = 'completed' | 'in_progress' | 'not_started';
 
@@ -22,59 +27,6 @@ export function planRunStatus(plan: RoutinePlan): TodayPlanRunStatus {
     }
 
     return 'not_started';
-}
-
-/** Rough planned minutes from step blocks + rest (no dedicated duration column). */
-export function estimatePlanMinutes(plan: RoutinePlan): number | null {
-    const steps = plan.steps ?? [];
-
-    if (steps.length === 0) {
-        return null;
-    }
-
-    let seconds = 0;
-
-    for (const step of steps) {
-        const blocks = Math.max(1, step.target_blocks ?? 1);
-        // ~2 min effort per block when no duration tracking
-        seconds += blocks * 120;
-
-        if (step.rest_seconds && blocks > 1) {
-            seconds += step.rest_seconds * (blocks - 1);
-        }
-    }
-
-    return Math.max(1, Math.round(seconds / 60));
-}
-
-export function sessionDurationMinutes(
-    session: RoutineSession | null,
-): number | null {
-    if (!session?.started_at) {
-        return null;
-    }
-
-    const start = Date.parse(session.started_at);
-    const end = session.finished_at
-        ? Date.parse(session.finished_at)
-        : Date.now();
-
-    if (Number.isNaN(start) || Number.isNaN(end) || end <= start) {
-        return null;
-    }
-
-    return Math.max(1, Math.round((end - start) / 60_000));
-}
-
-export function displayDurationMinutes(plan: RoutinePlan): number | null {
-    const session = latestSession(plan);
-    const status = planRunStatus(plan);
-
-    if (status === 'completed' || status === 'in_progress') {
-        return sessionDurationMinutes(session) ?? estimatePlanMinutes(plan);
-    }
-
-    return estimatePlanMinutes(plan);
 }
 
 export function formatMinutesJa(totalMinutes: number): string {
@@ -153,4 +105,42 @@ export function planDescription(plan: RoutinePlan): string {
 
 export function primaryStepPurpose(plan: RoutinePlan): StepPurpose | null {
     return plan.steps?.find((step) => step.purpose)?.purpose ?? null;
+}
+
+/**
+ * プランの性格を表すカテゴリ（最も多いステップのカテゴリ）。
+ *
+ * 先頭ステップだけを見ると、どのプランも準備運動から始まるため同じ判定になる。
+ * 同数のときは先に現れたカテゴリを採る。`other` は内容を表さないので、
+ * 他のカテゴリが1つでもあればそちらを優先する。
+ */
+export function dominantItemCategory(
+    plan: RoutinePlan,
+): RoutineItemCategory | null {
+    const counts = new Map<RoutineItemCategory, number>();
+
+    for (const step of plan.steps ?? []) {
+        const category = step.routine_item?.category;
+
+        if (!category) {
+            continue;
+        }
+
+        counts.set(category, (counts.get(category) ?? 0) + 1);
+    }
+
+    const meaningful = [...counts].filter(([category]) => category !== 'other');
+    const ranked = meaningful.length > 0 ? meaningful : [...counts];
+
+    let dominant: RoutineItemCategory | null = null;
+    let dominantCount = 0;
+
+    for (const [category, count] of ranked) {
+        if (count > dominantCount) {
+            dominant = category;
+            dominantCount = count;
+        }
+    }
+
+    return dominant;
 }

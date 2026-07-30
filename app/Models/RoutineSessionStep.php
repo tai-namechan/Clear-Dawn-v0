@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property string $item_name
  * @property string|null $video_id
  * @property StepPurpose|null $purpose
+ * @property string|null $note
  * @property int $sort_order
  * @property string|null $target_load
  * @property string|null $load_unit
@@ -39,6 +40,7 @@ use Illuminate\Support\Carbon;
     'item_name',
     'video_id',
     'purpose',
+    'note',
     'sort_order',
     'target_load',
     'load_unit',

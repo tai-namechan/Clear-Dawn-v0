@@ -15,8 +15,6 @@ const props = defineProps<Props>();
 
 const decidingId = ref<string | null>(null);
 
-const programContext = computed(() => props.ops.program_context ?? []);
-
 /** 主作戦 1 件のみ。チェックイン催促カードの羅列は出さない。 */
 const primaryRecommendation = computed(() => {
     const list = props.ops.recommendations ?? [];
@@ -62,25 +60,10 @@ const gaugeStyle = computed(() => {
     };
 });
 
-const hasContent = computed(
-    () =>
-        programContext.value.some((ctx) => ctx.needs_choice) ||
-        primaryRecommendation.value != null,
-);
+const hasContent = computed(() => primaryRecommendation.value != null);
 
 function isCheckinNudge(title: string): boolean {
     return title.includes('チェックイン');
-}
-
-async function selectChoice(choiceOptionId: string): Promise<void> {
-    await apiFetch('/today/program-choice', {
-        method: 'POST',
-        body: JSON.stringify({
-            date: props.date,
-            choice_option_id: choiceOptionId,
-        }),
-    });
-    router.reload({ only: ['ops', 'plans'] });
 }
 
 async function decideRecommendation(
@@ -121,44 +104,6 @@ function optionVariant(actionKey: string): 'default' | 'outline' {
 <template>
     <div v-if="hasContent" class="flex flex-col gap-4">
         <section
-            v-if="programContext.some((ctx) => ctx.needs_choice)"
-            aria-label="今日のプログラム選択"
-            class="rounded-2xl border border-cd-line bg-white p-4 md:p-5"
-        >
-            <h2 class="font-sans text-sm font-semibold text-cd-ink">
-                今日のプログラム選択
-            </h2>
-            <ul class="mt-3 flex flex-col gap-3">
-                <li
-                    v-for="ctx in programContext.filter((c) => c.needs_choice)"
-                    :key="ctx.plan_id"
-                    class="rounded-xl border border-cd-line px-4 py-3"
-                >
-                    <p class="font-sans text-sm font-medium text-cd-ink">
-                        W{{ ctx.week_number ?? '-' }} · {{ ctx.day_code }}
-                        {{ ctx.day_name }}
-                    </p>
-                    <p class="mt-1 font-sans text-xs text-cd-ink-muted">
-                        {{ ctx.title }}
-                    </p>
-                    <div class="mt-3 flex flex-wrap gap-2">
-                        <Button
-                            v-for="option in ctx.choice_options"
-                            :key="option.id"
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            class="font-sans"
-                            @click="selectChoice(option.id)"
-                        >
-                            {{ option.label }}
-                        </Button>
-                    </div>
-                </li>
-            </ul>
-        </section>
-
-        <section
             v-if="primaryRecommendation"
             aria-label="今日の作戦"
             class="rounded-2xl border border-[#E4DFF0] bg-[#F7F4FC] p-4 md:p-5"
@@ -167,9 +112,7 @@ function optionVariant(actionKey: string): 'default' | 'outline' {
                 class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between"
             >
                 <div class="min-w-0 flex-1">
-                    <p
-                        class="font-sans text-xs font-medium text-primary"
-                    >
+                    <p class="font-sans text-xs font-medium text-primary">
                         今日の作戦
                     </p>
                     <h2
@@ -216,7 +159,7 @@ function optionVariant(actionKey: string): 'default' | 'outline' {
                     >
                         <span
                             v-if="confidenceLabel.percent !== null"
-                            class="font-sans text-lg font-bold leading-none text-cd-ink"
+                            class="font-sans text-lg leading-none font-bold text-cd-ink"
                         >
                             {{ confidenceLabel.percent }}%
                         </span>

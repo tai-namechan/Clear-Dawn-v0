@@ -1,22 +1,15 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import {
-    BookOpen,
     CalendarPlus,
     ChevronDown,
     Dumbbell,
-    Footprints,
     Heart,
-    HeartPulse,
-    Music,
     NotebookPen,
     Plus,
-    Sparkles,
-    Target,
     Utensils,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
-import type { Component } from 'vue';
 import PageTabShell from '@/components/PageTabShell.vue';
 import PageViewTabs from '@/components/PageViewTabs.vue';
 import DailyCheckinPanel from '@/components/routine/DailyCheckinPanel.vue';
@@ -25,17 +18,10 @@ import TodayPlanCard from '@/components/routine/TodayPlanCard.vue';
 import TodayProgressPanel from '@/components/routine/TodayProgressPanel.vue';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/apiFetch';
+import { categoryIcon } from '@/lib/categoryIcon';
 import { activityLogEventTypeLabels } from '@/lib/routineConstants';
-import {
-    displayDurationMinutes,
-    planRunStatus,
-} from '@/lib/todayPlanDisplay';
-import type {
-    ActivityLog,
-    Routine,
-    RoutineItemCategory,
-    RoutinePlan,
-} from '@/types/routine';
+import { displayDurationMinutes, planRunStatus } from '@/lib/todayPlanDisplay';
+import type { ActivityLog, Routine, RoutinePlan } from '@/types/routine';
 import type { CheckinFormState, TodayOps } from '@/types/todayOps';
 
 interface Props {
@@ -99,7 +85,14 @@ const completedPlans = computed(() =>
 );
 
 const activePlans = computed(() =>
-    props.plans.filter((plan) => planRunStatus(plan) !== 'completed'),
+    props.plans.filter(
+        (plan) =>
+            plan.status !== 'archived' && planRunStatus(plan) !== 'completed',
+    ),
+);
+
+const displayedPlans = computed(() =>
+    props.plans.filter((plan) => plan.status !== 'archived'),
 );
 
 const visiblePlans = computed(() => {
@@ -111,13 +104,19 @@ const visiblePlans = computed(() => {
 });
 
 const completedCount = computed(() => completedPlans.value.length);
-const totalCount = computed(() => props.plans.length);
+const totalCount = computed(() => displayedPlans.value.length);
 
 const totalMinutes = computed(() =>
-    props.plans.reduce((sum, plan) => {
+    displayedPlans.value.reduce((sum, plan) => {
         return sum + (displayDurationMinutes(plan) ?? 0);
     }, 0),
 );
+
+function choiceContextFor(planId: string) {
+    return props.ops.program_context.find(
+        (context) => context.plan_id === planId,
+    );
+}
 
 const nutritionTarget = computed(
     () =>
@@ -176,27 +175,6 @@ const checkinSummary = computed(() => {
 
     return 'チェックイン済';
 });
-
-function categoryIcon(category: RoutineItemCategory | null | undefined): Component {
-    switch (category) {
-        case 'strength':
-            return Dumbbell;
-        case 'baseball':
-            return Target;
-        case 'mobility':
-            return Footprints;
-        case 'care':
-            return HeartPulse;
-        case 'music':
-            return Music;
-        case 'study':
-            return BookOpen;
-        case 'life':
-            return Sparkles;
-        default:
-            return NotebookPen;
-    }
-}
 
 function onTabChange(tab: string): void {
     activeTab.value = tab as 'today' | 'routines' | 'history';
@@ -383,12 +361,14 @@ function historyDescription(log: ActivityLog): string {
                                     v-for="plan in visiblePlans"
                                     :key="plan.id"
                                     :plan="plan"
+                                    :date="date"
+                                    :choice-context="choiceContextFor(plan.id)"
                                 />
                             </div>
 
                             <div
                                 v-else
-                                class="rounded-2xl border border-dashed border-cd-line bg-cd-cream/40 px-4 py-8 text-center"
+                                class="bg-cd-cream/40 rounded-2xl border border-dashed border-cd-line px-4 py-8 text-center"
                             >
                                 <p
                                     class="font-sans text-sm font-medium text-cd-ink"
@@ -434,9 +414,7 @@ function historyDescription(log: ActivityLog): string {
                                     :stroke-width="1.8"
                                     class="transition-transform"
                                     :class="
-                                        showCompleted
-                                            ? 'rotate-180'
-                                            : undefined
+                                        showCompleted ? 'rotate-180' : undefined
                                     "
                                 />
                                 {{
@@ -467,9 +445,7 @@ function historyDescription(log: ActivityLog): string {
                                     class="mt-3 font-sans text-2xl font-semibold tracking-tight text-cd-ink"
                                 >
                                     残り
-                                    {{
-                                        remainingKcal?.toLocaleString('ja-JP')
-                                    }}
+                                    {{ remainingKcal?.toLocaleString('ja-JP') }}
                                     kcal
                                 </p>
                                 <p
@@ -620,10 +596,7 @@ function historyDescription(log: ActivityLog): string {
                                     <Link
                                         :href="`/records/condition?date=${date}`"
                                     >
-                                        <Heart
-                                            :size="14"
-                                            :stroke-width="1.8"
-                                        />
+                                        <Heart :size="14" :stroke-width="1.8" />
                                         コンディションへ
                                     </Link>
                                 </Button>
@@ -685,7 +658,9 @@ function historyDescription(log: ActivityLog): string {
                     aria-labelledby="tab-routines"
                     class="flex flex-col gap-3"
                 >
-                    <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div
+                        class="flex flex-wrap items-center justify-between gap-2"
+                    >
                         <p class="font-sans text-sm text-cd-ink-muted">
                             保存したルーティンを今日のプランに追加できます。
                         </p>
@@ -721,7 +696,7 @@ function historyDescription(log: ActivityLog): string {
 
                     <div
                         v-if="routines.length === 0"
-                        class="rounded-2xl border border-dashed border-cd-line bg-cd-cream/40 px-4 py-10 text-center"
+                        class="bg-cd-cream/40 rounded-2xl border border-dashed border-cd-line px-4 py-10 text-center"
                     >
                         <p class="font-sans text-sm font-medium text-cd-ink">
                             ルーティンがまだありません
@@ -729,11 +704,7 @@ function historyDescription(log: ActivityLog): string {
                         <p class="mt-1 font-sans text-sm text-cd-ink-muted">
                             よくやる流れを保存して、今日のプランにすぐ追加できます。
                         </p>
-                        <Button
-                            type="button"
-                            class="mt-4 font-sans"
-                            as-child
-                        >
+                        <Button type="button" class="mt-4 font-sans" as-child>
                             <Link href="/routines/create">
                                 最初のルーティンを作る
                             </Link>
@@ -837,7 +808,7 @@ function historyDescription(log: ActivityLog): string {
 
                     <div
                         v-if="history.length === 0"
-                        class="rounded-2xl border border-dashed border-cd-line bg-cd-cream/40 px-4 py-10 text-center"
+                        class="bg-cd-cream/40 rounded-2xl border border-dashed border-cd-line px-4 py-10 text-center"
                     >
                         <p class="font-sans text-sm font-medium text-cd-ink">
                             まだ履歴がありません

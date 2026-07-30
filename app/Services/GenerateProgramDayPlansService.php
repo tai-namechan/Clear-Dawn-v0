@@ -23,6 +23,7 @@ use App\Support\RoutineStepDisplay;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -124,6 +125,8 @@ class GenerateProgramDayPlansService
             ->pluck('program_day_template_id')
             ->all();
 
+        // fallback は自動生成の対象外（手動で差し替えるための短縮版 DAY）。
+        // sequential は版の中で1回だけ消費される。
         return $version->dayTemplates
             ->filter(fn (ProgramDayTemplate $day): bool => $day->is_active
                 && $day->assignment_mode === DayAssignmentMode::Sequential
@@ -154,20 +157,29 @@ class GenerateProgramDayPlansService
         }
 
         $needsChoice = $dayTemplate->choiceGroup !== null && $choiceOptionId === null;
+        $isSkippedChoice = $this->isSkippedChoice($dayTemplate, $choiceOptionId);
 
         $plan = $user->routinePlans()->create([
             'title' => sprintf('%s · %s', $dayTemplate->code, $dayTemplate->name),
             'scheduled_on' => $date->toDateString(),
-            'status' => $needsChoice ? RoutinePlanStatus::Draft : RoutinePlanStatus::Ready,
+            'status' => match (true) {
+                $needsChoice => RoutinePlanStatus::Draft,
+                $isSkippedChoice => RoutinePlanStatus::Archived,
+                default => RoutinePlanStatus::Ready,
+            },
             'program_version_id' => $version->id,
             'program_week_id' => $week->id,
             'program_day_template_id' => $dayTemplate->id,
             'generation_source' => PlanGenerationSource::Program->value,
             'choice_option_id' => $choiceOptionId,
-            'note' => $needsChoice ? '選択メニューの選択待ち' : null,
+            'note' => match (true) {
+                $needsChoice => '選択メニューの選択待ち',
+                $isSkippedChoice => '選択日を省略',
+                default => null,
+            },
         ]);
 
-        if (! $needsChoice) {
+        if (! $needsChoice && ! $isSkippedChoice) {
             $this->snapshotSteps($user, $plan, $dayTemplate, $week, $choiceOptionId);
             $plan->update(['status' => RoutinePlanStatus::Ready]);
         }
@@ -198,13 +210,23 @@ class GenerateProgramDayPlansService
         $plan->steps()->delete();
         $this->snapshotSteps($user, $plan, $dayTemplate, $week, $choiceOptionId);
 
+        $isSkippedChoice = $this->isSkippedChoice($dayTemplate, $choiceOptionId);
+
         $plan->update([
             'choice_option_id' => $choiceOptionId,
-            'status' => RoutinePlanStatus::Ready,
-            'note' => null,
+            'status' => $isSkippedChoice ? RoutinePlanStatus::Archived : RoutinePlanStatus::Ready,
+            'note' => $isSkippedChoice ? '選択日を省略' : null,
         ]);
 
         return $plan->refresh()->load('steps');
+    }
+
+    private function isSkippedChoice(ProgramDayTemplate $dayTemplate, ?string $choiceOptionId): bool
+    {
+        return $choiceOptionId !== null
+            && ! $dayTemplate->steps->contains(
+                fn (ProgramDayStep $step): bool => $step->program_choice_option_id === $choiceOptionId,
+            );
     }
 
     /**
@@ -278,7 +300,9 @@ class GenerateProgramDayPlansService
      *     target_blocks: int|null,
      *     rest_seconds: int|null,
      *     percent_of_reference: string|null,
-     *     rpe_target: string|null
+     *     rpe_target: string|null,
+     *     prescription_intent: string|null,
+     *     prescription_note: string|null
      * }
      */
     private function resolveTargets(User $user, ProgramStepItem $item, ProgramWeek $week, \DateTimeInterface $asOf): array
@@ -321,16 +345,27 @@ class GenerateProgramDayPlansService
             'rest_seconds' => $item->rest_seconds,
             'percent_of_reference' => $percent,
             'rpe_target' => $rpe,
+            'prescription_intent' => $prescription?->intent,
+            'prescription_note' => $prescription?->note,
         ];
     }
 
     /**
+     * その週の処方（intent / note）も含めて、ステップに表示する一行を組み立てる。
+     *
      * @param  array<string, mixed>  $resolved
      */
     private function composeNote(ProgramStepItem $item, array $resolved): ?string
     {
+        // その週の処方は「ラベル：内容」で1行にまとめる（実行画面で1項目として読める）
+        $prescription = array_filter([
+            $resolved['prescription_intent'],
+            $resolved['prescription_note'],
+        ]);
+
         $parts = array_filter([
             $item->cues,
+            $prescription === [] ? null : implode('：', $prescription),
             $item->tempo !== null ? 'tempo '.$item->tempo : null,
             $item->side !== null ? 'side '.$item->side : null,
             $resolved['percent_of_reference'] !== null && $resolved['target_load'] === null
@@ -340,6 +375,6 @@ class GenerateProgramDayPlansService
             $item->note,
         ]);
 
-        return $parts === [] ? null : implode(' / ', $parts);
+        return $parts === [] ? null : Str::limit(implode(' / ', $parts), 255, '');
     }
 }

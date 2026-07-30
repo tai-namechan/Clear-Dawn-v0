@@ -198,9 +198,9 @@ class EvaluateRulesForDayService
                 ],
             ],
             'calibration_period' => [
-                'title' => '較正期間中',
-                'rationale' => 'ベースライン蓄積が4週未満のため、警告系アラートは抑制しています。',
-                'goal_impact' => '通常どおりプログラムを実行し、データを貯めてください。',
+                'title' => '個人の基準づくりの期間です',
+                'rationale' => 'コンディションなどの記録がまだ少ないため、あなた個人の基準が固まっていません。このあいだは厳しい警告アラートは出さないようにしています。',
+                'goal_impact' => 'いつもどおりプログラムを実行して、データを貯めてください。',
                 'options' => [
                     ['action_key' => 'execute', 'label' => '了解', 'description' => null],
                 ],
@@ -244,7 +244,7 @@ class EvaluateRulesForDayService
             'scope' => RecommendationScope::A,
             'title' => $payload['title'],
             'rationale' => $calibrating && $rule->key !== 'calibration_period'
-                ? ($payload['rationale'].'（較正中）')
+                ? ($payload['rationale'].'（個人の基準がまだ固まっていないため、厳しい警告は出していません）')
                 : $payload['rationale'],
             'goal_impact' => $payload['goal_impact'],
             'plan_diff' => [
