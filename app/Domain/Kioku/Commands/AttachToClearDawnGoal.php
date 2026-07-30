@@ -3,14 +3,26 @@
 namespace App\Domain\Kioku\Commands;
 
 use App\Domain\Kioku\Models\Memory;
+use App\Domain\Kioku\Services\MemoryActionExportService;
 
 /**
- * Stub: attach a memory to a Clear Dawn goal/roadmap entity.
+ * Explicit user action: attach memory provenance to Clear Dawn context.
  */
 final class AttachToClearDawnGoal
 {
-    public function handle(Memory $memory, ?string $goalId = null): void
+    public function __construct(private MemoryActionExportService $actions) {}
+
+    /**
+     * @return array{created: bool, target_id: string, preview: string}
+     */
+    public function handle(Memory $memory, ?string $goalId = null): array
     {
-        // TODO: create reference link to Clear Dawn entity
+        $result = $this->actions->sendToClearDawn($memory);
+
+        return [
+            'created' => $result['created'],
+            'target_id' => $result['target_id'],
+            'preview' => $result['preview'],
+        ];
     }
 }

@@ -97,6 +97,8 @@ class EnrichMemoryJob implements ShouldBeUnique, ShouldQueue
             ]);
 
             $relatedMemoryService->cacheRelated($memory);
+
+            $this->dispatchEmbeddingStage($memory);
         } catch (Throwable $e) {
             Log::warning('EnrichMemoryJob failed', [
                 'memory_id' => $this->memoryId,
@@ -195,5 +197,19 @@ class EnrichMemoryJob implements ShouldBeUnique, ShouldQueue
         $decoded = json_decode($trimmed, true);
 
         return is_array($decoded) ? $decoded : [];
+    }
+
+    private function dispatchEmbeddingStage(Memory $memory): void
+    {
+        if (! config('kioku.embedding.enabled', false)) {
+            return;
+        }
+
+        $jobClass = 'App\\Domain\\Kioku\\Jobs\\GenerateMemoryEmbeddingJob';
+        if (! class_exists($jobClass)) {
+            return;
+        }
+
+        $jobClass::dispatch($memory->id);
     }
 }

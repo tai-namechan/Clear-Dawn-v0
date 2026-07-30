@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Kioku;
 
+use App\Domain\Kioku\Capture\CaptureChannel;
 use App\Domain\Kioku\Models\KiokuCaptureEvent;
 use App\Domain\Kioku\Services\CaptureMemoryService;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Kioku\StoreAudioFileImportRequest;
 use App\Http\Requests\Kioku\StoreCaptureEventRequest;
 use App\Http\Requests\Kioku\StoreManualCaptureRequest;
 use App\Http\Requests\Kioku\StoreVoiceCaptureRequest;
@@ -47,6 +49,34 @@ class CaptureController extends Controller
             durationMs: (int) $request->validated('duration_ms'),
             capturedAt: $request->validated('captured_at'),
             sensitive: (bool) ($request->validated('sensitive') ?? false),
+        );
+
+        return response()->json([
+            'memory' => (new MemoryResource($result['memory']))->resolve(),
+            'created' => $result['created'],
+        ], $result['created'] ? 201 : 200);
+    }
+
+    public function audioImport(
+        StoreAudioFileImportRequest $request,
+        CaptureMemoryService $service,
+    ): JsonResponse {
+        $audio = $request->file('audio');
+        $detectedMime = (string) ($request->validated('server_detected_mime')
+            ?? $audio->getMimeType()
+            ?? 'application/octet-stream');
+
+        $declaredDuration = $request->validated('duration_ms');
+
+        $result = $service->captureVoice(
+            user: $request->user(),
+            audio: $audio,
+            clientCaptureId: (string) $request->validated('client_capture_id'),
+            durationMs: $declaredDuration !== null ? (int) $declaredDuration : null,
+            capturedAt: $request->validated('captured_at'),
+            sensitive: (bool) ($request->validated('sensitive') ?? false),
+            channel: CaptureChannel::AudioFileImport,
+            serverDetectedMime: $detectedMime,
         );
 
         return response()->json([

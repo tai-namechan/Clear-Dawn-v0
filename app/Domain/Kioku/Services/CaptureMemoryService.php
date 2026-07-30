@@ -2,26 +2,34 @@
 
 namespace App\Domain\Kioku\Services;
 
-use App\Domain\Kioku\Jobs\EnrichMemoryJob;
-use App\Domain\Kioku\Jobs\TranscribeMemoryAudioJob;
+use App\Domain\Kioku\Audio\AudioDurationProbe;
+use App\Domain\Kioku\Capture\Adapters\CaptureAdapterRegistry;
+use App\Domain\Kioku\Capture\CanonicalRawStore;
+use App\Domain\Kioku\Capture\CaptureChannel;
+use App\Domain\Kioku\Capture\Dto\CaptureCommand;
+use App\Domain\Kioku\Capture\MemoryProcessingPipeline;
 use App\Domain\Kioku\Models\Memory;
-use App\Domain\Kioku\Models\MemoryAsset;
 use App\Models\User;
-use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use RuntimeException;
-use Throwable;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Single write path for quick captures, shared by the legacy Inertia store
  * and the JSON capture endpoints. Idempotent on (user_id, client_capture_id)
  * so the client-side queue can resend safely.
+ *
+ * Internally routes through CaptureAdapter → CanonicalRawStore → Pipeline
+ * without changing the public endpoint contract.
  */
 final class CaptureMemoryService
 {
+    public function __construct(
+        private CaptureAdapterRegistry $adapters,
+        private CanonicalRawStore $store,
+        private MemoryProcessingPipeline $pipeline,
+        private AudioDurationProbe $durationProbe,
+    ) {}
+
     /**
      * @return array{memory: Memory, created: bool}
      */
@@ -33,42 +41,31 @@ final class CaptureMemoryService
         ?string $capturedAt = null,
         bool $sensitive = false,
     ): array {
-        $existing = $this->findByClientCaptureId($user, $clientCaptureId);
-        if ($existing !== null) {
-            return ['memory' => $existing, 'created' => false];
-        }
+        $kind = $sourceType === 'url' ? 'url' : 'text';
+        $command = new CaptureCommand(
+            user: $user,
+            clientCaptureId: $clientCaptureId,
+            kind: $kind,
+            text: $kind === 'text' ? $rawContent : null,
+            url: $kind === 'url' ? $rawContent : null,
+            capturedAt: $capturedAt,
+            sensitive: $sensitive,
+            metadata: [
+                'capture_channel' => $kind === 'url'
+                    ? CaptureChannel::WebUrl->value
+                    : CaptureChannel::WebText->value,
+                'legacy_source_type' => $sourceType,
+            ],
+        );
 
-        $content = trim($rawContent);
-        if ($sourceType === 'manual' && filter_var($content, FILTER_VALIDATE_URL)) {
-            $sourceType = 'url';
-        }
-
-        try {
-            $memory = Memory::query()->create([
-                'user_id' => $user->id,
-                'client_capture_id' => $clientCaptureId,
-                'source_type' => $sourceType,
-                'memory_type' => null,
-                'title' => '整理中…',
-                'raw_content' => $content,
-                'captured_at' => $capturedAt ?? now(),
-                'sensitive' => $sensitive,
-                'status' => 'captured',
-            ]);
-        } catch (UniqueConstraintViolationException) {
-            return ['memory' => $this->findExistingOrFail($user, $clientCaptureId), 'created' => false];
-        }
-
-        EnrichMemoryJob::dispatch($memory->id)->afterCommit();
-
-        return ['memory' => $memory, 'created' => true];
+        return $this->capture($command);
     }
 
     /**
-     * Voice capture: the audio original is the canonical raw, so the file is
-     * persisted to the private disk first and the Memory + Asset rows are
-     * created in one transaction. Transcription/enrichment never run before
-     * the raw is durable, and a failed transaction removes the orphan file.
+     * Voice capture: the audio original is the canonical raw.
+     *
+     * duration_ms is measured on the server when possible. Client declarations
+     * are never used for file-import / iOS paths, and never defaulted to 1.
      *
      * @return array{memory: Memory, created: bool}
      */
@@ -76,104 +73,94 @@ final class CaptureMemoryService
         User $user,
         UploadedFile $audio,
         string $clientCaptureId,
-        int $durationMs,
+        ?int $durationMs = null,
         ?string $capturedAt = null,
         bool $sensitive = false,
+        CaptureChannel $channel = CaptureChannel::BrowserVoice,
+        ?string $serverDetectedMime = null,
     ): array {
-        $existing = $this->findByClientCaptureId($user, $clientCaptureId);
-        if ($existing !== null) {
-            return ['memory' => $existing, 'created' => false];
-        }
+        $resolvedDuration = $this->resolveDurationMs($audio, $channel, $durationMs);
 
-        $disk = (string) config('kioku.audio.disk');
-        $extension = $audio->guessExtension() ?: 'bin';
-        $path = $audio->storeAs(
-            'kioku-audio/'.$user->id,
-            Str::ulid().'.'.$extension,
-            ['disk' => $disk],
+        $command = new CaptureCommand(
+            user: $user,
+            clientCaptureId: $clientCaptureId,
+            kind: 'audio',
+            audio: $audio,
+            serverDetectedMime: $serverDetectedMime ?? $audio->getMimeType(),
+            originalFilename: $audio->getClientOriginalName(),
+            declaredDurationMs: $resolvedDuration,
+            capturedAt: $capturedAt,
+            sensitive: $sensitive,
+            metadata: [
+                'capture_channel' => $channel->value,
+            ],
         );
 
-        if ($path === false) {
-            throw new RuntimeException('Failed to persist audio original.');
-        }
-
-        try {
-            $memory = DB::transaction(function () use ($user, $audio, $clientCaptureId, $durationMs, $capturedAt, $sensitive, $disk, $path): Memory {
-                $memory = Memory::query()->create([
-                    'user_id' => $user->id,
-                    'client_capture_id' => $clientCaptureId,
-                    'source_type' => 'voice',
-                    'memory_type' => null,
-                    'title' => '整理中…',
-                    'raw_content' => null,
-                    'captured_at' => $capturedAt ?? now(),
-                    'sensitive' => $sensitive,
-                    'status' => 'captured',
-                    'transcription_status' => 'pending',
-                ]);
-
-                MemoryAsset::query()->create([
-                    'memory_id' => $memory->id,
-                    'kind' => MemoryAsset::KIND_AUDIO_ORIGINAL,
-                    'disk' => $disk,
-                    'path' => $path,
-                    'mime_type' => $audio->getMimeType() ?? 'application/octet-stream',
-                    'byte_size' => (int) $audio->getSize(),
-                    'duration_ms' => $durationMs,
-                    'checksum' => hash_file('sha256', $audio->getRealPath()) ?: null,
-                ]);
-
-                return $memory;
-            });
-        } catch (UniqueConstraintViolationException) {
-            Storage::disk($disk)->delete($path);
-
-            return ['memory' => $this->findExistingOrFail($user, $clientCaptureId), 'created' => false];
-        } catch (Throwable $e) {
-            Storage::disk($disk)->delete($path);
-
-            throw $e;
-        }
-
-        $this->dispatchTranscriptionIfConfigured($memory);
-
-        return ['memory' => $memory, 'created' => true];
+        return $this->capture($command);
     }
 
     /**
-     * With no provider configured the memory stays transcription_status
-     * 'pending' and the UI reports transcription as not configured —
-     * the raw audio is already durable either way.
+     * Generic entry used by new adapters (file import, iOS Shortcut, etc.).
+     *
+     * @return array{memory: Memory, created: bool}
      */
-    private function dispatchTranscriptionIfConfigured(Memory $memory): void
+    public function capture(CaptureCommand $command): array
     {
-        if (config('kioku.transcription.provider', 'none') === 'none') {
-            return;
+        $raw = $this->adapters->toCapturedRaw($command);
+        $result = $this->store->persist($raw);
+
+        if ($result['created']) {
+            $this->pipeline->dispatchAfterCapture($result['memory']);
         }
 
-        TranscribeMemoryAudioJob::dispatch($memory->id)->afterCommit();
+        return $result;
     }
 
-    private function findExistingOrFail(User $user, ?string $clientCaptureId): Memory
+    public static function maxDurationMsForChannel(CaptureChannel|string|null $channel): int
     {
-        $memory = $this->findByClientCaptureId($user, $clientCaptureId);
-        if ($memory === null) {
-            throw new RuntimeException('Duplicate capture detected but original memory not found.');
+        $value = $channel instanceof CaptureChannel ? $channel->value : $channel;
+
+        return match ($value) {
+            CaptureChannel::AudioFileImport->value,
+            CaptureChannel::IosShortcut->value => (int) config('kioku.audio_import.max_duration_ms', 7_200_000),
+            default => (int) config('kioku.audio.max_duration_ms', 180_000),
+        };
+    }
+
+    private function resolveDurationMs(
+        UploadedFile $audio,
+        CaptureChannel $channel,
+        ?int $declaredDurationMs,
+    ): ?int {
+        $maxMs = self::maxDurationMsForChannel($channel);
+        $probed = $this->durationProbe->fromUploadedFile($audio);
+
+        if ($probed !== null && $probed > $maxMs) {
+            throw ValidationException::withMessages([
+                'audio' => ['音声の長さが上限を超えています。'],
+                'duration_ms' => ['音声の長さが上限を超えています。'],
+            ]);
         }
 
-        return $memory;
-    }
+        if ($probed !== null) {
+            return $probed;
+        }
 
-    private function findByClientCaptureId(User $user, ?string $clientCaptureId): ?Memory
-    {
-        if ($clientCaptureId === null) {
+        // File import / iOS: never trust client placeholders (e.g. duration_ms=1).
+        if (in_array($channel, [CaptureChannel::AudioFileImport, CaptureChannel::IosShortcut], true)) {
             return null;
         }
 
-        return Memory::query()
-            ->withoutUserScope()
-            ->where('user_id', $user->id)
-            ->where('client_capture_id', $clientCaptureId)
-            ->first();
+        if ($declaredDurationMs === null || $declaredDurationMs < 1) {
+            return null;
+        }
+
+        if ($declaredDurationMs > $maxMs) {
+            throw ValidationException::withMessages([
+                'duration_ms' => ['送信された録音時間が上限を超えています。'],
+            ]);
+        }
+
+        return $declaredDurationMs;
     }
 }

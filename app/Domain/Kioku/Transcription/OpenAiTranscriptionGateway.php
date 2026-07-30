@@ -3,6 +3,7 @@
 namespace App\Domain\Kioku\Transcription;
 
 use App\Domain\Kioku\Models\MemoryAsset;
+use App\Domain\Kioku\Services\CaptureMemoryService;
 use App\Domain\Shared\AI\AiCostCalculator;
 use App\Domain\Shared\AI\AiMoney;
 use App\Domain\Shared\AI\AiUsageLedger;
@@ -331,12 +332,7 @@ final class OpenAiTranscriptionGateway implements TranscriptionGateway
 
     private function estimateReservation(string $model, MemoryAsset $asset): AiMoney
     {
-        $durationSeconds = (int) ceil(((int) ($asset->duration_ms ?? 0)) / 1000);
-        if ($durationSeconds < 1) {
-            // Unknown duration: reserve for the configured maximum recording.
-            $durationSeconds = (int) ceil(((int) config('kioku.audio.max_duration_ms', 180_000)) / 1000);
-        }
-
+        $durationSeconds = $this->reservationDurationSeconds($asset);
         $rates = $this->costs->ratesFor($model);
 
         return AiMoney::estimateFromTokensAndRates(
@@ -345,6 +341,33 @@ final class OpenAiTranscriptionGateway implements TranscriptionGateway
             $rates['input'],
             $rates['output'],
         );
+    }
+
+    /**
+     * Prefer server-measured duration. Never treat client placeholders (e.g. 1ms)
+     * as real length for file-import / iOS — reserve the channel maximum instead.
+     */
+    private function reservationDurationSeconds(MemoryAsset $asset): int
+    {
+        $channel = $asset->memory()->withoutUserScope()->value('capture_channel');
+        $maxMs = CaptureMemoryService::maxDurationMsForChannel(
+            is_string($channel) ? $channel : null,
+        );
+        $maxSeconds = max(1, (int) ceil($maxMs / 1000));
+
+        $ms = $asset->duration_ms;
+        if ($ms === null || $ms < 1) {
+            return $maxSeconds;
+        }
+
+        $untrustedImportPlaceholder = in_array($channel, ['audio_file_import', 'ios_shortcut'], true)
+            && $ms < 1000;
+
+        if ($untrustedImportPlaceholder) {
+            return $maxSeconds;
+        }
+
+        return max(1, (int) ceil($ms / 1000));
     }
 
     /**

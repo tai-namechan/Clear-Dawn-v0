@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Kioku;
 
+use App\Domain\Kioku\Capture\CaptureChannel;
 use App\Domain\Kioku\Jobs\EnrichMemoryJob;
 use App\Domain\Kioku\Jobs\TranscribeMemoryAudioJob;
 use App\Domain\Kioku\Models\Memory;
@@ -587,5 +588,34 @@ class OpenAiTranscriptionTest extends TestCase
             return str_contains($request->url(), '/audio/transcriptions')
                 && $request->hasFile('file', null, 'audio.mp4');
         });
+    }
+
+    public function test_import_channel_placeholder_duration_reserves_import_maximum(): void
+    {
+        $user = User::factory()->create();
+        $memory = Memory::factory()->voice()->create([
+            'user_id' => $user->id,
+            'capture_channel' => CaptureChannel::AudioFileImport->value,
+        ]);
+        $path = 'kioku-audio/'.$user->id.'/'.$memory->id.'.bin';
+        Storage::disk('local')->put($path, 'audio-bytes');
+        $asset = MemoryAsset::query()->create([
+            'memory_id' => $memory->id,
+            'kind' => MemoryAsset::KIND_AUDIO_ORIGINAL,
+            'disk' => 'local',
+            'path' => $path,
+            'mime_type' => 'audio/wav',
+            'byte_size' => 11,
+            'duration_ms' => 1,
+        ]);
+
+        $gateway = app(OpenAiTranscriptionGateway::class);
+        $method = (new ReflectionClass($gateway))->getMethod('reservationDurationSeconds');
+        $method->setAccessible(true);
+
+        $seconds = $method->invoke($gateway, $asset);
+        $expected = (int) ceil(((int) config('kioku.audio_import.max_duration_ms', 7_200_000)) / 1000);
+        $this->assertSame($expected, $seconds);
+        $this->assertGreaterThan(60, $seconds);
     }
 }

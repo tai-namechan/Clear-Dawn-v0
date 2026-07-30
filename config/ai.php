@@ -34,6 +34,9 @@ return [
         // conservative token estimate.
         'gpt-4o-mini-transcribe' => ['input' => 1.25, 'output' => 5.0],
         'gpt-4o-mini-transcribe-2025-12-15' => ['input' => 1.25, 'output' => 5.0],
+        // OpenAI embeddings (kioku.embedding). Source checked 2026-07-29:
+        // text-embedding-3-small ~$0.02 / 1M input tokens.
+        'text-embedding-3-small' => ['input' => 0.02, 'output' => 0.0],
         'default' => ['input' => 3.0, 'output' => 15.0],
     ],
 

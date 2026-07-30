@@ -2,6 +2,25 @@
 
 namespace App\Providers;
 
+use App\Domain\Kioku\Capture\Adapters\AudioFileImportCaptureAdapter;
+use App\Domain\Kioku\Capture\Adapters\BrowserVoiceCaptureAdapter;
+use App\Domain\Kioku\Capture\Adapters\CaptureAdapterRegistry;
+use App\Domain\Kioku\Capture\Adapters\IosShortcutCaptureAdapter;
+use App\Domain\Kioku\Capture\Adapters\WebTextCaptureAdapter;
+use App\Domain\Kioku\Capture\CanonicalRawStore;
+use App\Domain\Kioku\Capture\DefaultMemoryProcessingPipeline;
+use App\Domain\Kioku\Capture\MemoryProcessingPipeline;
+use App\Domain\Kioku\Capture\Normalizers\AudioTranscriptionNormalizer;
+use App\Domain\Kioku\Capture\Normalizers\RawNormalizerRegistry;
+use App\Domain\Kioku\Capture\Normalizers\TextRawNormalizer;
+use App\Domain\Kioku\Capture\Normalizers\UrlContentNormalizer;
+use App\Domain\Kioku\Capture\Store\EloquentCanonicalRawStore;
+use App\Domain\Kioku\Embedding\EmbeddingGateway;
+use App\Domain\Kioku\Embedding\FakeEmbeddingGateway;
+use App\Domain\Kioku\Embedding\NullEmbeddingGateway;
+use App\Domain\Kioku\Embedding\OpenAiEmbeddingGateway;
+use App\Domain\Kioku\Embedding\Store\MysqlJsonVectorStore;
+use App\Domain\Kioku\Embedding\VectorStore;
 use App\Domain\Kioku\Transcription\FakeTranscriptionGateway;
 use App\Domain\Kioku\Transcription\NullTranscriptionGateway;
 use App\Domain\Kioku\Transcription\OpenAiTranscriptionGateway;
@@ -40,6 +59,42 @@ class AppServiceProvider extends ServiceProvider
                 ),
             };
         });
+
+        $this->app->singleton(CaptureAdapterRegistry::class, fn (): CaptureAdapterRegistry => new CaptureAdapterRegistry([
+            // More specific adapters first.
+            new IosShortcutCaptureAdapter,
+            new AudioFileImportCaptureAdapter,
+            new BrowserVoiceCaptureAdapter,
+            new WebTextCaptureAdapter,
+        ]));
+
+        $this->app->singleton(CanonicalRawStore::class, EloquentCanonicalRawStore::class);
+        $this->app->singleton(MemoryProcessingPipeline::class, DefaultMemoryProcessingPipeline::class);
+        $this->app->singleton(RawNormalizerRegistry::class, fn (): RawNormalizerRegistry => new RawNormalizerRegistry([
+            new TextRawNormalizer,
+            new AudioTranscriptionNormalizer,
+            new UrlContentNormalizer,
+        ]));
+
+        $this->app->bind(EmbeddingGateway::class, function (Application $app): EmbeddingGateway {
+            if (! config('kioku.embedding.enabled', false)) {
+                return new NullEmbeddingGateway;
+            }
+
+            $provider = (string) config('kioku.embedding.provider', 'none');
+
+            return match ($provider) {
+                'none' => new NullEmbeddingGateway,
+                'fake' => $app->make(FakeEmbeddingGateway::class),
+                'openai' => $app->make(OpenAiEmbeddingGateway::class),
+                default => throw new RuntimeException(
+                    "Unknown embedding provider [{$provider}] (KIOKU_EMBEDDING_PROVIDER)."
+                ),
+            };
+        });
+
+        $this->app->singleton(FakeEmbeddingGateway::class);
+        $this->app->singleton(VectorStore::class, MysqlJsonVectorStore::class);
     }
 
     /**

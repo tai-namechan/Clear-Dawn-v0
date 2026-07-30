@@ -2,6 +2,7 @@
 
 namespace App\Domain\Kioku\Models;
 
+use App\Domain\Kioku\Embedding\VectorStore;
 use App\Domain\Shared\Models\BelongsToUser;
 use Database\Factories\Domain\Kioku\MemoryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -18,6 +19,8 @@ use LogicException;
  * @property int $user_id
  * @property string|null $client_capture_id
  * @property string $source_type
+ * @property string|null $raw_kind
+ * @property string|null $capture_channel
  * @property string|null $memory_type
  * @property string $title
  * @property string|null $raw_content
@@ -40,6 +43,8 @@ use LogicException;
     'user_id',
     'client_capture_id',
     'source_type',
+    'raw_kind',
+    'capture_channel',
     'memory_type',
     'title',
     'raw_content',
@@ -99,6 +104,13 @@ class Memory extends Model
                     'Memory raw_content is immutable after creation. '
                     .'Set allowRawContentMutation for explicit data repair only.',
                 );
+            }
+        });
+
+        static::updated(function (Memory $memory): void {
+            if ($memory->wasChanged('sensitive') && $memory->sensitive === true) {
+                app(VectorStore::class)
+                    ->deleteForMemory($memory->id, (int) $memory->user_id);
             }
         });
 
@@ -167,15 +179,38 @@ class Memory extends Model
     }
 
     /**
-     * Text the enrichment pipeline should analyze: transcript for voice,
-     * raw_content otherwise.
+     * Text the enrichment pipeline should analyze: transcript for audio,
+     * raw_content otherwise. Prefers raw_kind; falls back to source_type.
      */
     public function enrichmentSourceText(): ?string
     {
-        if ($this->source_type === 'voice') {
+        if ($this->isAudioRaw()) {
             return $this->transcript_text;
         }
 
         return $this->raw_content;
+    }
+
+    public function isAudioRaw(): bool
+    {
+        if ($this->raw_kind === 'audio') {
+            return true;
+        }
+
+        return $this->raw_kind === null && $this->source_type === 'voice';
+    }
+
+    public function resolvedRawKind(): ?string
+    {
+        if ($this->raw_kind !== null) {
+            return $this->raw_kind;
+        }
+
+        return match ($this->source_type) {
+            'manual', 'kioku_letter' => 'text',
+            'url' => 'url',
+            'voice' => 'audio',
+            default => null,
+        };
     }
 }

@@ -22,6 +22,7 @@ import { relatedMemoryReason } from '@/lib/kiokuRelated.mjs';
 import { KIOKU_MAX_TAG_CHARS, KIOKU_MAX_TAGS } from '@/lib/kiokuTags.mjs';
 import { kiokuTranscriptDisplayMode } from '@/lib/kiokuTranscriptDisplay.mjs';
 import { home } from '@/routes/kioku';
+import { obsidian as obsidianExport } from '@/routes/kioku/export';
 import {
     audio,
     index as memoriesIndex,
@@ -29,6 +30,10 @@ import {
     retryTranscription,
     show,
 } from '@/routes/kioku/memories';
+import {
+    clearDawn as exportClearDawn,
+    yoyu as exportYoyu,
+} from '@/routes/kioku/memories/export';
 import { update as updateTags } from '@/routes/kioku/memories/tags';
 import type { KiokuMemory, UpdateMemoryTagsPayload } from '@/types/kioku';
 
@@ -36,6 +41,8 @@ interface Props {
     memory: KiokuMemory;
     related: KiokuMemory[];
     transcriptionEnabled: boolean;
+    obsidianExportEnabled?: boolean;
+    actionExportEnabled?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -78,6 +85,12 @@ const transcriptMode = computed(() =>
 const displayTitle = computed(() => kiokuMemoryDisplayTitle(props.memory));
 
 const canReenrich = computed(() => canKiokuMemoryReenrich(props.memory));
+
+function downloadObsidianZip(): void {
+    globalThis.location.href = obsidianExport.url({
+        query: { memory_ids: [props.memory.id] },
+    });
+}
 
 const titleClass = computed(
     () => sourceTypeMeta(props.memory.source_type).titleClass ?? 'text-os-ink',
@@ -596,6 +609,47 @@ defineOptions({
                         />
                     </Link>
                 </div>
+            </div>
+
+            <div
+                v-if="actionExportEnabled || obsidianExportEnabled"
+                class="flex flex-wrap gap-2 border-t border-os-line px-5 py-4"
+            >
+                <Button
+                    v-if="actionExportEnabled && !memory.sensitive"
+                    type="button"
+                    variant="outline"
+                    class="gap-1.5 rounded-full border border-os-line text-os-sub"
+                    @click="
+                        router.post(exportYoyu.url(memory.id), {}, { preserveScroll: true })
+                    "
+                >
+                    ヨユウへ送る
+                </Button>
+                <Button
+                    v-if="actionExportEnabled && !memory.sensitive"
+                    type="button"
+                    variant="outline"
+                    class="gap-1.5 rounded-full border border-os-line text-os-sub"
+                    @click="
+                        router.post(
+                            exportClearDawn.url(memory.id),
+                            {},
+                            { preserveScroll: true },
+                        )
+                    "
+                >
+                    Clear Dawn用にマーク
+                </Button>
+                <Button
+                    v-if="obsidianExportEnabled"
+                    type="button"
+                    variant="outline"
+                    class="gap-1.5 rounded-full border border-os-line text-os-sub"
+                    @click="downloadObsidianZip"
+                >
+                    Obsidian ZIP
+                </Button>
             </div>
 
             <div

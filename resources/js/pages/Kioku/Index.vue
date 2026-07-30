@@ -17,6 +17,7 @@ import type {
 interface Props {
     memories: KiokuMemory[];
     transcriptionEnabled: boolean;
+    audioImportEnabled?: boolean;
     letters: KiokuLetterSummary[];
     letterSchedule?: KiokuLetterScheduleSummary | null;
 }
@@ -96,6 +97,7 @@ defineOptions({
 
         <KiokuQuickCapture
             :server-capture-ids="serverCaptureIds"
+            :audio-import-enabled="audioImportEnabled ?? false"
             @synced="manualReload"
         />
 

@@ -2,8 +2,11 @@
 
 use App\Domain\Kioku\Models\Memory;
 use App\Http\Controllers\Kioku\CaptureController;
+use App\Http\Controllers\Kioku\CaptureTokenController;
 use App\Http\Controllers\Kioku\LetterController;
 use App\Http\Controllers\Kioku\MemoryController;
+use App\Http\Controllers\Kioku\MemoryExportController;
+use App\Http\Controllers\Kioku\RecallController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->prefix('kioku')->name('kioku.')->group(function () {
@@ -16,17 +19,35 @@ Route::middleware(['auth', 'verified'])->prefix('kioku')->name('kioku.')->group(
     Route::post('/captures/voice', [CaptureController::class, 'voice'])
         ->middleware('throttle:60,1')
         ->name('captures.voice');
+    Route::post('/captures/audio-import', [CaptureController::class, 'audioImport'])
+        ->middleware('throttle:30,1')
+        ->name('captures.audio-import');
     Route::post('/captures/events', [CaptureController::class, 'event'])
         ->middleware('throttle:120,1')
         ->name('captures.events');
     Route::get('/memories/status', [MemoryController::class, 'status'])
         ->middleware('throttle:60,1')
         ->name('memories.status');
+    Route::get('/recall', [RecallController::class, 'search'])
+        ->middleware('throttle:60,1')
+        ->name('recall.search');
+    Route::post('/recall/feedback', [RecallController::class, 'feedback'])
+        ->middleware('throttle:60,1')
+        ->name('recall.feedback');
     Route::get('/memories/{memory}', [MemoryController::class, 'show'])->name('memories.show');
     Route::get('/memories/{memory}/audio', [MemoryController::class, 'audio'])->name('memories.audio');
     Route::post('/memories/{memory}/reenrich', [MemoryController::class, 'reenrich'])->name('memories.reenrich');
     Route::post('/memories/{memory}/retry-transcription', [MemoryController::class, 'retryTranscription'])->name('memories.retry-transcription');
     Route::put('/memories/{memory}/tags', [MemoryController::class, 'updateTags'])->name('memories.tags.update');
+    Route::get('/export/obsidian.zip', [MemoryExportController::class, 'obsidianZip'])
+        ->middleware('throttle:10,1')
+        ->name('export.obsidian');
+    Route::post('/memories/{memory}/export/yoyu', [MemoryExportController::class, 'sendToYoyu'])
+        ->middleware('throttle:30,1')
+        ->name('memories.export.yoyu');
+    Route::post('/memories/{memory}/export/clear-dawn', [MemoryExportController::class, 'sendToClearDawn'])
+        ->middleware('throttle:30,1')
+        ->name('memories.export.clear-dawn');
     Route::get('/letters', [LetterController::class, 'index'])->name('letters.index');
     Route::get('/letters/preview', [LetterController::class, 'preview'])->name('letters.preview');
     Route::get('/letters/{letter}', [LetterController::class, 'show'])->name('letters.show');
@@ -46,5 +67,11 @@ Route::middleware(['auth', 'verified'])->prefix('kioku')->name('kioku.')->group(
             'sourceCounts' => $counts,
         ]);
     })->name('sources');
-    Route::get('/settings', fn () => inertia('Kioku/Settings'))->name('settings');
+    Route::get('/settings', [CaptureTokenController::class, 'index'])->name('settings');
+    Route::post('/settings/capture-tokens', [CaptureTokenController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('settings.capture-tokens.store');
+    Route::delete('/settings/capture-tokens/{token}', [CaptureTokenController::class, 'destroy'])
+        ->middleware('throttle:10,1')
+        ->name('settings.capture-tokens.destroy');
 });

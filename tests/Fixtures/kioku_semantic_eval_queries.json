@@ -1,0 +1,102 @@
+[
+  {
+    "id": 1,
+    "query": "入力元を増やしても後段を共通にする話",
+    "expected_title_contains": "パイプライン"
+  },
+  {
+    "id": 2,
+    "query": "23時でも短時間で残したい",
+    "expected_title_contains": "キャプチャ"
+  },
+  {
+    "id": 3,
+    "query": "原音声は書き換えない",
+    "expected_title_contains": "音声"
+  },
+  {
+    "id": 4,
+    "query": "sensitiveを意味検索から外す",
+    "expected_title_contains": "プライバシー"
+  },
+  {
+    "id": 5,
+    "query": "同じ内容ならEmbeddingを課金しない",
+    "expected_title_contains": "hash"
+  },
+  {
+    "id": 6,
+    "query": "あれなんだっけ UI",
+    "expected_title_contains": "想起"
+  },
+  {
+    "id": 7,
+    "query": "RRFで候補を統合する",
+    "expected_title_contains": "検索"
+  },
+  {
+    "id": 8,
+    "query": "iOS Shortcutから送る",
+    "expected_title_contains": "Shortcut"
+  },
+  {
+    "id": 9,
+    "query": "ObsidianへZIPで出す",
+    "expected_title_contains": "Obsidian"
+  },
+  {
+    "id": 10,
+    "query": "ヨユウへ明示操作で送る",
+    "expected_title_contains": "ヨユウ"
+  },
+  {
+    "id": 11,
+    "query": "文字起こし失敗でも原音声は残る",
+    "expected_title_contains": "文字起こし"
+  },
+  {
+    "id": 12,
+    "query": "client_capture_idの再送",
+    "expected_title_contains": "冪等"
+  },
+  {
+    "id": 13,
+    "query": "24MBの音声ファイル取込",
+    "expected_title_contains": "取込"
+  },
+  {
+    "id": 14,
+    "query": "キオク便りの候補からsensitiveを外す",
+    "expected_title_contains": "便り"
+  },
+  {
+    "id": 15,
+    "query": "タグはAND/ORフィルタ",
+    "expected_title_contains": "タグ"
+  },
+  {
+    "id": 16,
+    "query": "vector storeはMySQL JSONで始める",
+    "expected_title_contains": "Vector"
+  },
+  {
+    "id": 17,
+    "query": "これこれ！とMISSのフィードバック",
+    "expected_title_contains": "Feedback"
+  },
+  {
+    "id": 18,
+    "query": "feature flagは既定OFF",
+    "expected_title_contains": "flag"
+  },
+  {
+    "id": 19,
+    "query": "SSRFを防ぐURL取得",
+    "expected_title_contains": "SSRF"
+  },
+  {
+    "id": 20,
+    "query": "raw_contentは作成後に変えない",
+    "expected_title_contains": "不変"
+  }
+]
