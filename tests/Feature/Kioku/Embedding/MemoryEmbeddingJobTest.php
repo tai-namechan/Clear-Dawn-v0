@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Kioku\Embedding;
 
+use App\Domain\Kioku\Embedding\EmbeddingFailedException;
 use App\Domain\Kioku\Embedding\EmbeddingGateway;
 use App\Domain\Kioku\Embedding\EmbeddingRequest;
 use App\Domain\Kioku\Embedding\EmbeddingResult;
@@ -298,5 +299,234 @@ class MemoryEmbeddingJobTest extends TestCase
         $hits = app(VectorStore::class)->nearest((int) $user->id, $current->vectorArray(), 10);
         $this->assertCount(1, $hits);
         $this->assertSame($memory->id, $hits[0]['memory_id']);
+    }
+
+    public function test_backfill_second_batch_advances_past_ready_current_embeddings(): void
+    {
+        Bus::fake([GenerateMemoryEmbeddingJob::class]);
+        $user = User::factory()->create();
+
+        $first = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'sensitive' => false,
+            'title' => '先頭',
+            'summary' => '1',
+            'tags' => ['a'],
+        ]);
+        $second = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'sensitive' => false,
+            'title' => '二件目',
+            'summary' => '2',
+            'tags' => ['b'],
+        ]);
+
+        /** @var FakeEmbeddingGateway $fake */
+        $fake = app(FakeEmbeddingGateway::class);
+        (new GenerateMemoryEmbeddingJob($first->id))->handle(
+            $fake,
+            app(SearchDocumentBuilder::class),
+            app(VectorStore::class),
+        );
+        $callsAfterFirst = $fake->calls;
+
+        Bus::fake([GenerateMemoryEmbeddingJob::class]);
+
+        $this->artisan('kioku:embeddings:backfill', [
+            '--user' => $user->id,
+            '--limit' => 1,
+        ])->assertSuccessful();
+
+        Bus::assertDispatched(GenerateMemoryEmbeddingJob::class, 1);
+        Bus::assertDispatched(
+            GenerateMemoryEmbeddingJob::class,
+            fn (GenerateMemoryEmbeddingJob $job): bool => $job->memoryId === $second->id,
+        );
+        Bus::assertNotDispatched(
+            GenerateMemoryEmbeddingJob::class,
+            fn (GenerateMemoryEmbeddingJob $job): bool => $job->memoryId === $first->id,
+        );
+
+        $this->assertSame($callsAfterFirst, $fake->calls);
+    }
+
+    public function test_cap_eviction_runs_only_after_successful_publish(): void
+    {
+        config(['kioku.embedding.max_memories_per_user' => 1]);
+        $user = User::factory()->create();
+
+        $existing = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'title' => '既存',
+            'summary' => '残すべき',
+            'tags' => ['keep'],
+        ]);
+        $incoming = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'title' => '新規',
+            'summary' => '失敗する',
+            'tags' => ['new'],
+        ]);
+
+        /** @var FakeEmbeddingGateway $fake */
+        $fake = app(FakeEmbeddingGateway::class);
+        (new GenerateMemoryEmbeddingJob($existing->id))->handle(
+            $fake,
+            app(SearchDocumentBuilder::class),
+            app(VectorStore::class),
+        );
+        $this->assertSame(1, MemoryEmbedding::query()->withoutUserScope()->where('status', 'ready')->count());
+
+        $failing = new class implements EmbeddingGateway
+        {
+            public function embed(EmbeddingRequest $request): EmbeddingResult
+            {
+                throw new EmbeddingFailedException('boom', permanent: true, errorCode: 'permanent');
+            }
+        };
+
+        (new GenerateMemoryEmbeddingJob($incoming->id))->handle(
+            $failing,
+            app(SearchDocumentBuilder::class),
+            app(VectorStore::class),
+        );
+
+        $this->assertSame(
+            1,
+            MemoryEmbedding::query()->withoutUserScope()->where('status', 'ready')->count(),
+        );
+        $this->assertTrue(
+            MemoryEmbedding::query()->withoutUserScope()
+                ->where('memory_id', $existing->id)
+                ->where('status', 'ready')
+                ->exists(),
+        );
+    }
+
+    public function test_cap_eviction_keeps_newest_ready_after_success(): void
+    {
+        config(['kioku.embedding.max_memories_per_user' => 1]);
+        $user = User::factory()->create();
+
+        $older = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'title' => '古い',
+            'summary' => '追い出す',
+            'tags' => ['old'],
+        ]);
+        $newer = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'title' => '新しい',
+            'summary' => '残る',
+            'tags' => ['new'],
+        ]);
+
+        /** @var FakeEmbeddingGateway $fake */
+        $fake = app(FakeEmbeddingGateway::class);
+        (new GenerateMemoryEmbeddingJob($older->id))->handle(
+            $fake,
+            app(SearchDocumentBuilder::class),
+            app(VectorStore::class),
+        );
+        (new GenerateMemoryEmbeddingJob($newer->id))->handle(
+            $fake,
+            app(SearchDocumentBuilder::class),
+            app(VectorStore::class),
+        );
+
+        $ready = MemoryEmbedding::query()->withoutUserScope()->where('status', 'ready')->get();
+        $this->assertCount(1, $ready);
+        $this->assertSame($newer->id, $ready->first()->memory_id);
+    }
+
+    public function test_rebuild_with_new_model_dispatches_even_when_no_rows_exist(): void
+    {
+        Bus::fake([GenerateMemoryEmbeddingJob::class]);
+        $user = User::factory()->create();
+        $memory = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'sensitive' => false,
+        ]);
+
+        $this->artisan('kioku:embeddings:rebuild', [
+            '--user' => $user->id,
+            '--model' => 'text-embedding-3-large',
+        ])->assertSuccessful();
+
+        Bus::assertDispatched(
+            GenerateMemoryEmbeddingJob::class,
+            fn (GenerateMemoryEmbeddingJob $job): bool => $job->memoryId === $memory->id
+                && $job->modelOverride === 'text-embedding-3-large',
+        );
+    }
+
+    public function test_rebuild_without_model_uses_config_and_marks_existing_pending(): void
+    {
+        Bus::fake([GenerateMemoryEmbeddingJob::class]);
+        $user = User::factory()->create();
+        $memory = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'sensitive' => false,
+            'title' => '再構築',
+            'summary' => 'config',
+            'tags' => ['r'],
+        ]);
+
+        /** @var FakeEmbeddingGateway $fake */
+        $fake = app(FakeEmbeddingGateway::class);
+        (new GenerateMemoryEmbeddingJob($memory->id))->handle(
+            $fake,
+            app(SearchDocumentBuilder::class),
+            app(VectorStore::class),
+        );
+
+        Bus::fake([GenerateMemoryEmbeddingJob::class]);
+
+        $this->artisan('kioku:embeddings:rebuild', [
+            '--user' => $user->id,
+        ])->assertSuccessful();
+
+        $this->assertSame(
+            'pending',
+            MemoryEmbedding::query()->withoutUserScope()->where('memory_id', $memory->id)->value('status'),
+        );
+        Bus::assertDispatched(
+            GenerateMemoryEmbeddingJob::class,
+            fn (GenerateMemoryEmbeddingJob $job): bool => $job->memoryId === $memory->id
+                && $job->modelOverride === null,
+        );
+    }
+
+    public function test_model_override_is_used_for_generated_embedding_row(): void
+    {
+        $user = User::factory()->create();
+        $memory = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'title' => 'override',
+            'summary' => 'model',
+            'tags' => ['m'],
+        ]);
+
+        /** @var FakeEmbeddingGateway $fake */
+        $fake = app(FakeEmbeddingGateway::class);
+        (new GenerateMemoryEmbeddingJob($memory->id, 'text-embedding-3-large'))->handle(
+            $fake,
+            app(SearchDocumentBuilder::class),
+            app(VectorStore::class),
+        );
+
+        $row = MemoryEmbedding::query()->withoutUserScope()->where('memory_id', $memory->id)->sole();
+        $this->assertSame('text-embedding-3-large', $row->model);
+        $this->assertSame('ready', $row->status);
+        $this->assertSame(1, $fake->calls);
     }
 }

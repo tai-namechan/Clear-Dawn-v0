@@ -14,7 +14,7 @@ final class SearchDocumentBuilder
     /**
      * @return array{document: string, content_hash: string, schema_version: string, model: string}|null
      */
-    public function build(Memory $memory): ?array
+    public function build(Memory $memory, ?string $modelOverride = null): ?array
     {
         if ($memory->sensitive) {
             return null;
@@ -29,7 +29,9 @@ final class SearchDocumentBuilder
         }
 
         $schema = (string) config('kioku.embedding.schema_version', self::SCHEMA_VERSION);
-        $model = (string) config('kioku.embedding.model', 'text-embedding-3-small');
+        $model = $modelOverride !== null && $modelOverride !== ''
+            ? $modelOverride
+            : (string) config('kioku.embedding.model', 'text-embedding-3-small');
         $document = $this->normalizedDocument($memory);
         $maxChars = (int) config('kioku.embedding.max_document_chars', 8000);
         if (mb_strlen($document) > $maxChars) {

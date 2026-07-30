@@ -28,11 +28,16 @@ class GenerateMemoryEmbeddingJob implements ShouldBeUnique, ShouldQueue
 
     public int $uniqueFor = 3600;
 
-    public function __construct(public string $memoryId) {}
+    public function __construct(
+        public string $memoryId,
+        public ?string $modelOverride = null,
+    ) {}
 
     public function uniqueId(): string
     {
-        return $this->memoryId;
+        return $this->modelOverride === null || $this->modelOverride === ''
+            ? $this->memoryId
+            : $this->memoryId.':'.$this->modelOverride;
     }
 
     public function handle(
@@ -59,7 +64,7 @@ class GenerateMemoryEmbeddingJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $built = $builder->build($memory);
+        $built = $builder->build($memory, $this->modelOverride);
         if ($built === null) {
             return;
         }
@@ -98,8 +103,6 @@ class GenerateMemoryEmbeddingJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $this->enforceUserCap((int) $memory->user_id, $embedding->id);
-
         try {
             $result = $gateway->embed(new EmbeddingRequest(
                 userId: (int) $memory->user_id,
@@ -116,7 +119,7 @@ class GenerateMemoryEmbeddingJob implements ShouldBeUnique, ShouldQueue
                 return;
             }
 
-            $rebuilt = $builder->build($fresh);
+            $rebuilt = $builder->build($fresh, $this->modelOverride);
             if ($rebuilt === null || $rebuilt['content_hash'] !== $built['content_hash']) {
                 MemoryEmbedding::query()
                     ->withoutUserScope()
@@ -133,7 +136,7 @@ class GenerateMemoryEmbeddingJob implements ShouldBeUnique, ShouldQueue
                 ]);
 
                 if ($rebuilt !== null && ! $fresh->sensitive) {
-                    self::dispatch($this->memoryId);
+                    self::dispatch($this->memoryId, $this->modelOverride);
                 }
 
                 return;
@@ -156,7 +159,11 @@ class GenerateMemoryEmbeddingJob implements ShouldBeUnique, ShouldQueue
                     'model' => $result->model,
                 ]);
 
-            if ($updated !== 1) {
+            if ($updated === 1) {
+                // Evict only after the new vector is ready so a failed generation
+                // cannot shrink semantic coverage.
+                $this->enforceUserCap((int) $memory->user_id, $embedding->id);
+            } else {
                 Log::info('GenerateMemoryEmbeddingJob stale write rejected', [
                     'memory_id' => $this->memoryId,
                 ]);
@@ -241,12 +248,11 @@ class GenerateMemoryEmbeddingJob implements ShouldBeUnique, ShouldQueue
             ->where('status', 'ready')
             ->count();
 
-        if ($readyCount < $cap) {
+        if ($readyCount <= $cap) {
             return;
         }
 
-        // Drop oldest ready embeddings beyond cap (excluding the current row).
-        $overflow = $readyCount - $cap + 1;
+        $overflow = $readyCount - $cap;
         if ($overflow <= 0) {
             return;
         }

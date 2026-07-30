@@ -2,6 +2,10 @@
 
 namespace Tests\Feature\Kioku;
 
+use App\Domain\Kioku\Embedding\FakeEmbeddingGateway;
+use App\Domain\Kioku\Embedding\SearchDocumentBuilder;
+use App\Domain\Kioku\Embedding\VectorStore;
+use App\Domain\Kioku\Jobs\GenerateMemoryEmbeddingJob;
 use App\Domain\Kioku\Models\KiokuRecallFeedback;
 use App\Domain\Kioku\Models\Memory;
 use App\Models\User;
@@ -129,5 +133,101 @@ class HybridRecallTest extends TestCase
         $this->actingAs($user)
             ->get(route('kioku.memories.index', ['q' => 'legacy']))
             ->assertOk();
+    }
+
+    public function test_recall_with_tag_filter_excludes_high_scoring_out_of_scope_vector(): void
+    {
+        $user = User::factory()->create();
+
+        $inScope = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'sensitive' => false,
+            'memory_type' => 'idea',
+            'title' => '共通パイプライン',
+            'summary' => 'タグ付きの記憶',
+            'tags' => ['設計'],
+            'raw_content' => '共通パイプライン 設計',
+        ]);
+        $outOfScope = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'sensitive' => false,
+            'memory_type' => 'idea',
+            'title' => '共通パイプライン設計メモ',
+            'summary' => 'クエリとほぼ同じ文言でベクトル順位を高くする',
+            'tags' => ['別タグ'],
+            'raw_content' => '共通パイプライン設計',
+        ]);
+
+        /** @var FakeEmbeddingGateway $fake */
+        $fake = app(FakeEmbeddingGateway::class);
+        foreach ([$inScope, $outOfScope] as $memory) {
+            (new GenerateMemoryEmbeddingJob($memory->id))->handle(
+                $fake,
+                app(SearchDocumentBuilder::class),
+                app(VectorStore::class),
+            );
+        }
+
+        $response = $this->actingAs($user)
+            ->getJson(route('kioku.recall.search', [
+                'q' => '共通パイプライン設計',
+                'semantic' => 1,
+                'tags' => ['設計'],
+            ]))
+            ->assertOk();
+
+        $ids = collect($response->json('results'))->pluck('memory.id');
+        $this->assertTrue($ids->contains($inScope->id));
+        $this->assertFalse($ids->contains($outOfScope->id));
+    }
+
+    public function test_recall_with_type_filter_keeps_matching_vector_hits(): void
+    {
+        $user = User::factory()->create();
+
+        $idea = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'sensitive' => false,
+            'memory_type' => 'idea',
+            'title' => 'アイデアメモ',
+            'summary' => '種類フィルタ対象',
+            'tags' => ['x'],
+            'raw_content' => 'アイデア',
+        ]);
+        $log = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'sensitive' => false,
+            'memory_type' => 'decision',
+            'title' => 'アイデアの決定ログ',
+            'summary' => '種類が違う',
+            'tags' => ['x'],
+            'raw_content' => 'アイデア',
+        ]);
+
+        /** @var FakeEmbeddingGateway $fake */
+        $fake = app(FakeEmbeddingGateway::class);
+        foreach ([$idea, $log] as $memory) {
+            (new GenerateMemoryEmbeddingJob($memory->id))->handle(
+                $fake,
+                app(SearchDocumentBuilder::class),
+                app(VectorStore::class),
+            );
+        }
+
+        $response = $this->actingAs($user)
+            ->getJson(route('kioku.recall.search', [
+                'q' => 'アイデア',
+                'semantic' => 1,
+                'types' => ['idea'],
+            ]))
+            ->assertOk();
+
+        $ids = collect($response->json('results'))->pluck('memory.id');
+        $this->assertTrue($ids->contains($idea->id));
+        $this->assertFalse($ids->contains($log->id));
     }
 }

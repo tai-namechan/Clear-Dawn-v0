@@ -66,7 +66,7 @@ final class HybridSearchService
         $mode = 'tag_fulltext';
         if ($wantSemantic) {
             try {
-                $vector = $this->vectorRanks($userId, $query);
+                $vector = $this->vectorRanks($userId, $query, $baseFilters);
                 $mode = 'hybrid';
             } catch (Throwable $e) {
                 Log::warning('HybridSearch vector pool failed; falling back', [
@@ -85,6 +85,10 @@ final class HybridSearchService
         $this->accumulate($scores, $reasons, $links, 1.3, 'link');
 
         $this->applyFeedbackBoost($userId, hash('sha256', mb_strtolower($query)), $scores);
+
+        // Defense in depth: never surface memories that violate explicit tags/types filters
+        // (vector/link pools can otherwise reintroduce them via RRF).
+        $this->retainMatchingScores($userId, $scores, $baseFilters);
 
         arsort($scores);
         $topIds = array_slice(array_keys($scores), 0, $limit);
@@ -164,9 +168,10 @@ final class HybridSearchService
     }
 
     /**
+     * @param  array{types?: list<string>, tags?: list<string>, tag_mode?: string}  $baseFilters
      * @return array<string, int>
      */
-    private function vectorRanks(int $userId, string $query): array
+    private function vectorRanks(int $userId, string $query, array $baseFilters): array
     {
         $model = (string) config('kioku.embedding.model', 'text-embedding-3-small');
         $result = $this->embeddings->embed(new EmbeddingRequest(
@@ -178,13 +183,105 @@ final class HybridSearchService
         ));
 
         $nearest = $this->vectors->nearest($userId, $result->vector, (int) config('kioku.semantic_search.top_k', 40));
+        $candidateIds = [];
+        foreach ($nearest as $hit) {
+            $candidateIds[] = (string) $hit['memory_id'];
+        }
+        $allowed = $this->idsMatchingExplicitFilters($userId, $candidateIds, $baseFilters);
+
         $ranks = [];
         $i = 1;
         foreach ($nearest as $hit) {
-            $ranks[$hit['memory_id']] = $i++;
+            $id = (string) $hit['memory_id'];
+            if (! isset($allowed[$id])) {
+                continue;
+            }
+            $ranks[$id] = $i++;
         }
 
         return $ranks;
+    }
+
+    /**
+     * @param  array<string, float>  $scores
+     * @param  array{types?: list<string>, tags?: list<string>, tag_mode?: string}  $baseFilters
+     */
+    private function retainMatchingScores(int $userId, array &$scores, array $baseFilters): void
+    {
+        if ($scores === []) {
+            return;
+        }
+
+        if (($baseFilters['types'] ?? []) === [] && ($baseFilters['tags'] ?? []) === []) {
+            return;
+        }
+
+        $allowed = $this->idsMatchingExplicitFilters($userId, array_keys($scores), $baseFilters);
+        foreach (array_keys($scores) as $id) {
+            if (! isset($allowed[$id])) {
+                unset($scores[$id]);
+            }
+        }
+    }
+
+    /**
+     * @param  list<string>  $memoryIds
+     * @param  array{types?: list<string>, tags?: list<string>, tag_mode?: string}  $baseFilters
+     * @return array<string, true>
+     */
+    private function idsMatchingExplicitFilters(int $userId, array $memoryIds, array $baseFilters): array
+    {
+        $memoryIds = array_values(array_unique(array_filter(
+            $memoryIds,
+            static fn (string $id): bool => $id !== '',
+        )));
+        if ($memoryIds === []) {
+            return [];
+        }
+
+        /** @var list<string> $types */
+        $types = array_values(array_filter(
+            $baseFilters['types'] ?? [],
+            static fn (string $type): bool => $type !== '',
+        ));
+        /** @var list<string> $tags */
+        $tags = array_values(array_unique(array_filter(
+            $baseFilters['tags'] ?? [],
+            static fn (string $tag): bool => $tag !== '',
+        )));
+
+        $query = Memory::query()
+            ->withoutUserScope()
+            ->where('user_id', $userId)
+            ->whereIn('id', $memoryIds)
+            ->where('status', 'ready')
+            ->where('sensitive', false)
+            ->where('source_type', '!=', 'kioku_letter');
+
+        if ($types !== []) {
+            $query->whereIn('memory_type', $types);
+        }
+
+        if ($tags !== []) {
+            if (($baseFilters['tag_mode'] ?? 'and') === 'or') {
+                $query->where(function ($q) use ($tags): void {
+                    foreach ($tags as $tag) {
+                        $q->orWhereJsonContains('tags', $tag);
+                    }
+                });
+            } else {
+                foreach ($tags as $tag) {
+                    $query->whereJsonContains('tags', $tag);
+                }
+            }
+        }
+
+        $allowed = [];
+        foreach ($query->pluck('id') as $id) {
+            $allowed[(string) $id] = true;
+        }
+
+        return $allowed;
     }
 
     /**

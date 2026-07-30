@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Domain\Kioku\Jobs\GenerateMemoryEmbeddingJob;
+use App\Domain\Kioku\Models\Memory;
 use App\Domain\Kioku\Models\MemoryEmbedding;
 use Illuminate\Console\Command;
 
@@ -10,10 +11,10 @@ class KiokuEmbeddingsRebuildCommand extends Command
 {
     protected $signature = 'kioku:embeddings:rebuild
                             {--user= : Required user id}
-                            {--model= : Optional model override}
+                            {--model= : Model to generate with (not a filter on existing rows)}
                             {--dry-run : Report without writing}';
 
-    protected $description = 'Mark embeddings stale and re-enqueue for a single user';
+    protected $description = 'Re-enqueue embedding generation for a single user (optionally with a target model)';
 
     public function handle(): int
     {
@@ -25,33 +26,43 @@ class KiokuEmbeddingsRebuildCommand extends Command
         }
 
         $dryRun = (bool) $this->option('dry-run');
-        $model = $this->option('model');
+        $modelOption = $this->option('model');
+        $modelOverride = is_string($modelOption) && $modelOption !== '' ? $modelOption : null;
+        $userIdInt = (int) $userId;
 
-        $query = MemoryEmbedding::query()
+        $memoryIds = Memory::query()
             ->withoutUserScope()
-            ->where('user_id', (int) $userId)
-            ->when(is_string($model) && $model !== '', fn ($q) => $q->where('model', $model));
+            ->where('user_id', $userIdInt)
+            ->where('status', 'ready')
+            ->where('sensitive', false)
+            ->where('source_type', '!=', 'kioku_letter')
+            ->orderBy('id')
+            ->pluck('id');
 
-        $count = $query->count();
-        $this->info(($dryRun ? '[dry-run] ' : '')."rows={$count}");
+        $this->info(($dryRun ? '[dry-run] ' : '').'memories='.$memoryIds->count()
+            .($modelOverride !== null ? " model={$modelOverride}" : ''));
 
         if ($dryRun) {
             return self::SUCCESS;
         }
 
-        $ids = $query->pluck('memory_id')->unique()->values();
-        $query->update([
-            'status' => 'pending',
-            'content_hash' => '',
-            'vector' => null,
-            'error_code' => 'rebuild_requested',
-        ]);
-
-        foreach ($ids as $memoryId) {
-            GenerateMemoryEmbeddingJob::dispatch((string) $memoryId);
+        if ($modelOverride === null) {
+            MemoryEmbedding::query()
+                ->withoutUserScope()
+                ->where('user_id', $userIdInt)
+                ->update([
+                    'status' => 'pending',
+                    'content_hash' => '',
+                    'vector' => null,
+                    'error_code' => 'rebuild_requested',
+                ]);
         }
 
-        $this->info('dispatched='.$ids->count());
+        foreach ($memoryIds as $memoryId) {
+            GenerateMemoryEmbeddingJob::dispatch((string) $memoryId, $modelOverride);
+        }
+
+        $this->info('dispatched='.$memoryIds->count());
 
         return self::SUCCESS;
     }

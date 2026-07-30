@@ -6,6 +6,7 @@ use App\Domain\Kioku\Jobs\EnrichMemoryJob;
 use App\Domain\Kioku\Jobs\GenerateMemoryEmbeddingJob;
 use App\Domain\Kioku\Models\Memory;
 use App\Domain\Kioku\Models\MemoryAsset;
+use App\Domain\Kioku\Models\MemoryEmbedding;
 use App\Domain\Kioku\Models\MemoryLink;
 use App\Domain\Kioku\Services\KiokuTagNormalizer;
 use App\Models\User;
@@ -53,6 +54,48 @@ class MemoryTagsUpdateTest extends TestCase
         Bus::assertNotDispatched(EnrichMemoryJob::class);
         Bus::assertDispatched(GenerateMemoryEmbeddingJob::class, fn (GenerateMemoryEmbeddingJob $job) => $job->memoryId === $memory->id);
         Http::assertNothingSent();
+    }
+
+    public function test_tag_update_marks_ready_embedding_pending(): void
+    {
+        config([
+            'kioku.embedding.enabled' => true,
+            'kioku.embedding.provider' => 'fake',
+            'kioku.embedding.model' => 'text-embedding-3-small',
+            'kioku.embedding.schema_version' => 'v1',
+        ]);
+        Bus::fake([EnrichMemoryJob::class, GenerateMemoryEmbeddingJob::class]);
+
+        $user = User::factory()->create();
+        $memory = Memory::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'tags' => ['古い'],
+        ]);
+        MemoryEmbedding::query()->create([
+            'user_id' => $user->id,
+            'memory_id' => $memory->id,
+            'provider' => 'fake',
+            'model' => 'text-embedding-3-small',
+            'schema_version' => 'v1',
+            'status' => 'ready',
+            'content_hash' => 'old-hash',
+            'vector' => json_encode([0.1, 0.2], JSON_THROW_ON_ERROR),
+            'dimensions' => 2,
+            'embedded_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('kioku.memories.tags.update', $memory), [
+                'tags' => ['新しい'],
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(
+            'pending',
+            MemoryEmbedding::query()->withoutUserScope()->where('memory_id', $memory->id)->value('status'),
+        );
+        Bus::assertDispatched(GenerateMemoryEmbeddingJob::class);
     }
 
     public function test_empty_array_clears_all_tags(): void
