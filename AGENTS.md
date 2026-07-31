@@ -1,3 +1,72 @@
+<!-- AGENT-PREAMBLE:START -->
+<!--
+  この節は CLAUDE.md と AGENTS.md で同一内容を保つこと。
+  CI（.github/workflows/ci.yml の docs ジョブ）が両者の一致を検査する。
+  編集する場合は必ず両方を同時に更新する。
+-->
+
+# Clear Dawn — プロジェクト固有の優先順位
+
+- **プロダクト仕様・データ設計・画面仕様の正は `docs/` とする**
+- Laravel Boost のガイドライン（下記）と `docs/` が矛盾する場合は **`docs/` を優先**する
+- 仕様と実装が乖離したら、実装前に `docs/` を先に更新する
+
+## 開発ルールの正は `.cursor/rules/`
+
+コーディング規約・品質基準・禁止事項の**正は `.cursor/rules/*.mdc`** とする。
+Cursor では `alwaysApply: true` により自動適用される。**Claude Code / Codex 等で作業する場合は、
+着手前に該当するルールを明示的に読むこと。**
+
+Laravel Boost のガイドライン（下記）と `.cursor/rules/` が矛盾する場合は **`.cursor/rules/` を優先**する。
+
+### 常時適用ルール（全タスク共通）
+
+| ファイル | 内容 |
+| --- | --- |
+| [@.cursor/rules/global-workflow.mdc](.cursor/rules/global-workflow.mdc) | 差分最小・スコープ限定・仕様変更禁止 |
+| [@.cursor/rules/architecture-layers.mdc](.cursor/rules/architecture-layers.mdc) | Controller / Query / Service / Policy / FormRequest / Resource の責務 |
+| [@.cursor/rules/implementation-gates.mdc](.cursor/rules/implementation-gates.mdc) | 実装前後の品質ゲート |
+| [@.cursor/rules/static-analysis-zero.mdc](.cursor/rules/static-analysis-zero.mdc) | 静的解析エラーゼロ方針（型宣言必須・`any` 禁止） |
+| [@.cursor/rules/code-context-awareness.mdc](.cursor/rules/code-context-awareness.mdc) | データ構成・処理規模への考慮 |
+| [@.cursor/rules/project-specific.mdc](.cursor/rules/project-specific.mdc) | Clear Dawn 固有の環境・運用ルール |
+| [@.cursor/rules/completion-workflow.mdc](.cursor/rules/completion-workflow.mdc) | 完了時のセルフレビュー・Git 操作・報告 |
+| [@.cursor/rules/report-output-format.mdc](.cursor/rules/report-output-format.mdc) | 報告・レポートの出力フォーマット |
+
+### 領域別ルール
+
+| ファイル | 適用場面 |
+| --- | --- |
+| [@.cursor/rules/sql-memory-performance.mdc](.cursor/rules/sql-memory-performance.mdc) | DB / クエリ / マイグレーションを触るとき |
+| [@.cursor/rules/test-quality-standards.mdc](.cursor/rules/test-quality-standards.mdc) | テストを書く・直すとき |
+| [@.cursor/rules/http-safety.mdc](.cursor/rules/http-safety.mdc) | 外部 HTTP を伴うコード・テスト |
+| [@.cursor/rules/design-consistency.mdc](.cursor/rules/design-consistency.mdc) | UI / Tailwind を触るとき |
+| [@.cursor/rules/text-change-checklist.mdc](.cursor/rules/text-change-checklist.mdc) | 文言変更タスク |
+| [@.cursor/rules/task-skill-routing.mdc](.cursor/rules/task-skill-routing.mdc) | タスク種別 → スキルの対応表 |
+
+## スキルの配置
+
+| 分類 | 正の場所 | 扱い |
+| --- | --- | --- |
+| Boost 生成スキル（7件） | `.claude/skills/` `.cursor/skills/` | **手編集禁止**。`php artisan boost:update` が再生成する |
+| Cloud デプロイスキル | `.ai/skills/deploying-laravel-cloud/` | 両者から symlink |
+| 手書きワークフロースキル（7件） | **`.cursor/skills/`** | `.claude/skills/` から symlink。正は `.cursor/` 側 |
+
+手書きワークフロースキル: `bugfix` / `incident` / `perf-review` / `review-only` / `spec` /
+`test-design-review` / `vue-sfc-patterns`（共通概念は `_shared/analysis-concepts.md`）。
+
+詳細は [`docs/dev/laravel-boost.md`](docs/dev/laravel-boost.md) と
+[`.cursor/skills/README.md`](.cursor/skills/README.md)。
+
+## 進行中の是正作業
+
+本番リリース前監査（2026-07-26）の指摘と対応状況は
+[`docs/audit/remediation-roadmap.md`](docs/audit/remediation-roadmap.md) を参照。
+関連箇所を触る際は、既知の指摘と重複していないか先に確認すること。
+
+<!-- AGENT-PREAMBLE:END -->
+
+---
+
 <laravel-boost-guidelines>
 === foundation rules ===
 
