@@ -71,7 +71,7 @@ class LookupFoodLabelOcrJobTest extends TestCase
         $job->handle(app(AiGateway::class));
     }
 
-    public function test_job_marks_found_and_deletes_image_on_success(): void
+    public function test_job_marks_found_and_keeps_image_on_success(): void
     {
         $lookup = $this->ocrLookup();
         $imagePath = (string) $lookup->temp_image_path;
@@ -96,9 +96,8 @@ class LookupFoodLabelOcrJobTest extends TestCase
         $this->assertEqualsWithDelta(225.0, (float) $lookup->result['kcal'], 0.001);
         $this->assertEqualsWithDelta(12.4, (float) $lookup->result['fat_g'], 0.001);
 
-        // 解析後破棄（完成設計 §3）
-        $this->assertNull($lookup->temp_image_path);
-        Storage::disk('food-label-ocr')->assertMissing($imagePath);
+        $this->assertSame($imagePath, $lookup->temp_image_path);
+        Storage::disk('food-label-ocr')->assertExists($imagePath);
 
         // PR-A ledger へ自動連携され settle されている
         $usage = AiUsageRequest::query()

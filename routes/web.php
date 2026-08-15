@@ -201,6 +201,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('throttle:10,1')
         ->name('meals.menu-estimate.store');
     Route::put('meals/goals', [NutritionGoalController::class, 'upsert'])->name('meals.goals.upsert');
+    Route::get('meals/{mealEntry}/photo', [MealEntryController::class, 'photo'])->name('meals.photo');
     Route::post('meals/{mealEntry}/copy', [MealEntryController::class, 'copy'])->name('meals.copy');
     Route::patch('meals/{mealEntry}', [MealEntryController::class, 'update'])->name('meals.update');
     Route::delete('meals/{mealEntry}', [MealEntryController::class, 'destroy'])->name('meals.destroy');

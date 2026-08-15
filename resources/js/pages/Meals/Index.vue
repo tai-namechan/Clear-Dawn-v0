@@ -6,6 +6,7 @@ import {
     Coffee,
     Cookie,
     Copy,
+    Download,
     Leaf,
     Plus,
     ScanBarcode,
@@ -113,6 +114,7 @@ const entryForm = ref({
 });
 const showCopyModal = ref(false);
 const copyingEntry = ref<MealEntry | null>(null);
+const previewingEntry = ref<MealEntry | null>(null);
 const copyForm = ref({
     eaten_on: '',
     meal_type: 'breakfast' as MealSection['meal_type'],
@@ -675,6 +677,22 @@ async function toggleFavorite(food: FoodItem, event: Event): Promise<void> {
     }
 }
 
+function openPhotoPreview(entry: MealEntry): void {
+    if (!entry.has_photo || !entry.photo_url) {
+        return;
+    }
+
+    previewingEntry.value = entry;
+}
+
+function photoDownloadUrl(entry: MealEntry | null): string {
+    if (!entry?.photo_url) {
+        return '#';
+    }
+
+    return `${entry.photo_url}?download=1`;
+}
+
 function openCopyEntry(entry: MealEntry): void {
     copyingEntry.value = entry;
     copyForm.value = {
@@ -1002,14 +1020,31 @@ function applyChartFilter(): void {
                                         </span>
                                     </td>
                                     <td
-                                        class="max-w-[16rem] truncate px-3 py-3.5 font-sans text-sm text-cd-ink"
+                                        class="max-w-[16rem] px-3 py-3.5 font-sans text-sm text-cd-ink"
                                     >
-                                        {{ entry.name }}
-                                        <span
-                                            class="text-cd-ink-muted"
-                                        >
-                                            × {{ formatNum(entry.quantity) }}
-                                        </span>
+                                        <div class="flex items-center gap-2.5">
+                                            <button
+                                                v-if="entry.has_photo && entry.photo_url"
+                                                type="button"
+                                                class="size-10 shrink-0 overflow-hidden rounded-lg border border-cd-line bg-cd-surface"
+                                                :aria-label="`${entry.name} の写真を見る`"
+                                                @click="openPhotoPreview(entry)"
+                                            >
+                                                <img
+                                                    :src="entry.photo_url"
+                                                    :alt="entry.name"
+                                                    class="size-full object-cover"
+                                                />
+                                            </button>
+                                            <span class="min-w-0 truncate">
+                                                {{ entry.name }}
+                                                <span
+                                                    class="text-cd-ink-muted"
+                                                >
+                                                    × {{ formatNum(entry.quantity) }}
+                                                </span>
+                                            </span>
+                                        </div>
                                     </td>
                                     <td
                                         class="px-3 py-3.5 text-right font-sans text-sm text-cd-ink"
@@ -1583,6 +1618,51 @@ function applyChartFilter(): void {
                     @click="copyEntry"
                 >
                     コピー
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+
+    <Dialog
+        :open="previewingEntry !== null"
+        @update:open="(open) => !open && (previewingEntry = null)"
+    >
+        <DialogContent class="bg-cd-surface sm:max-w-lg">
+            <DialogHeader>
+                <DialogTitle class="font-sans">
+                    {{ previewingEntry?.name }}
+                </DialogTitle>
+                <DialogDescription class="font-sans text-sm text-cd-ink-muted">
+                    AI解析で使った写真
+                </DialogDescription>
+            </DialogHeader>
+            <div
+                v-if="previewingEntry?.photo_url"
+                class="overflow-hidden rounded-xl border border-cd-line bg-[#FAFAFC]"
+            >
+                <img
+                    :src="previewingEntry.photo_url"
+                    :alt="previewingEntry.name"
+                    class="max-h-[70vh] w-full object-contain"
+                />
+            </div>
+            <DialogFooter>
+                <Button
+                    type="button"
+                    variant="outline"
+                    class="font-sans"
+                    @click="previewingEntry = null"
+                >
+                    閉じる
+                </Button>
+                <Button
+                    v-if="previewingEntry?.photo_url"
+                    as="a"
+                    :href="photoDownloadUrl(previewingEntry)"
+                    class="font-sans"
+                >
+                    <Download :size="14" :stroke-width="1.6" />
+                    ダウンロード
                 </Button>
             </DialogFooter>
         </DialogContent>

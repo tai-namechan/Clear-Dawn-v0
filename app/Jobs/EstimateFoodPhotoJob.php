@@ -224,12 +224,7 @@ PROMPT;
                 'source' => $source,
                 'result' => json_encode($result, JSON_UNESCAPED_UNICODE),
                 'error_code' => null,
-                'temp_image_path' => null,
             ]);
-
-        if ($written === 1) {
-            $this->deleteImage($lookup);
-        }
     }
 
     private function finishFailed(FoodLookupRequest $lookup, string $errorCode): void

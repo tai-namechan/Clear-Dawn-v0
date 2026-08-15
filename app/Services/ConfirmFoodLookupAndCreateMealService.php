@@ -17,6 +17,7 @@ class ConfirmFoodLookupAndCreateMealService
     public function __construct(
         private readonly ConfirmFoodLookupService $confirmFoodLookup,
         private readonly CreateMealEntryService $createMealEntry,
+        private readonly MealPhotoService $photos,
     ) {}
 
     /**
@@ -43,7 +44,7 @@ class ConfirmFoodLookupAndCreateMealService
      */
     public function handle(User $user, FoodLookupRequest $lookup, array $attributes): array
     {
-        return DB::transaction(function () use ($user, $lookup, $attributes): array {
+        $result = DB::transaction(function () use ($user, $lookup, $attributes): array {
             $lookup = FoodLookupRequest::query()
                 ->whereKey($lookup->id)
                 ->lockForUpdate()
@@ -94,5 +95,14 @@ class ConfirmFoodLookupAndCreateMealService
                 'created' => true,
             ];
         });
+
+        $lookup->refresh();
+        $this->photos->attachFromLookup($result['entry'], $lookup);
+
+        return [
+            'food' => $result['food'],
+            'entry' => $result['entry']->fresh() ?? $result['entry'],
+            'created' => $result['created'],
+        ];
     }
 }
