@@ -11,9 +11,9 @@ enum BodyStoryKind: string
     public function templateUrl(): string
     {
         return match ($this) {
-            self::Nutrition => '/images/products/stories/daily-nutrition.svg',
-            self::Weight => '/images/products/stories/daily-weight.svg',
-            self::Weekly => '/images/products/stories/weekly-summary.svg',
+            self::Nutrition => '/images/products/today-food-log.png',
+            self::Weight => '/images/products/today-weight-log.png',
+            self::Weekly => '/images/products/weekly-log.png',
         };
     }
 

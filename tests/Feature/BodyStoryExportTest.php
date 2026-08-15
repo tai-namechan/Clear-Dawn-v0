@@ -63,7 +63,7 @@ class BodyStoryExportTest extends TestCase
             ->assertOk()
             ->assertJsonPath('kind', 'nutrition')
             ->assertJsonPath('date', '2026-08-16')
-            ->assertJsonPath('template_url', '/images/products/stories/daily-nutrition.svg')
+            ->assertJsonPath('template_url', '/images/products/today-food-log.png')
             ->assertJsonPath('nutrition.calories_kcal', 2480)
             ->assertJsonPath('nutrition.protein_g', 180)
             ->assertJsonPath('nutrition.fat_g', 68)
@@ -128,7 +128,7 @@ class BodyStoryExportTest extends TestCase
                 'date' => '2026-08-16',
             ]))
             ->assertOk()
-            ->assertJsonPath('template_url', '/images/products/stories/daily-weight.svg')
+            ->assertJsonPath('template_url', '/images/products/today-weight-log.png')
             ->assertJsonPath('weight.weight_kg', 84.6)
             ->assertJsonPath('weight.previous_weight_kg', 85)
             ->assertJsonPath('weight.delta_kg', -0.4);
@@ -203,7 +203,7 @@ class BodyStoryExportTest extends TestCase
             ->assertOk()
             ->assertJsonPath('start_date', '2026-08-10')
             ->assertJsonPath('end_date', '2026-08-16')
-            ->assertJsonPath('template_url', '/images/products/stories/weekly-summary.svg')
+            ->assertJsonPath('template_url', '/images/products/weekly-log.png')
             ->assertJsonPath('nutrition.average_calories_kcal', 2500)
             ->assertJsonPath('weight.average_7d_kg', 85)
             ->assertJsonPath('nutrition.calorie_history.0.date', '2026-08-10')
@@ -263,9 +263,9 @@ class BodyStoryExportTest extends TestCase
     public function test_story_templates_exist_in_public(): void
     {
         foreach ([
-            'images/products/stories/daily-nutrition.svg',
-            'images/products/stories/daily-weight.svg',
-            'images/products/stories/weekly-summary.svg',
+            'images/products/today-food-log.png',
+            'images/products/today-weight-log.png',
+            'images/products/weekly-log.png',
         ] as $relativePath) {
             $this->assertFileExists(public_path($relativePath));
         }

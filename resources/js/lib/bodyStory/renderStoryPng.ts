@@ -2,6 +2,9 @@ import {
     BODY_STORY_COLORS,
     STORY_LAYOUT,
     STORY_SIZE,
+    storyBox,
+    storyX,
+    storyY,
 } from '@/lib/bodyStory/layout';
 import {
     storyFilename,
@@ -74,7 +77,6 @@ function drawLineChart(
     box: { x: number; y: number; width: number; height: number },
     points: StoryChartPoint[],
     color: string,
-    gridColor: string,
 ): void {
     if (points.length === 0) {
         return;
@@ -88,18 +90,6 @@ function drawLineChart(
     const high = max + pad;
     const range = high - low;
 
-    ctx.save();
-    ctx.strokeStyle = gridColor;
-    ctx.lineWidth = 1;
-
-    for (let i = 0; i < 4; i += 1) {
-        const y = box.y + (box.height / 3) * i;
-        ctx.beginPath();
-        ctx.moveTo(box.x, y);
-        ctx.lineTo(box.x + box.width, y);
-        ctx.stroke();
-    }
-
     const coords = points.map((point, index) => {
         const x =
             points.length === 1
@@ -111,6 +101,7 @@ function drawLineChart(
         return { x, y, label: point.label };
     });
 
+    ctx.save();
     ctx.strokeStyle = color;
     ctx.lineWidth = 5;
     ctx.lineJoin = 'round';
@@ -134,11 +125,11 @@ function drawLineChart(
     });
 
     ctx.fillStyle = BODY_STORY_COLORS.axis;
-    ctx.font = '500 22px "Instrument Sans", "Noto Sans JP", sans-serif';
+    ctx.font = '500 20px "Instrument Sans", "Noto Sans JP", sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     coords.forEach((coord) => {
-        ctx.fillText(coord.label, coord.x, box.y + box.height + 12);
+        ctx.fillText(coord.label, coord.x, box.y + box.height + 10);
     });
     ctx.restore();
 }
@@ -148,6 +139,7 @@ function drawPfcCard(
     box: { x: number; y: number; width: number; height: number },
     label: string,
     card: PfcCard,
+    color: string,
 ): void {
     if (card.grams === null) {
         return;
@@ -157,18 +149,18 @@ function drawPfcCard(
         ctx,
         label,
         box.x + box.width / 2,
-        box.y + box.height * 0.22,
-        '700 28px "Instrument Sans", "Noto Sans JP", sans-serif',
-        '#FFFFFF',
+        box.y + box.height * 0.28,
+        '700 26px "Instrument Sans", "Noto Sans JP", sans-serif',
+        color,
         'center',
     );
     fillText(
         ctx,
         `${Number.isInteger(card.grams) ? card.grams : Math.round(card.grams * 10) / 10}g`,
         box.x + box.width / 2,
-        box.y + box.height * 0.55,
-        '700 48px "Instrument Sans", "Noto Sans JP", sans-serif',
-        '#FFFFFF',
+        box.y + box.height * 0.58,
+        '700 44px "Instrument Sans", "Noto Sans JP", sans-serif',
+        BODY_STORY_COLORS.textPrimary,
         'center',
     );
 
@@ -177,9 +169,9 @@ function drawPfcCard(
             ctx,
             `${card.percentage}%`,
             box.x + box.width / 2,
-            box.y + box.height * 0.78,
-            '600 28px "Instrument Sans", "Noto Sans JP", sans-serif',
-            '#FFFFFF',
+            box.y + box.height * 0.82,
+            '600 26px "Instrument Sans", "Noto Sans JP", sans-serif',
+            color,
             'center',
         );
     }
@@ -208,10 +200,11 @@ async function renderPayload(
             fillText(
                 ctx,
                 view.displayDate,
-                STORY_LAYOUT.date.x,
-                STORY_LAYOUT.date.y,
-                '600 32px "Instrument Sans", "Noto Sans JP", sans-serif',
+                storyX(STORY_LAYOUT.date.x),
+                storyY(STORY_LAYOUT.date.y),
+                '600 28px "Instrument Sans", "Noto Sans JP", sans-serif',
                 BODY_STORY_COLORS.textSecondary,
+                'center',
             );
         }
 
@@ -219,56 +212,69 @@ async function renderPayload(
             fillText(
                 ctx,
                 view.calories.display,
-                STORY_LAYOUT.nutrition.calories.x,
-                STORY_LAYOUT.nutrition.calories.y,
-                '700 84px "Instrument Sans", "Noto Sans JP", sans-serif',
+                storyX(STORY_LAYOUT.nutrition.calories.x),
+                storyY(STORY_LAYOUT.nutrition.calories.y),
+                '700 40px "Instrument Sans", "Noto Sans JP", sans-serif',
                 BODY_STORY_COLORS.nutritionValue,
+                'center',
             );
         }
 
         drawLineChart(
             ctx,
-            STORY_LAYOUT.nutrition.chart,
+            storyBox(STORY_LAYOUT.nutrition.chart),
             view.chart.points,
             BODY_STORY_COLORS.nutrition,
-            '#F3E8D9',
         );
 
         if (view.averageCalories.display !== null) {
             fillText(
                 ctx,
-                '平均',
-                STORY_LAYOUT.nutrition.average.x,
-                STORY_LAYOUT.nutrition.average.y - 48,
-                '600 28px "Instrument Sans", "Noto Sans JP", sans-serif',
-                BODY_STORY_COLORS.textSecondary,
-            );
-            fillText(
-                ctx,
                 view.averageCalories.display,
-                STORY_LAYOUT.nutrition.average.x,
-                STORY_LAYOUT.nutrition.average.y,
-                '700 56px "Instrument Sans", "Noto Sans JP", sans-serif',
+                storyX(STORY_LAYOUT.nutrition.average.x),
+                storyY(STORY_LAYOUT.nutrition.average.y),
+                '700 40px "Instrument Sans", "Noto Sans JP", sans-serif',
                 BODY_STORY_COLORS.nutritionValue,
+                'center',
             );
         }
 
-        drawPfcCard(ctx, STORY_LAYOUT.nutrition.pfc[0], 'P', view.protein);
-        drawPfcCard(ctx, STORY_LAYOUT.nutrition.pfc[1], 'F', view.fat);
-        drawPfcCard(ctx, STORY_LAYOUT.nutrition.pfc[2], 'C', view.carbs);
+        drawPfcCard(
+            ctx,
+            storyBox(STORY_LAYOUT.nutrition.pfc[0]),
+            'P',
+            view.protein,
+            BODY_STORY_COLORS.protein,
+        );
+        drawPfcCard(
+            ctx,
+            storyBox(STORY_LAYOUT.nutrition.pfc[1]),
+            'F',
+            view.fat,
+            BODY_STORY_COLORS.fat,
+        );
+        drawPfcCard(
+            ctx,
+            storyBox(STORY_LAYOUT.nutrition.pfc[2]),
+            'C',
+            view.carbs,
+            BODY_STORY_COLORS.carbs,
+        );
     }
 
     if (payload.kind === 'weight') {
         const view = toWeightViewModel(payload);
+        const photoBox = STORY_LAYOUT.weight.photo;
 
         if (view.displayDate !== null) {
             fillText(
                 ctx,
                 view.displayDate,
-                STORY_LAYOUT.date.x,
-                STORY_LAYOUT.date.y,
-                '600 32px "Instrument Sans", "Noto Sans JP", sans-serif',
+                storyX(STORY_LAYOUT.date.x),
+                storyY(STORY_LAYOUT.date.y),
+                '600 26px "Instrument Sans", "Noto Sans JP", sans-serif',
                 BODY_STORY_COLORS.textSecondary,
+                'center',
             );
         }
 
@@ -276,11 +282,11 @@ async function renderPayload(
             drawCover(
                 ctx,
                 photo,
-                STORY_LAYOUT.weight.photo.x,
-                STORY_LAYOUT.weight.photo.y,
-                STORY_LAYOUT.weight.photo.width,
-                STORY_LAYOUT.weight.photo.height,
-                STORY_LAYOUT.weight.photo.radius,
+                storyX(photoBox.x),
+                storyY(photoBox.y),
+                storyX(photoBox.width),
+                storyY(photoBox.height),
+                storyX(photoBox.radius),
             );
         }
 
@@ -288,30 +294,31 @@ async function renderPayload(
             fillText(
                 ctx,
                 view.weight.display,
-                STORY_LAYOUT.weight.value.x,
-                STORY_LAYOUT.weight.value.y,
-                '700 84px "Instrument Sans", "Noto Sans JP", sans-serif',
+                storyX(STORY_LAYOUT.weight.value.x),
+                storyY(STORY_LAYOUT.weight.value.y),
+                '700 64px "Instrument Sans", "Noto Sans JP", sans-serif',
                 BODY_STORY_COLORS.weight,
+                'center',
             );
         }
 
         if (view.delta.display !== null) {
             fillText(
                 ctx,
-                `前日比 ${view.delta.display}`,
-                STORY_LAYOUT.weight.delta.x,
-                STORY_LAYOUT.weight.delta.y,
-                '600 36px "Instrument Sans", "Noto Sans JP", sans-serif',
+                view.delta.display,
+                storyX(STORY_LAYOUT.weight.delta.x),
+                storyY(STORY_LAYOUT.weight.delta.y),
+                '600 40px "Instrument Sans", "Noto Sans JP", sans-serif',
                 BODY_STORY_COLORS.weight,
+                'center',
             );
         }
 
         drawLineChart(
             ctx,
-            STORY_LAYOUT.weight.chart,
+            storyBox(STORY_LAYOUT.weight.chart),
             view.chart.points,
             BODY_STORY_COLORS.weight,
-            '#D7E6FA',
         );
     }
 
@@ -322,58 +329,68 @@ async function renderPayload(
             fillText(
                 ctx,
                 view.displayDate,
-                STORY_LAYOUT.date.x,
-                STORY_LAYOUT.date.y,
-                '600 28px "Instrument Sans", "Noto Sans JP", sans-serif',
+                storyX(STORY_LAYOUT.date.x),
+                storyY(STORY_LAYOUT.date.y),
+                '600 24px "Instrument Sans", "Noto Sans JP", sans-serif',
                 BODY_STORY_COLORS.textSecondary,
+                'center',
             );
         }
 
         drawLineChart(
             ctx,
-            STORY_LAYOUT.weekly.calorieChart,
+            storyBox(STORY_LAYOUT.weekly.calorieChart),
             view.calorieChart.points,
             BODY_STORY_COLORS.summary,
-            '#EDE9FE',
         );
 
         if (view.averageCalories.display !== null) {
             fillText(
                 ctx,
-                '平均',
-                STORY_LAYOUT.weekly.average.x,
-                STORY_LAYOUT.weekly.average.y - 40,
-                '600 24px "Instrument Sans", "Noto Sans JP", sans-serif',
-                BODY_STORY_COLORS.textSecondary,
-            );
-            fillText(
-                ctx,
                 view.averageCalories.display,
-                STORY_LAYOUT.weekly.average.x,
-                STORY_LAYOUT.weekly.average.y,
-                '700 52px "Instrument Sans", "Noto Sans JP", sans-serif',
+                storyX(STORY_LAYOUT.weekly.average.x),
+                storyY(STORY_LAYOUT.weekly.average.y),
+                '700 36px "Instrument Sans", "Noto Sans JP", sans-serif',
                 BODY_STORY_COLORS.summary,
+                'center',
             );
         }
 
-        drawPfcCard(ctx, STORY_LAYOUT.weekly.pfc[0], 'P', view.protein);
-        drawPfcCard(ctx, STORY_LAYOUT.weekly.pfc[1], 'F', view.fat);
-        drawPfcCard(ctx, STORY_LAYOUT.weekly.pfc[2], 'C', view.carbs);
+        drawPfcCard(
+            ctx,
+            storyBox(STORY_LAYOUT.weekly.pfc[0]),
+            'P',
+            view.protein,
+            BODY_STORY_COLORS.protein,
+        );
+        drawPfcCard(
+            ctx,
+            storyBox(STORY_LAYOUT.weekly.pfc[1]),
+            'F',
+            view.fat,
+            BODY_STORY_COLORS.fat,
+        );
+        drawPfcCard(
+            ctx,
+            storyBox(STORY_LAYOUT.weekly.pfc[2]),
+            'C',
+            view.carbs,
+            BODY_STORY_COLORS.carbs,
+        );
         drawLineChart(
             ctx,
-            STORY_LAYOUT.weekly.weightChart,
+            storyBox(STORY_LAYOUT.weekly.weightChart),
             view.weightChart.points,
             BODY_STORY_COLORS.summary,
-            '#EDE9FE',
         );
 
         if (view.averageWeight.display !== null) {
             fillText(
                 ctx,
-                `体重推移（平均：${view.averageWeight.display}）`,
-                STORY_LAYOUT.weekly.weightAverage.x,
-                STORY_LAYOUT.weekly.weightAverage.y,
-                '600 32px "Instrument Sans", "Noto Sans JP", sans-serif',
+                view.averageWeight.display,
+                storyX(STORY_LAYOUT.weekly.weightAverage.x),
+                storyY(STORY_LAYOUT.weekly.weightAverage.y),
+                '700 28px "Instrument Sans", "Noto Sans JP", sans-serif',
                 BODY_STORY_COLORS.summary,
             );
         }
