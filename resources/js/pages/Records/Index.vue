@@ -17,6 +17,7 @@ import BaseChart from '@/components/charts/BaseChart.vue';
 import DateNavigator from '@/components/DateNavigator.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTabShell from '@/components/PageTabShell.vue';
+import BodyStoryExportButton from '@/components/records/BodyStoryExportButton.vue';
 import { Button } from '@/components/ui/button';
 import {
     CHART_COLORS,
@@ -703,15 +704,22 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                             この期間の食事記録がまだありません。記録すると推移グラフが表示されます。
                         </p>
 
-                        <Button as-child class="font-sans tracking-[0.06em]">
-                            <Link
-                                :href="`/meals?date=${date}`"
-                                class="inline-flex items-center gap-2"
-                            >
-                                食事を記録する
-                                <ArrowRight :size="16" :stroke-width="1.6" />
-                            </Link>
-                        </Button>
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <BodyStoryExportButton
+                                kind="weekly"
+                                :date="date"
+                                label="週の記録を画像にする"
+                            />
+                            <Button as-child class="font-sans tracking-[0.06em]">
+                                <Link
+                                    :href="`/meals?date=${date}`"
+                                    class="inline-flex items-center gap-2"
+                                >
+                                    食事を記録する
+                                    <ArrowRight :size="16" :stroke-width="1.6" />
+                                </Link>
+                            </Button>
+                        </div>
                     </div>
                 </PageSectionCard>
 

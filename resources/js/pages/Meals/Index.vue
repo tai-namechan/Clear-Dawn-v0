@@ -27,6 +27,7 @@ import MealsTrendsPanel from '@/components/meals/MealsTrendsPanel.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTabShell from '@/components/PageTabShell.vue';
 import PageViewTabs from '@/components/PageViewTabs.vue';
+import BodyStoryExportButton from '@/components/records/BodyStoryExportButton.vue';
 import RestaurantLookupModal from '@/components/RestaurantLookupModal.vue';
 import { Button } from '@/components/ui/button';
 import {
@@ -938,15 +939,22 @@ function applyChartFilter(): void {
                         >
                             今日の食事記録
                         </h2>
-                        <Button
-                            type="button"
-                            size="sm"
-                            class="font-sans"
-                            @click="openAddEntry()"
-                        >
-                            <Plus :size="14" :stroke-width="1.6" />
-                            食事を追加
-                        </Button>
+                        <div class="flex flex-wrap items-center justify-end gap-2">
+                            <BodyStoryExportButton
+                                kind="nutrition"
+                                :date="date"
+                                label="今日の食事を画像にする"
+                            />
+                            <Button
+                                type="button"
+                                size="sm"
+                                class="font-sans"
+                                @click="openAddEntry()"
+                            >
+                                <Plus :size="14" :stroke-width="1.6" />
+                                食事を追加
+                            </Button>
+                        </div>
                     </div>
 
                     <div

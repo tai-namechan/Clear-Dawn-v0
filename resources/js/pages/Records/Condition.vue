@@ -22,6 +22,7 @@ import DateNavigator from '@/components/DateNavigator.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTabShell from '@/components/PageTabShell.vue';
 import PageViewTabs from '@/components/PageViewTabs.vue';
+import BodyStoryExportButton from '@/components/records/BodyStoryExportButton.vue';
 import DailyCheckinPanel from '@/components/routine/DailyCheckinPanel.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -646,13 +647,22 @@ async function saveAll(): Promise<void> {
                     padding="none"
                     aria-label="今日のコンディションを記録"
                 >
-                    <div class="border-b border-cd-line px-5 py-4">
-                        <h2 class="font-sans text-base font-semibold text-cd-ink">
-                            基本の測定を記録
-                        </h2>
-                        <p class="mt-1 font-sans text-xs text-cd-ink-muted">
-                            体重・睡眠・痛み・疲労を先に入力します
-                        </p>
+                    <div
+                        class="flex items-start justify-between gap-3 border-b border-cd-line px-5 py-4"
+                    >
+                        <div>
+                            <h2 class="font-sans text-base font-semibold text-cd-ink">
+                                基本の測定を記録
+                            </h2>
+                            <p class="mt-1 font-sans text-xs text-cd-ink-muted">
+                                体重・睡眠・痛み・疲労を先に入力します
+                            </p>
+                        </div>
+                        <BodyStoryExportButton
+                            kind="weight"
+                            :date="date"
+                            label="今日の体重を画像にする"
+                        />
                     </div>
 
                     <ul class="grid gap-3 p-4 sm:grid-cols-2">
