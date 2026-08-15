@@ -96,15 +96,11 @@ class ImportBodyMeasurementFromPdfService
         }
 
         $attributes = [
+            ...$parsed->toPersistenceAttributes(),
             'input_source' => BodyMeasurementSource::Pdf,
             'source_pdf_path' => $storedPath,
             'parse_status' => BodyMeasurementStatus::Confirmed,
             'confirmed_at' => now(),
-            'weight_kg' => $parsed->weightKg,
-            'lean_body_mass_kg' => $parsed->resolvedLeanBodyMassKg(),
-            'skeletal_muscle_mass_kg' => $parsed->skeletalMuscleMassKg,
-            'body_fat_percentage' => $parsed->bodyFatPercentage,
-            'abdominal_circumference_cm' => $parsed->abdominalCircumferenceCm,
             'raw_extracted_json' => [
                 'source_filename' => $pdf->getClientOriginalName(),
                 'extracted' => $parsed->raw,

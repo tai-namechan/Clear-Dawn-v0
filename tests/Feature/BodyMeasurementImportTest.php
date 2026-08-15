@@ -64,7 +64,34 @@ class BodyMeasurementImportTest extends TestCase
         $this->assertSame('39.00', $measurement->skeletal_muscle_mass_kg);
         $this->assertSame('23.80', $measurement->body_fat_percentage);
         $this->assertSame('95.70', $measurement->abdominal_circumference_cm);
+        $this->assertSame('178.0', $measurement->height_cm);
+        $this->assertSame(34, $measurement->age);
+        $this->assertSame('male', $measurement->gender);
+        $this->assertSame('14.80', $measurement->protein_kg);
+        $this->assertSame('4.20', $measurement->mineral_kg);
+        $this->assertSame('48.60', $measurement->total_body_water_kg);
+        $this->assertSame('22.00', $measurement->body_fat_mass_kg);
+        $this->assertSame('18.10', $measurement->subcutaneous_fat_mass_kg);
+        $this->assertSame('3.90', $measurement->visceral_fat_mass_kg);
+        $this->assertSame('112.00', $measurement->visceral_fat_area_cm2);
+        $this->assertSame(12, $measurement->visceral_fat_level);
+        $this->assertSame(1980, $measurement->bmr_kcal);
+        $this->assertSame(2650, $measurement->tee_kcal);
+        $this->assertSame(31, $measurement->bio_age);
+        $this->assertSame('72.0', $measurement->bwi_score);
+        $this->assertSame('0.910', $measurement->waist_to_hip_ratio);
+        $this->assertSame(2200, $measurement->recommended_calories_min);
+        $this->assertSame(2600, $measurement->recommended_calories_max);
+        $this->assertSame('140.0', $measurement->recommended_protein_min_g);
+        $this->assertSame('180.0', $measurement->recommended_protein_max_g);
+        $this->assertSame('220.0', $measurement->recommended_carbohydrate_min_g);
+        $this->assertSame('280.0', $measurement->recommended_carbohydrate_max_g);
+        $this->assertSame('55.0', $measurement->recommended_fat_min_g);
+        $this->assertSame('75.0', $measurement->recommended_fat_max_g);
+        $this->assertNotNull($measurement->measured_at);
+        $this->assertSame('2026-08-16 03:07:00', $measurement->measured_at->toDateTimeString());
         $this->assertNotNull($measurement->source_pdf_path);
+        $this->assertStringNotContainsString('Taro', json_encode($measurement->raw_extracted_json));
         Storage::disk('local')->assertExists($measurement->source_pdf_path);
 
         $leftArm = $measurement->segments->firstWhere('segment_key', BodySegment::LeftArm);
@@ -166,6 +193,9 @@ class BodyMeasurementImportTest extends TestCase
         $measurement = BodyMeasurement::query()->where('user_id', $user->id)->firstOrFail();
         $this->assertSame('90.10', $measurement->weight_kg);
         $this->assertSame('70.28', $measurement->lean_body_mass_kg);
+        $this->assertNull($measurement->bmr_kcal);
+        $this->assertNull($measurement->tee_kcal);
+        $this->assertNull($measurement->visceral_fat_mass_kg);
         $this->assertNotSame($firstPath, $measurement->source_pdf_path);
         Storage::disk('local')->assertExists($measurement->source_pdf_path);
     }
