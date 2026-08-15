@@ -226,4 +226,12 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->hasMany(UserModuleSetting::class);
     }
+
+    /**
+     * @return HasMany<BodyMeasurement, $this>
+     */
+    public function bodyMeasurements(): HasMany
+    {
+        return $this->hasMany(BodyMeasurement::class);
+    }
 }

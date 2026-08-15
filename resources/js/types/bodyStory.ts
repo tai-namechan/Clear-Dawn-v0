@@ -1,4 +1,16 @@
-export type BodyStoryKind = 'nutrition' | 'weight' | 'weekly';
+export type BodyStoryKind = 'nutrition' | 'weight' | 'weekly' | 'body';
+
+export type BodyStorySegmentKey =
+    | 'left_arm'
+    | 'right_arm'
+    | 'torso'
+    | 'left_leg'
+    | 'right_leg';
+
+export type BodyStorySegmentValues = {
+    lean_mass_kg: number | null;
+    fat_mass_kg: number | null;
+};
 
 export type BodyStoryExportPayload = {
     kind: BodyStoryKind;
@@ -23,6 +35,15 @@ export type BodyStoryExportPayload = {
         delta_kg: number | null;
         average_7d_kg: number | null;
         history: Array<{ date: string; weight_kg: number }>;
+    };
+    body: {
+        weight_kg: number | null;
+        lean_body_mass_kg: number | null;
+        skeletal_muscle_mass_kg: number | null;
+        body_fat_percentage: number | null;
+        abdominal_circumference_cm: number | null;
+        measured_on: string | null;
+        segments: Record<BodyStorySegmentKey, BodyStorySegmentValues>;
     };
 };
 
@@ -57,4 +78,16 @@ export type WeeklyStoryViewModel = {
     carbs: { grams: number | null; percentage: number | null };
     calorieChart: { points: StoryChartPoint[] };
     weightChart: { points: StoryChartPoint[] };
+};
+
+export type BodyCompositionStoryViewModel = {
+    displayDate: string | null;
+    weight: { value: number | null; display: string };
+    skeletalMuscle: { value: number | null; display: string };
+    bodyFat: { value: number | null; display: string };
+    abdominal: { value: number | null; display: string };
+    segments: Record<
+        BodyStorySegmentKey,
+        { lean: string; fat: string }
+    >;
 };

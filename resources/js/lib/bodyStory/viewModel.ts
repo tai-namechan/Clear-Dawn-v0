@@ -1,5 +1,7 @@
 import type {
+    BodyCompositionStoryViewModel,
     BodyStoryExportPayload,
+    BodyStorySegmentKey,
     NutritionStoryViewModel,
     StoryChartPoint,
     WeeklyStoryViewModel,
@@ -29,6 +31,27 @@ function formatKg(value: number): string {
         minimumFractionDigits: 1,
         maximumFractionDigits: 1,
     })} kg`;
+}
+
+function formatKgPrecise(value: number, digits: number): string {
+    return `${value.toLocaleString('ja-JP', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+    })} kg`;
+}
+
+function formatPercent(value: number): string {
+    return `${value.toLocaleString('ja-JP', {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+    })}%`;
+}
+
+function formatCm(value: number): string {
+    return `${value.toLocaleString('ja-JP', {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+    })} cm`;
 }
 
 function formatDeltaKg(value: number): string {
@@ -192,9 +215,78 @@ export function toWeeklyViewModel(
     };
 }
 
+export function toBodyViewModel(
+    payload: BodyStoryExportPayload,
+): BodyCompositionStoryViewModel {
+    const dateSource = payload.body.measured_on ?? payload.date;
+    const segmentKeys: BodyStorySegmentKey[] = [
+        'left_arm',
+        'right_arm',
+        'torso',
+        'left_leg',
+        'right_leg',
+    ];
+    const segments = Object.fromEntries(
+        segmentKeys.map((key) => {
+            const segment = payload.body.segments[key];
+
+            return [
+                key,
+                {
+                    lean:
+                        segment.lean_mass_kg !== null
+                            ? formatKgPrecise(segment.lean_mass_kg, 2)
+                            : '--',
+                    fat:
+                        segment.fat_mass_kg !== null
+                            ? formatKgPrecise(segment.fat_mass_kg, 2)
+                            : '--',
+                },
+            ];
+        }),
+    ) as BodyCompositionStoryViewModel['segments'];
+
+    return {
+        displayDate: dottedDate(dateSource),
+        weight: {
+            value: payload.body.weight_kg,
+            display:
+                payload.body.weight_kg !== null
+                    ? formatKgPrecise(payload.body.weight_kg, 1)
+                    : '--',
+        },
+        skeletalMuscle: {
+            value: payload.body.skeletal_muscle_mass_kg,
+            display:
+                payload.body.skeletal_muscle_mass_kg !== null
+                    ? formatKgPrecise(payload.body.skeletal_muscle_mass_kg, 1)
+                    : '--',
+        },
+        bodyFat: {
+            value: payload.body.body_fat_percentage,
+            display:
+                payload.body.body_fat_percentage !== null
+                    ? formatPercent(payload.body.body_fat_percentage)
+                    : '--',
+        },
+        abdominal: {
+            value: payload.body.abdominal_circumference_cm,
+            display:
+                payload.body.abdominal_circumference_cm !== null
+                    ? formatCm(payload.body.abdominal_circumference_cm)
+                    : '--',
+        },
+        segments,
+    };
+}
+
 export function storyFilename(payload: BodyStoryExportPayload): string {
     if (payload.kind === 'weekly') {
         return `clear-dawn-weekly-${payload.start_date}-${payload.end_date}.png`;
+    }
+
+    if (payload.kind === 'body') {
+        return `clear-dawn-body-story-${payload.date}.png`;
     }
 
     if (payload.kind === 'weight') {

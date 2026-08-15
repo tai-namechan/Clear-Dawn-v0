@@ -266,6 +266,7 @@ class BodyStoryExportTest extends TestCase
             'images/products/today-food-log.png',
             'images/products/today-weight-log.png',
             'images/products/weekly-log.png',
+            'images/products/body-story.png',
         ] as $relativePath) {
             $this->assertFileExists(public_path($relativePath));
         }

@@ -6,6 +6,7 @@ export const METRIC_LABELS: Record<string, string> = {
     pitch_count: '投球数',
     pain_level: '痛みレベル',
     fatigue_level: '疲労レベル',
+    lean_body_mass: '徐脂肪体重',
 };
 
 export function metricLabel(key: string, fallback?: string | null): string {

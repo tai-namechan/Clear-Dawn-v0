@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import {
     Activity,
     ArrowRight,
@@ -44,16 +44,32 @@ import {
 import type { ChartPoint, DailyMetricEntry } from '@/types/routine';
 import type { CheckinFormState, TodayOpsCheckin } from '@/types/todayOps';
 
+type BodyMeasurementSummary = {
+    measured_on: string;
+    weight_kg: number | null;
+    lean_body_mass_kg: number | null;
+    skeletal_muscle_mass_kg: number | null;
+    body_fat_percentage: number | null;
+    abdominal_circumference_cm: number | null;
+};
+
 interface Props {
     date: string;
     metrics: DailyMetricEntry[];
     previousMetrics: DailyMetricEntry[];
     chartSeries: Record<string, ChartPoint[]>;
+    bodyMeasurement?: BodyMeasurementSummary | null;
     checkin?: TodayOpsCheckin | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    bodyMeasurement: null,
     checkin: null,
+});
+
+const importForm = useForm({
+    date: props.date,
+    pdf: null as File | null,
 });
 
 type DeltaTone = 'good' | 'bad' | 'neutral';
@@ -86,6 +102,7 @@ const metricIcons: Record<string, Component> = {
     pitch_count: Activity,
     pain_level: HeartPulse,
     fatigue_level: HeartPulse,
+    lean_body_mass: Scale,
 };
 
 /**
@@ -100,6 +117,7 @@ const higherIsBetter: Record<string, boolean | null> = {
     pitch_count: null,
     pain_level: false,
     fatigue_level: false,
+    lean_body_mass: true,
 };
 
 /** Always keep form values as strings to avoid Vue number-input trim bugs. */
@@ -153,6 +171,50 @@ watch(
         );
     },
 );
+
+watch(
+    () => props.date,
+    (date) => {
+        importForm.date = date;
+        importForm.pdf = null;
+        importForm.clearErrors();
+    },
+);
+
+function onBodyPdfChange(event: Event): void {
+    const input = event.target;
+
+    if (!(input instanceof HTMLInputElement) || input.files === null) {
+        return;
+    }
+
+    importForm.pdf = input.files[0] ?? null;
+}
+
+function importBodyPdf(): void {
+    importForm.post('/records/body-measurements/import', {
+        forceFormData: true,
+        preserveScroll: true,
+        onSuccess: () => {
+            importForm.reset('pdf');
+        },
+    });
+}
+
+function formatBodyNumber(
+    value: number | null,
+    digits: number,
+    suffix: string,
+): string {
+    if (value === null) {
+        return '--';
+    }
+
+    return `${value.toLocaleString('ja-JP', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+    })}${suffix}`;
+}
 
 watch(
     () => props.checkin,
@@ -900,6 +962,118 @@ async function saveAll(): Promise<void> {
                             class="mt-3 min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 font-sans text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
                             placeholder="気づきや体調のメモ（任意）"
                         />
+                    </div>
+                </PageSectionCard>
+
+                <PageSectionCard aria-label="体組成PDFの取り込み">
+                    <div
+                        class="flex items-start justify-between gap-3 border-b border-cd-line px-5 py-4"
+                    >
+                        <div>
+                            <h2 class="font-sans text-base font-semibold text-cd-ink">
+                                体組成
+                            </h2>
+                            <p class="mt-1 font-sans text-xs text-cd-ink-muted">
+                                EVOLT 360 のPDFを取り込むと、Body Story
+                                と徐脂肪体重の推移に使います
+                            </p>
+                        </div>
+                        <BodyStoryExportButton
+                            kind="body"
+                            :date="date"
+                            label="体組成を画像にする"
+                        />
+                    </div>
+
+                    <div class="flex flex-col gap-4 p-5">
+                        <div
+                            v-if="bodyMeasurement"
+                            class="grid gap-2 font-sans text-sm text-cd-ink sm:grid-cols-2"
+                        >
+                            <p>
+                                体重
+                                {{
+                                    formatBodyNumber(
+                                        bodyMeasurement.weight_kg,
+                                        1,
+                                        ' kg',
+                                    )
+                                }}
+                            </p>
+                            <p>
+                                徐脂肪体重
+                                {{
+                                    formatBodyNumber(
+                                        bodyMeasurement.lean_body_mass_kg,
+                                        1,
+                                        ' kg',
+                                    )
+                                }}
+                            </p>
+                            <p>
+                                骨格筋量
+                                {{
+                                    formatBodyNumber(
+                                        bodyMeasurement.skeletal_muscle_mass_kg,
+                                        1,
+                                        ' kg',
+                                    )
+                                }}
+                            </p>
+                            <p>
+                                体脂肪率
+                                {{
+                                    formatBodyNumber(
+                                        bodyMeasurement.body_fat_percentage,
+                                        1,
+                                        '%',
+                                    )
+                                }}
+                            </p>
+                        </div>
+                        <p
+                            v-else
+                            class="font-sans text-sm text-cd-ink-muted"
+                        >
+                            この日の体組成はまだ取り込まれていません
+                        </p>
+
+                        <div class="flex flex-col gap-2">
+                            <Label
+                                for="body-composition-pdf"
+                                class="font-sans text-sm font-semibold text-cd-ink"
+                            >
+                                体組成PDF
+                            </Label>
+                            <input
+                                id="body-composition-pdf"
+                                type="file"
+                                accept="application/pdf"
+                                class="block w-full font-sans text-xs"
+                                @change="onBodyPdfChange"
+                            />
+                            <p
+                                v-if="importForm.errors.pdf"
+                                class="font-sans text-sm text-destructive"
+                            >
+                                {{ importForm.errors.pdf }}
+                            </p>
+                        </div>
+
+                        <div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                class="font-sans"
+                                :disabled="
+                                    importForm.processing ||
+                                    importForm.pdf === null
+                                "
+                                @click="importBodyPdf"
+                            >
+                                PDFを取り込む
+                            </Button>
+                        </div>
                     </div>
                 </PageSectionCard>
 

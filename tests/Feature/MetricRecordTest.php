@@ -416,7 +416,8 @@ class MetricRecordTest extends TestCase
             );
 
         $this->assertDatabaseHas('metrics', ['key' => 'weight', 'label' => '体重']);
-        $this->assertSame(6, Metric::query()->count());
+        $this->assertDatabaseHas('metrics', ['key' => 'lean_body_mass', 'label' => '徐脂肪体重', 'is_advanced' => 1]);
+        $this->assertSame(7, Metric::query()->count());
     }
 
     public function test_visiting_condition_ensures_missing_metrics(): void
@@ -430,7 +431,7 @@ class MetricRecordTest extends TestCase
             ->assertOk()
             ->assertInertia(fn ($page) => $page
                 ->component('Records/Condition')
-                ->has('metrics', 6)
+                ->has('metrics', 7)
                 ->where('metrics.0.metric.label', '体重')
             );
     }
@@ -510,6 +511,40 @@ class MetricRecordTest extends TestCase
                 ->has('chartPoints', 1)
                 ->where('chartPoints.0.item_name', 'ベンチプレス')
                 ->where('chartPoints.0.max_load_value', '80.00')
+                ->has('leanBodyMassChartPoints', 0)
+            );
+    }
+
+    public function test_strength_page_returns_lean_body_mass_points_scoped_to_user(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $lean = Metric::query()->where('key', 'lean_body_mass')->firstOrFail();
+
+        MetricRecord::factory()->create([
+            'user_id' => $user->id,
+            'metric_id' => $lean->id,
+            'recorded_on' => '2026-07-10',
+            'value' => 70.3,
+        ]);
+        MetricRecord::factory()->create([
+            'user_id' => $other->id,
+            'metric_id' => $lean->id,
+            'recorded_on' => '2026-07-10',
+            'value' => 90.1,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('records.strength', [
+                'period' => 'month',
+                'to' => '2026-07-31',
+            ]))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Records/Strength')
+                ->has('leanBodyMassChartPoints', 1)
+                ->where('leanBodyMassChartPoints.0.date', '2026-07-10')
+                ->where('leanBodyMassChartPoints.0.value', '70.30')
             );
     }
 

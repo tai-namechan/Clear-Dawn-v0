@@ -2,22 +2,30 @@
 
 namespace App\Queries;
 
+use App\Enums\BodySegment;
 use App\Enums\BodyStoryKind;
+use App\Http\Resources\BodyMeasurementResource;
+use App\Models\BodyMeasurement;
 use App\Models\Metric;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
+/**
+ * Story画像用の表示データ組み立て。
+ */
 class GetBodyStoryExportQuery
 {
     public function __construct(
         private GetNutritionChartQuery $nutritionChartQuery,
         private GetMetricChartQuery $metricChartQuery,
+        private GetConfirmedBodyMeasurementQuery $bodyMeasurementQuery,
     ) {}
 
     /**
-     * 既存 meal_entries / metric_records から Story 表示用データを組み立てる。
-     * 書き込みはしない。Story 専用の記録テーブルは使わない。
+     * 既存記録から Story 表示用データを組み立てる。
+     *
+     * 食事・体重は既存テーブル、体組成は確定済み body_measurements を正本にする。
      *
      * @return array{
      *     kind: string,
@@ -42,6 +50,15 @@ class GetBodyStoryExportQuery
      *         delta_kg: float|null,
      *         average_7d_kg: float|null,
      *         history: array<int, array{date: string, weight_kg: float}>
+     *     },
+     *     body: array{
+     *         weight_kg: float|null,
+     *         lean_body_mass_kg: float|null,
+     *         skeletal_muscle_mass_kg: float|null,
+     *         body_fat_percentage: float|null,
+     *         abdominal_circumference_cm: float|null,
+     *         measured_on: string|null,
+     *         segments: array<string, array{lean_mass_kg: float|null, fat_mass_kg: float|null}>
      *     }
      * }
      */
@@ -119,6 +136,66 @@ class GetBodyStoryExportQuery
                     ->values()
                     ->all(),
             ],
+            'body' => $this->bodyPayload($user, $end),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     weight_kg: float|null,
+     *     lean_body_mass_kg: float|null,
+     *     skeletal_muscle_mass_kg: float|null,
+     *     body_fat_percentage: float|null,
+     *     abdominal_circumference_cm: float|null,
+     *     measured_on: string|null,
+     *     segments: array<string, array{lean_mass_kg: float|null, fat_mass_kg: float|null}>
+     * }
+     */
+    private function bodyPayload(User $user, Carbon $date): array
+    {
+        $measurement = $this->bodyMeasurementQuery->handle($user, $date);
+
+        if ($measurement instanceof BodyMeasurement) {
+            /** @var array{
+             *     id: string,
+             *     measured_on: string,
+             *     weight_kg: float|null,
+             *     lean_body_mass_kg: float|null,
+             *     skeletal_muscle_mass_kg: float|null,
+             *     body_fat_percentage: float|null,
+             *     abdominal_circumference_cm: float|null,
+             *     segments: array<string, array{lean_mass_kg: float|null, fat_mass_kg: float|null}>
+             * } $resolved */
+            $resolved = BodyMeasurementResource::make($measurement)->resolve();
+
+            return [
+                'weight_kg' => $resolved['weight_kg'],
+                'lean_body_mass_kg' => $resolved['lean_body_mass_kg'],
+                'skeletal_muscle_mass_kg' => $resolved['skeletal_muscle_mass_kg'],
+                'body_fat_percentage' => $resolved['body_fat_percentage'],
+                'abdominal_circumference_cm' => $resolved['abdominal_circumference_cm'],
+                'measured_on' => $resolved['measured_on'],
+                'segments' => $resolved['segments'],
+            ];
+        }
+
+        $emptySegments = [];
+
+        foreach (BodySegment::cases() as $segment) {
+            $emptySegments[$segment->value] = [
+                'lean_mass_kg' => null,
+                'fat_mass_kg' => null,
+            ];
+        }
+
+        return [
+            'weight_kg' => null,
+            'lean_body_mass_kg' => null,
+            'skeletal_muscle_mass_kg' => null,
+            'body_fat_percentage' => null,
+            'abdominal_circumference_cm' => null,
+            'measured_on' => null,
+            'segments' => $emptySegments,
         ];
     }
 

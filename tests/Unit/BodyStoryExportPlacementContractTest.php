@@ -47,6 +47,26 @@ class BodyStoryExportPlacementContractTest extends TestCase
         $this->assertStringContainsString('今日の体重を画像にする', $source);
     }
 
+    public function test_body_button_lives_in_condition_body_card(): void
+    {
+        $source = $this->pageSource('resources/js/pages/Records/Condition.vue');
+        $card = strpos($source, 'aria-label="体組成PDFの取り込み"');
+        $button = strpos($source, 'kind="body"');
+
+        $this->assertNotFalse($card);
+        $this->assertNotFalse($button);
+        $this->assertGreaterThan($card, $button);
+        $this->assertStringContainsString('体組成を画像にする', $source);
+    }
+
+    public function test_strength_page_has_lean_body_mass_chart_card(): void
+    {
+        $source = $this->pageSource('resources/js/pages/Records/Strength.vue');
+
+        $this->assertStringContainsString('aria-label="徐脂肪体重の推移"', $source);
+        $this->assertStringContainsString('leanBodyMassChartPoints', $source);
+    }
+
     private function pageSource(string $relativePath): string
     {
         $absolute = base_path($relativePath);

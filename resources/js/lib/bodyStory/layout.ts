@@ -21,6 +21,7 @@ export const BODY_STORY_COLORS = {
     protein: '#2E7D32',
     fat: '#E65100',
     carbs: '#B45309',
+    body: '#FFFFFF',
 } as const;
 
 /**
@@ -55,6 +56,18 @@ export const STORY_LAYOUT = {
         ],
         weightChart: { x: 225, y: 1345, width: 525, height: 230 },
         weightAverage: { x: 430, y: 1318 },
+    },
+    body: {
+        leftArm: { lean: { x: 156, y: 380 }, fat: { x: 156, y: 521 } },
+        torso: { lean: { x: 156, y: 792 }, fat: { x: 156, y: 926 } },
+        leftLeg: { lean: { x: 156, y: 1170 }, fat: { x: 156, y: 1285 } },
+        rightArm: { lean: { x: 777, y: 380 }, fat: { x: 777, y: 522 } },
+        abdominal: { x: 778, y: 931 },
+        rightLeg: { lean: { x: 777, y: 1171 }, fat: { x: 777, y: 1287 } },
+        weight: { x: 141, y: 1582 },
+        skeletal: { x: 344, y: 1582 },
+        bodyFat: { x: 559, y: 1582 },
+        date: { x: 783, y: 1582 },
     },
 } as const;
 
