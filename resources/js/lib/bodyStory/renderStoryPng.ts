@@ -8,6 +8,7 @@ import {
 } from '@/lib/bodyStory/layout';
 import {
     storyFilename,
+    toBodyViewModel,
     toNutritionViewModel,
     toWeeklyViewModel,
     toWeightViewModel,
@@ -394,6 +395,151 @@ async function renderPayload(
                 BODY_STORY_COLORS.summary,
             );
         }
+    }
+
+    if (payload.kind === 'body') {
+        const view = toBodyViewModel(payload);
+        const bodyFont =
+            '700 32px "Instrument Sans", "Noto Sans JP", sans-serif';
+        const footerFont =
+            '700 34px "Instrument Sans", "Noto Sans JP", sans-serif';
+        const slots = STORY_LAYOUT.body;
+
+        fillText(
+            ctx,
+            view.segments.left_arm.lean,
+            storyX(slots.leftArm.lean.x),
+            storyY(slots.leftArm.lean.y),
+            bodyFont,
+            BODY_STORY_COLORS.body,
+            'center',
+        );
+        fillText(
+            ctx,
+            view.segments.left_arm.fat,
+            storyX(slots.leftArm.fat.x),
+            storyY(slots.leftArm.fat.y),
+            bodyFont,
+            BODY_STORY_COLORS.body,
+            'center',
+        );
+        fillText(
+            ctx,
+            view.segments.torso.lean,
+            storyX(slots.torso.lean.x),
+            storyY(slots.torso.lean.y),
+            bodyFont,
+            BODY_STORY_COLORS.body,
+            'center',
+        );
+        fillText(
+            ctx,
+            view.segments.torso.fat,
+            storyX(slots.torso.fat.x),
+            storyY(slots.torso.fat.y),
+            bodyFont,
+            BODY_STORY_COLORS.body,
+            'center',
+        );
+        fillText(
+            ctx,
+            view.segments.left_leg.lean,
+            storyX(slots.leftLeg.lean.x),
+            storyY(slots.leftLeg.lean.y),
+            bodyFont,
+            BODY_STORY_COLORS.body,
+            'center',
+        );
+        fillText(
+            ctx,
+            view.segments.left_leg.fat,
+            storyX(slots.leftLeg.fat.x),
+            storyY(slots.leftLeg.fat.y),
+            bodyFont,
+            BODY_STORY_COLORS.body,
+            'center',
+        );
+        fillText(
+            ctx,
+            view.segments.right_arm.lean,
+            storyX(slots.rightArm.lean.x),
+            storyY(slots.rightArm.lean.y),
+            bodyFont,
+            BODY_STORY_COLORS.body,
+            'center',
+        );
+        fillText(
+            ctx,
+            view.segments.right_arm.fat,
+            storyX(slots.rightArm.fat.x),
+            storyY(slots.rightArm.fat.y),
+            bodyFont,
+            BODY_STORY_COLORS.body,
+            'center',
+        );
+        fillText(
+            ctx,
+            view.abdominal.display,
+            storyX(slots.abdominal.x),
+            storyY(slots.abdominal.y),
+            bodyFont,
+            BODY_STORY_COLORS.body,
+            'center',
+        );
+        fillText(
+            ctx,
+            view.segments.right_leg.lean,
+            storyX(slots.rightLeg.lean.x),
+            storyY(slots.rightLeg.lean.y),
+            bodyFont,
+            BODY_STORY_COLORS.body,
+            'center',
+        );
+        fillText(
+            ctx,
+            view.segments.right_leg.fat,
+            storyX(slots.rightLeg.fat.x),
+            storyY(slots.rightLeg.fat.y),
+            bodyFont,
+            BODY_STORY_COLORS.body,
+            'center',
+        );
+        fillText(
+            ctx,
+            view.weight.display,
+            storyX(slots.weight.x),
+            storyY(slots.weight.y),
+            footerFont,
+            BODY_STORY_COLORS.body,
+            'center',
+        );
+        fillText(
+            ctx,
+            view.skeletalMuscle.display,
+            storyX(slots.skeletal.x),
+            storyY(slots.skeletal.y),
+            footerFont,
+            BODY_STORY_COLORS.body,
+            'center',
+        );
+        fillText(
+            ctx,
+            view.bodyFat.display,
+            storyX(slots.bodyFat.x),
+            storyY(slots.bodyFat.y),
+            footerFont,
+            BODY_STORY_COLORS.body,
+            'center',
+        );
+        fillText(
+            ctx,
+            view.displayDate ?? '--',
+            storyX(slots.date.x),
+            storyY(slots.date.y),
+            footerFont,
+            BODY_STORY_COLORS.body,
+            'center',
+        );
     }
 
     return canvas;

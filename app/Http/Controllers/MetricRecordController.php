@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Domain\Yoyu\Support\UserTimezoneResolver;
 use App\Http\Requests\MetricRecords\ShowDailyRecordsRequest;
 use App\Http\Requests\MetricRecords\UpsertDailyMetricsRequest;
+use App\Http\Resources\BodyMeasurementResource;
 use App\Http\Resources\MetricRecordResource;
 use App\Http\Resources\MetricResource;
 use App\Http\Resources\NutritionGoalResource;
 use App\Models\DailyCheckin;
 use App\Models\Metric;
 use App\Models\MetricRecord;
+use App\Queries\GetConfirmedBodyMeasurementQuery;
 use App\Queries\GetDailyMealsQuery;
 use App\Queries\GetDailyMetricsQuery;
 use App\Queries\GetMetricChartQuery;
@@ -94,6 +96,7 @@ class MetricRecordController extends Controller
         ShowDailyRecordsRequest $request,
         GetDailyMetricsQuery $query,
         GetMetricChartQuery $chartQuery,
+        GetConfirmedBodyMeasurementQuery $bodyMeasurementQuery,
         EnsureMetricsService $ensureMetrics,
         UserTimezoneResolver $timezoneResolver,
     ): Response {
@@ -134,11 +137,16 @@ class MetricRecordController extends Controller
             ->whereDate('checked_on', $recordedOn->toDateString())
             ->first();
 
+        $bodyMeasurement = $bodyMeasurementQuery->handle($user, $recordedOn);
+
         return Inertia::render('Records/Condition', [
             'date' => $recordedOn->toDateString(),
             'metrics' => $this->mapDailyMetrics($daily),
             'previousMetrics' => $this->mapDailyMetrics($previous),
             'chartSeries' => $chartSeries,
+            'bodyMeasurement' => $bodyMeasurement === null
+                ? null
+                : BodyMeasurementResource::make($bodyMeasurement)->resolve(),
             'checkin' => $checkin === null ? null : [
                 'id' => $checkin->id,
                 'checked_on' => $checkin->checked_on->toDateString(),
@@ -195,18 +203,35 @@ class MetricRecordController extends Controller
     public function strength(
         Request $request,
         GetStrengthChartQuery $chartQuery,
+        GetMetricChartQuery $metricChartQuery,
+        EnsureMetricsService $ensureMetrics,
         UserTimezoneResolver $timezoneResolver,
     ): Response {
+        $ensureMetrics->handle();
+
         $today = $timezoneResolver->todayDateString($request->user());
         [$from, $to, $period] = $this->resolveChartRange($request, $today);
 
         $chartPoints = $chartQuery->handle($request->user(), $from, $to);
+
+        $leanMetric = Metric::query()
+            ->where('key', 'lean_body_mass')
+            ->whereNull('user_id')
+            ->first();
+
+        $leanBodyMassChartPoints = $leanMetric === null
+            ? []
+            : $metricChartQuery
+                ->handle($request->user(), $leanMetric, $from, $to)
+                ->values()
+                ->all();
 
         return Inertia::render('Records/Strength', [
             'from' => $from->toDateString(),
             'to' => $to->toDateString(),
             'period' => $period,
             'chartPoints' => $chartPoints,
+            'leanBodyMassChartPoints' => $leanBodyMassChartPoints,
         ]);
     }
 

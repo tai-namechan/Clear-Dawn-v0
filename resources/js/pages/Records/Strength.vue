@@ -26,11 +26,17 @@ type StrengthPoint = {
     max_load_value: string | null;
 };
 
+type LeanBodyMassPoint = {
+    date: string;
+    value: string;
+};
+
 interface Props {
     from: string;
     to: string;
     period: Period;
     chartPoints: StrengthPoint[];
+    leanBodyMassChartPoints: LeanBodyMassPoint[];
 }
 
 const props = defineProps<Props>();
@@ -104,6 +110,46 @@ const chartOption = computed<EChartsCoreOption>(() => ({
         };
     }),
 }));
+
+const leanDates = computed(() => eachDateInclusive(props.from, props.to));
+
+const leanChartOption = computed<EChartsCoreOption>(() => {
+    const byDate = new Map(
+        props.leanBodyMassChartPoints.map((point) => [point.date, point.value]),
+    );
+
+    return {
+        grid: { left: 48, right: 24, top: 24, bottom: 32 },
+        tooltip: {
+            trigger: 'axis',
+        },
+        xAxis: {
+            type: 'category',
+            data: leanDates.value,
+            axisLabel: chartAxisLabel(11),
+            axisLine: chartAxisLine(),
+        },
+        yAxis: {
+            type: 'value',
+            name: 'kg',
+            axisLabel: chartAxisLabel(11),
+            splitLine: chartSplitLine(),
+        },
+        series: [
+            {
+                name: '徐脂肪体重',
+                type: 'line' as const,
+                smooth: true,
+                ...chartLineSeriesStyle(chartColors[0] ?? '#5B5577'),
+                data: leanDates.value.map((date) => {
+                    const value = byDate.get(date);
+
+                    return value != null ? Number(value) : null;
+                }),
+            },
+        ],
+    };
+});
 
 function navigate(query: Record<string, string>): void {
     router.get('/records/strength', query, {
@@ -224,6 +270,22 @@ function applyPeriod(period: Exclude<Period, null>): void {
                     class="py-12 text-center font-sans text-sm text-cd-ink-muted"
                 >
                     この期間に完了した筋力セッションがありません。
+                </p>
+            </PageSectionCard>
+
+            <PageSectionCard aria-label="徐脂肪体重の推移">
+                <h2 class="mb-4 font-sans text-base font-semibold text-cd-ink">
+                    徐脂肪体重の推移
+                </h2>
+                <BaseChart
+                    v-if="leanBodyMassChartPoints.length > 0"
+                    :option="leanChartOption"
+                />
+                <p
+                    v-else
+                    class="py-12 text-center font-sans text-sm text-cd-ink-muted"
+                >
+                    この期間の徐脂肪体重の記録がありません。
                 </p>
             </PageSectionCard>
         </div>

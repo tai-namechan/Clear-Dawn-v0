@@ -45,6 +45,10 @@ const title = computed(() => {
         return '今日の体重をStory画像にする';
     }
 
+    if (props.kind === 'body') {
+        return '体組成をStory画像にする';
+    }
+
     return '今日の食事をStory画像にする';
 });
 
