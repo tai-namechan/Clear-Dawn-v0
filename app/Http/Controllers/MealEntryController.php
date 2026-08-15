@@ -17,13 +17,17 @@ use App\Services\CopyMealEntryService;
 use App\Services\CopyPreviousDayMealsService;
 use App\Services\CreateMealEntryService;
 use App\Services\DeleteMealEntryService;
+use App\Services\MealPhotoService;
 use App\Services\UpdateMealEntryService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MealEntryController extends Controller
 {
@@ -109,6 +113,31 @@ class MealEntryController extends Controller
         );
 
         return response()->json($result);
+    }
+
+    public function photo(
+        Request $request,
+        MealEntry $mealEntry,
+        MealPhotoService $photos,
+    ): StreamedResponse {
+        Gate::authorize('view', $mealEntry);
+        abort_unless($photos->exists($mealEntry), 404);
+
+        $disk = Storage::disk($photos->disk());
+        $headers = [
+            'Content-Type' => $photos->mimeType((string) $mealEntry->photo_path),
+            'Cache-Control' => 'private, max-age=0, no-store',
+        ];
+
+        if ($request->boolean('download')) {
+            return $disk->download(
+                (string) $mealEntry->photo_path,
+                $photos->downloadName($mealEntry),
+                $headers,
+            );
+        }
+
+        return $disk->response((string) $mealEntry->photo_path, null, $headers);
     }
 
     public function copy(

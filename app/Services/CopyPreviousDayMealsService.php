@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\DB;
 
 class CopyPreviousDayMealsService
 {
+    public function __construct(
+        private readonly MealPhotoService $photos,
+    ) {}
+
     /**
      * 前日の食事エントリを指定日へコピーする（ユーザー所有のみ）。
      * 対象日に既存の記録がある場合は重複防止のためコピーしない（reason: target_not_empty）。
@@ -44,7 +48,7 @@ class CopyPreviousDayMealsService
             $copied = 0;
 
             foreach ($sourceEntries as $entry) {
-                MealEntry::query()->create([
+                $copy = MealEntry::query()->create([
                     'user_id' => $user->id,
                     'food_item_id' => $entry->food_item_id,
                     'eaten_on' => $target,
@@ -57,6 +61,7 @@ class CopyPreviousDayMealsService
                     'carb_g' => $entry->carb_g,
                     'note' => $entry->note,
                 ]);
+                $this->photos->copyTo($entry, $copy);
                 $copied++;
             }
 

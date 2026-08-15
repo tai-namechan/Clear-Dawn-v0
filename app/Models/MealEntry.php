@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property string $fat_g
  * @property string $carb_g
  * @property string|null $note
+ * @property string|null $photo_path
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -39,6 +40,7 @@ use Illuminate\Support\Carbon;
     'fat_g',
     'carb_g',
     'note',
+    'photo_path',
 ])]
 class MealEntry extends Model
 {

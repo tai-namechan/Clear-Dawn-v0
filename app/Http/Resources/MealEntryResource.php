@@ -29,6 +29,10 @@ class MealEntryResource extends JsonResource
             'fat_g' => (string) $this->fat_g,
             'carb_g' => (string) $this->carb_g,
             'note' => $this->note,
+            'has_photo' => $this->photo_path !== null,
+            'photo_url' => $this->photo_path !== null
+                ? route('meals.photo', $this->id)
+                : null,
         ];
     }
 }

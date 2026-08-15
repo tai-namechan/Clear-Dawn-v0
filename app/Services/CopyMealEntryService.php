@@ -14,6 +14,10 @@ use Illuminate\Validation\ValidationException;
  */
 class CopyMealEntryService
 {
+    public function __construct(
+        private readonly MealPhotoService $photos,
+    ) {}
+
     /**
      * @param  array{eaten_on: string, meal_type?: string|null, quantity?: float|int|string|null, note?: string|null}  $data
      */
@@ -25,7 +29,7 @@ class CopyMealEntryService
             ]);
         }
 
-        return DB::transaction(function () use ($user, $source, $data): MealEntry {
+        $copy = DB::transaction(function () use ($user, $source, $data): MealEntry {
             $mealType = isset($data['meal_type']) && $data['meal_type'] !== null && $data['meal_type'] !== ''
                 ? MealType::from((string) $data['meal_type'])
                 : $source->meal_type;
@@ -52,5 +56,9 @@ class CopyMealEntryService
                 'note' => array_key_exists('note', $data) ? $data['note'] : $source->note,
             ]);
         });
+
+        $this->photos->copyTo($source, $copy);
+
+        return $copy->fresh() ?? $copy;
     }
 }

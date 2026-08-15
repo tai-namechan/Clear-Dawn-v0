@@ -247,6 +247,8 @@ export type MealEntry = {
     fat_g: string;
     carb_g: string;
     note: string | null;
+    has_photo: boolean;
+    photo_url: string | null;
 };
 
 export type MealSection = {

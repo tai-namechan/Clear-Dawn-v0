@@ -74,7 +74,7 @@ class EstimateFoodPhotoJobTest extends TestCase
         $job->handle(app(AiGateway::class), app(ChainNutritionScraper::class));
     }
 
-    public function test_job_marks_found_and_deletes_image_on_success(): void
+    public function test_job_marks_found_and_keeps_image_on_success(): void
     {
         $lookup = $this->photoLookup();
         $imagePath = (string) $lookup->temp_image_path;
@@ -100,8 +100,8 @@ class EstimateFoodPhotoJobTest extends TestCase
         $this->assertEqualsWithDelta(680.0, (float) $lookup->result['kcal'], 0.001);
         $this->assertEqualsWithDelta(25.0, (float) $lookup->result['protein_g'], 0.001);
 
-        $this->assertNull($lookup->temp_image_path);
-        Storage::disk('food-label-ocr')->assertMissing($imagePath);
+        $this->assertSame($imagePath, $lookup->temp_image_path);
+        Storage::disk('food-label-ocr')->assertExists($imagePath);
 
         $usage = AiUsageRequest::query()
             ->withoutUserScope()
