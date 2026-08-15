@@ -76,18 +76,22 @@ class BodyMeasurementImportTest extends TestCase
         $weight = Metric::query()->where('key', 'weight')->firstOrFail();
         $lean = Metric::query()->where('key', 'lean_body_mass')->firstOrFail();
 
-        $this->assertDatabaseHas('metric_records', [
-            'user_id' => $user->id,
-            'metric_id' => $weight->id,
-            'recorded_on' => '2026-08-16',
-            'value' => 92.3,
-        ]);
-        $this->assertDatabaseHas('metric_records', [
-            'user_id' => $user->id,
-            'metric_id' => $lean->id,
-            'recorded_on' => '2026-08-16',
-            'value' => 70.3,
-        ]);
+        $this->assertTrue(
+            MetricRecord::query()
+                ->where('user_id', $user->id)
+                ->where('metric_id', $weight->id)
+                ->whereDate('recorded_on', '2026-08-16')
+                ->where('value', 92.3)
+                ->exists(),
+        );
+        $this->assertTrue(
+            MetricRecord::query()
+                ->where('user_id', $user->id)
+                ->where('metric_id', $lean->id)
+                ->whereDate('recorded_on', '2026-08-16')
+                ->where('value', 70.3)
+                ->exists(),
+        );
     }
 
     public function test_pdf_import_does_not_write_other_users_records(): void
