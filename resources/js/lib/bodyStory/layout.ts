@@ -47,7 +47,7 @@ export const STORY_LAYOUT = {
     },
     weekly: {
         calorieChart: { x: 245, y: 455, width: 490, height: 340 },
-        average: { x: 470, y: 910 },
+        average: { x: 470, y: 965 },
         pfc: [
             { x: 156, y: 1085, width: 186, height: 174 },
             { x: 375, y: 1085, width: 185, height: 174 },
