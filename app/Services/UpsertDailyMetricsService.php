@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\MetricRecordSource;
 use App\Models\Metric;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -16,7 +17,8 @@ class UpsertDailyMetricsService
      *     metric_key: string,
      *     value: float|int|string,
      *     life_area_id?: string|null,
-     *     note?: string|null
+     *     note?: string|null,
+     *     input_source?: MetricRecordSource|null
      * }>  $records
      */
     public function handle(User $user, Carbon $recordedOn, array $records): void
@@ -46,6 +48,7 @@ class UpsertDailyMetricsService
                         'value' => $record['value'],
                         'life_area_id' => $record['life_area_id'] ?? null,
                         'note' => $record['note'] ?? null,
+                        'input_source' => $record['input_source'] ?? MetricRecordSource::Manual,
                     ],
                 );
             }
@@ -53,7 +56,7 @@ class UpsertDailyMetricsService
     }
 
     /**
-     * 指定キーの日次メトリクス削除。
+     * PDF投影メトリクスの削除。
      *
      * @param  list<string>  $metricKeys
      */
@@ -74,6 +77,7 @@ class UpsertDailyMetricsService
         $user->metricRecords()
             ->whereIn('metric_id', $metricIds)
             ->whereDate('recorded_on', $recordedOn->toDateString())
+            ->where('input_source', MetricRecordSource::BodyPdf)
             ->delete();
     }
 }

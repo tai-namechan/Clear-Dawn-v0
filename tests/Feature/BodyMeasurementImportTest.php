@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\BodyMeasurementSource;
 use App\Enums\BodyMeasurementStatus;
 use App\Enums\BodySegment;
+use App\Enums\MetricRecordSource;
 use App\Models\BodyMeasurement;
 use App\Models\Metric;
 use App\Models\MetricRecord;
@@ -119,6 +120,13 @@ class BodyMeasurementImportTest extends TestCase
                 ->where('value', 70.3)
                 ->exists(),
         );
+        $projectedWeight = MetricRecord::query()
+            ->where('user_id', $user->id)
+            ->where('metric_id', $weight->id)
+            ->whereDate('recorded_on', '2026-08-16')
+            ->first();
+        $this->assertNotNull($projectedWeight);
+        $this->assertSame(MetricRecordSource::BodyPdf, $projectedWeight->input_source);
     }
 
     public function test_pdf_import_does_not_write_other_users_records(): void
@@ -193,6 +201,91 @@ class BodyMeasurementImportTest extends TestCase
             ])
             ->assertRedirect()
             ->assertSessionHasErrors('pdf');
+    }
+
+    public function test_needs_review_import_preserves_manual_weight_and_note(): void
+    {
+        $user = User::factory()->create();
+        $weight = Metric::query()->where('key', 'weight')->firstOrFail();
+
+        $this->actingAs($user)
+            ->putJson(route('records.upsert-daily'), [
+                'recorded_on' => '2026-08-16',
+                'records' => [
+                    ['metric_key' => 'weight', 'value' => 88.5, 'note' => '朝の手入力'],
+                ],
+            ])
+            ->assertOk();
+
+        $this->actingAs($user)
+            ->from(route('records.condition', ['date' => '2026-08-16']))
+            ->post(route('records.body-measurements.import'), [
+                'date' => '2026-08-16',
+                'pdf' => EvoltSamplePdf::uploadedInconsistentFile(),
+            ])
+            ->assertRedirect(route('records.condition', ['date' => '2026-08-16']));
+
+        $measurement = BodyMeasurement::query()->where('user_id', $user->id)->firstOrFail();
+        $this->assertSame(BodyMeasurementStatus::NeedsReview, $measurement->parse_status);
+
+        $record = MetricRecord::query()
+            ->where('user_id', $user->id)
+            ->where('metric_id', $weight->id)
+            ->whereDate('recorded_on', '2026-08-16')
+            ->first();
+
+        $this->assertNotNull($record);
+        $this->assertSame('88.50', $record->value);
+        $this->assertSame('朝の手入力', $record->note);
+        $this->assertSame(MetricRecordSource::Manual, $record->input_source);
+    }
+
+    public function test_needs_review_reimport_keeps_manual_overwrite_and_clears_untouched_projection(): void
+    {
+        $user = User::factory()->create();
+        $weight = Metric::query()->where('key', 'weight')->firstOrFail();
+        $lean = Metric::query()->where('key', 'lean_body_mass')->firstOrFail();
+
+        $this->actingAs($user)
+            ->post(route('records.body-measurements.import'), [
+                'date' => '2026-08-16',
+                'pdf' => EvoltSamplePdf::uploadedFile(),
+            ])
+            ->assertRedirect();
+
+        $this->actingAs($user)
+            ->putJson(route('records.upsert-daily'), [
+                'recorded_on' => '2026-08-16',
+                'records' => [
+                    ['metric_key' => 'weight', 'value' => 91.0, 'note' => '手で直した'],
+                ],
+            ])
+            ->assertOk();
+
+        $this->actingAs($user)
+            ->post(route('records.body-measurements.import'), [
+                'date' => '2026-08-16',
+                'pdf' => EvoltSamplePdf::uploadedInconsistentFile(),
+            ])
+            ->assertRedirect();
+
+        $record = MetricRecord::query()
+            ->where('user_id', $user->id)
+            ->where('metric_id', $weight->id)
+            ->whereDate('recorded_on', '2026-08-16')
+            ->first();
+
+        $this->assertNotNull($record);
+        $this->assertSame('91.00', $record->value);
+        $this->assertSame('手で直した', $record->note);
+        $this->assertSame(MetricRecordSource::Manual, $record->input_source);
+        $this->assertFalse(
+            MetricRecord::query()
+                ->where('user_id', $user->id)
+                ->where('metric_id', $lean->id)
+                ->whereDate('recorded_on', '2026-08-16')
+                ->exists(),
+        );
     }
 
     public function test_needs_review_reimport_clears_previous_weight_and_lean_projections(): void
