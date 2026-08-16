@@ -5,7 +5,7 @@ namespace App\Services\BodyComposition;
 /**
  * PDF本文のテキスト抽出。
  *
- * FlateDecode を展開し、Tj/TJ と ToUnicode だけを読む。
+ * FlateDecode を展開し、Tj/TJ と選択中フォントの ToUnicode だけを読む。
  * ファイル全体の括弧拾いはフォント辞書の Height を誤抽出するため使わない。
  */
 class PdfTextExtractor
@@ -29,16 +29,35 @@ class PdfTextExtractor
             return new ExtractedPdfDocument([], '');
         }
 
-        $streams = $this->inflateStreams($raw);
-        $cmap = $this->mergeCmaps($streams);
+        $objects = $this->parseObjects($raw);
+        $fontCmaps = $this->fontCmaps($objects);
+        $pageContentIds = $this->pageContentObjectIds($objects);
         $items = [];
 
-        foreach ($streams as $decoded) {
-            if (! str_contains($decoded, 'Tj') && ! str_contains($decoded, 'TJ')) {
+        foreach ($objects as $id => $object) {
+            $fontMap = $this->fontResourceMap($object['dict'], $objects);
+
+            foreach ($this->contentObjectIds($object['dict']) as $contentId) {
+                $stream = $objects[$contentId]['stream'] ?? null;
+
+                if ($stream === null || ! $this->hasTextOperators($stream)) {
+                    continue;
+                }
+
+                foreach ($this->extractPositionedItems($stream, $fontCmaps, $fontMap) as $item) {
+                    if ($this->isUsableText($item->text)) {
+                        $items[] = $item;
+                    }
+                }
+            }
+
+            $stream = $object['stream'];
+
+            if ($stream === null || isset($pageContentIds[$id]) || ! $this->hasTextOperators($stream)) {
                 continue;
             }
 
-            foreach ($this->extractPositionedItems($decoded, $cmap) as $item) {
+            foreach ($this->extractPositionedItems($stream, $fontCmaps, $fontMap) as $item) {
                 if ($this->isUsableText($item->text)) {
                     $items[] = $item;
                 }
@@ -57,15 +76,16 @@ class PdfTextExtractor
     }
 
     /**
-     * @return list<string>
+     * @return array<int, array{dict: string, stream: string|null}>
      */
-    private function inflateStreams(string $raw): array
+    private function parseObjects(string $raw): array
     {
-        $streams = [];
+        $objects = [];
         $offset = 0;
         $length = strlen($raw);
 
-        while (preg_match('/\d+\s+0\s+obj/', $raw, $match, PREG_OFFSET_CAPTURE, $offset) === 1) {
+        while (preg_match('/(\d+)\s+0\s+obj/', $raw, $match, PREG_OFFSET_CAPTURE, $offset) === 1) {
+            $id = (int) $match[1][0];
             $objStart = (int) $match[0][1] + strlen($match[0][0]);
             $endobj = strpos($raw, 'endobj', $objStart);
 
@@ -76,6 +96,10 @@ class PdfTextExtractor
             $streamPos = strpos($raw, 'stream', $objStart);
 
             if ($streamPos === false || $streamPos > $endobj) {
+                $objects[$id] = [
+                    'dict' => substr($raw, $objStart, $endobj - $objStart),
+                    'stream' => null,
+                ];
                 $offset = $endobj + 6;
 
                 continue;
@@ -105,14 +129,14 @@ class PdfTextExtractor
                 ? $this->inflate($data)
                 : $data;
 
-            if ($decoded !== null && $decoded !== '') {
-                $streams[] = $decoded;
-            }
-
+            $objects[$id] = [
+                'dict' => $header,
+                'stream' => $decoded !== null && $decoded !== '' ? $decoded : null,
+            ];
             $offset = $endobj + 6;
         }
 
-        return $streams;
+        return $objects;
     }
 
     private function inflate(string $data): ?string
@@ -129,24 +153,61 @@ class PdfTextExtractor
     }
 
     /**
-     * @param  list<string>  $streams
+     * @param  array<int, array{dict: string, stream: string|null}>  $objects
+     * @return array<int, array<string, string>>
+     */
+    private function fontCmaps(array $objects): array
+    {
+        $cmapsByObject = [];
+
+        foreach ($objects as $id => $object) {
+            if ($object['stream'] === null || ! str_contains($object['stream'], 'begincmap')) {
+                continue;
+            }
+
+            $cmapsByObject[$id] = $this->parseCmap($object['stream']);
+        }
+
+        $fontCmaps = [];
+
+        foreach ($objects as $id => $object) {
+            if (! preg_match('/\/Type\s*\/Font\b/', $object['dict'])
+                || ! preg_match('/\/ToUnicode\s+(\d+)\s+0\s+R/', $object['dict'], $match)) {
+                continue;
+            }
+
+            $toUnicodeId = (int) $match[1];
+
+            if (isset($cmapsByObject[$toUnicodeId])) {
+                $fontCmaps[$id] = $cmapsByObject[$toUnicodeId];
+            }
+        }
+
+        return $fontCmaps;
+    }
+
+    /**
      * @return array<string, string>
      */
-    private function mergeCmaps(array $streams): array
+    private function parseCmap(string $decoded): array
     {
         $cmap = [];
+        $blocks = [];
 
-        foreach ($streams as $decoded) {
-            if (! str_contains($decoded, 'begincmap')) {
+        if (str_contains($decoded, 'beginbfchar')
+            && preg_match_all('/beginbfchar(.*?)endbfchar/s', $decoded, $matches) !== false) {
+            $blocks = $matches[1];
+        } else {
+            $blocks = [$decoded];
+        }
+
+        foreach ($blocks as $block) {
+            if (preg_match_all('/<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/', $block, $pairs, PREG_SET_ORDER) === false) {
                 continue;
             }
 
-            if (preg_match_all('/<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/', $decoded, $matches, PREG_SET_ORDER) === false) {
-                continue;
-            }
-
-            foreach ($matches as $match) {
-                $cmap[strtoupper($match[1])] = $match[2];
+            foreach ($pairs as $pair) {
+                $cmap[strtoupper($pair[1])] = $pair[2];
             }
         }
 
@@ -154,17 +215,100 @@ class PdfTextExtractor
     }
 
     /**
-     * @param  array<string, string>  $cmap
+     * @param  array<int, array{dict: string, stream: string|null}>  $objects
+     * @return array<int, true>
+     */
+    private function pageContentObjectIds(array $objects): array
+    {
+        $ids = [];
+
+        foreach ($objects as $object) {
+            foreach ($this->contentObjectIds($object['dict']) as $contentId) {
+                $ids[$contentId] = true;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function contentObjectIds(string $dict): array
+    {
+        if (preg_match('/\/Contents\s*\[(.*?)\]/s', $dict, $match) === 1) {
+            if (preg_match_all('/(\d+)\s+0\s+R/', $match[1], $refs) === false) {
+                return [];
+            }
+
+            return array_map(fn (string $id): int => (int) $id, $refs[1]);
+        }
+
+        if (preg_match('/\/Contents\s+(\d+)\s+0\s+R/', $dict, $match) === 1) {
+            return [(int) $match[1]];
+        }
+
+        return [];
+    }
+
+    /**
+     * @param  array<int, array{dict: string, stream: string|null}>  $objects
+     * @return array<string, int>
+     */
+    private function fontResourceMap(string $dict, array $objects): array
+    {
+        if (preg_match('/\/Resources\s+(\d+)\s+0\s+R/', $dict, $match) === 1) {
+            $dict = $objects[(int) $match[1]]['dict'] ?? $dict;
+        }
+
+        if (preg_match('/\/Font\s+(\d+)\s+0\s+R/', $dict, $match) === 1) {
+            return $this->parseNameRefs($objects[(int) $match[1]]['dict'] ?? '');
+        }
+
+        if (preg_match('/\/Font\s*<<([^>]*)>>/', $dict, $match) === 1) {
+            return $this->parseNameRefs($match[1]);
+        }
+
+        return [];
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function parseNameRefs(string $dict): array
+    {
+        if (preg_match_all('/\/([A-Za-z0-9_+\-]+)\s+(\d+)\s+0\s+R/', $dict, $matches, PREG_SET_ORDER) === false) {
+            return [];
+        }
+
+        $map = [];
+
+        foreach ($matches as $match) {
+            $map[$match[1]] = (int) $match[2];
+        }
+
+        return $map;
+    }
+
+    private function hasTextOperators(string $decoded): bool
+    {
+        return str_contains($decoded, 'Tj') || str_contains($decoded, 'TJ');
+    }
+
+    /**
+     * @param  array<int, array<string, string>>  $fontCmaps
+     * @param  array<string, int>  $fontMap
      * @return list<ExtractedPdfTextItem>
      */
-    private function extractPositionedItems(string $decoded, array $cmap): array
+    private function extractPositionedItems(string $decoded, array $fontCmaps, array $fontMap): array
     {
         $items = [];
         $x = 0.0;
         $y = 0.0;
+        $cmap = [];
 
         if (preg_match_all(
-            '/(?:([0-9.\-]+)\s+([0-9.\-]+)\s+([0-9.\-]+)\s+([0-9.\-]+)\s+([0-9.\-]+)\s+([0-9.\-]+)\s+Tm)|(?:([0-9.\-]+)\s+([0-9.\-]+)\s+Td)|(?:\(((?:\\\\.|[^\\\\)])*)\)\s*Tj)|(?:<([0-9A-Fa-f]+)>\s*Tj)|(?:\[(.*?)\]\s*TJ)/s',
+            '/(?:\/([A-Za-z0-9_+\-]+)\s+[0-9.\-]+\s+Tf)|(?:([0-9.\-]+)\s+([0-9.\-]+)\s+([0-9.\-]+)\s+([0-9.\-]+)\s+([0-9.\-]+)\s+([0-9.\-]+)\s+Tm)|(?:([0-9.\-]+)\s+([0-9.\-]+)\s+Td)|(?:\(((?:\\\\.|[^\\\\)])*)\)\s*Tj)|(?:<([0-9A-Fa-f]+)>\s*Tj)|(?:\[(.*?)\]\s*TJ)/s',
             $decoded,
             $matches,
             PREG_SET_ORDER,
@@ -173,34 +317,41 @@ class PdfTextExtractor
         }
 
         foreach ($matches as $match) {
-            if (($match[1] ?? '') !== '' && isset($match[5], $match[6])) {
-                $x = (float) $match[5];
-                $y = (float) $match[6];
+            if (($match[1] ?? '') !== '') {
+                $fontId = $fontMap[$match[1]] ?? null;
+                $cmap = $fontId !== null ? ($fontCmaps[$fontId] ?? []) : [];
 
                 continue;
             }
 
-            if (($match[7] ?? '') !== '' && isset($match[8])) {
-                $x += (float) $match[7];
-                $y += (float) $match[8];
+            if (($match[2] ?? '') !== '' && isset($match[6], $match[7])) {
+                $x = (float) $match[6];
+                $y = (float) $match[7];
 
                 continue;
             }
 
-            if (($match[9] ?? '') !== '') {
-                $items[] = new ExtractedPdfTextItem($this->unescapePdfLiteral($match[9]), $x, $y);
+            if (($match[8] ?? '') !== '' && isset($match[9])) {
+                $x += (float) $match[8];
+                $y += (float) $match[9];
 
                 continue;
             }
 
             if (($match[10] ?? '') !== '') {
-                $items[] = new ExtractedPdfTextItem($this->decodeHex($match[10], $cmap), $x, $y);
+                $items[] = new ExtractedPdfTextItem($this->unescapePdfLiteral($match[10]), $x, $y);
 
                 continue;
             }
 
             if (($match[11] ?? '') !== '') {
-                $items[] = new ExtractedPdfTextItem($this->decodeTjArray($match[11], $cmap), $x, $y);
+                $items[] = new ExtractedPdfTextItem($this->decodeHex($match[11], $cmap), $x, $y);
+
+                continue;
+            }
+
+            if (($match[12] ?? '') !== '') {
+                $items[] = new ExtractedPdfTextItem($this->decodeTjArray($match[12], $cmap), $x, $y);
             }
         }
 

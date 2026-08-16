@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\MetricRecordSource;
 use Database\Factories\MetricRecordFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
@@ -18,6 +19,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon $recorded_on
  * @property string $value
  * @property string|null $note
+ * @property MetricRecordSource|null $input_source
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
@@ -28,6 +30,7 @@ use Illuminate\Support\Carbon;
     'recorded_on',
     'value',
     'note',
+    'input_source',
 ])]
 class MetricRecord extends Model
 {
@@ -42,6 +45,7 @@ class MetricRecord extends Model
         return [
             'recorded_on' => 'date',
             'value' => 'decimal:2',
+            'input_source' => MetricRecordSource::class,
         ];
     }
 

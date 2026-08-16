@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\BodyMeasurementSource;
 use App\Enums\BodyMeasurementStatus;
 use App\Enums\BodySegment;
+use App\Enums\MetricRecordSource;
 use App\Models\BodyMeasurement;
 use App\Models\BodyMeasurementSegment;
 use App\Models\User;
@@ -74,6 +75,8 @@ class ImportBodyMeasurementFromPdfService
 
                 if ($integrity->canConfirm()) {
                     $this->projectMetricRecords($user, $measuredOn, $parsed);
+                } else {
+                    $this->upsertDailyMetrics->clear($user, $measuredOn, ['weight', 'lean_body_mass']);
                 }
 
                 return $measurement->load('segments');
@@ -158,6 +161,7 @@ class ImportBodyMeasurementFromPdfService
             $records[] = [
                 'metric_key' => 'weight',
                 'value' => $parsed->weightKg,
+                'input_source' => MetricRecordSource::BodyPdf,
             ];
         }
 
@@ -167,6 +171,7 @@ class ImportBodyMeasurementFromPdfService
             $records[] = [
                 'metric_key' => 'lean_body_mass',
                 'value' => $lean,
+                'input_source' => MetricRecordSource::BodyPdf,
             ];
         }
 
