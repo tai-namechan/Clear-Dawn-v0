@@ -74,6 +74,8 @@ class ImportBodyMeasurementFromPdfService
 
                 if ($integrity->canConfirm()) {
                     $this->projectMetricRecords($user, $measuredOn, $parsed);
+                } else {
+                    $this->upsertDailyMetrics->clear($user, $measuredOn, ['weight', 'lean_body_mass']);
                 }
 
                 return $measurement->load('segments');

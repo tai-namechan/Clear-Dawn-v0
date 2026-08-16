@@ -195,6 +195,108 @@ class BodyMeasurementImportTest extends TestCase
             ->assertSessionHasErrors('pdf');
     }
 
+    public function test_needs_review_reimport_clears_previous_weight_and_lean_projections(): void
+    {
+        $user = User::factory()->create();
+        $other = User::factory()->create();
+        $weight = Metric::query()->where('key', 'weight')->firstOrFail();
+        $lean = Metric::query()->where('key', 'lean_body_mass')->firstOrFail();
+        $sleep = Metric::query()->where('key', 'sleep_minutes')->firstOrFail();
+
+        MetricRecord::factory()->create([
+            'user_id' => $user->id,
+            'metric_id' => $sleep->id,
+            'recorded_on' => '2026-08-16',
+            'value' => 420,
+        ]);
+        MetricRecord::factory()->create([
+            'user_id' => $user->id,
+            'metric_id' => $weight->id,
+            'recorded_on' => '2026-08-15',
+            'value' => 91.0,
+        ]);
+        MetricRecord::factory()->create([
+            'user_id' => $other->id,
+            'metric_id' => $weight->id,
+            'recorded_on' => '2026-08-16',
+            'value' => 80.0,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('records.body-measurements.import'), [
+                'date' => '2026-08-16',
+                'pdf' => EvoltSamplePdf::uploadedFile(),
+            ])
+            ->assertRedirect();
+
+        $this->assertTrue(
+            MetricRecord::query()
+                ->where('user_id', $user->id)
+                ->where('metric_id', $weight->id)
+                ->whereDate('recorded_on', '2026-08-16')
+                ->where('value', 92.3)
+                ->exists(),
+        );
+        $this->assertTrue(
+            MetricRecord::query()
+                ->where('user_id', $user->id)
+                ->where('metric_id', $lean->id)
+                ->whereDate('recorded_on', '2026-08-16')
+                ->where('value', 70.3)
+                ->exists(),
+        );
+
+        $this->actingAs($user)
+            ->from(route('records.condition', ['date' => '2026-08-16']))
+            ->post(route('records.body-measurements.import'), [
+                'date' => '2026-08-16',
+                'pdf' => EvoltSamplePdf::uploadedInconsistentFile(),
+            ])
+            ->assertRedirect(route('records.condition', ['date' => '2026-08-16']));
+
+        $measurement = BodyMeasurement::query()->where('user_id', $user->id)->firstOrFail();
+        $this->assertSame(BodyMeasurementStatus::NeedsReview, $measurement->parse_status);
+        $this->assertNull($measurement->confirmed_at);
+        $this->assertFalse(
+            MetricRecord::query()
+                ->where('user_id', $user->id)
+                ->where('metric_id', $weight->id)
+                ->whereDate('recorded_on', '2026-08-16')
+                ->exists(),
+        );
+        $this->assertFalse(
+            MetricRecord::query()
+                ->where('user_id', $user->id)
+                ->where('metric_id', $lean->id)
+                ->whereDate('recorded_on', '2026-08-16')
+                ->exists(),
+        );
+        $this->assertTrue(
+            MetricRecord::query()
+                ->where('user_id', $user->id)
+                ->where('metric_id', $sleep->id)
+                ->whereDate('recorded_on', '2026-08-16')
+                ->where('value', 420)
+                ->exists(),
+        );
+        $this->assertTrue(
+            MetricRecord::query()
+                ->where('user_id', $user->id)
+                ->where('metric_id', $weight->id)
+                ->whereDate('recorded_on', '2026-08-15')
+                ->where('value', 91.0)
+                ->exists(),
+        );
+        $this->assertTrue(
+            MetricRecord::query()
+                ->where('user_id', $other->id)
+                ->where('metric_id', $weight->id)
+                ->whereDate('recorded_on', '2026-08-16')
+                ->where('value', 80.0)
+                ->exists(),
+        );
+    }
+
     public function test_reimport_on_same_day_replaces_the_measurement(): void
     {
         $user = User::factory()->create();

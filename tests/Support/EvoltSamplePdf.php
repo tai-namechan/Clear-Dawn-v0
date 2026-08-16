@@ -67,6 +67,42 @@ final class EvoltSamplePdf
     }
 
     /**
+     * コアは揃うが体脂肪率と体水分が一致する要確認PDF。
+     */
+    public static function uploadedInconsistentFile(string $name = 'evolt-inconsistent.pdf'): UploadedFile
+    {
+        return self::uploadedFile([
+            'Weight 92.3 kg',
+            'Skeletal Muscle 39.0 kg',
+            'PBF 50.6 %',
+            'Total Body Water 50.6 kg',
+            'Lean Body Mass 70.3 kg',
+            'Body Fat Mass 22.0 kg',
+        ], $name);
+    }
+
+    /**
+     * 同一グリフコードをフォントごとに別文字へ割り当てるPDF。
+     */
+    public static function conflictingToUnicodeContent(): string
+    {
+        $content = "BT\n/F1 12 Tf\n1 0 0 1 50 700 Tm\n<0001> Tj\n/F2 12 Tf\n1 0 0 1 50 680 Tm\n<0001> Tj\nET";
+        $cmapA = self::toUnicodeStream(['0001' => '0041']);
+        $cmapB = self::toUnicodeStream(['0001' => '0042']);
+
+        return self::wrapObjects([
+            1 => '<< /Type /Catalog /Pages 2 0 R >>',
+            2 => '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            3 => '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 7 0 R /F2 8 0 R >> >> >>',
+            4 => '<< /Length '.strlen($content)." >>\nstream\n{$content}\nendstream",
+            7 => '<< /Type /Font /Subtype /Type0 /BaseFont /AAAAAA+F1 /Encoding /Identity-H /ToUnicode 10 0 R >>',
+            8 => '<< /Type /Font /Subtype /Type0 /BaseFont /BBBBBB+F2 /Encoding /Identity-H /ToUnicode 11 0 R >>',
+            10 => '<< /Length '.strlen($cmapA)." >>\nstream\n{$cmapA}\nendstream",
+            11 => '<< /Length '.strlen($cmapB)." >>\nstream\n{$cmapB}\nendstream",
+        ]);
+    }
+
+    /**
      * 圧縮ストリームPDFのアップロード用ファイル。
      */
     public static function uploadedFlateFile(string $name = 'evolt-flate.pdf'): UploadedFile
@@ -144,6 +180,22 @@ final class EvoltSamplePdf
         ];
 
         return self::wrapObjects($objects);
+    }
+
+    /**
+     * @param  array<string, string>  $pairs
+     */
+    private static function toUnicodeStream(array $pairs): string
+    {
+        $chars = '';
+
+        foreach ($pairs as $src => $dst) {
+            $chars .= "<{$src}> <{$dst}>\n";
+        }
+
+        $count = count($pairs);
+
+        return "/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n{$count} beginbfchar\n{$chars}endbfchar\nendcmap\nend\nend";
     }
 
     /**

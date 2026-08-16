@@ -11,6 +11,7 @@ import {
     Moon,
     Plus,
     Scale,
+    Upload,
 } from '@lucide/vue';
 import type { EChartsCoreOption } from 'echarts/core';
 import { computed, ref, watch } from 'vue';
@@ -1068,13 +1069,37 @@ async function saveAll(): Promise<void> {
                             >
                                 体組成PDF
                             </Label>
-                            <input
-                                id="body-composition-pdf"
-                                type="file"
-                                accept="application/pdf"
-                                class="block w-full font-sans text-xs"
-                                @change="onBodyPdfChange"
-                            />
+                            <label
+                                for="body-composition-pdf"
+                                class="flex cursor-pointer flex-col items-center gap-2 rounded-xl border border-dashed border-cd-line bg-cd-surface/80 px-4 py-6 font-sans text-sm text-cd-ink-muted transition-colors hover:bg-white/40"
+                            >
+                                <Upload
+                                    :size="20"
+                                    :stroke-width="1.6"
+                                    class="text-cd-ink"
+                                />
+                                <span
+                                    class="font-sans text-sm font-medium text-cd-ink"
+                                >
+                                    {{
+                                        importForm.pdf?.name ?? 'PDFを選択'
+                                    }}
+                                </span>
+                                <span class="font-sans text-xs text-cd-ink-muted">
+                                    {{
+                                        importForm.pdf
+                                            ? '別のPDFに変える'
+                                            : 'クリックしてファイルを選ぶ'
+                                    }}
+                                </span>
+                                <input
+                                    id="body-composition-pdf"
+                                    type="file"
+                                    accept="application/pdf"
+                                    class="sr-only"
+                                    @change="onBodyPdfChange"
+                                />
+                            </label>
                             <p
                                 v-if="importForm.errors.pdf"
                                 class="font-sans text-sm text-destructive"

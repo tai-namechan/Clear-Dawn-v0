@@ -51,4 +51,29 @@ class UpsertDailyMetricsService
             }
         });
     }
+
+    /**
+     * 指定キーの日次メトリクス削除。
+     *
+     * @param  list<string>  $metricKeys
+     */
+    public function clear(User $user, Carbon $recordedOn, array $metricKeys): void
+    {
+        if ($metricKeys === []) {
+            return;
+        }
+
+        $metricIds = Metric::query()
+            ->whereIn('key', $metricKeys)
+            ->pluck('id');
+
+        if ($metricIds->isEmpty()) {
+            return;
+        }
+
+        $user->metricRecords()
+            ->whereIn('metric_id', $metricIds)
+            ->whereDate('recorded_on', $recordedOn->toDateString())
+            ->delete();
+    }
 }
