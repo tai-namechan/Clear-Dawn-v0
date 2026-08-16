@@ -45,11 +45,13 @@ import type { ChartPoint, DailyMetricEntry } from '@/types/routine';
 import type { CheckinFormState, TodayOpsCheckin } from '@/types/todayOps';
 
 type BodyMeasurementSummary = {
+    parse_status?: string | null;
     measured_on: string;
     weight_kg: number | null;
     lean_body_mass_kg: number | null;
     skeletal_muscle_mass_kg: number | null;
     body_fat_percentage: number | null;
+    total_body_water_kg?: number | null;
     abdominal_circumference_cm: number | null;
 };
 
@@ -990,6 +992,16 @@ async function saveAll(): Promise<void> {
                             v-if="bodyMeasurement"
                             class="grid gap-2 font-sans text-sm text-cd-ink sm:grid-cols-2"
                         >
+                            <p
+                                v-if="
+                                    bodyMeasurement.parse_status ===
+                                    'needs_review'
+                                "
+                                class="sm:col-span-2 text-destructive"
+                            >
+                                読み取り結果が不自然なため要確認です。グラフと Body
+                                Story には使っていません。
+                            </p>
                             <p>
                                 体重
                                 {{
@@ -1027,6 +1039,17 @@ async function saveAll(): Promise<void> {
                                         bodyMeasurement.body_fat_percentage,
                                         1,
                                         '%',
+                                    )
+                                }}
+                            </p>
+                            <p>
+                                体水分量
+                                {{
+                                    formatBodyNumber(
+                                        bodyMeasurement.total_body_water_kg ??
+                                            null,
+                                        1,
+                                        ' kg',
                                     )
                                 }}
                             </p>

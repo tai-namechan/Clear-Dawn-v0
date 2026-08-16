@@ -8,6 +8,7 @@ namespace App\Enums;
 enum BodyMeasurementStatus: string
 {
     case Confirmed = 'confirmed';
+    case NeedsReview = 'needs_review';
     case Failed = 'failed';
 
     /**

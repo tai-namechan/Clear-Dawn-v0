@@ -8,6 +8,8 @@ use App\Enums\BodySegment;
 use App\Models\BodyMeasurement;
 use App\Models\BodyMeasurementSegment;
 use App\Models\User;
+use App\Services\BodyComposition\BodyCompositionIntegrity;
+use App\Services\BodyComposition\BodyCompositionIntegrityValidator;
 use App\Services\BodyComposition\EvoltBodyCompositionParser;
 use App\Services\BodyComposition\ParsedBodyComposition;
 use App\Services\BodyComposition\PdfTextExtractor;
@@ -28,6 +30,7 @@ class ImportBodyMeasurementFromPdfService
     public function __construct(
         private PdfTextExtractor $textExtractor,
         private EvoltBodyCompositionParser $parser,
+        private BodyCompositionIntegrityValidator $integrityValidator,
         private EnsureMetricsService $ensureMetrics,
         private UpsertDailyMetricsService $upsertDailyMetrics,
     ) {}
@@ -47,11 +50,12 @@ class ImportBodyMeasurementFromPdfService
             ]);
         }
 
-        $parsed = $this->parser->parse($this->textExtractor->extract($absolutePath));
+        $parsed = $this->parser->parseDocument($this->textExtractor->extractDocument($absolutePath));
+        $integrity = $this->integrityValidator->evaluate($parsed);
 
-        if (! $parsed->hasPersistableValues()) {
+        if (! $parsed->hasPersistableValues() || ! $integrity->hasCoreMeasurements) {
             throw ValidationException::withMessages([
-                'pdf' => '体組成の数値を読み取れませんでした。EVOLT 360 のPDFか確認してください。',
+                'pdf' => '体重・骨格筋量・体脂肪率を正しく読み取れませんでした。EVOLT 360 のPDFか確認してください。',
             ]);
         }
 
@@ -64,10 +68,13 @@ class ImportBodyMeasurementFromPdfService
         }
 
         try {
-            return DB::transaction(function () use ($user, $measuredOn, $pdf, $parsed, $storedPath): BodyMeasurement {
-                $measurement = $this->persistMeasurement($user, $measuredOn, $pdf, $parsed, $storedPath);
+            return DB::transaction(function () use ($user, $measuredOn, $pdf, $parsed, $storedPath, $integrity): BodyMeasurement {
+                $measurement = $this->persistMeasurement($user, $measuredOn, $pdf, $parsed, $storedPath, $integrity);
                 $this->replaceSegments($measurement, $parsed);
-                $this->projectMetricRecords($user, $measuredOn, $parsed);
+
+                if ($integrity->canConfirm()) {
+                    $this->projectMetricRecords($user, $measuredOn, $parsed);
+                }
 
                 return $measurement->load('segments');
             });
@@ -84,6 +91,7 @@ class ImportBodyMeasurementFromPdfService
         UploadedFile $pdf,
         ParsedBodyComposition $parsed,
         string $storedPath,
+        BodyCompositionIntegrity $integrity,
     ): BodyMeasurement {
         $existing = BodyMeasurement::query()
             ->whereBelongsTo($user)
@@ -99,11 +107,14 @@ class ImportBodyMeasurementFromPdfService
             ...$parsed->toPersistenceAttributes(),
             'input_source' => BodyMeasurementSource::Pdf,
             'source_pdf_path' => $storedPath,
-            'parse_status' => BodyMeasurementStatus::Confirmed,
-            'confirmed_at' => now(),
+            'parse_status' => $integrity->canConfirm()
+                ? BodyMeasurementStatus::Confirmed
+                : BodyMeasurementStatus::NeedsReview,
+            'confirmed_at' => $integrity->canConfirm() ? now() : null,
             'raw_extracted_json' => [
                 'source_filename' => $pdf->getClientOriginalName(),
                 'extracted' => $parsed->raw,
+                'integrity_failures' => $integrity->failures,
             ],
         ];
 
