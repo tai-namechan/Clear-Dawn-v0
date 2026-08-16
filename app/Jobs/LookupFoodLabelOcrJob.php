@@ -21,6 +21,7 @@ use Throwable;
  * 画面リクエスト中に AI 通信しない原則のため、必ず Queue 経由で実行する。
  * AI結果は自動確定しない: found にするだけで food_items へは confirm 経由でしか書かない。
  * 終端状態（found / failed）に達したら temp 画像を破棄する。
+ * 成分表画像は食事記録の表示用には残さない。
  */
 class LookupFoodLabelOcrJob implements ShouldBeUnique, ShouldQueue
 {
@@ -173,7 +174,12 @@ PROMPT;
                 'source' => 'label_ocr',
                 'result' => json_encode($result, JSON_UNESCAPED_UNICODE),
                 'error_code' => null,
+                'temp_image_path' => null,
             ]);
+
+        if ($written === 1) {
+            $this->deleteImage($lookup);
+        }
     }
 
     private function finishFailed(FoodLookupRequest $lookup, string $errorCode): void

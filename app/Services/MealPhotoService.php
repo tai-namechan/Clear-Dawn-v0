@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\Storage;
  * 食事記録に紐づく料理写真の永続化・複製・削除。
  * 解析用の一時画像（food_lookup_requests.temp_image_path）を、
  * 確定時に meal-photos/{userId}/{entryId}.ext へ移す。
+ *
+ * 表示用に残すのは料理・商品の外観写真（ai_photo_estimate）だけ。
+ * 成分表 OCR の画像は数値を読むための素材なので、確定時に破棄する。
+ * 写真は meal_entries にだけ置き、food_items / バーコードカタログには載せない。
  */
 class MealPhotoService
 {
@@ -18,8 +22,19 @@ class MealPhotoService
      */
     private const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 
+    /**
+     * @var list<string>
+     */
+    private const DISPLAY_PHOTO_SOURCES = ['ai_photo_estimate'];
+
     public function attachFromLookup(MealEntry $entry, FoodLookupRequest $lookup): void
     {
+        if (! $this->shouldPersistLookupPhoto($lookup)) {
+            $this->discardLookupTemp($lookup);
+
+            return;
+        }
+
         if ($entry->photo_path !== null) {
             $this->discardLookupTemp($lookup);
 
@@ -70,6 +85,31 @@ class MealPhotoService
         Storage::disk($this->disk())->delete($entry->photo_path);
     }
 
+    /**
+     * 成分表 OCR 由来で食事記録に残ってしまった写真を取り除く。
+     * 料理写真（ai_photo_estimate）は残す。
+     */
+    public function discardNonDisplayPhotos(): int
+    {
+        $discarded = 0;
+
+        MealEntry::query()
+            ->whereNotNull('photo_path')
+            ->whereHas('foodItem', function ($query): void {
+                $query->where('source', 'label_ocr');
+            })
+            ->orderBy('id')
+            ->chunkById(100, function ($entries) use (&$discarded): void {
+                foreach ($entries as $entry) {
+                    $this->deleteFor($entry);
+                    $entry->forceFill(['photo_path' => null])->save();
+                    $discarded++;
+                }
+            });
+
+        return $discarded;
+    }
+
     public function exists(MealEntry $entry): bool
     {
         return $entry->photo_path !== null
@@ -96,6 +136,11 @@ class MealPhotoService
     public function disk(): string
     {
         return (string) config('meals.label_ocr.disk', 'local');
+    }
+
+    private function shouldPersistLookupPhoto(FoodLookupRequest $lookup): bool
+    {
+        return in_array($lookup->source, self::DISPLAY_PHOTO_SOURCES, true);
     }
 
     private function pathFor(MealEntry $entry, string $sourcePath): string

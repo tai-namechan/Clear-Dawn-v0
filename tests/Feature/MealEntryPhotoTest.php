@@ -24,6 +24,35 @@ class MealEntryPhotoTest extends TestCase
         config(['meals.label_ocr.disk' => 'food-label-ocr']);
     }
 
+    public function test_confirm_label_ocr_does_not_persist_image_on_meal_entry(): void
+    {
+        $user = User::factory()->create();
+        $sourcePath = 'food-label-ocr/'.$user->id.'/label.jpg';
+        $lookup = FoodLookupRequest::factory()->for($user)->found()->create([
+            'source' => 'label_ocr',
+            'barcode' => null,
+            'barcode_type' => null,
+            'temp_image_path' => $sourcePath,
+        ]);
+        Storage::disk('food-label-ocr')->put($sourcePath, 'label-jpeg-bytes');
+
+        $response = $this->actingAs($user)->postJson(
+            route('meals.barcode-lookup.confirm', $lookup->id),
+            $this->confirmPayload(),
+        );
+
+        $response->assertCreated()
+            ->assertJsonPath('entry.has_photo', false)
+            ->assertJsonPath('created', true);
+
+        $entry = MealEntry::query()->where('user_id', $user->id)->sole();
+        $this->assertNull($entry->photo_path);
+        Storage::disk('food-label-ocr')->assertMissing($sourcePath);
+
+        $lookup->refresh();
+        $this->assertNull($lookup->temp_image_path);
+    }
+
     public function test_confirm_photo_estimate_persists_image_on_meal_entry(): void
     {
         $user = User::factory()->create();

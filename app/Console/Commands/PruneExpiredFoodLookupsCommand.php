@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\FoodLookupRequest;
+use App\Services\MealPhotoService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
 
@@ -12,7 +13,7 @@ class PruneExpiredFoodLookupsCommand extends Command
 
     protected $description = 'Delete barcode/OCR food lookup requests past their expires_at';
 
-    public function handle(): int
+    public function handle(MealPhotoService $photos): int
     {
         $disk = (string) config('meals.label_ocr.disk', 'local');
         $deleted = 0;
@@ -33,7 +34,10 @@ class PruneExpiredFoodLookupsCommand extends Command
                 }
             });
 
+        $discardedPhotos = $photos->discardNonDisplayPhotos();
+
         $this->info("Pruned {$deleted} expired food lookup request(s).");
+        $this->info("Discarded {$discardedPhotos} non-display meal photo(s).");
 
         return self::SUCCESS;
     }

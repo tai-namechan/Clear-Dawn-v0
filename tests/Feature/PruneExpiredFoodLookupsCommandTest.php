@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Enums\FoodLookupStatus;
+use App\Models\FoodItem;
 use App\Models\FoodLookupRequest;
+use App\Models\MealEntry;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
@@ -74,5 +77,33 @@ class PruneExpiredFoodLookupsCommandTest extends TestCase
 
         $this->assertDatabaseMissing('food_lookup_requests', ['id' => $expiredFound->id]);
         $this->assertDatabaseMissing('food_lookup_requests', ['id' => $expiredFailed->id]);
+    }
+
+    public function test_discards_label_ocr_meal_photos_and_keeps_photo_estimate(): void
+    {
+        Storage::fake('food-label-ocr');
+        config(['meals.label_ocr.disk' => 'food-label-ocr']);
+
+        $user = User::factory()->create();
+        $labelFood = FoodItem::factory()->for($user)->create(['source' => 'label_ocr']);
+        $photoFood = FoodItem::factory()->for($user)->create(['source' => 'ai_photo_estimate']);
+
+        $labelEntry = MealEntry::factory()->for($user)->create(['food_item_id' => $labelFood->id]);
+        $photoEntry = MealEntry::factory()->for($user)->create(['food_item_id' => $photoFood->id]);
+
+        $labelPath = 'meal-photos/'.$user->id.'/'.$labelEntry->id.'.jpg';
+        $photoPath = 'meal-photos/'.$user->id.'/'.$photoEntry->id.'.jpg';
+        Storage::disk('food-label-ocr')->put($labelPath, 'label-bytes');
+        Storage::disk('food-label-ocr')->put($photoPath, 'food-bytes');
+        $labelEntry->forceFill(['photo_path' => $labelPath])->save();
+        $photoEntry->forceFill(['photo_path' => $photoPath])->save();
+
+        Artisan::call('meals:prune-expired-lookups');
+
+        $this->assertNull($labelEntry->fresh()->photo_path);
+        Storage::disk('food-label-ocr')->assertMissing($labelPath);
+
+        $this->assertSame($photoPath, $photoEntry->fresh()->photo_path);
+        Storage::disk('food-label-ocr')->assertExists($photoPath);
     }
 }
