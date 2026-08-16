@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\BodyMeasurementStatus;
 use App\Http\Requests\BodyMeasurements\ImportBodyMeasurementRequest;
 use App\Models\BodyMeasurement;
 use App\Models\User;
@@ -31,13 +32,20 @@ class BodyMeasurementImportController extends Controller
         $pdf = $request->file('pdf');
         abort_unless($pdf instanceof UploadedFile, 422);
 
-        $service->handle(
+        $measurement = $service->handle(
             $user,
             Carbon::parse((string) $request->validated('date')),
             $pdf,
         );
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => '体組成PDFを取り込みました。']);
+        if ($measurement->parse_status === BodyMeasurementStatus::NeedsReview) {
+            Inertia::flash('toast', [
+                'type' => 'warning',
+                'message' => '体組成を読み取りましたが、値が不自然なため要確認です。グラフには反映していません。',
+            ]);
+        } else {
+            Inertia::flash('toast', ['type' => 'success', 'message' => '体組成PDFを取り込みました。']);
+        }
 
         return redirect()->route('records.condition', [
             'date' => $request->validated('date'),

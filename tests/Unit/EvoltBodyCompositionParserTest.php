@@ -208,4 +208,61 @@ class EvoltBodyCompositionParserTest extends TestCase
 
         unlink($pdfPath);
     }
+
+    public function test_extracts_flate_encoded_evolt_grid_and_ignores_font_height(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'evolt-flate-');
+        $this->assertNotFalse($path);
+        $pdfPath = $path.'.pdf';
+        rename($path, $pdfPath);
+        file_put_contents($pdfPath, EvoltSamplePdf::flateEncodedContent());
+
+        $parsed = (new EvoltBodyCompositionParser)->parseDocument(
+            (new PdfTextExtractor)->extractDocument($pdfPath),
+        );
+
+        $this->assertSame(173.0, $parsed->heightCm);
+        $this->assertSame(92.3, $parsed->weightKg);
+        $this->assertSame(70.3, $parsed->extractedLeanBodyMassKg);
+        $this->assertSame(39.0, $parsed->skeletalMuscleMassKg);
+        $this->assertSame(23.8, $parsed->bodyFatPercentage);
+        $this->assertSame(50.6, $parsed->totalBodyWaterKg);
+        $this->assertNotSame(763.0, $parsed->heightCm);
+        $this->assertNotSame(50.6, $parsed->bodyFatPercentage);
+        $this->assertNotSame(3.0, $parsed->skeletalMuscleMassKg);
+
+        unlink($pdfPath);
+    }
+
+    public function test_does_not_map_section_number_or_body_water_to_core_fields(): void
+    {
+        $parsed = (new EvoltBodyCompositionParser)->parse(<<<'TEXT'
+            2. 骨格筋量：
+            3. PROTEIN
+            TOTAL BODY WATER
+            50.6 kg
+            TOTAL BODY FAT PERCENTAGE
+            23.8 %
+            Weight 92.3 kg
+            Lean Body Mass 70.3 kg
+            Skeletal Muscle 39.0 kg
+            PBF 23.8 %
+            TEXT);
+
+        $this->assertSame(92.3, $parsed->weightKg);
+        $this->assertSame(70.3, $parsed->extractedLeanBodyMassKg);
+        $this->assertSame(39.0, $parsed->skeletalMuscleMassKg);
+        $this->assertSame(23.8, $parsed->bodyFatPercentage);
+        $this->assertSame(50.6, $parsed->totalBodyWaterKg);
+        $this->assertNotSame(50.6, $parsed->bodyFatPercentage);
+        $this->assertNotSame(3.0, $parsed->skeletalMuscleMassKg);
+    }
+
+    public function test_ignores_font_height_metadata(): void
+    {
+        $parsed = (new EvoltBodyCompositionParser)->parse("/CapHeight 763\n/Height 62\nWeight 92.3 kg");
+
+        $this->assertNull($parsed->heightCm);
+        $this->assertSame(92.3, $parsed->weightKg);
+    }
 }

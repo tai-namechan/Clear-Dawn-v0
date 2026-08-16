@@ -39,6 +39,7 @@ class BodyMeasurementResource extends JsonResource
 
         return [
             'id' => $this->id,
+            'parse_status' => $this->parse_status->value,
             'measured_on' => $this->measured_on->toDateString(),
             'measured_at' => $this->measured_at?->toDateTimeString(),
             'height_cm' => $this->nullableFloat($this->height_cm),

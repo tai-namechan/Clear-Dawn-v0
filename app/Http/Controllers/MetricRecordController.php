@@ -137,7 +137,7 @@ class MetricRecordController extends Controller
             ->whereDate('checked_on', $recordedOn->toDateString())
             ->first();
 
-        $bodyMeasurement = $bodyMeasurementQuery->handle($user, $recordedOn);
+        $bodyMeasurement = $bodyMeasurementQuery->handleLatest($user, $recordedOn);
 
         return Inertia::render('Records/Condition', [
             'date' => $recordedOn->toDateString(),

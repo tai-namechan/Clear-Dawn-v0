@@ -67,6 +67,24 @@ final class EvoltSamplePdf
     }
 
     /**
+     * 圧縮ストリームPDFのアップロード用ファイル。
+     */
+    public static function uploadedFlateFile(string $name = 'evolt-flate.pdf'): UploadedFile
+    {
+        $path = tempnam(sys_get_temp_dir(), 'evolt-flate-');
+
+        if ($path === false) {
+            throw new \RuntimeException('Failed to create a temporary PDF path.');
+        }
+
+        $pdfPath = $path.'.pdf';
+        rename($path, $pdfPath);
+        file_put_contents($pdfPath, self::flateEncodedContent());
+
+        return new UploadedFile($pdfPath, $name, 'application/pdf', null, true);
+    }
+
+    /**
      * アップロード用のPDFファイル。
      *
      * @param  list<string>|null  $lines
@@ -91,6 +109,30 @@ final class EvoltSamplePdf
         return str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $text);
     }
 
+    /**
+     * FlateDecode 本文を持つPDF。フォント辞書の Height を含めて誤抽出しないことを見る。
+     */
+    public static function flateEncodedContent(): string
+    {
+        $stream = "BT\n/F1 12 Tf\n1 0 0 1 21 740 Tm\n(173 cm) Tj\n1 0 0 1 164 740 Tm\n(92.3 kg) Tj\n1 0 0 1 21 660 Tm\n(70.3 / High) Tj\n1 0 0 1 164 660 Tm\n(22.0 / High) Tj\n1 0 0 1 307 660 Tm\n(8 / Balanced) Tj\n1 0 0 1 21 620 Tm\n(39.0 / High) Tj\n1 0 0 1 164 620 Tm\n(19.1) Tj\n1 0 0 1 307 620 Tm\n(1888 kCal) Tj\n1 0 0 1 21 580 Tm\n(14.4 / High) Tj\n1 0 0 1 164 580 Tm\n(2.9) Tj\n1 0 0 1 307 580 Tm\n(2907 kCal) Tj\n1 0 0 1 21 540 Tm\n(5.3 / High) Tj\n1 0 0 1 164 540 Tm\n(75 / Optimal) Tj\n1 0 0 1 21 500 Tm\n(50.6 / High) Tj\n1 0 0 1 164 500 Tm\n(23.8% / High) Tj\nET";
+        $compressed = zlib_encode($stream, ZLIB_ENCODING_DEFLATE);
+
+        if ($compressed === false) {
+            throw new \RuntimeException('Failed to compress the sample PDF stream.');
+        }
+
+        $objects = [
+            1 => '<< /Type /Catalog /Pages 2 0 R >>',
+            2 => '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+            3 => '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>',
+            4 => '<< /Filter /FlateDecode /Length '.strlen($compressed)." >>\nstream\n{$compressed}\nendstream",
+            5 => '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /FontDescriptor 6 0 R >>',
+            6 => '<< /Type /FontDescriptor /FontName /Helvetica /CapHeight 763 /Flags 32 /FontBBox [0 -200 1000 900] /ItalicAngle 0 /Ascent 800 /Descent -200 /StemV 80 >>',
+        ];
+
+        return self::wrapObjects($objects);
+    }
+
     private static function wrap(string $stream): string
     {
         $objects = [
@@ -101,6 +143,14 @@ final class EvoltSamplePdf
             5 => '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
         ];
 
+        return self::wrapObjects($objects);
+    }
+
+    /**
+     * @param  array<int, string>  $objects
+     */
+    private static function wrapObjects(array $objects): string
+    {
         $pdf = "%PDF-1.4\n";
         $offsets = [];
 

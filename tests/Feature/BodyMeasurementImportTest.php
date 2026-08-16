@@ -154,6 +154,33 @@ class BodyMeasurementImportTest extends TestCase
         $this->assertSame($countBefore, BodyMeasurement::query()->count());
     }
 
+    public function test_flate_encoded_evolt_pdf_persists_core_fields_not_water_as_fat(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post(route('records.body-measurements.import'), [
+                'date' => '2026-08-16',
+                'pdf' => EvoltSamplePdf::uploadedFlateFile(),
+            ])
+            ->assertRedirect();
+
+        $measurement = BodyMeasurement::query()
+            ->where('user_id', $user->id)
+            ->whereDate('measured_on', '2026-08-16')
+            ->first();
+
+        $this->assertNotNull($measurement);
+        $this->assertSame(BodyMeasurementStatus::Confirmed, $measurement->parse_status);
+        $this->assertSame('92.30', $measurement->weight_kg);
+        $this->assertSame('70.30', $measurement->lean_body_mass_kg);
+        $this->assertSame('39.00', $measurement->skeletal_muscle_mass_kg);
+        $this->assertSame('23.80', $measurement->body_fat_percentage);
+        $this->assertSame('50.60', $measurement->total_body_water_kg);
+        $this->assertNotSame('50.60', $measurement->body_fat_percentage);
+        $this->assertNotSame('3.00', $measurement->skeletal_muscle_mass_kg);
+    }
+
     public function test_non_pdf_upload_is_rejected(): void
     {
         $user = User::factory()->create();
@@ -184,7 +211,11 @@ class BodyMeasurementImportTest extends TestCase
         $this->actingAs($user)
             ->post(route('records.body-measurements.import'), [
                 'date' => '2026-08-16',
-                'pdf' => EvoltSamplePdf::uploadedFile(['Weight 90.1 kg', 'PBF 22.0 %']),
+                'pdf' => EvoltSamplePdf::uploadedFile([
+                    'Weight 90.1 kg',
+                    'PBF 22.0 %',
+                    'Skeletal Muscle 38.0 kg',
+                ]),
             ])
             ->assertRedirect();
 
