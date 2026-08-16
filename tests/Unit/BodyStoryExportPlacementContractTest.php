@@ -59,6 +59,53 @@ class BodyStoryExportPlacementContractTest extends TestCase
         $this->assertStringContainsString('体組成を画像にする', $source);
     }
 
+    public function test_body_story_segment_values_sit_below_mass_labels(): void
+    {
+        $source = $this->pageSource('resources/js/lib/bodyStory/layout.ts');
+
+        $this->assertTrue(
+            preg_match('/leftArm: \{ lean: \{ x: \d+, y: (\d+) \}, fat: \{ x: \d+, y: (\d+) \}/', $source, $leftArm) === 1,
+        );
+        $this->assertTrue(
+            preg_match('/torso: \{ lean: \{ x: \d+, y: (\d+) \}, fat: \{ x: \d+, y: (\d+) \}/', $source, $torso) === 1,
+        );
+        $this->assertTrue(
+            preg_match('/leftLeg: \{ lean: \{ x: \d+, y: (\d+) \}, fat: \{ x: \d+, y: (\d+) \}/', $source, $leftLeg) === 1,
+        );
+        $this->assertTrue(
+            preg_match('/rightArm: \{ lean: \{ x: \d+, y: (\d+) \}, fat: \{ x: \d+, y: (\d+) \}/', $source, $rightArm) === 1,
+        );
+        $this->assertTrue(
+            preg_match('/rightLeg: \{ lean: \{ x: \d+, y: (\d+) \}, fat: \{ x: \d+, y: (\d+) \}/', $source, $rightLeg) === 1,
+        );
+        $this->assertTrue(
+            preg_match('/abdominal: \{ x: \d+, y: (\d+) \}/', $source, $abdominal) === 1,
+        );
+
+        $this->assertGreaterThan(461, (int) $leftArm[1]);
+        $this->assertLessThan(530, (int) $leftArm[1]);
+        $this->assertGreaterThan(600, (int) $leftArm[2]);
+        $this->assertLessThan(662, (int) $leftArm[2]);
+
+        $this->assertGreaterThan(867, (int) $torso[1]);
+        $this->assertLessThan(935, (int) $torso[1]);
+        $this->assertGreaterThan(1005, (int) $torso[2]);
+        $this->assertLessThan(1058, (int) $torso[2]);
+
+        $this->assertGreaterThan(1245, (int) $leftLeg[1]);
+        $this->assertLessThan(1292, (int) $leftLeg[1]);
+        $this->assertGreaterThan(1360, (int) $leftLeg[2]);
+        $this->assertLessThan(1405, (int) $leftLeg[2]);
+
+        $this->assertSame((int) $leftArm[1], (int) $rightArm[1]);
+        $this->assertSame((int) $leftArm[2], (int) $rightArm[2]);
+        $this->assertSame((int) $leftLeg[1], (int) $rightLeg[1]);
+        $this->assertSame((int) $leftLeg[2], (int) $rightLeg[2]);
+
+        $this->assertGreaterThan(923, (int) $abdominal[1]);
+        $this->assertLessThan(1031, (int) $abdominal[1]);
+    }
+
     public function test_strength_page_has_lean_body_mass_chart_card(): void
     {
         $source = $this->pageSource('resources/js/pages/Records/Strength.vue');
