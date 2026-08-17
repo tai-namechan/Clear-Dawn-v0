@@ -79,31 +79,21 @@ class PruneExpiredFoodLookupsCommandTest extends TestCase
         $this->assertDatabaseMissing('food_lookup_requests', ['id' => $expiredFailed->id]);
     }
 
-    public function test_discards_label_ocr_meal_photos_and_keeps_photo_estimate(): void
+    public function test_does_not_delete_meal_photos_when_food_item_source_is_label_ocr(): void
     {
         Storage::fake('food-label-ocr');
         config(['meals.label_ocr.disk' => 'food-label-ocr']);
 
         $user = User::factory()->create();
-        $labelFood = FoodItem::factory()->for($user)->create(['source' => 'label_ocr']);
-        $photoFood = FoodItem::factory()->for($user)->create(['source' => 'ai_photo_estimate']);
-
-        $labelEntry = MealEntry::factory()->for($user)->create(['food_item_id' => $labelFood->id]);
-        $photoEntry = MealEntry::factory()->for($user)->create(['food_item_id' => $photoFood->id]);
-
-        $labelPath = 'meal-photos/'.$user->id.'/'.$labelEntry->id.'.jpg';
-        $photoPath = 'meal-photos/'.$user->id.'/'.$photoEntry->id.'.jpg';
-        Storage::disk('food-label-ocr')->put($labelPath, 'label-bytes');
-        Storage::disk('food-label-ocr')->put($photoPath, 'food-bytes');
-        $labelEntry->forceFill(['photo_path' => $labelPath])->save();
-        $photoEntry->forceFill(['photo_path' => $photoPath])->save();
+        $food = FoodItem::factory()->for($user)->create(['source' => 'label_ocr']);
+        $entry = MealEntry::factory()->for($user)->create(['food_item_id' => $food->id]);
+        $path = 'meal-photos/'.$user->id.'/'.$entry->id.'.jpg';
+        Storage::disk('food-label-ocr')->put($path, 'meal-bytes');
+        $entry->forceFill(['photo_path' => $path])->save();
 
         Artisan::call('meals:prune-expired-lookups');
 
-        $this->assertNull($labelEntry->fresh()->photo_path);
-        Storage::disk('food-label-ocr')->assertMissing($labelPath);
-
-        $this->assertSame($photoPath, $photoEntry->fresh()->photo_path);
-        Storage::disk('food-label-ocr')->assertExists($photoPath);
+        $this->assertSame($path, $entry->fresh()->photo_path);
+        Storage::disk('food-label-ocr')->assertExists($path);
     }
 }

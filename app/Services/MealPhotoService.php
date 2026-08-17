@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
  * 栄養値の出典（ai_photo_estimate / nutrition_db）は問わない。
  * 成分表 OCR の画像は数値を読むための素材なので、確定時に破棄する。
  * 写真は meal_entries にだけ置き、food_items / バーコードカタログには載せない。
+ * food_items.source は後から上書きされるので、確定済み写真の削除判定には使わない。
  */
 class MealPhotoService
 {
@@ -81,31 +82,6 @@ class MealPhotoService
         }
 
         Storage::disk($this->disk())->delete($entry->photo_path);
-    }
-
-    /**
-     * 成分表 OCR 由来で食事記録に残ってしまった写真を取り除く。
-     * 料理写真アップロードから確定したエントリは残す。
-     */
-    public function discardNonDisplayPhotos(): int
-    {
-        $discarded = 0;
-
-        MealEntry::query()
-            ->whereNotNull('photo_path')
-            ->whereHas('foodItem', function ($query): void {
-                $query->where('source', 'label_ocr');
-            })
-            ->orderBy('id')
-            ->chunkById(100, function ($entries) use (&$discarded): void {
-                foreach ($entries as $entry) {
-                    $this->deleteFor($entry);
-                    $entry->forceFill(['photo_path' => null])->save();
-                    $discarded++;
-                }
-            });
-
-        return $discarded;
     }
 
     public function exists(MealEntry $entry): bool
