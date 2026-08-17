@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\Storage;
  * 解析用の一時画像（food_lookup_requests.temp_image_path）を、
  * 確定時に meal-photos/{userId}/{entryId}.ext へ移す。
  *
- * 表示用に残すのは料理・商品の外観写真（ai_photo_estimate）だけ。
+ * 表示用に残すのは料理写真アップロード（food-photo-estimate/）だけ。
+ * 栄養値の出典（ai_photo_estimate / nutrition_db）は問わない。
  * 成分表 OCR の画像は数値を読むための素材なので、確定時に破棄する。
  * 写真は meal_entries にだけ置き、food_items / バーコードカタログには載せない。
  */
@@ -22,10 +23,7 @@ class MealPhotoService
      */
     private const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 
-    /**
-     * @var list<string>
-     */
-    private const DISPLAY_PHOTO_SOURCES = ['ai_photo_estimate'];
+    private const DISPLAY_PHOTO_PREFIX = 'food-photo-estimate/';
 
     public function attachFromLookup(MealEntry $entry, FoodLookupRequest $lookup): void
     {
@@ -87,7 +85,7 @@ class MealPhotoService
 
     /**
      * 成分表 OCR 由来で食事記録に残ってしまった写真を取り除く。
-     * 料理写真（ai_photo_estimate）は残す。
+     * 料理写真アップロードから確定したエントリは残す。
      */
     public function discardNonDisplayPhotos(): int
     {
@@ -140,7 +138,12 @@ class MealPhotoService
 
     private function shouldPersistLookupPhoto(FoodLookupRequest $lookup): bool
     {
-        return in_array($lookup->source, self::DISPLAY_PHOTO_SOURCES, true);
+        $path = $lookup->temp_image_path;
+        if ($path === null || $path === '' || str_contains($path, '..')) {
+            return false;
+        }
+
+        return str_starts_with($path, self::DISPLAY_PHOTO_PREFIX);
     }
 
     private function pathFor(MealEntry $entry, string $sourcePath): string

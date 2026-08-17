@@ -93,6 +93,37 @@ class MealEntryPhotoTest extends TestCase
         );
     }
 
+    public function test_confirm_photo_estimate_keeps_image_when_source_is_nutrition_db(): void
+    {
+        $user = User::factory()->create();
+        $sourcePath = 'food-photo-estimate/'.$user->id.'/shot.jpg';
+        $lookup = FoodLookupRequest::factory()->for($user)->found()->create([
+            'source' => 'nutrition_db',
+            'barcode' => null,
+            'barcode_type' => null,
+            'temp_image_path' => $sourcePath,
+        ]);
+        Storage::disk('food-label-ocr')->put($sourcePath, 'scraped-meal-jpeg');
+
+        $response = $this->actingAs($user)->postJson(
+            route('meals.barcode-lookup.confirm', $lookup->id),
+            $this->confirmPayload(),
+        );
+
+        $response->assertCreated()
+            ->assertJsonPath('entry.has_photo', true)
+            ->assertJsonPath('created', true);
+
+        $entry = MealEntry::query()->where('user_id', $user->id)->sole();
+        $this->assertSame(
+            'meal-photos/'.$user->id.'/'.$entry->id.'.jpg',
+            $entry->photo_path,
+        );
+        Storage::disk('food-label-ocr')->assertExists($entry->photo_path);
+        Storage::disk('food-label-ocr')->assertMissing($sourcePath);
+        $this->assertSame('scraped-meal-jpeg', Storage::disk('food-label-ocr')->get($entry->photo_path));
+    }
+
     public function test_owner_can_preview_and_download_meal_photo(): void
     {
         $user = User::factory()->create();
