@@ -10,6 +10,7 @@ import {
     Utensils,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
+import CdProgressRing from '@/components/CdProgressRing.vue';
 import PageTabShell from '@/components/PageTabShell.vue';
 import PageViewTabs from '@/components/PageViewTabs.vue';
 import DailyCheckinPanel from '@/components/routine/DailyCheckinPanel.vue';
@@ -19,6 +20,10 @@ import TodayProgressPanel from '@/components/routine/TodayProgressPanel.vue';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/apiFetch';
 import { categoryIcon } from '@/lib/categoryIcon';
+import {
+    kcalAchievement,
+    kcalAchievementBadge,
+} from '@/lib/kcalAchievement.mjs';
 import { activityLogEventTypeLabels } from '@/lib/routineConstants';
 import { displayDurationMinutes, planRunStatus } from '@/lib/todayPlanDisplay';
 import type { ActivityLog, Routine, RoutinePlan } from '@/types/routine';
@@ -134,16 +139,15 @@ const nutritionIntake = computed(
         },
 );
 
-const remainingKcal = computed(() => {
-    if (!nutritionTarget.value) {
-        return null;
-    }
-
-    return Math.max(
-        0,
-        Number(nutritionTarget.value.kcal) - Number(nutritionIntake.value.kcal),
-    );
-});
+const mealAchievement = computed(() =>
+    kcalAchievement(
+        Number(nutritionIntake.value.kcal),
+        nutritionTarget.value?.kcal,
+    ),
+);
+const mealAchievementBadge = computed(() =>
+    kcalAchievementBadge(mealAchievement.value),
+);
 
 const kcalProgress = computed(() => {
     if (!nutritionTarget.value) {
@@ -282,14 +286,12 @@ function historyDescription(log: ActivityLog): string {
                 subtitle="今日やるセッションを最初に。ルーティンと履歴はここから。"
             >
                 <template #hero>
-                    <div class="cd-hero-stat min-w-[8.5rem] flex-1">
-                        <p class="cd-hero-stat-label">完了したセッション</p>
-                        <p class="cd-hero-stat-number">{{ completedCount }} / {{ totalCount }}</p>
-                    </div>
-                    <div class="cd-hero-stat min-w-[8.5rem] flex-1">
-                        <p class="cd-hero-stat-label">予定時間</p>
-                        <p class="cd-hero-stat-number">{{ totalMinutes }} <span class="text-xs font-medium">分</span></p>
-                    </div>
+                    <TodayProgressPanel
+                        :date="date"
+                        :completed-count="completedCount"
+                        :total-count="totalCount"
+                        :total-minutes="totalMinutes"
+                    />
                 </template>
                 <template #actions>
                     <Button
@@ -343,25 +345,7 @@ function historyDescription(log: ActivityLog): string {
                                         プログラム生成プランと手動プランをここから開始します。
                                     </p>
                                 </div>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    class="font-sans"
-                                    @click="openRoutinesTab"
-                                >
-                                    <Plus :size="14" :stroke-width="1.8" />
-                                    ルーティンから追加
-                                </Button>
                             </div>
-
-                            <TodayProgressPanel
-                                :date="date"
-                                :completed-count="completedCount"
-                                :total-count="totalCount"
-                                :total-minutes="totalMinutes"
-                                class="mb-4"
-                            />
 
                             <div
                                 v-if="visiblePlans.length > 0"
@@ -413,6 +397,17 @@ function historyDescription(log: ActivityLog): string {
                                 </div>
                             </div>
 
+                            <Button
+                                v-if="visiblePlans.length > 0"
+                                type="button"
+                                variant="outline"
+                                class="mt-3 h-12 w-full rounded-full font-sans font-bold"
+                                @click="openRoutinesTab"
+                            >
+                                <Plus :size="16" :stroke-width="1.8" />
+                                ルーティンから追加
+                            </Button>
+
                             <button
                                 v-if="completedCount > 0"
                                 type="button"
@@ -439,41 +434,57 @@ function historyDescription(log: ActivityLog): string {
                             class="min-w-0 rounded-2xl border border-cd-line bg-white p-4 shadow-sm md:p-5"
                             aria-label="今日の状態"
                         >
-                            <p
-                                class="font-sans text-xs font-medium text-cd-ink-muted"
-                            >
-                                今日の状態
-                            </p>
                             <h2
-                                class="mt-1 font-sans text-base font-semibold tracking-tight text-cd-ink"
+                                class="font-sans text-base font-bold tracking-tight text-cd-ink"
                             >
-                                食事の残り
+                                今日の食事状況
+                                <span class="sr-only">（食事の残り）</span>
                             </h2>
 
                             <template v-if="nutritionTarget">
-                                <p
-                                    class="mt-3 font-sans text-2xl font-semibold tracking-tight text-cd-ink"
+                                <div
+                                    class="mt-3 flex items-center justify-between gap-3"
                                 >
-                                    残り
-                                    {{ remainingKcal?.toLocaleString('ja-JP') }}
-                                    kcal
-                                </p>
-                                <p
-                                    class="mt-1 font-sans text-xs text-cd-ink-muted"
-                                >
-                                    {{
-                                        Number(
-                                            nutritionIntake.kcal,
-                                        ).toLocaleString('ja-JP')
-                                    }}
-                                    /
-                                    {{
-                                        Number(
-                                            nutritionTarget.kcal,
-                                        ).toLocaleString('ja-JP')
-                                    }}
-                                    kcal
-                                </p>
+                                    <div class="min-w-0">
+                                        <p
+                                            class="font-sans text-2xl font-bold tracking-tight text-cd-ink tabular-nums"
+                                        >
+                                            {{
+                                                Number(
+                                                    nutritionIntake.kcal,
+                                                ).toLocaleString('ja-JP')
+                                            }}
+                                            <span
+                                                class="text-sm font-medium text-cd-ink-muted"
+                                                >/
+                                                {{
+                                                    Number(
+                                                        nutritionTarget.kcal,
+                                                    ).toLocaleString('ja-JP')
+                                                }}
+                                                kcal</span
+                                            >
+                                        </p>
+                                        <p
+                                            v-if="mealAchievementBadge"
+                                            class="cd-achievement-badge mt-2"
+                                            :class="`cd-achievement-badge--${mealAchievement.status}`"
+                                        >
+                                            {{ mealAchievementBadge }}
+                                        </p>
+                                    </div>
+                                    <CdProgressRing
+                                        :percent="mealAchievement.ringPercent"
+                                        size="md"
+                                        :label="`食事の達成率 ${mealAchievement.percent ?? 0}%`"
+                                    >
+                                        <span class="cd-progress-ring-value"
+                                            >{{
+                                                mealAchievement.percent ?? 0
+                                            }}%</span
+                                        >
+                                    </CdProgressRing>
+                                </div>
                                 <div
                                     class="mt-3 h-3.5 overflow-hidden rounded-full bg-[#EAE6F2]"
                                     role="progressbar"
