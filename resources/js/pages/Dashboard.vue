@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
+import { CalendarDays } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import MatrixCellEditModal from '@/components/MatrixCellEditModal.vue';
-import CdHeroBanner from '@/components/CdHeroBanner.vue';
 import MatrixSheet from '@/components/MatrixSheet.vue';
 import MatrixSheetMobile from '@/components/MatrixSheetMobile.vue';
+import { formatHomeDate, greetingFor } from '@/lib/homeMatrix.mjs';
 import type { LifeArea, MatrixRow } from '@/types/matrix';
 
 interface Props {
@@ -14,14 +15,14 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const currentItems = computed(() =>
-    (props.rows.find((row) => row.key === 'current')?.cells ?? []).flatMap(
-        (cell) => cell.items,
-    ),
-);
-const completedCurrentItems = computed(() =>
-    currentItems.value.filter((item) => item.is_completed).length,
-);
+const now = new Date();
+const todayLabel = formatHomeDate(now);
+const todayIso = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+].join('-');
+const greeting = greetingFor(now.getHours());
 
 const editing = ref<{ rowIndex: number; areaIndex: number } | null>(null);
 
@@ -77,34 +78,37 @@ function openCellEditor(payload: { rowIndex: number; areaIndex: number }) {
     <Head title="ダッシュボード" />
 
     <div
-        class="flex h-full min-h-0 flex-1 flex-col p-4 landscape-compact:p-3 landscape-compact:pb-3 md:px-6 md:pb-8"
+        class="flex h-full min-h-0 flex-1 flex-col p-4 md:px-6 md:pb-8 landscape-compact:p-3 landscape-compact:pb-3"
     >
         <div
-            class="mx-auto flex w-full max-w-7xl min-h-0 flex-1 flex-col gap-6 landscape-compact:gap-3 md:gap-7"
+            class="mx-auto flex min-h-0 w-full max-w-7xl flex-1 flex-col gap-6 md:gap-7 landscape-compact:gap-3"
         >
-            <CdHeroBanner
-                eyebrow="YOUR JOURNEY"
-                title="今日も、一歩ずつ前へ。"
-                subtitle="今やることを明確にして、未来の目標へつなげましょう。"
-                class="landscape-compact:hidden"
+            <section
+                class="cd-hero-banner cd-home-hero landscape-compact:hidden"
+                aria-label="今日のあいさつ"
             >
-                <div class="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
-                    <div class="cd-hero-stat min-w-0 sm:min-w-40">
-                        <p class="cd-hero-stat-label">今やること</p>
-                        <p class="cd-hero-stat-number">{{ currentItems.length }} 件</p>
-                    </div>
-                    <div class="cd-hero-stat min-w-0 sm:min-w-40">
-                        <p class="cd-hero-stat-label">完了</p>
-                        <p class="cd-hero-stat-number">{{ completedCurrentItems }} 件</p>
-                    </div>
-                    <Link href="/routines" class="col-span-2 inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-bold text-[#30245F] shadow-sm transition-colors hover:bg-[#EEE7FF] sm:col-span-1">
-                        今日のルーティンを見る →
-                    </Link>
-                </div>
-            </CdHeroBanner>
+                <p class="cd-home-date">
+                    <CalendarDays
+                        :size="16"
+                        :stroke-width="1.8"
+                        aria-hidden="true"
+                    />
+                    <time :datetime="todayIso">{{ todayLabel }}</time>
+                </p>
+                <h1 class="mt-3 text-3xl leading-tight font-bold md:text-4xl">
+                    {{ greeting }}
+                </h1>
+                <p class="mt-1.5 text-sm md:text-base">
+                    今日も、積み重ねていこう。
+                </p>
+            </section>
             <!-- Desktop / tablet: keep the classic matrix table -->
             <div class="hidden min-h-0 flex-1 flex-col md:flex">
-                <MatrixSheet :areas="areas" :rows="rows" @edit="openCellEditor" />
+                <MatrixSheet
+                    :areas="areas"
+                    :rows="rows"
+                    @edit="openCellEditor"
+                />
             </div>
 
             <!-- Phone only (< md): stacked area tabs + row cards -->

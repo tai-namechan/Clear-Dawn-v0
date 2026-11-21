@@ -47,7 +47,7 @@ test('primary Clear Dawn pages use the hero design', () => {
     for (const page of ['Records/Index','Records/Condition','Meals/Index','Routines/Index']) {
         assert.match(source('resources/js/pages/' + page + '.vue'), /<PageTabShell/, page);
     }
-    assert.match(source('resources/js/pages/Dashboard.vue'), /<CdHeroBanner/);
+    assert.match(source('resources/js/pages/Dashboard.vue'), /class="cd-hero-banner cd-home-hero/);
 });
 
 test('the dawn sky sits behind the header and hero, and the matrix keeps its marble', () => {

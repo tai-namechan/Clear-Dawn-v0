@@ -69,12 +69,21 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(
-        180deg,
-        rgba(22, 18, 64, 0.46) 0%,
-        rgba(22, 18, 64, 0.16) 42%,
-        rgba(22, 18, 64, 0) 72%
-    );
+    /* Keep white hero text readable even over the bright sunrise. */
+    background:
+        linear-gradient(
+            180deg,
+            rgba(22, 18, 64, 0.55) 0%,
+            rgba(22, 18, 64, 0.3) 45%,
+            rgba(22, 18, 64, 0.1) 75%,
+            rgba(22, 18, 64, 0) 100%
+        ),
+        linear-gradient(
+            95deg,
+            rgba(22, 18, 64, 0.38) 0%,
+            rgba(22, 18, 64, 0.14) 55%,
+            rgba(22, 18, 64, 0) 85%
+        );
 }
 
 /* ---------------------------------------------------------------- Header on the sky */
@@ -184,6 +193,12 @@
     :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
     [data-slot='button']:not(.bg-primary) {
     color: #fff;
+    text-shadow: none;
+}
+/* Outline buttons become frosted glass; ghost icon buttons stay transparent. */
+.cd-clear-app
+    :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
+    [data-slot='button'].border:not(.bg-primary) {
     background: rgba(255, 255, 255, 0.16);
     border-color: rgba(255, 255, 255, 0.5);
     text-shadow: none;
@@ -192,7 +207,8 @@
 .cd-clear-app
     :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
     [data-slot='button']:not(.bg-primary):hover {
-    background: rgba(255, 255, 255, 0.26);
+    color: #fff;
+    background: rgba(255, 255, 255, 0.2);
 }
 .cd-clear-app .cd-hero-panel .cd-hero-primary-action {
     color: #2a2153;
@@ -446,4 +462,71 @@
     .cd-clear-app .cd-sky-backdrop {
         display: none !important;
     }
+}
+
+/* ---------------------------------------------------------------- Home (life matrix) */
+.cd-clear-app .cd-home-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+}
+.cd-clear-app .cd-home-area-tile {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    border: 1.5px solid transparent;
+    border-radius: 1.1rem;
+    background: #f5f2ff;
+    padding: 1rem 0.75rem 0.9rem;
+    text-align: center;
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease;
+}
+.cd-clear-app .cd-home-area-tile:hover {
+    background: #efeaff;
+}
+.cd-clear-app .cd-home-area-tile[aria-selected='true'] {
+    border-color: var(--cd-hero-primary);
+    background: #ece6ff;
+}
+.cd-clear-app .cd-home-area-tile:focus-visible {
+    outline: 2px solid var(--cd-hero-primary);
+    outline-offset: 2px;
+}
+.cd-clear-app .cd-home-area-icon {
+    color: var(--cd-hero-primary);
+}
+.cd-clear-app .cd-home-segment {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 0.25rem;
+    border-radius: 999px;
+    background: #f1eff7;
+    padding: 0.25rem;
+}
+.cd-clear-app .cd-home-segment button {
+    border-radius: 999px;
+    padding: 0.55rem 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--cd-hero-muted);
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+.cd-clear-app .cd-home-segment button[aria-selected='true'] {
+    background: var(--cd-hero-primary);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(107, 90, 237, 0.28);
+}
+.cd-clear-app .cd-home-segment button:focus-visible {
+    outline: 2px solid var(--cd-hero-primary);
+    outline-offset: 2px;
 }
