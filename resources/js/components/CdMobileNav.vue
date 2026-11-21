@@ -19,7 +19,7 @@ function isActive(paths: string[]): boolean {
 </script>
 
 <template>
-    <nav class="cd-mobile-nav" aria-label="Clear Dawn モバイルナビゲーション">
+    <nav v-if="!currentPath.startsWith('/sessions/')" class="cd-mobile-nav" aria-label="Clear Dawn モバイルナビゲーション">
         <Link
             v-for="item in items"
             :key="item.href"

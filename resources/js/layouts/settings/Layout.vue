@@ -52,7 +52,7 @@ const { isCurrentOrParentUrl } = useCurrentUrl();
 <template>
     <div class="px-4 py-6 md:px-6 md:pb-8">
         <div class="mx-auto w-full max-w-5xl space-y-6">
-            <section class="cd-panel p-5 md:p-6">
+            <section class="cd-panel cd-hero-panel p-5 md:p-6">
                 <Heading
                     title="設定"
                     description="アカウントなどの各種設定を管理します。"

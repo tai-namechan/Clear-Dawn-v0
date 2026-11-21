@@ -144,3 +144,45 @@
     .cd-clear-app .cd-panel { transition: none !important; }
 }
 @media print { .cd-clear-app .cd-mobile-nav { display: none !important; } }
+
+
+/* Compact date navigation and secondary buttons on dark hero stages */
+.cd-clear-app .cd-hero-stage .text-cd-ink,
+.cd-clear-app .cd-hero-stage .text-primary,
+.cd-clear-app .cd-hero-stage .text-cd-ink-muted {
+    color: rgba(255,255,255,.94);
+}
+.cd-clear-app .cd-hero-stage button[aria-label="日付を選択"],
+.cd-clear-app .cd-hero-stage button[aria-label="前の日"],
+.cd-clear-app .cd-hero-stage button[aria-label="次の日"] {
+    color: #fff;
+    border-radius: .75rem;
+}
+.cd-clear-app .cd-hero-stage button[aria-label="日付を選択"]:hover,
+.cd-clear-app .cd-hero-stage button[aria-label="前の日"]:hover,
+.cd-clear-app .cd-hero-stage button[aria-label="次の日"]:hover {
+    background: rgba(255,255,255,.14);
+}
+.cd-clear-app .cd-hero-stage .text-cd-ink-muted { color: rgba(255,255,255,.82); }
+.cd-clear-app .cd-hero-stage button:not([disabled]):focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+.cd-clear-app .cd-hero-panel :is(h1,h2).text-cd-ink,
+.cd-clear-app .cd-hero-panel :is(h1,h2).text-primary,
+.cd-clear-app .cd-hero-panel .text-cd-ink,
+.cd-clear-app .cd-hero-panel .text-primary { color: #fff; }
+.cd-clear-app .cd-hero-panel :is(p,span).text-cd-ink-muted { color: rgba(255,255,255,.85); }
+.cd-clear-app .cd-hero-panel .cd-hero-heading .cd-title-rule {
+    background: linear-gradient(90deg,#f0d7fa,rgba(255,255,255,0));
+}
+@media (max-width:767px) {
+    .cd-clear-app {
+        padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+    }
+    .cd-clear-app .cd-mobile-nav {
+        position: fixed;
+        inset-inline: 0;
+        bottom: 0;
+    }
+}
