@@ -165,11 +165,7 @@ function openEditor(): void {
                     </button>
                 </div>
 
-                <div
-                    class="cd-home-segment mt-3"
-                    role="tablist"
-                    aria-label="期間"
-                >
+                <div class="cd-segment mt-3" role="tablist" aria-label="期間">
                     <button
                         v-for="row in rows"
                         :key="row.key"

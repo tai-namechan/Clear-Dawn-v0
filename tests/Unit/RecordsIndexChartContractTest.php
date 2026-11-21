@@ -6,7 +6,7 @@ use Tests\TestCase;
 
 /**
  * Prove Records index mini-charts share one plot box and keep legends /
- * axis names off the plot so meal and condition cards stay aligned.
+ * axis names off the plot so the trend and condition cards stay aligned.
  */
 class RecordsIndexChartContractTest extends TestCase
 {
@@ -25,9 +25,14 @@ class RecordsIndexChartContractTest extends TestCase
             'All four Records mini-charts should use RECORDS_MINI_GRID',
         );
         $this->assertSame(
-            4,
+            2,
             substr_count($source, 'class="!h-40"'),
-            'All four Records mini-charts should share the same height',
+            'Both condition-card mini-charts (body / strength) should share the same height',
+        );
+        $this->assertSame(
+            1,
+            substr_count($source, ':option="trendOption"'),
+            'Meal kcal / weight / PFC trends share one switchable chart in the 7-day card',
         );
         $this->assertSame(
             3,

@@ -3,7 +3,6 @@ import { Head, Link } from '@inertiajs/vue3';
 import {
     Activity,
     ArrowRight,
-    Flame,
     Gauge,
     HeartPulse,
     Moon,
@@ -11,8 +10,9 @@ import {
     UtensilsCrossed,
 } from '@lucide/vue';
 import type { EChartsCoreOption } from 'echarts/core';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import type { Component } from 'vue';
+import CdProgressRing from '@/components/CdProgressRing.vue';
 import BaseChart from '@/components/charts/BaseChart.vue';
 import DateNavigator from '@/components/DateNavigator.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
@@ -31,11 +31,16 @@ import {
     nutritionSeriesByDate,
 } from '@/lib/chartTheme';
 import {
+    kcalAchievement,
+    kcalAchievementBadge,
+} from '@/lib/kcalAchievement.mjs';
+import {
     formatSleepDelta,
     formatSleepMinutes,
     metricLabel,
 } from '@/lib/metricLabels';
 import { PFC_COLORS } from '@/lib/pfcColors';
+import { pfcEnergyShare } from '@/lib/pfcShare.mjs';
 import type {
     DailyMetricEntry,
     NutritionChartPoint,
@@ -154,22 +159,7 @@ const summaryMetrics = computed(() =>
     }),
 );
 
-const pfcEnergy = computed(() => {
-    const p = props.mealTotals.protein_g * 4;
-    const f = props.mealTotals.fat_g * 9;
-    const c = props.mealTotals.carb_g * 4;
-    const total = p + f + c;
-
-    if (total <= 0) {
-        return { p: 0, f: 0, c: 0 };
-    }
-
-    return {
-        p: Math.round((p / total) * 100),
-        f: Math.round((f / total) * 100),
-        c: Math.round((c / total) * 100),
-    };
-});
+const pfcEnergy = computed(() => pfcEnergyShare(props.mealTotals));
 
 const pfcDonutStyle = computed(() => {
     const { p, f, c } = pfcEnergy.value;
@@ -192,19 +182,44 @@ const pfcDonutStyle = computed(() => {
     };
 });
 
-const kcalProgress = computed(() => {
-    if (!props.mealGoal) {
-        return null;
-    }
+const achievement = computed(() =>
+    kcalAchievement(props.mealTotals.kcal, props.mealGoal?.kcal),
+);
+const achievementBadge = computed(() =>
+    kcalAchievementBadge(achievement.value),
+);
 
-    const target = Number(props.mealGoal.kcal);
+function formatKcal(value: number | string): string {
+    return Number(value).toLocaleString('ja-JP', { maximumFractionDigits: 0 });
+}
 
-    if (target <= 0) {
-        return null;
-    }
+function formatGrams(value: number | string): string {
+    return Number(value).toLocaleString('ja-JP', { maximumFractionDigits: 1 });
+}
 
-    return Math.min(100, Math.round((props.mealTotals.kcal / target) * 100));
-});
+const pfcRows = computed(() => [
+    {
+        key: 'p',
+        label: 'P',
+        grams: props.mealTotals.protein_g,
+        percent: pfcEnergy.value.p,
+        color: PFC_COLORS.p.css,
+    },
+    {
+        key: 'f',
+        label: 'F',
+        grams: props.mealTotals.fat_g,
+        percent: pfcEnergy.value.f,
+        color: PFC_COLORS.f.css,
+    },
+    {
+        key: 'c',
+        label: 'C',
+        grams: props.mealTotals.carb_g,
+        percent: pfcEnergy.value.c,
+        color: PFC_COLORS.c.css,
+    },
+]);
 
 const hasMealChartData = computed(() =>
     props.mealChartPoints.some(
@@ -264,9 +279,9 @@ const mealKcalChartOption = computed<EChartsCoreOption>(() => {
                 name: 'kcal',
                 type: 'line',
                 smooth: true,
-                ...chartLineSeriesStyle(CHART_COLORS.primary),
+                ...chartLineSeriesStyle(TREND_COLOR),
                 data: values,
-                areaStyle: { color: CHART_COLORS.primaryArea },
+                areaStyle: { color: 'rgba(107, 90, 237, 0.12)' },
             },
         ],
     };
@@ -398,9 +413,7 @@ const conditionChartOption = computed<EChartsCoreOption>(() => {
                 data: dates.map((date) => weightMap.get(date) ?? null),
                 tooltip: {
                     valueFormatter: (value: unknown) =>
-                        value == null || value === ''
-                            ? '—'
-                            : `${value} kg`,
+                        value == null || value === '' ? '—' : `${value} kg`,
                 },
             },
             {
@@ -412,14 +425,86 @@ const conditionChartOption = computed<EChartsCoreOption>(() => {
                 data: dates.map((date) => sleepHoursMap.get(date) ?? null),
                 tooltip: {
                     valueFormatter: (value: unknown) =>
-                        value == null || value === ''
-                            ? '—'
-                            : `${value} 時間`,
+                        value == null || value === '' ? '—' : `${value} 時間`,
                 },
             },
         ],
     };
 });
+
+/** Brand violet for the 7-day trend card (mockup). */
+const TREND_COLOR = '#6B5AED';
+
+type TrendTab = 'kcal' | 'weight' | 'pfc';
+
+const trendTabs: { id: TrendTab; label: string }[] = [
+    { id: 'kcal', label: 'カロリー' },
+    { id: 'weight', label: '体重' },
+    { id: 'pfc', label: 'PFC' },
+];
+const trendTab = ref<TrendTab>('kcal');
+
+const hasWeightChartData = computed(
+    () => (props.conditionChartSeries.weight ?? []).length > 0,
+);
+
+const weightChartOption = computed<EChartsCoreOption>(() => {
+    const dates = eachDateInclusive(props.chartFrom, props.chartTo);
+    const weightByDate = new Map(
+        (props.conditionChartSeries.weight ?? []).map((point) => [
+            point.date,
+            Number(point.value),
+        ]),
+    );
+
+    return {
+        grid: { ...RECORDS_MINI_GRID, bottom: 28 },
+        tooltip: { trigger: 'axis' },
+        xAxis: {
+            type: 'category',
+            data: dates.map((date) => date.slice(5)),
+            axisLabel: chartAxisLabel(10),
+            axisLine: chartAxisLine(),
+        },
+        yAxis: {
+            type: 'value',
+            scale: true,
+            axisLabel: chartAxisLabel(10),
+            splitLine: chartSplitLine(),
+        },
+        series: [
+            {
+                name: '体重',
+                type: 'line',
+                smooth: true,
+                ...chartLineSeriesStyle(TREND_COLOR),
+                data: dates.map((date) => weightByDate.get(date) ?? null),
+                tooltip: {
+                    valueFormatter: (value: unknown) =>
+                        value == null || value === '' ? '—' : `${value} kg`,
+                },
+            },
+        ],
+    };
+});
+
+const trendOption = computed<EChartsCoreOption>(() => {
+    if (trendTab.value === 'weight') {
+        return weightChartOption.value;
+    }
+
+    if (trendTab.value === 'pfc') {
+        return mealPfcChartOption.value;
+    }
+
+    return mealKcalChartOption.value;
+});
+
+const trendHasData = computed(() =>
+    trendTab.value === 'weight'
+        ? hasWeightChartData.value
+        : hasMealChartData.value,
+);
 
 const strengthItemNames = computed(() =>
     [...new Set(props.strengthChartPoints.map((point) => point.item_name))]
@@ -486,22 +571,6 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                 title="パフォーマンス管理"
                 subtitle="食事とコンディションを、すぐ記録して、すぐ振り返る"
             >
-                <template #hero>
-                    <div class="cd-hero-stat min-w-[8.5rem] flex-1">
-                        <p class="cd-hero-stat-label">摂取カロリー</p>
-                        <p class="cd-hero-stat-number">{{ Number(mealTotals.kcal).toLocaleString('ja-JP', { maximumFractionDigits: 0 }) }} <span class="text-xs font-medium">kcal</span></p>
-                        <p v-if="mealGoal" class="mt-1 text-xs text-white/80">目標 {{ Number(mealGoal.kcal).toLocaleString('ja-JP') }} kcal</p>
-                    </div>
-                    <div class="cd-hero-stat min-w-[8.5rem] flex-1">
-                        <p class="cd-hero-stat-label">体重</p>
-                        <p class="cd-hero-stat-number">{{ summaryMetrics.find((item) => item.key === 'weight')?.display ?? '—' }} <span class="text-xs font-medium">kg</span></p>
-                        <p class="mt-1 text-xs text-white/80">今日の測定</p>
-                    </div>
-                    <div class="cd-hero-stat min-w-[8.5rem] flex-1">
-                        <p class="cd-hero-stat-label">たんぱく質</p>
-                        <p class="cd-hero-stat-number">{{ Number(mealTotals.protein_g).toLocaleString('ja-JP', { maximumFractionDigits: 1 }) }} <span class="text-xs font-medium">g</span></p>
-                    </div>
-                </template>
                 <template #calendar>
                     <DateNavigator
                         compact
@@ -523,135 +592,174 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                 </template>
             </PageTabShell>
 
-            <PageSectionCard padding="none" aria-label="本日のサマリ">
-                <div
-                    class="grid grid-cols-2 divide-x divide-y divide-cd-line md:grid-cols-3 xl:grid-cols-6 xl:divide-y-0"
+            <!-- Intake vs goal (mockup: achievement ring) -->
+            <section
+                class="cd-panel flex items-center gap-5 p-5"
+                aria-label="摂取カロリーの達成率"
+            >
+                <CdProgressRing
+                    :percent="achievement.ringPercent"
+                    size="lg"
+                    :label="
+                        achievement.percent === null
+                            ? '目標未設定'
+                            : `達成率 ${achievement.percent}%`
+                    "
                 >
-                    <div class="relative p-4 pr-14">
-                        <Flame
-                            class="pointer-events-none absolute top-3 right-3 text-cd-icon-primary opacity-90"
-                            :size="28"
-                            :stroke-width="1.5"
-                        />
-                        <p class="font-sans text-xs text-cd-ink-muted">
-                            摂取カロリー
-                        </p>
-                        <p
-                            class="mt-2 font-sans text-2xl font-semibold text-cd-ink"
+                    <span class="cd-progress-ring-value">{{
+                        achievement.percent === null
+                            ? '—'
+                            : `${achievement.percent}%`
+                    }}</span>
+                    <span class="cd-progress-ring-caption">達成率</span>
+                </CdProgressRing>
+                <div class="min-w-0">
+                    <p class="font-sans text-sm text-cd-ink-muted">
+                        摂取カロリー
+                    </p>
+                    <p
+                        class="mt-1 font-sans text-[1.7rem] leading-tight font-bold text-cd-ink tabular-nums"
+                    >
+                        {{ formatKcal(mealTotals.kcal) }}
+                        <span class="text-sm font-medium text-cd-ink-muted">{{
+                            mealGoal
+                                ? `/ ${formatKcal(mealGoal.kcal)} kcal`
+                                : 'kcal'
+                        }}</span>
+                    </p>
+                    <p
+                        v-if="achievementBadge"
+                        class="cd-achievement-badge mt-2"
+                        :class="`cd-achievement-badge--${achievement.status}`"
+                    >
+                        {{ achievementBadge }}
+                    </p>
+                    <Link
+                        v-else
+                        :href="`/meals?date=${date}`"
+                        class="mt-2 inline-block font-sans text-xs font-semibold text-[var(--cd-hero-primary)] hover:underline"
+                    >
+                        目標未設定 · 食事記録で設定する
+                    </Link>
+                </div>
+            </section>
+
+            <!-- Condition tiles -->
+            <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+                <div
+                    v-for="item in summaryMetrics"
+                    :key="item.key"
+                    class="cd-panel flex flex-col items-center p-3 text-center"
+                >
+                    <component
+                        :is="item.icon"
+                        class="text-[var(--cd-hero-primary)]"
+                        :size="22"
+                        :stroke-width="1.7"
+                        aria-hidden="true"
+                    />
+                    <p class="mt-1 font-sans text-xs text-cd-ink-muted">
+                        {{ item.label }}
+                    </p>
+                    <p
+                        class="mt-0.5 font-sans text-xl font-bold text-cd-ink tabular-nums"
+                    >
+                        {{ item.display }}
+                        <span
+                            v-if="
+                                item.display !== '—' &&
+                                item.key !== 'sleep_minutes' &&
+                                item.key !== 'pain_level' &&
+                                item.key !== 'fatigue_level'
+                            "
+                            class="text-xs font-medium text-cd-ink-muted"
+                            >{{ item.unit }}</span
                         >
-                            {{
-                                Number(mealTotals.kcal).toLocaleString(
-                                    'ja-JP',
-                                    { maximumFractionDigits: 0 },
-                                )
-                            }}
-                            <span class="text-sm font-medium text-cd-ink-muted"
-                                >kcal</span
-                            >
-                        </p>
-                        <p
-                            v-if="mealGoal"
-                            class="mt-1 font-sans text-xs text-cd-ink-muted"
-                        >
-                            目標
-                            {{
-                                Number(mealGoal.kcal).toLocaleString('ja-JP', {
-                                    maximumFractionDigits: 0,
-                                })
-                            }}
-                            kcal
-                        </p>
+                    </p>
+                    <p
+                        v-if="item.delta"
+                        class="mt-0.5 font-sans text-[11px] text-cd-ink-muted"
+                    >
+                        {{ item.delta }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid gap-4 lg:grid-cols-2">
+                <!-- PFC balance -->
+                <section class="cd-panel p-5" aria-label="PFCバランス">
+                    <h2 class="font-sans text-lg font-bold text-cd-ink">
+                        PFCバランス
+                    </h2>
+                    <div class="mt-4 flex items-center gap-6">
                         <div
-                            v-if="kcalProgress !== null"
-                            class="mt-3 h-2 overflow-hidden rounded-full bg-cd-line/40"
+                            class="relative size-28 shrink-0 rounded-full"
+                            :style="pfcDonutStyle"
                         >
                             <div
-                                class="h-full rounded-full bg-primary"
-                                :style="{ width: `${kcalProgress}%` }"
+                                class="absolute inset-[24%] rounded-full bg-white"
                             />
                         </div>
-                    </div>
-
-                    <div class="p-4">
-                        <p class="font-sans text-xs text-cd-ink-muted">
-                            PFC バランス
-                        </p>
-                        <div class="mt-3 flex items-center gap-3">
-                            <div
-                                class="relative size-14 shrink-0 rounded-full"
-                                :style="pfcDonutStyle"
+                        <ul class="flex min-w-0 flex-1 flex-col gap-2.5">
+                            <li
+                                v-for="row in pfcRows"
+                                :key="row.key"
+                                class="flex items-center gap-2 font-sans text-sm text-cd-ink"
                             >
-                                <div
-                                    class="absolute inset-[22%] rounded-full bg-cd-surface"
+                                <span
+                                    aria-hidden="true"
+                                    class="size-2.5 shrink-0 rounded-full"
+                                    :style="{ background: row.color }"
                                 />
-                            </div>
-                            <div class="flex flex-col gap-1 font-sans text-xs">
-                                <span
-                                    class="inline-flex items-center gap-1.5 text-cd-pfc-p"
+                                <span class="w-4 font-bold">{{
+                                    row.label
+                                }}</span>
+                                <span class="font-bold tabular-nums"
+                                    >{{ formatGrams(row.grams) }} g</span
                                 >
-                                    <span
-                                        class="size-2 rounded-sm bg-cd-pfc-p"
-                                    />
-                                    P {{ pfcEnergy.p }}%
-                                </span>
                                 <span
-                                    class="inline-flex items-center gap-1.5 text-cd-pfc-f"
+                                    class="ml-auto text-cd-ink-muted tabular-nums"
+                                    >({{ row.percent }}%)</span
                                 >
-                                    <span
-                                        class="size-2 rounded-sm bg-cd-pfc-f"
-                                    />
-                                    F {{ pfcEnergy.f }}%
-                                </span>
-                                <span
-                                    class="inline-flex items-center gap-1.5 text-cd-pfc-c"
-                                >
-                                    <span
-                                        class="size-2 rounded-sm bg-cd-pfc-c"
-                                    />
-                                    C {{ pfcEnergy.c }}%
-                                </span>
-                            </div>
-                        </div>
+                            </li>
+                        </ul>
                     </div>
+                </section>
 
+                <!-- 7-day trend -->
+                <section class="cd-panel p-5" aria-label="7日間の推移">
+                    <h2 class="font-sans text-lg font-bold text-cd-ink">
+                        7日間の推移
+                    </h2>
                     <div
-                        v-for="item in summaryMetrics"
-                        :key="item.key"
-                        class="relative p-4 pr-14"
+                        class="cd-segment mt-3"
+                        role="tablist"
+                        aria-label="推移の表示切替"
                     >
-                        <component
-                            :is="item.icon"
-                            class="pointer-events-none absolute top-3 right-3 text-cd-icon-primary opacity-90"
-                            :size="28"
-                            :stroke-width="1.5"
-                        />
-                        <p class="font-sans text-xs text-cd-ink-muted">
-                            {{ item.label }}
-                        </p>
-                        <p
-                            class="mt-2 font-sans text-2xl font-semibold text-cd-ink"
+                        <button
+                            v-for="tab in trendTabs"
+                            :key="tab.id"
+                            type="button"
+                            role="tab"
+                            :aria-selected="trendTab === tab.id"
+                            @click="trendTab = tab.id"
                         >
-                            {{ item.display }}
-                            <span
-                                v-if="
-                                    item.display !== '—' &&
-                                    item.key !== 'sleep_minutes' &&
-                                    item.key !== 'pain_level' &&
-                                    item.key !== 'fatigue_level'
-                                "
-                                class="text-sm font-medium text-cd-ink-muted"
-                                >{{ item.unit }}</span
-                            >
-                        </p>
-                        <p
-                            v-if="item.delta"
-                            class="mt-1 font-sans text-xs text-cd-ink-muted"
-                        >
-                            {{ item.delta }}
-                        </p>
+                            {{ tab.label }}
+                        </button>
                     </div>
-                </div>
-            </PageSectionCard>
+                    <BaseChart
+                        v-if="trendHasData"
+                        :option="trendOption"
+                        class="mt-3 !h-44"
+                    />
+                    <p
+                        v-else
+                        class="mt-3 flex !h-44 items-center justify-center rounded-xl border border-dashed border-cd-line px-3 text-center font-sans text-sm text-cd-ink-muted"
+                    >
+                        この期間の記録がまだありません。記録すると推移が表示されます。
+                    </p>
+                </section>
+            </div>
 
             <div class="grid gap-4 lg:grid-cols-2">
                 <PageSectionCard aria-label="食事記録への入り口">
@@ -672,67 +780,32 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                                     食事記録
                                 </h2>
                                 <p class="font-sans text-sm text-cd-ink-muted">
-                                    直近7日の摂取推移を確認して、記録へ進みます。
+                                    今日の食事を記録し、週の記録を画像にできます。
                                 </p>
                             </div>
                         </div>
 
                         <div
-                            v-if="hasMealChartData"
-                            class="grid gap-3"
-                            aria-label="食事の直近7日推移"
+                            class="flex flex-col gap-2 sm:flex-row sm:items-center"
                         >
-                            <div>
-                                <div
-                                    class="mb-1 flex min-h-7 items-center"
-                                >
-                                    <p
-                                        class="font-sans text-xs text-cd-ink-muted"
-                                    >
-                                        エネルギー (kcal)
-                                    </p>
-                                </div>
-                                <BaseChart
-                                    :option="mealKcalChartOption"
-                                    class="!h-40"
-                                />
-                            </div>
-                            <div>
-                                <div
-                                    class="mb-1 flex min-h-7 items-center"
-                                >
-                                    <p
-                                        class="font-sans text-xs text-cd-ink-muted"
-                                    >
-                                        PFC (g)
-                                    </p>
-                                </div>
-                                <BaseChart
-                                    :option="mealPfcChartOption"
-                                    class="!h-40"
-                                />
-                            </div>
-                        </div>
-                        <p
-                            v-else
-                            class="rounded-xl border border-dashed border-cd-line px-3 py-6 text-center font-sans text-sm text-cd-ink-muted"
-                        >
-                            この期間の食事記録がまだありません。記録すると推移グラフが表示されます。
-                        </p>
-
-                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
                             <BodyStoryExportButton
                                 kind="weekly"
                                 :date="date"
                                 label="週の記録を画像にする"
                             />
-                            <Button as-child class="font-sans tracking-[0.06em]">
+                            <Button
+                                as-child
+                                class="font-sans tracking-[0.06em]"
+                            >
                                 <Link
                                     :href="`/meals?date=${date}`"
                                     class="inline-flex items-center gap-2"
                                 >
                                     食事を記録する
-                                    <ArrowRight :size="16" :stroke-width="1.6" />
+                                    <ArrowRight
+                                        :size="16"
+                                        :stroke-width="1.6"
+                                    />
                                 </Link>
                             </Button>
                         </div>
@@ -764,9 +837,7 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                             aria-label="コンディションの直近7日推移"
                         >
                             <div aria-label="体重・睡眠の直近7日推移">
-                                <div
-                                    class="mb-1 flex min-h-7 items-center"
-                                >
+                                <div class="mb-1 flex min-h-7 items-center">
                                     <p
                                         class="font-sans text-xs text-cd-ink-muted"
                                     >

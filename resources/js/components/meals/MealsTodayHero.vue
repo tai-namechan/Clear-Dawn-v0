@@ -2,6 +2,7 @@
 import { Sparkles } from '@lucide/vue';
 import { computed } from 'vue';
 import { Button } from '@/components/ui/button';
+import { kcalAchievement as calculateKcalAchievement } from '@/lib/kcalAchievement.mjs';
 
 interface Remaining {
     kcal: number;
@@ -45,16 +46,22 @@ const ringPercent = computed(() => {
     return Math.min(100, Math.max(0, props.kcalAchievement));
 });
 
+/** Real intake vs goal: the ring is capped, the text is not (design guidelines). */
+const achievement = computed(() =>
+    calculateKcalAchievement(props.totalsKcal, props.goalKcal),
+);
+const percentLabel = computed(() =>
+    achievement.value.percent === null ? '—' : `${achievement.value.percent}%`,
+);
+const isOverGoal = computed(() => achievement.value.status === 'over');
+
 const ringStyle = computed(() => ({
     background: `conic-gradient(var(--cd-primary) ${ringPercent.value}%, #E8E4F0 ${ringPercent.value}%)`,
 }));
 </script>
 
 <template>
-    <div
-        class="grid gap-4 lg:grid-cols-2"
-        aria-label="残りの摂取目安"
-    >
+    <div class="grid gap-4 lg:grid-cols-2" aria-label="残りの摂取目安">
         <section
             class="rounded-2xl border border-cd-line bg-white p-5 shadow-sm md:p-6"
         >
@@ -64,15 +71,15 @@ const ringStyle = computed(() => ({
                         class="flex size-[7.25rem] shrink-0 items-center justify-center rounded-full p-[12px] sm:size-[8rem]"
                         :style="ringStyle"
                         role="img"
-                        :aria-label="`達成率 ${ringPercent}%`"
+                        :aria-label="`達成率 ${percentLabel}`"
                     >
                         <div
                             class="flex size-full flex-col items-center justify-center rounded-full bg-white"
                         >
                             <span
-                                class="font-sans text-2xl font-bold leading-none text-cd-ink"
+                                class="font-sans text-2xl leading-none font-bold text-cd-ink"
                             >
-                                {{ ringPercent }}%
+                                {{ percentLabel }}
                             </span>
                             <span
                                 class="mt-1.5 font-sans text-xs text-cd-ink-muted"
@@ -91,7 +98,14 @@ const ringStyle = computed(() => ({
                         <p
                             class="mt-1.5 font-sans text-3xl font-bold tracking-tight text-cd-ink md:text-[2rem]"
                         >
-                            あと {{ formatNum(remaining.kcal) }}
+                            <template v-if="isOverGoal"
+                                >超過 +{{
+                                    formatNum(achievement.difference ?? 0)
+                                }}</template
+                            >
+                            <template v-else
+                                >あと {{ formatNum(remaining.kcal) }}</template
+                            >
                             <span
                                 class="text-base font-semibold text-cd-ink-muted"
                                 >kcal</span
@@ -100,7 +114,11 @@ const ringStyle = computed(() => ({
                         <p
                             class="mt-2 font-sans text-sm leading-relaxed text-cd-ink-muted"
                         >
-                            目標達成に向けて、あとこれだけ摂れます。
+                            {{
+                                isOverGoal
+                                    ? '今日の目標を超えています。'
+                                    : '目標達成に向けて、あとこれだけ摂れます。'
+                            }}
                         </p>
 
                         <template v-if="goalKcal !== null">
@@ -117,22 +135,18 @@ const ringStyle = computed(() => ({
                                     :style="{ width: `${ringPercent}%` }"
                                 />
                             </div>
-                            <p
-                                class="mt-2 font-sans text-xs text-cd-ink-muted"
-                            >
+                            <p class="mt-2 font-sans text-xs text-cd-ink-muted">
                                 {{ formatNum(totalsKcal) }} /
                                 {{ formatNum(goalKcal) }} kcal（{{
-                                    ringPercent
-                                }}%）
+                                    percentLabel
+                                }}）
                             </p>
                         </template>
                     </div>
                 </div>
             </template>
             <template v-else>
-                <p
-                    class="font-sans text-xs font-medium text-cd-ink-muted"
-                >
+                <p class="font-sans text-xs font-medium text-cd-ink-muted">
                     残りの摂取目安
                 </p>
                 <p class="mt-3 font-sans text-xl font-semibold text-cd-ink">
@@ -156,9 +170,7 @@ const ringStyle = computed(() => ({
                 残りの PFC
             </p>
             <div v-if="remaining" class="mt-3 grid grid-cols-3 gap-2.5">
-                <div
-                    class="rounded-2xl bg-[#E8F6EE] px-3 py-3 text-center"
-                >
+                <div class="rounded-2xl bg-[#E8F6EE] px-3 py-3 text-center">
                     <p class="font-sans text-xs font-semibold text-cd-pfc-p">
                         P
                     </p>
@@ -173,9 +185,7 @@ const ringStyle = computed(() => ({
                         目標 {{ formatNum(goalAmounts.protein_g) }} g
                     </p>
                 </div>
-                <div
-                    class="rounded-2xl bg-[#FFF1E4] px-3 py-3 text-center"
-                >
+                <div class="rounded-2xl bg-[#FFF1E4] px-3 py-3 text-center">
                     <p class="font-sans text-xs font-semibold text-cd-pfc-f">
                         F
                     </p>
@@ -190,9 +200,7 @@ const ringStyle = computed(() => ({
                         目標 {{ formatNum(goalAmounts.fat_g) }} g
                     </p>
                 </div>
-                <div
-                    class="rounded-2xl bg-[#E7F3FC] px-3 py-3 text-center"
-                >
+                <div class="rounded-2xl bg-[#E7F3FC] px-3 py-3 text-center">
                     <p class="font-sans text-xs font-semibold text-cd-pfc-c">
                         C
                     </p>

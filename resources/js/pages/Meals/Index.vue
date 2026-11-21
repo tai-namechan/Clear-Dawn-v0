@@ -8,6 +8,7 @@ import {
     Copy,
     Download,
     Leaf,
+    MoreVertical,
     Plus,
     ScanBarcode,
     Search,
@@ -38,10 +39,15 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiFetch } from '@/lib/apiFetch';
-import { PFC_COLORS } from '@/lib/pfcColors';
 import {
     CHART_COLORS,
     chartAxisLabel,
@@ -51,6 +57,8 @@ import {
     chartSplitLine,
     nutritionSeriesByDate,
 } from '@/lib/chartTheme';
+import { PFC_COLORS } from '@/lib/pfcColors';
+import { pfcEnergyShare } from '@/lib/pfcShare.mjs';
 import type {
     FoodItem,
     MealEntry,
@@ -124,7 +132,9 @@ const copyForm = ref({
 
 const showBarcodeModal = ref(false);
 const showRestaurantModal = ref(false);
-const restaurantInitialStep = ref<'photo_capture' | 'menu_input' | undefined>(undefined);
+const restaurantInitialStep = ref<'photo_capture' | 'menu_input' | undefined>(
+    undefined,
+);
 
 const entryPreview = computed(() => {
     const q = Number(entryForm.value.quantity) || 0;
@@ -134,7 +144,9 @@ const entryPreview = computed(() => {
     const baseP = Number(
         selectedFood.value?.protein_g ?? entryForm.value.protein_g ?? 0,
     );
-    const baseF = Number(selectedFood.value?.fat_g ?? entryForm.value.fat_g ?? 0);
+    const baseF = Number(
+        selectedFood.value?.fat_g ?? entryForm.value.fat_g ?? 0,
+    );
     const baseC = Number(
         selectedFood.value?.carb_g ?? entryForm.value.carb_g ?? 0,
     );
@@ -219,6 +231,29 @@ const kcalAchievement = computed(() => {
 
     return Math.round((props.totals.kcal / target) * 100);
 });
+
+const pfcShare = computed(() => pfcEnergyShare(props.totals));
+
+const pfcChips = computed(() => [
+    {
+        key: 'p',
+        label: 'P',
+        grams: props.totals.protein_g,
+        percent: pfcShare.value.p,
+    },
+    {
+        key: 'f',
+        label: 'F',
+        grams: props.totals.fat_g,
+        percent: pfcShare.value.f,
+    },
+    {
+        key: 'c',
+        label: 'C',
+        grams: props.totals.carb_g,
+        percent: pfcShare.value.c,
+    },
+]);
 
 const goalAmounts = computed(() => {
     if (!props.goal) {
@@ -424,7 +459,9 @@ function resetEntryForm(): void {
 }
 
 function nextMealType(): MealSection['meal_type'] {
-    const empty = props.sections.find((section) => section.entries.length === 0);
+    const empty = props.sections.find(
+        (section) => section.entries.length === 0,
+    );
 
     return empty?.meal_type ?? 'breakfast';
 }
@@ -475,7 +512,10 @@ function onBarcodeRegistered(food: FoodItem): void {
     router.reload({ only: ['sections', 'totals', 'chartPoints', 'goal'] });
 }
 
-function onMealAdded(payload: { food: FoodItem | null; entry: MealEntry }): void {
+function onMealAdded(payload: {
+    food: FoodItem | null;
+    entry: MealEntry;
+}): void {
     const name = payload.entry.name;
     message.value = `「${name}」を食事に追加しました。`;
     router.reload({ only: ['sections', 'totals', 'chartPoints', 'goal'] });
@@ -604,6 +644,7 @@ async function searchFoods(query: string): Promise<void> {
             `/meals/foods?${params.toString()}`,
         );
         foodResults.value = data.foods;
+
         if (query.trim() !== '') {
             showUsualSections.value = false;
         }
@@ -809,7 +850,9 @@ function applyChartFilter(): void {
     <Head title="食事記録" />
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
-        <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 md:gap-5">
+        <div
+            class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 md:gap-5"
+        >
             <PageTabShell
                 title="食事記録"
                 subtitle="残り摂取と次の一手を先に、記録は下で"
@@ -817,18 +860,45 @@ function applyChartFilter(): void {
                 back-label="パフォーマンス管理"
             >
                 <template #hero>
-                    <div class="cd-hero-stat min-w-[8.5rem] flex-1">
-                        <p class="cd-hero-stat-label">本日の摂取</p>
-                        <p class="cd-hero-stat-number">{{ Number(totals.kcal).toLocaleString('ja-JP', { maximumFractionDigits: 0 }) }} <span class="text-xs font-medium">kcal</span></p>
-                        <p v-if="goal" class="mt-1 text-xs text-white/80">目標 {{ Number(goal.kcal).toLocaleString('ja-JP') }} kcal</p>
-                    </div>
-                    <div class="cd-hero-stat min-w-[8.5rem] flex-1">
-                        <p class="cd-hero-stat-label">たんぱく質</p>
-                        <p class="cd-hero-stat-number">{{ Number(totals.protein_g).toLocaleString('ja-JP', { maximumFractionDigits: 1 }) }} <span class="text-xs font-medium">g</span></p>
-                    </div>
-                    <div class="cd-hero-stat min-w-[8.5rem] flex-1">
-                        <p class="cd-hero-stat-label">記録した食事</p>
-                        <p class="cd-hero-stat-number">{{ recordedEntries.length }} 件</p>
+                    <div class="cd-meal-summary">
+                        <div class="min-w-0">
+                            <p class="font-sans text-xs text-cd-ink-muted">
+                                本日の摂取
+                            </p>
+                            <p
+                                class="mt-1 font-sans text-[1.6rem] leading-tight font-bold whitespace-nowrap text-cd-ink tabular-nums"
+                            >
+                                {{ formatNum(totals.kcal) }}
+                                <span class="text-sm font-medium">kcal</span>
+                            </p>
+                            <p
+                                class="font-sans text-xs text-cd-ink-muted tabular-nums"
+                            >
+                                {{
+                                    goal
+                                        ? `/ ${formatNum(goal.kcal)} kcal`
+                                        : '目標未設定'
+                                }}
+                            </p>
+                        </div>
+                        <ul class="cd-pfc-chips" aria-label="PFC">
+                            <li
+                                v-for="chip in pfcChips"
+                                :key="chip.key"
+                                :class="`cd-pfc-chip cd-pfc-chip--${chip.key}`"
+                            >
+                                <span class="cd-pfc-chip-label">{{
+                                    chip.label
+                                }}</span>
+                                <span class="cd-pfc-chip-value"
+                                    >{{ formatNum(chip.grams)
+                                    }}<small>g</small></span
+                                >
+                                <span class="cd-pfc-chip-share"
+                                    >({{ chip.percent }}%)</span
+                                >
+                            </li>
+                        </ul>
                     </div>
                 </template>
                 <template #calendar>
@@ -903,48 +973,7 @@ function applyChartFilter(): void {
             </p>
 
             <!-- 今日（二次ブロック） -->
-            <div
-                v-show="activeTab === 'today'"
-                class="flex flex-col gap-4"
-            >
-                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    <button
-                        v-for="action in quickActions"
-                        :key="action.key"
-                        type="button"
-                        class="group flex items-center gap-3.5 rounded-2xl border border-cd-line bg-white px-4 py-5 text-left shadow-sm transition-colors hover:border-primary/35 hover:bg-[#F8F6FC]"
-                        :disabled="action.key === 'copy' && saving"
-                        @click="action.run()"
-                    >
-                        <span
-                            class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#F3F1F8] text-primary"
-                        >
-                            <component
-                                :is="action.icon"
-                                :size="22"
-                                :stroke-width="1.7"
-                            />
-                        </span>
-                        <span class="min-w-0 flex-1">
-                            <span
-                                class="block font-sans text-sm font-semibold text-cd-ink"
-                            >
-                                {{ action.title }}
-                            </span>
-                            <span
-                                class="mt-0.5 block font-sans text-xs text-cd-ink-muted"
-                            >
-                                {{ action.description }}
-                            </span>
-                        </span>
-                        <ChevronRight
-                            :size="16"
-                            :stroke-width="1.7"
-                            class="shrink-0 text-cd-ink-muted/70 transition-colors group-hover:text-primary"
-                        />
-                    </button>
-                </div>
-
+            <div v-show="activeTab === 'today'" class="flex flex-col gap-4">
                 <PageSectionCard padding="none" aria-label="今日の食事記録">
                     <div
                         class="flex items-center justify-between gap-3 border-b border-cd-line px-5 py-4"
@@ -952,9 +981,11 @@ function applyChartFilter(): void {
                         <h2
                             class="font-sans text-base font-semibold text-cd-ink"
                         >
-                            今日の食事記録
+                            食事一覧（今日）
                         </h2>
-                        <div class="flex flex-wrap items-center justify-end gap-2">
+                        <div
+                            class="flex flex-wrap items-center justify-end gap-2"
+                        >
                             <BodyStoryExportButton
                                 kind="nutrition"
                                 :date="date"
@@ -963,7 +994,7 @@ function applyChartFilter(): void {
                             <Button
                                 type="button"
                                 size="sm"
-                                class="font-sans"
+                                class="hidden font-sans md:inline-flex"
                                 @click="openAddEntry()"
                             >
                                 <Plus :size="14" :stroke-width="1.6" />
@@ -972,11 +1003,103 @@ function applyChartFilter(): void {
                         </div>
                     </div>
 
+                    <!-- Phones: meal list with photos (mockup) -->
+                    <ul
+                        v-if="recordedEntries.length > 0"
+                        class="flex flex-col md:hidden"
+                        aria-label="食事一覧"
+                    >
+                        <li
+                            v-for="entry in recordedEntries"
+                            :key="entry.id"
+                            class="flex items-center gap-3 border-b border-cd-line/70 px-4 py-3 last:border-b-0"
+                        >
+                            <span
+                                class="flex size-7 shrink-0 items-center justify-center rounded-full"
+                                :class="mealTypeMeta[entry.meal_type].className"
+                                aria-hidden="true"
+                            >
+                                <component
+                                    :is="mealTypeMeta[entry.meal_type].icon"
+                                    :size="14"
+                                    :stroke-width="1.8"
+                                />
+                            </span>
+                            <button
+                                v-if="entry.has_photo && entry.photo_url"
+                                type="button"
+                                class="size-14 shrink-0 overflow-hidden rounded-xl border border-cd-line bg-cd-surface"
+                                :aria-label="`${entry.name} の写真を見る`"
+                                @click="openPhotoPreview(entry)"
+                            >
+                                <img
+                                    :src="entry.photo_url"
+                                    :alt="entry.name"
+                                    class="size-full object-cover"
+                                />
+                            </button>
+                            <button
+                                type="button"
+                                class="min-w-0 flex-1 text-left"
+                                :aria-label="`${entry.name} を編集`"
+                                @click="openEditEntry(entry)"
+                            >
+                                <span
+                                    class="block font-sans text-xs font-semibold text-cd-ink-muted"
+                                    >{{ entry.sectionLabel }}</span
+                                >
+                                <span
+                                    class="block truncate font-sans text-[15px] text-cd-ink"
+                                >
+                                    {{ entry.name }}
+                                    <span class="text-cd-ink-muted"
+                                        >× {{ formatNum(entry.quantity) }}</span
+                                    >
+                                </span>
+                                <span
+                                    class="block font-sans text-xs text-cd-ink-muted tabular-nums"
+                                    >{{ formatNum(entry.kcal) }} kcal</span
+                                >
+                            </button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger as-child>
+                                    <button
+                                        type="button"
+                                        class="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-cd-ink-muted hover:bg-[#f3f1f8]"
+                                        :aria-label="`${entry.name} の操作`"
+                                    >
+                                        <MoreVertical
+                                            :size="18"
+                                            :stroke-width="1.8"
+                                        />
+                                    </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                        @select="openEditEntry(entry)"
+                                        >編集</DropdownMenuItem
+                                    >
+                                    <DropdownMenuItem
+                                        @select="openCopyEntry(entry)"
+                                        >コピー</DropdownMenuItem
+                                    >
+                                    <DropdownMenuItem
+                                        class="text-destructive"
+                                        @select="deleteEntry(entry)"
+                                        >削除</DropdownMenuItem
+                                    >
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </li>
+                    </ul>
+
                     <div
                         v-if="recordedEntries.length > 0"
-                        class="overflow-x-auto"
+                        class="hidden overflow-x-auto md:block"
                     >
-                        <table class="w-full min-w-[40rem] border-collapse text-left">
+                        <table
+                            class="w-full min-w-[40rem] border-collapse text-left"
+                        >
                             <thead>
                                 <tr
                                     class="border-b border-cd-line bg-[#FAFAFC] font-sans text-[11px] font-medium text-cd-ink-muted"
@@ -1025,8 +1148,9 @@ function applyChartFilter(): void {
                                             <span
                                                 class="flex size-7 items-center justify-center rounded-full"
                                                 :class="
-                                                    mealTypeMeta[entry.meal_type]
-                                                        .className
+                                                    mealTypeMeta[
+                                                        entry.meal_type
+                                                    ].className
                                                 "
                                             >
                                                 <component
@@ -1047,7 +1171,10 @@ function applyChartFilter(): void {
                                     >
                                         <div class="flex items-center gap-2.5">
                                             <button
-                                                v-if="entry.has_photo && entry.photo_url"
+                                                v-if="
+                                                    entry.has_photo &&
+                                                    entry.photo_url
+                                                "
                                                 type="button"
                                                 class="size-10 shrink-0 overflow-hidden rounded-lg border border-cd-line bg-cd-surface"
                                                 :aria-label="`${entry.name} の写真を見る`"
@@ -1061,10 +1188,13 @@ function applyChartFilter(): void {
                                             </button>
                                             <span class="min-w-0 truncate">
                                                 {{ entry.name }}
-                                                <span
-                                                    class="text-cd-ink-muted"
-                                                >
-                                                    × {{ formatNum(entry.quantity) }}
+                                                <span class="text-cd-ink-muted">
+                                                    ×
+                                                    {{
+                                                        formatNum(
+                                                            entry.quantity,
+                                                        )
+                                                    }}
                                                 </span>
                                             </span>
                                         </div>
@@ -1090,9 +1220,7 @@ function applyChartFilter(): void {
                                         {{ formatNum(entry.carb_g) }}
                                     </td>
                                     <td class="px-5 py-3.5">
-                                        <div
-                                            class="flex justify-end gap-1.5"
-                                        >
+                                        <div class="flex justify-end gap-1.5">
                                             <Button
                                                 type="button"
                                                 size="sm"
@@ -1169,7 +1297,66 @@ function applyChartFilter(): void {
                             まだ食事は記録されていません。上のクイック操作か「食事を追加」から始めましょう。
                         </p>
                     </div>
+
+                    <div
+                        class="grid grid-cols-2 gap-3 border-t border-cd-line/70 p-4 md:hidden"
+                    >
+                        <Button
+                            type="button"
+                            variant="outline"
+                            class="h-12 rounded-full font-sans font-bold"
+                            @click="openAddEntry()"
+                        >
+                            <Plus :size="16" :stroke-width="1.8" />
+                            食事を追加
+                        </Button>
+                        <Button
+                            type="button"
+                            class="h-12 rounded-full font-sans font-bold"
+                            @click="openPhotoEstimate()"
+                        >
+                            <Camera :size="16" :stroke-width="1.8" />
+                            画像から記録
+                        </Button>
+                    </div>
                 </PageSectionCard>
+                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    <button
+                        v-for="action in quickActions"
+                        :key="action.key"
+                        type="button"
+                        class="group flex items-center gap-3.5 rounded-2xl border border-cd-line bg-white px-4 py-5 text-left shadow-sm transition-colors hover:border-primary/35 hover:bg-[#F8F6FC]"
+                        :disabled="action.key === 'copy' && saving"
+                        @click="action.run()"
+                    >
+                        <span
+                            class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#F3F1F8] text-primary"
+                        >
+                            <component
+                                :is="action.icon"
+                                :size="22"
+                                :stroke-width="1.7"
+                            />
+                        </span>
+                        <span class="min-w-0 flex-1">
+                            <span
+                                class="block font-sans text-sm font-semibold text-cd-ink"
+                            >
+                                {{ action.title }}
+                            </span>
+                            <span
+                                class="mt-0.5 block font-sans text-xs text-cd-ink-muted"
+                            >
+                                {{ action.description }}
+                            </span>
+                        </span>
+                        <ChevronRight
+                            :size="16"
+                            :stroke-width="1.7"
+                            class="shrink-0 text-cd-ink-muted/70 transition-colors group-hover:text-primary"
+                        />
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -1185,7 +1372,12 @@ function applyChartFilter(): void {
             <div class="grid grid-cols-2 gap-3">
                 <div class="flex flex-col gap-1">
                     <Label class="font-sans text-xs">kcal</Label>
-                    <Input v-model="goalForm.kcal" type="number" min="0" step="1" />
+                    <Input
+                        v-model="goalForm.kcal"
+                        type="number"
+                        min="0"
+                        step="1"
+                    />
                 </div>
                 <div class="flex flex-col gap-1">
                     <Label class="font-sans text-xs">P (g)</Label>
@@ -1319,7 +1511,9 @@ function applyChartFilter(): void {
                     class="max-h-56 space-y-3 overflow-y-auto"
                 >
                     <div v-if="usualFavorites.length > 0">
-                        <p class="mb-1 font-sans text-xs font-semibold text-cd-ink-muted">
+                        <p
+                            class="mb-1 font-sans text-xs font-semibold text-cd-ink-muted"
+                        >
                             お気に入り
                         </p>
                         <ul class="rounded-lg border border-cd-line">
@@ -1327,14 +1521,22 @@ function applyChartFilter(): void {
                                 v-for="food in usualFavorites"
                                 :key="`fav-${food.id}`"
                                 class="flex cursor-pointer items-center gap-2 border-b border-cd-line px-3 py-2 last:border-b-0 hover:bg-muted/40"
-                                :class="selectedFood?.id === food.id ? 'bg-primary/5' : ''"
+                                :class="
+                                    selectedFood?.id === food.id
+                                        ? 'bg-primary/5'
+                                        : ''
+                                "
                                 @click="selectFood(food)"
                             >
                                 <div class="min-w-0 flex-1">
-                                    <p class="font-sans text-sm font-medium text-cd-ink">
+                                    <p
+                                        class="font-sans text-sm font-medium text-cd-ink"
+                                    >
                                         {{ food.name }}
                                     </p>
-                                    <p class="font-sans text-xs text-cd-ink-muted">
+                                    <p
+                                        class="font-sans text-xs text-cd-ink-muted"
+                                    >
                                         {{ food.serving_label }} ·
                                         {{ formatNum(food.kcal) }} kcal · P
                                         {{ formatNum(food.protein_g) }} / F
@@ -1350,14 +1552,20 @@ function applyChartFilter(): void {
                                 >
                                     <Star
                                         :size="16"
-                                        :fill="food.is_favorite ? 'currentColor' : 'none'"
+                                        :fill="
+                                            food.is_favorite
+                                                ? 'currentColor'
+                                                : 'none'
+                                        "
                                     />
                                 </button>
                             </li>
                         </ul>
                     </div>
                     <div v-if="usualRecent.length > 0">
-                        <p class="mb-1 font-sans text-xs font-semibold text-cd-ink-muted">
+                        <p
+                            class="mb-1 font-sans text-xs font-semibold text-cd-ink-muted"
+                        >
                             最近使った
                         </p>
                         <ul class="rounded-lg border border-cd-line">
@@ -1365,14 +1573,22 @@ function applyChartFilter(): void {
                                 v-for="food in usualRecent"
                                 :key="`recent-${food.id}`"
                                 class="flex cursor-pointer items-center gap-2 border-b border-cd-line px-3 py-2 last:border-b-0 hover:bg-muted/40"
-                                :class="selectedFood?.id === food.id ? 'bg-primary/5' : ''"
+                                :class="
+                                    selectedFood?.id === food.id
+                                        ? 'bg-primary/5'
+                                        : ''
+                                "
                                 @click="selectFood(food)"
                             >
                                 <div class="min-w-0 flex-1">
-                                    <p class="font-sans text-sm font-medium text-cd-ink">
+                                    <p
+                                        class="font-sans text-sm font-medium text-cd-ink"
+                                    >
                                         {{ food.name }}
                                     </p>
-                                    <p class="font-sans text-xs text-cd-ink-muted">
+                                    <p
+                                        class="font-sans text-xs text-cd-ink-muted"
+                                    >
                                         {{ food.serving_label }} ·
                                         {{ formatNum(food.kcal) }} kcal
                                     </p>
@@ -1385,14 +1601,20 @@ function applyChartFilter(): void {
                                 >
                                     <Star
                                         :size="16"
-                                        :fill="food.is_favorite ? 'currentColor' : 'none'"
+                                        :fill="
+                                            food.is_favorite
+                                                ? 'currentColor'
+                                                : 'none'
+                                        "
                                     />
                                 </button>
                             </li>
                         </ul>
                     </div>
                     <div v-if="usualFrequent.length > 0">
-                        <p class="mb-1 font-sans text-xs font-semibold text-cd-ink-muted">
+                        <p
+                            class="mb-1 font-sans text-xs font-semibold text-cd-ink-muted"
+                        >
                             よく使う
                         </p>
                         <ul class="rounded-lg border border-cd-line">
@@ -1400,14 +1622,22 @@ function applyChartFilter(): void {
                                 v-for="food in usualFrequent"
                                 :key="`freq-${food.id}`"
                                 class="flex cursor-pointer items-center gap-2 border-b border-cd-line px-3 py-2 last:border-b-0 hover:bg-muted/40"
-                                :class="selectedFood?.id === food.id ? 'bg-primary/5' : ''"
+                                :class="
+                                    selectedFood?.id === food.id
+                                        ? 'bg-primary/5'
+                                        : ''
+                                "
                                 @click="selectFood(food)"
                             >
                                 <div class="min-w-0 flex-1">
-                                    <p class="font-sans text-sm font-medium text-cd-ink">
+                                    <p
+                                        class="font-sans text-sm font-medium text-cd-ink"
+                                    >
                                         {{ food.name }}
                                     </p>
-                                    <p class="font-sans text-xs text-cd-ink-muted">
+                                    <p
+                                        class="font-sans text-xs text-cd-ink-muted"
+                                    >
                                         {{ food.serving_label }} ·
                                         {{ formatNum(food.kcal) }} kcal
                                     </p>
@@ -1420,7 +1650,11 @@ function applyChartFilter(): void {
                                 >
                                     <Star
                                         :size="16"
-                                        :fill="food.is_favorite ? 'currentColor' : 'none'"
+                                        :fill="
+                                            food.is_favorite
+                                                ? 'currentColor'
+                                                : 'none'
+                                        "
                                     />
                                 </button>
                             </li>
@@ -1446,11 +1680,15 @@ function applyChartFilter(): void {
                         v-for="food in foodResults"
                         :key="food.id"
                         class="flex cursor-pointer items-center gap-2 border-b border-cd-line px-3 py-2 last:border-b-0 hover:bg-muted/40"
-                        :class="selectedFood?.id === food.id ? 'bg-primary/5' : ''"
+                        :class="
+                            selectedFood?.id === food.id ? 'bg-primary/5' : ''
+                        "
                         @click="selectFood(food)"
                     >
                         <div class="min-w-0 flex-1">
-                            <p class="font-sans text-sm font-medium text-cd-ink">
+                            <p
+                                class="font-sans text-sm font-medium text-cd-ink"
+                            >
                                 {{ food.name }}
                             </p>
                             <p class="font-sans text-xs text-cd-ink-muted">
@@ -1469,7 +1707,9 @@ function applyChartFilter(): void {
                         >
                             <Star
                                 :size="16"
-                                :fill="food.is_favorite ? 'currentColor' : 'none'"
+                                :fill="
+                                    food.is_favorite ? 'currentColor' : 'none'
+                                "
                             />
                         </button>
                     </li>
@@ -1485,11 +1725,20 @@ function applyChartFilter(): void {
             <div v-else class="grid grid-cols-2 gap-3">
                 <div class="col-span-2 flex flex-col gap-1">
                     <Label class="font-sans text-xs">名前</Label>
-                    <Input v-model="entryForm.name" type="text" maxlength="100" />
+                    <Input
+                        v-model="entryForm.name"
+                        type="text"
+                        maxlength="100"
+                    />
                 </div>
                 <div class="flex flex-col gap-1">
                     <Label class="font-sans text-xs">kcal</Label>
-                    <Input v-model="entryForm.kcal" type="number" min="0" step="0.1" />
+                    <Input
+                        v-model="entryForm.kcal"
+                        type="number"
+                        min="0"
+                        step="0.1"
+                    />
                 </div>
                 <div class="flex flex-col gap-1">
                     <Label class="font-sans text-xs">P (g)</Label>
@@ -1533,7 +1782,9 @@ function applyChartFilter(): void {
 
             <div class="grid grid-cols-2 gap-3">
                 <div class="flex flex-col gap-1">
-                    <Label class="font-sans text-xs">数量（サービング倍率）</Label>
+                    <Label class="font-sans text-xs"
+                        >数量（サービング倍率）</Label
+                    >
                     <Input
                         v-model="entryForm.quantity"
                         type="number"
@@ -1547,7 +1798,11 @@ function applyChartFilter(): void {
                 </div>
                 <div class="flex flex-col gap-1">
                     <Label class="font-sans text-xs">メモ</Label>
-                    <Input v-model="entryForm.note" type="text" maxlength="500" />
+                    <Input
+                        v-model="entryForm.note"
+                        type="text"
+                        maxlength="500"
+                    />
                 </div>
                 <div
                     class="col-span-2 rounded-lg bg-muted/40 px-3 py-2 font-sans text-xs text-cd-ink-muted"
@@ -1591,7 +1846,9 @@ function applyChartFilter(): void {
             <DialogHeader>
                 <DialogTitle class="font-sans">食事をコピー</DialogTitle>
                 <DialogDescription class="font-sans text-sm text-cd-ink-muted">
-                    「{{ copyingEntry?.name }}」を指定日・区分へコピーします。元の記録は変更されません。
+                    「{{
+                        copyingEntry?.name
+                    }}」を指定日・区分へコピーします。元の記録は変更されません。
                 </DialogDescription>
             </DialogHeader>
             <div class="grid grid-cols-2 gap-3">

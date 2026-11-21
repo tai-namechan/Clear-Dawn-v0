@@ -5,6 +5,8 @@
  */
 .cd-clear-app {
     --cd-hero-primary: #6b5aed;
+    /* Rings and badges that read --cd-primary follow the brand violet here. */
+    --cd-primary: #6b5aed;
     --cd-hero-primary-hover: #5a49dc;
     --cd-hero-primary-soft: #efecff;
     --cd-hero-ink: #211f41;
@@ -371,6 +373,9 @@
 .cd-clear-app .bg-primary {
     background-color: var(--cd-hero-primary);
 }
+.cd-clear-app .bg-primary\/70 {
+    background-color: rgba(107, 90, 237, 0.7);
+}
 .cd-clear-app .bg-primary:hover,
 .cd-clear-app .hover\:bg-primary\/90:hover {
     background-color: var(--cd-hero-primary-hover);
@@ -502,7 +507,7 @@
 .cd-clear-app .cd-home-area-icon {
     color: var(--cd-hero-primary);
 }
-.cd-clear-app .cd-home-segment {
+.cd-clear-app .cd-segment {
     display: grid;
     grid-auto-columns: minmax(0, 1fr);
     grid-auto-flow: column;
@@ -511,7 +516,7 @@
     background: #f1eff7;
     padding: 0.25rem;
 }
-.cd-clear-app .cd-home-segment button {
+.cd-clear-app .cd-segment button {
     border-radius: 999px;
     padding: 0.55rem 0.5rem;
     font-size: 0.9rem;
@@ -521,12 +526,130 @@
         background-color 0.15s ease,
         color 0.15s ease;
 }
-.cd-clear-app .cd-home-segment button[aria-selected='true'] {
+.cd-clear-app .cd-segment button[aria-selected='true'] {
     background: var(--cd-hero-primary);
     color: #fff;
     box-shadow: 0 6px 16px rgba(107, 90, 237, 0.28);
 }
-.cd-clear-app .cd-home-segment button:focus-visible {
+.cd-clear-app .cd-segment button:focus-visible {
     outline: 2px solid var(--cd-hero-primary);
     outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- Progress ring & achievement badge */
+.cd-clear-app .cd-progress-ring {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    border-radius: 999px;
+    background: conic-gradient(
+        var(--cd-hero-primary) var(--cd-ring-fill, 0deg),
+        #ebe7f7 0
+    );
+}
+.cd-clear-app .cd-progress-ring--lg {
+    width: 7.5rem;
+    height: 7.5rem;
+}
+.cd-clear-app .cd-progress-ring--md {
+    width: 5.75rem;
+    height: 5.75rem;
+}
+.cd-clear-app .cd-progress-ring-inner {
+    display: flex;
+    width: calc(100% - 1.25rem);
+    height: calc(100% - 1.25rem);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--cd-hero-ink);
+}
+.cd-clear-app .cd-progress-ring-value {
+    font-size: 1.6rem;
+    font-weight: 750;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    color: var(--cd-hero-primary);
+}
+.cd-clear-app .cd-progress-ring--md .cd-progress-ring-value {
+    font-size: 1.25rem;
+}
+.cd-clear-app .cd-progress-ring-caption {
+    margin-top: 0.15rem;
+    font-size: 0.7rem;
+    color: var(--cd-hero-muted);
+}
+.cd-clear-app .cd-achievement-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.2rem 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+/* Over the goal is a fact, not a failure: warm but calm, never alarm red. */
+.cd-clear-app .cd-achievement-badge--over {
+    background: #fde9e4;
+    color: #b4543c;
+}
+.cd-clear-app .cd-achievement-badge--remaining,
+.cd-clear-app .cd-achievement-badge--reached {
+    background: var(--cd-hero-primary-soft);
+    color: #4f3fd0;
+}
+
+/* ---------------------------------------------------------------- Meals summary */
+.cd-clear-app .cd-meal-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 0.75rem 0.75rem 1rem;
+}
+.cd-clear-app .cd-pfc-chips {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(3.9rem, 1fr));
+    gap: 0.4rem;
+}
+.cd-clear-app .cd-pfc-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-radius: 0.9rem;
+    padding: 0.45rem 0.35rem;
+    font-variant-numeric: tabular-nums;
+}
+.cd-clear-app .cd-pfc-chip-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+.cd-clear-app .cd-pfc-chip-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--cd-hero-ink);
+}
+.cd-clear-app .cd-pfc-chip-value small {
+    margin-left: 0.1rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+.cd-clear-app .cd-pfc-chip-share {
+    font-size: 0.68rem;
+    color: var(--cd-hero-muted);
+}
+.cd-clear-app .cd-pfc-chip--p {
+    background: #e8f5ee;
+    color: #3f9a70;
+}
+.cd-clear-app .cd-pfc-chip--f {
+    background: #fbefe1;
+    color: #c07a2c;
+}
+.cd-clear-app .cd-pfc-chip--c {
+    background: #e6f0fa;
+    color: #3b82c4;
 }
