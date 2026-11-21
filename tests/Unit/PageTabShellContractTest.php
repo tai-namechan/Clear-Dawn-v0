@@ -92,15 +92,10 @@ class PageTabShellContractTest extends TestCase
             $routines,
             'Today tab prioritizes session progress after fold-in',
         );
-        $this->assertStringContainsString(
+        $this->assertStringNotContainsString(
             'TodayOpsPrimary',
             $routines,
-            'Today tab owns ops after /today fold-in',
-        );
-        $this->assertStringContainsString(
-            '/records/condition',
-            $routines,
-            'Condition CTA must use the records.condition path, not /condition',
+            'The ops card is no longer shown on the routines today tab (2026-11-22)',
         );
         $this->assertStringNotContainsString(
             'href="/condition"',

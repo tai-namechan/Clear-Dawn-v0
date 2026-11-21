@@ -4,25 +4,17 @@ import {
     CalendarPlus,
     ChevronDown,
     Dumbbell,
-    Heart,
     NotebookPen,
     Plus,
-    Utensils,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
-import CdProgressRing from '@/components/CdProgressRing.vue';
 import PageTabShell from '@/components/PageTabShell.vue';
 import PageViewTabs from '@/components/PageViewTabs.vue';
-import TodayOpsPrimary from '@/components/routine/TodayOpsPrimary.vue';
 import TodayPlanCard from '@/components/routine/TodayPlanCard.vue';
 import TodayProgressPanel from '@/components/routine/TodayProgressPanel.vue';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/apiFetch';
 import { categoryIcon } from '@/lib/categoryIcon';
-import {
-    kcalAchievement,
-    kcalAchievementBadge,
-} from '@/lib/kcalAchievement.mjs';
 import { activityLogEventTypeLabels } from '@/lib/routineConstants';
 import { displayDurationMinutes, planRunStatus } from '@/lib/todayPlanDisplay';
 import type { ActivityLog, Routine, RoutinePlan } from '@/types/routine';
@@ -79,6 +71,14 @@ const visiblePlans = computed(() => {
 });
 
 const completedCount = computed(() => completedPlans.value.length);
+
+const sessionChecklist = computed(() =>
+    displayedPlans.value.map((plan) => ({
+        id: plan.id,
+        title: plan.title,
+        done: planRunStatus(plan) === 'completed',
+    })),
+);
 const totalCount = computed(() => displayedPlans.value.length);
 
 const totalMinutes = computed(() =>
@@ -92,49 +92,6 @@ function choiceContextFor(planId: string) {
         (context) => context.plan_id === planId,
     );
 }
-
-const nutritionTarget = computed(
-    () =>
-        props.ops.nutrition?.profile ??
-        props.ops.nutrition?.fallback_goal ??
-        null,
-);
-const nutritionIntake = computed(
-    () =>
-        props.ops.nutrition?.intake ?? {
-            kcal: 0,
-            protein_g: 0,
-            fat_g: 0,
-            carb_g: 0,
-        },
-);
-
-const mealAchievement = computed(() =>
-    kcalAchievement(
-        Number(nutritionIntake.value.kcal),
-        nutritionTarget.value?.kcal,
-    ),
-);
-const mealAchievementBadge = computed(() =>
-    kcalAchievementBadge(mealAchievement.value),
-);
-
-const kcalProgress = computed(() => {
-    if (!nutritionTarget.value) {
-        return 0;
-    }
-
-    const target = Number(nutritionTarget.value.kcal);
-
-    if (target <= 0) {
-        return 0;
-    }
-
-    return Math.min(
-        100,
-        Math.round((Number(nutritionIntake.value.kcal) / target) * 100),
-    );
-});
 
 function onTabChange(tab: string): void {
     activeTab.value = tab as 'today' | 'routines' | 'history';
@@ -229,6 +186,7 @@ function historyDescription(log: ActivityLog): string {
                         :completed-count="completedCount"
                         :total-count="totalCount"
                         :total-minutes="totalMinutes"
+                        :sessions="sessionChecklist"
                     />
                 </template>
                 <template #actions>
@@ -253,7 +211,7 @@ function historyDescription(log: ActivityLog): string {
                     />
                 </template>
 
-                <!-- 今日: セッション + 食事 → 作戦 -->
+                <!-- 今日: セッションの実行に集中 -->
                 <div
                     v-show="activeTab === 'today'"
                     id="panel-today"
@@ -285,9 +243,9 @@ function historyDescription(log: ActivityLog): string {
                                 </div>
                             </div>
 
-                            <div
+                            <ul
                                 v-if="visiblePlans.length > 0"
-                                class="flex min-w-0 flex-col gap-3"
+                                class="flex min-w-0 list-none flex-col gap-3"
                             >
                                 <TodayPlanCard
                                     v-for="plan in visiblePlans"
@@ -296,7 +254,7 @@ function historyDescription(log: ActivityLog): string {
                                     :date="date"
                                     :choice-context="choiceContextFor(plan.id)"
                                 />
-                            </div>
+                            </ul>
 
                             <div
                                 v-else
@@ -367,203 +325,7 @@ function historyDescription(log: ActivityLog): string {
                                 }}
                             </button>
                         </section>
-
-                        <aside
-                            class="min-w-0 rounded-2xl border border-cd-line bg-white p-4 shadow-sm md:p-5"
-                            aria-label="今日の状態"
-                        >
-                            <h2
-                                class="font-sans text-base font-bold tracking-tight text-cd-ink"
-                            >
-                                今日の食事状況
-                                <span class="sr-only">（食事の残り）</span>
-                            </h2>
-
-                            <template v-if="nutritionTarget">
-                                <div
-                                    class="mt-3 flex items-center justify-between gap-3"
-                                >
-                                    <div class="min-w-0">
-                                        <p
-                                            class="font-sans text-2xl font-bold tracking-tight text-cd-ink tabular-nums"
-                                        >
-                                            {{
-                                                Number(
-                                                    nutritionIntake.kcal,
-                                                ).toLocaleString('ja-JP')
-                                            }}
-                                            <span
-                                                class="text-sm font-medium text-cd-ink-muted"
-                                                >/
-                                                {{
-                                                    Number(
-                                                        nutritionTarget.kcal,
-                                                    ).toLocaleString('ja-JP')
-                                                }}
-                                                kcal</span
-                                            >
-                                        </p>
-                                        <p
-                                            v-if="mealAchievementBadge"
-                                            class="cd-achievement-badge mt-2"
-                                            :class="`cd-achievement-badge--${mealAchievement.status}`"
-                                        >
-                                            {{ mealAchievementBadge }}
-                                        </p>
-                                    </div>
-                                    <CdProgressRing
-                                        :percent="mealAchievement.ringPercent"
-                                        size="md"
-                                        :label="`食事の達成率 ${mealAchievement.percent ?? 0}%`"
-                                    >
-                                        <span class="cd-progress-ring-value"
-                                            >{{
-                                                mealAchievement.percent ?? 0
-                                            }}%</span
-                                        >
-                                    </CdProgressRing>
-                                </div>
-                                <div
-                                    class="mt-3 h-3.5 overflow-hidden rounded-full bg-[#EAE6F2]"
-                                    role="progressbar"
-                                    :aria-valuenow="kcalProgress"
-                                    aria-valuemin="0"
-                                    aria-valuemax="100"
-                                    aria-label="カロリー進捗"
-                                >
-                                    <div
-                                        class="h-full rounded-full bg-primary transition-[width] duration-300"
-                                        :style="{ width: `${kcalProgress}%` }"
-                                    />
-                                </div>
-                                <div class="mt-4 grid grid-cols-3 gap-2.5">
-                                    <div class="min-w-0">
-                                        <p
-                                            class="font-sans text-[10px] text-cd-ink-muted"
-                                        >
-                                            たんぱく質
-                                        </p>
-                                        <div
-                                            class="mt-1.5 h-2 overflow-hidden rounded-full bg-[#EAE6F2]"
-                                        >
-                                            <div
-                                                class="h-full rounded-full bg-primary/70"
-                                                :style="{
-                                                    width: `${Math.min(100, Math.round((Number(nutritionIntake.protein_g) / Math.max(1, Number(nutritionTarget.protein_g))) * 100))}%`,
-                                                }"
-                                            />
-                                        </div>
-                                        <p
-                                            class="mt-1 font-sans text-xs font-semibold text-cd-ink"
-                                        >
-                                            {{
-                                                Number(
-                                                    nutritionIntake.protein_g,
-                                                )
-                                            }}/{{
-                                                Number(
-                                                    nutritionTarget.protein_g,
-                                                )
-                                            }}g
-                                        </p>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <p
-                                            class="font-sans text-[10px] text-cd-ink-muted"
-                                        >
-                                            脂質
-                                        </p>
-                                        <div
-                                            class="mt-1.5 h-2 overflow-hidden rounded-full bg-[#EAE6F2]"
-                                        >
-                                            <div
-                                                class="h-full rounded-full bg-primary/70"
-                                                :style="{
-                                                    width: `${Math.min(100, Math.round((Number(nutritionIntake.fat_g) / Math.max(1, Number(nutritionTarget.fat_g))) * 100))}%`,
-                                                }"
-                                            />
-                                        </div>
-                                        <p
-                                            class="mt-1 font-sans text-xs font-semibold text-cd-ink"
-                                        >
-                                            {{
-                                                Number(nutritionIntake.fat_g)
-                                            }}/{{
-                                                Number(nutritionTarget.fat_g)
-                                            }}g
-                                        </p>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <p
-                                            class="font-sans text-[10px] text-cd-ink-muted"
-                                        >
-                                            炭水化物
-                                        </p>
-                                        <div
-                                            class="mt-1.5 h-2 overflow-hidden rounded-full bg-[#EAE6F2]"
-                                        >
-                                            <div
-                                                class="h-full rounded-full bg-primary/70"
-                                                :style="{
-                                                    width: `${Math.min(100, Math.round((Number(nutritionIntake.carb_g) / Math.max(1, Number(nutritionTarget.carb_g))) * 100))}%`,
-                                                }"
-                                            />
-                                        </div>
-                                        <p
-                                            class="mt-1 font-sans text-xs font-semibold text-cd-ink"
-                                        >
-                                            {{
-                                                Number(nutritionIntake.carb_g)
-                                            }}/{{
-                                                Number(nutritionTarget.carb_g)
-                                            }}g
-                                        </p>
-                                    </div>
-                                </div>
-                            </template>
-
-                            <template v-else>
-                                <p
-                                    class="mt-3 font-sans text-sm text-cd-ink-muted"
-                                >
-                                    栄養目標が未設定です。コンディションで設定すると残りが表示されます。
-                                </p>
-                            </template>
-
-                            <div class="mt-4 flex flex-col gap-2">
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    class="w-full font-sans"
-                                    as-child
-                                >
-                                    <Link href="/meals">
-                                        <Utensils
-                                            :size="14"
-                                            :stroke-width="1.8"
-                                        />
-                                        食事を記録
-                                    </Link>
-                                </Button>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    class="w-full font-sans"
-                                    as-child
-                                >
-                                    <Link
-                                        :href="`/records/condition?date=${date}`"
-                                    >
-                                        <Heart :size="14" :stroke-width="1.8" />
-                                        コンディションへ
-                                    </Link>
-                                </Button>
-                            </div>
-                        </aside>
                     </div>
-
-                    <TodayOpsPrimary :date="date" :ops="ops" />
                 </div>
 
                 <!-- ルーティン一覧 -->

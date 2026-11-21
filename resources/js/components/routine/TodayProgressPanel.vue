@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import {
-    Activity,
     CalendarDays,
+    Check,
     ChevronLeft,
     ChevronRight,
-    Clock3,
+    Minus,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 import CdProgressRing from '@/components/CdProgressRing.vue';
@@ -17,9 +17,19 @@ interface Props {
     completedCount: number;
     totalCount: number;
     totalMinutes: number;
+    /** Today's sessions for the checklist next to the ring. */
+    sessions?: { id: string; title: string; done: boolean }[];
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    sessions: () => [],
+});
+
+const CHECKLIST_LIMIT = 4;
+const checklist = computed(() => props.sessions.slice(0, CHECKLIST_LIMIT));
+const hiddenCount = computed(() =>
+    Math.max(0, props.sessions.length - CHECKLIST_LIMIT),
+);
 const dateRef = computed(() => props.date);
 const dateInputRef = ref<HTMLInputElement | null>(null);
 
@@ -62,49 +72,59 @@ function onDatePicked(event: Event): void {
 
 <template>
     <aside class="min-w-0 overflow-hidden rounded-2xl" aria-label="今日の進捗">
-        <!-- Mockup: completion ring, progress and planned time -->
-        <div
-            class="grid grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)] items-center gap-2 px-3 pt-3 pb-2 sm:px-4"
-        >
+        <!-- Mockup: "本日の実行" ring and a checklist of today's sessions -->
+        <div class="flex items-center gap-4 px-4 pt-4 pb-3">
             <CdProgressRing
                 :percent="completionRate"
-                size="md"
-                :label="`完了 ${completedCount} / ${totalCount}`"
+                size="lg"
+                tone="gold"
+                :label="`本日の実行 ${completedCount} / ${totalCount}`"
             >
-                <span class="cd-progress-ring-value"
-                    >{{ completedCount }}/{{ totalCount }}</span
+                <span class="cd-meal-ring-caption">本日の実行</span>
+                <span class="cd-meal-ring-value"
+                    >{{ completedCount }}<small>/ {{ totalCount }}</small></span
                 >
-                <span class="cd-progress-ring-caption">完了</span>
             </CdProgressRing>
-            <div class="flex min-w-0 flex-col items-center text-center">
-                <Activity
-                    :size="20"
-                    :stroke-width="1.8"
-                    class="text-[var(--cd-hero-primary)]"
-                    aria-hidden="true"
-                />
-                <p
-                    class="mt-1 font-sans text-2xl font-bold text-cd-ink tabular-nums"
-                >
-                    {{ completionRate }}%
+            <div class="min-w-0 flex-1">
+                <ul v-if="checklist.length > 0" class="flex flex-col">
+                    <li
+                        v-for="item in checklist"
+                        :key="item.id"
+                        class="flex items-center gap-2 border-b border-[#f0edf5] py-1.5 last:border-b-0"
+                    >
+                        <Check
+                            v-if="item.done"
+                            :size="15"
+                            :stroke-width="2.4"
+                            class="shrink-0 text-[var(--cd-gold)]"
+                            aria-label="完了"
+                        />
+                        <Minus
+                            v-else
+                            :size="15"
+                            :stroke-width="2"
+                            class="shrink-0 text-cd-ink-muted/60"
+                            aria-label="未完了"
+                        />
+                        <span
+                            class="min-w-0 flex-1 truncate font-sans text-sm text-cd-ink"
+                            :class="{ 'text-cd-ink-muted': item.done }"
+                            >{{ item.title }}</span
+                        >
+                    </li>
+                </ul>
+                <p v-else class="font-sans text-sm text-cd-ink-muted">
+                    今日のセッションはまだありません
                 </p>
-                <p class="font-sans text-xs text-cd-ink-muted">進捗</p>
-            </div>
-            <div
-                class="flex min-w-0 flex-col items-center border-l border-[#efecf5] text-center"
-            >
-                <Clock3
-                    :size="20"
-                    :stroke-width="1.8"
-                    class="text-[var(--cd-hero-primary)]"
-                    aria-hidden="true"
-                />
                 <p
-                    class="mt-1 truncate font-sans text-2xl font-bold text-cd-ink tabular-nums"
+                    class="mt-1.5 font-sans text-[11px] text-cd-ink-muted tabular-nums"
                 >
+                    <template v-if="hiddenCount > 0"
+                        >ほか {{ hiddenCount }} 件 ·
+                    </template>
+                    予定
                     {{ totalMinutes > 0 ? formatMinutesJa(totalMinutes) : '—' }}
                 </p>
-                <p class="font-sans text-xs text-cd-ink-muted">予定時間</p>
             </div>
         </div>
 

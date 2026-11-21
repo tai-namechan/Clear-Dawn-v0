@@ -70,6 +70,10 @@ test('tab-shell pages put hero figures in a white summary card', () => {
     assert.match(shell, /class="cd-hero-stage"/);
 });
 
-test('mobile navigation never overrides the running-session controls', () => {
-    assert.ok(source('resources/js/components/CdMobileNav.vue').includes("currentPath.startsWith('/sessions/')"));
+test('the running-session controls sit above the mobile navigation', () => {
+    assert.match(source('resources/js/pages/Sessions/Show.vue'), /class="cd-session-actionbar/);
+    assert.match(
+        source('resources/css/clear-dawn-hero.css'),
+        /\.cd-session-actionbar \{[^}]*bottom: calc\(4\.6rem \+ env\(safe-area-inset-bottom\)\)/,
+    );
 });

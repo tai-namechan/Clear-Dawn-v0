@@ -68,7 +68,7 @@ class RoutinesHubTabsContractTest extends TestCase
         );
     }
 
-    public function test_routines_today_prioritizes_session_and_meal(): void
+    public function test_routines_today_focuses_on_sessions(): void
     {
         $source = $this->pageSource('resources/js/pages/Routines/Index.vue');
 
@@ -82,15 +82,15 @@ class RoutinesHubTabsContractTest extends TestCase
             $source,
             'Today tab must list plan cards for start/continue',
         );
-        $this->assertStringContainsString(
+        $this->assertStringNotContainsString(
             '食事の残り',
             $source,
-            'Today tab must show remaining nutrition beside sessions',
+            'Meal status lives on the meals screen, not the routines today tab (2026-11-22)',
         );
-        $this->assertStringContainsString(
+        $this->assertStringNotContainsString(
             'TodayOpsPrimary',
             $source,
-            'Ops primary card lives on /routines today tab after fold-in',
+            'The ops card is no longer shown on the routines today tab (2026-11-22)',
         );
         $this->assertStringNotContainsString(
             'DailyCheckinPanel',
@@ -103,16 +103,9 @@ class RoutinesHubTabsContractTest extends TestCase
             'Programs remains reachable from routines header/actions',
         );
 
-        $sessionPos = strpos($source, '今日のセッション');
-        $mealPos = strpos($source, '食事の残り');
-        $opsPos = strpos($source, '<TodayOpsPrimary');
-
-        $this->assertNotFalse($sessionPos);
-        $this->assertNotFalse($mealPos);
-        $this->assertNotFalse($opsPos);
-        $this->assertTrue(
-            $sessionPos < $opsPos && $mealPos < $opsPos,
-            'Session + meal must render before ops',
+        $this->assertNotFalse(
+            strpos($source, '今日のセッション'),
+            'Today tab must list today\'s sessions',
         );
         $this->assertStringNotContainsString(
             '今日のチェックイン',
@@ -184,10 +177,6 @@ class RoutinesHubTabsContractTest extends TestCase
         $planCard = $this->pageSource(
             'resources/js/components/routine/TodayPlanCard.vue',
         );
-        $ops = $this->pageSource(
-            'resources/js/components/routine/TodayOpsPrimary.vue',
-        );
-
         $this->assertStringContainsString(
             ':choice-context="choiceContextFor(plan.id)"',
             $index,
@@ -205,20 +194,15 @@ class RoutinesHubTabsContractTest extends TestCase
         }
         $this->assertStringNotContainsString(
             '今日のプログラム選択',
-            $ops,
+            $index,
         );
     }
 
-    public function test_today_ops_primary_skips_checkin_nudge_cards(): void
+    public function test_ops_card_component_is_retired(): void
     {
-        $source = $this->pageSource(
-            'resources/js/components/routine/TodayOpsPrimary.vue',
-        );
-
-        $this->assertStringContainsString(
-            'isCheckinNudge',
-            $source,
-            'Primary ops must filter check-in nudge recommendation cards',
+        $this->assertFileDoesNotExist(
+            base_path('resources/js/components/routine/TodayOpsPrimary.vue'),
+            'The ops card was removed from the routines today tab on 2026-11-22',
         );
     }
 

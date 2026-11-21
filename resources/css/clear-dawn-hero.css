@@ -1044,3 +1044,28 @@
     color: #fff;
     box-shadow: 0 6px 16px rgba(107, 90, 237, 0.28);
 }
+
+/* ---------------------------------------------------------------- Routines (plan progress bar) */
+.cd-clear-app .cd-plan-progress {
+    display: block;
+    height: 0.4rem;
+    flex: 1;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #efe9df;
+}
+.cd-clear-app .cd-plan-progress > span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #e3c27d, #b8893a);
+    transition: width 0.3s ease;
+}
+
+/* ---------------------------------------------------------------- Session run: action bar above the bottom nav */
+.cd-clear-app .cd-session-actionbar {
+    position: fixed;
+    inset-inline: 0.75rem;
+    bottom: calc(4.6rem + env(safe-area-inset-bottom));
+    z-index: 44;
+}
