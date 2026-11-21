@@ -4,31 +4,35 @@
  * All artwork is decorative; data text and controls stay in Vue/HTML.
  */
 .cd-clear-app {
-    --cd-hero-primary: #6b5aed;
+    --cd-hero-primary: #6f68ad;
     /* Gold accent for intake rings and remaining badges (meals mockup). */
-    --cd-gold: #b8893a;
+    --cd-gold: #b8924a;
+    --cd-gold-accent: #d4b370;
     --cd-gold-soft: #f7eedb;
     /* Rings and badges that read --cd-primary follow the brand violet here. */
-    --cd-primary: #6b5aed;
-    --cd-hero-primary-hover: #5a49dc;
+    --cd-primary: #6f68ad;
+    --cd-hero-primary-hover: #5f5899;
     /* Buttons and selected tabs: violet gradient as in the mockup. */
     --cd-hero-primary-gradient: linear-gradient(
         135deg,
-        #8064f5 0%,
-        #5e45df 100%
+        #9a93cf 0%,
+        #6c64a8 100%
     );
     --cd-hero-primary-gradient-hover: linear-gradient(
         135deg,
-        #7258ee 0%,
-        #5139d4 100%
+        #8d86c4 0%,
+        #5f5899 100%
     );
-    --cd-hero-primary-soft: #efecff;
-    --cd-hero-ink: #211f41;
-    --cd-hero-muted: #655f79;
+    --cd-hero-primary-soft: #eeeaf6;
+    --cd-hero-ink: #2b2a45;
+    --cd-hero-muted: #6c6779;
     --cd-hero-glow: #c2a8ff;
-    --cd-hero-surface: #ffffff;
+    /* Washi cards (palette: base #FBF7EF / 朝霞 #EEEAF6 / 藍墨 #DCD6E8 / 金 #D4B370). */
+    --cd-hero-surface: rgba(251, 247, 239, 0.9);
+    --cd-surface-solid: #fdfaf4;
+    --cd-surface-tint: #f4efe6;
     --cd-hero-radius: 1.5rem;
-    --cd-hero-edge: rgba(111, 98, 154, 0.15);
+    --cd-hero-edge: rgba(176, 156, 120, 0.22);
     --cd-hero-shadow:
         0 14px 44px rgba(37, 32, 74, 0.075), 0 2px 8px rgba(37, 32, 74, 0.035);
     position: relative;
@@ -94,8 +98,8 @@
 .cd-clear-app .cd-app-header .cd-header-control:hover,
 .cd-clear-app .cd-app-header [data-test='product-switcher-trigger']:hover,
 .cd-clear-app .cd-app-header [data-test='header-user-menu-button']:hover {
-    border-color: rgba(107, 90, 237, 0.35);
-    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(111, 104, 173, 0.35);
+    background: rgba(251, 247, 239, 0.95);
 }
 .cd-clear-app .cd-app-header [data-sidebar='trigger']:hover {
     background: rgba(255, 255, 255, 0.7);
@@ -138,7 +142,7 @@
     text-wrap: pretty;
 }
 .cd-clear-app :is(.cd-hero-panel, .cd-hero-stage) .cd-title-rule {
-    background: linear-gradient(90deg, #c9a35a, rgba(201, 163, 90, 0));
+    background: linear-gradient(90deg, #d4b370, rgba(212, 179, 112, 0));
 }
 .cd-clear-app
     :is(.cd-hero-panel, .cd-hero-stage)
@@ -168,7 +172,7 @@
     :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
     [data-slot='button'].border:not(.bg-primary) {
     color: var(--cd-hero-ink);
-    background: rgba(255, 255, 255, 0.72);
+    background: rgba(251, 247, 239, 0.78);
     border-color: rgba(111, 98, 154, 0.22);
     backdrop-filter: blur(10px);
 }
@@ -176,7 +180,7 @@
     :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
     [data-slot='button']:not(.bg-primary):hover {
     color: var(--cd-hero-ink);
-    background: rgba(255, 255, 255, 0.92);
+    background: rgba(251, 247, 239, 0.95);
 }
 .cd-clear-app .cd-hero-panel .cd-hero-primary-action {
     color: #fff;
@@ -218,7 +222,7 @@
 .cd-clear-app .cd-hero-stat {
     border: 1px solid rgba(111, 98, 154, 0.15);
     border-radius: 1.125rem;
-    background: rgba(255, 255, 255, 0.72);
+    background: rgba(251, 247, 239, 0.78);
     padding: 0.85rem 1rem;
     backdrop-filter: blur(10px);
 }
@@ -241,6 +245,7 @@
     border-radius: var(--cd-hero-radius);
     background: var(--cd-hero-surface);
     box-shadow: var(--cd-hero-shadow);
+    backdrop-filter: blur(6px);
 }
 .cd-clear-app .cd-panel:not(.cd-hero-panel) h2 {
     letter-spacing: -0.018em;
@@ -284,7 +289,7 @@
     padding: 0.75rem 1rem;
 }
 .cd-clear-app .cd-hero-summary .cd-hero-stat + .cd-hero-stat {
-    border-left: 1px solid #efecf5;
+    border-left: 1px solid #ece6dc;
 }
 .cd-clear-app .cd-hero-summary .cd-hero-stat-label {
     color: var(--cd-hero-muted);
@@ -300,23 +305,23 @@
 }
 .cd-clear-app .cd-page-tab-shell .cd-page-tab-tabs {
     padding: 1rem 1.25rem 0.3rem;
-    background: #fff;
+    background: transparent;
 }
 .cd-clear-app .cd-page-tab-shell .cd-page-tab-content {
     padding: 1.25rem;
-    background: #fff;
+    background: transparent;
 }
 .cd-clear-app .cd-page-tab-shell .cd-page-tab-tabs + .cd-page-tab-content {
-    border-top: 1px solid #f0edf5;
+    border-top: 1px solid #ece6dc;
 }
 
-/* ---------------------------------------------------------------- Primary #6B5AED for actions and selection */
+/* ---------------------------------------------------------------- Primary #6f68ad for actions and selection */
 .cd-clear-app .bg-primary {
     background-color: var(--cd-hero-primary);
     background-image: var(--cd-hero-primary-gradient);
 }
 .cd-clear-app .bg-primary\/70 {
-    background-color: rgba(107, 90, 237, 0.7);
+    background-color: rgba(111, 104, 173, 0.7);
 }
 .cd-clear-app .bg-primary:hover,
 .cd-clear-app .hover\:bg-primary\/90:hover {
@@ -324,7 +329,7 @@
     background-image: var(--cd-hero-primary-gradient-hover);
 }
 .cd-clear-app [role='tab'][aria-selected='true'].bg-primary {
-    box-shadow: 0 6px 16px rgba(107, 90, 237, 0.28);
+    box-shadow: 0 6px 16px rgba(111, 104, 173, 0.28);
 }
 
 /* ---------------------------------------------------------------- Mobile bottom navigation */
@@ -371,7 +376,7 @@
         bottom: 0;
         z-index: 45;
         padding: 0.45rem 0.45rem calc(0.45rem + env(safe-area-inset-bottom));
-        background: rgba(255, 255, 255, 0.96);
+        background: rgba(251, 247, 239, 0.96);
         border-top: 1px solid rgba(111, 98, 154, 0.12);
         box-shadow: 0 -8px 24px rgba(37, 32, 74, 0.06);
         backdrop-filter: blur(18px);
@@ -431,7 +436,7 @@
     align-items: center;
     border: 1.5px solid transparent;
     border-radius: 1.1rem;
-    background: #f5f2ff;
+    background: #f4f0f8;
     padding: 1rem 0.75rem 0.9rem;
     text-align: center;
     transition:
@@ -439,11 +444,11 @@
         border-color 0.15s ease;
 }
 .cd-clear-app .cd-home-area-tile:hover {
-    background: #efeaff;
+    background: #ebe7f4;
 }
 .cd-clear-app .cd-home-area-tile[aria-selected='true'] {
     border-color: var(--cd-hero-primary);
-    background: #ece6ff;
+    background: #e7e2f2;
 }
 .cd-clear-app .cd-home-area-tile:focus-visible {
     outline: 2px solid var(--cd-hero-primary);
@@ -458,7 +463,7 @@
     grid-auto-flow: column;
     gap: 0.25rem;
     border-radius: 999px;
-    background: #f1eff7;
+    background: #eeeaf6;
     padding: 0.25rem;
 }
 .cd-clear-app .cd-segment button {
@@ -474,7 +479,7 @@
 .cd-clear-app .cd-segment button[aria-selected='true'] {
     background: var(--cd-hero-primary-gradient);
     color: #fff;
-    box-shadow: 0 6px 16px rgba(107, 90, 237, 0.28);
+    box-shadow: 0 6px 16px rgba(111, 104, 173, 0.28);
 }
 .cd-clear-app .cd-segment button:focus-visible {
     outline: 2px solid var(--cd-hero-primary);
@@ -489,7 +494,7 @@
     border-radius: 999px;
     background: conic-gradient(
         var(--cd-hero-primary) var(--cd-ring-fill, 0deg),
-        #ebe7f7 0
+        #eeeaf6 0
     );
 }
 .cd-clear-app .cd-progress-ring--lg {
@@ -508,7 +513,7 @@
     align-items: center;
     justify-content: center;
     border-radius: 999px;
-    background: #fff;
+    background: var(--cd-surface-solid);
     color: var(--cd-hero-ink);
 }
 .cd-clear-app .cd-progress-ring-value {
@@ -544,7 +549,7 @@
 .cd-clear-app .cd-achievement-badge--remaining,
 .cd-clear-app .cd-achievement-badge--reached {
     background: var(--cd-hero-primary-soft);
-    color: #4f3fd0;
+    color: #5a5396;
 }
 
 /* ---------------------------------------------------------------- Meals summary */
@@ -603,13 +608,13 @@
 .cd-clear-app .cd-hero-stage [role='group'][aria-label='日付'] {
     border: 1px solid rgba(111, 98, 154, 0.18);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.72);
+    background: rgba(251, 247, 239, 0.78);
     padding: 0.15rem 0.35rem;
     box-shadow: 0 4px 14px rgba(37, 32, 74, 0.06);
     backdrop-filter: blur(10px);
 }
 .cd-clear-app .cd-segment button:not([aria-selected='true']):hover {
-    background: rgba(255, 255, 255, 0.92);
+    background: rgba(251, 247, 239, 0.95);
     color: var(--cd-hero-ink);
 }
 
@@ -621,9 +626,9 @@
 .cd-clear-app .cd-progress-ring--gold {
     background: conic-gradient(
         from 200deg,
-        #e3c27d 0deg,
-        #b8893a var(--cd-ring-fill, 0deg),
-        #efe9df 0
+        #e7d3a4 0deg,
+        #b8924a var(--cd-ring-fill, 0deg),
+        #efe6d6 0
     );
 }
 .cd-clear-app .cd-progress-ring--xl .cd-progress-ring-inner {
@@ -708,7 +713,7 @@
     height: 0.35rem;
     overflow: hidden;
     border-radius: 999px;
-    background: #efecf5;
+    background: #ece6dc;
 }
 .cd-clear-app .cd-pfc-bar-fill {
     display: block;
@@ -756,10 +761,10 @@
     transition: background-color 0.15s ease;
 }
 .cd-clear-app .cd-meal-row + .cd-meal-row {
-    border-top: 1px solid #f0edf5;
+    border-top: 1px solid #ece6dc;
 }
 .cd-clear-app .cd-meal-row:hover {
-    background: #faf8fd;
+    background: #f6f1e7;
 }
 .cd-clear-app .cd-meal-row:disabled {
     opacity: 0.55;
@@ -791,7 +796,7 @@
         box-shadow 0.15s ease;
 }
 .cd-clear-app a.cd-condition-card:hover {
-    border-color: rgba(107, 90, 237, 0.35);
+    border-color: rgba(111, 104, 173, 0.35);
 }
 .cd-clear-app a.cd-condition-card:focus-visible {
     outline: 2px solid var(--cd-hero-primary);
@@ -814,7 +819,7 @@
     height: 0.3rem;
     overflow: hidden;
     border-radius: 999px;
-    background: #efecf5;
+    background: #ece6dc;
 }
 .cd-clear-app .cd-condition-level-fill {
     display: block;
@@ -822,10 +827,10 @@
     border-radius: 999px;
 }
 .cd-clear-app .cd-condition-level-fill--gold {
-    background: linear-gradient(90deg, #e3c27d, #b8893a);
+    background: linear-gradient(90deg, #e7d3a4, #b8924a);
 }
 .cd-clear-app .cd-condition-level-fill--violet {
-    background: linear-gradient(90deg, #a08cf7, #6b5aed);
+    background: linear-gradient(90deg, #b8b2dc, #6f68ad);
 }
 
 /* ---------------------------------------------------------------- Condition input form */
@@ -833,9 +838,9 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    border: 1px solid #e6e2f0;
+    border: 1px solid #e3dccf;
     border-radius: 1rem;
-    background: #faf9fd;
+    background: #fcf9f3;
     padding: 0.25rem 0.9rem 0.25rem 0.25rem;
     font-size: 0.85rem;
     font-weight: 600;
@@ -843,7 +848,7 @@
 }
 .cd-clear-app .cd-measure-field:focus-within {
     border-color: var(--cd-hero-primary);
-    box-shadow: 0 0 0 3px rgba(107, 90, 237, 0.15);
+    box-shadow: 0 0 0 3px rgba(111, 104, 173, 0.15);
 }
 .cd-clear-app .cd-measure-field .cd-measure-input {
     height: 3rem;
@@ -874,9 +879,9 @@
     flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    border: 1px solid #e6e2f0;
+    border: 1px solid #e3dccf;
     border-radius: 999px;
-    background: #fff;
+    background: var(--cd-surface-solid);
     color: var(--cd-hero-primary);
     transition: background-color 0.15s ease;
 }
@@ -895,9 +900,9 @@
 }
 .cd-clear-app .cd-scale button {
     height: 2.9rem;
-    border: 1px solid #e6e2f0;
+    border: 1px solid #e3dccf;
     border-radius: 0.9rem;
-    background: #fff;
+    background: var(--cd-surface-solid);
     font-size: 1.05rem;
     font-weight: 700;
     color: var(--cd-hero-muted);
@@ -913,7 +918,7 @@
     border-color: transparent;
     background: var(--cd-hero-primary-gradient);
     color: #fff;
-    box-shadow: 0 6px 16px rgba(107, 90, 237, 0.28);
+    box-shadow: 0 6px 16px rgba(111, 104, 173, 0.28);
 }
 
 /* ---------------------------------------------------------------- Routines (plan progress bar) */
@@ -923,13 +928,13 @@
     flex: 1;
     overflow: hidden;
     border-radius: 999px;
-    background: #efe9df;
+    background: #efe6d6;
 }
 .cd-clear-app .cd-plan-progress > span {
     display: block;
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg, #e3c27d, #b8893a);
+    background: linear-gradient(90deg, #e7d3a4, #b8924a);
     transition: width 0.3s ease;
 }
 
@@ -943,23 +948,27 @@
 
 /* ---------------------------------------------------------------- Brand scope for dialogs (they portal outside .cd-clear-app) */
 .cd-brand {
-    --primary: #6b5aed;
-    --cd-primary: #6b5aed;
-    --cd-hero-primary: #6b5aed;
-    --cd-hero-primary-soft: #efecff;
+    --primary: #6f68ad;
+    --cd-primary: #6f68ad;
+    --cd-hero-primary: #6f68ad;
+    --cd-hero-primary-soft: #eeeaf6;
     --cd-hero-muted: #655f79;
     --cd-hero-ink: #211f41;
     --cd-hero-primary-gradient: linear-gradient(
         135deg,
-        #8064f5 0%,
-        #5e45df 100%
+        #9a93cf 0%,
+        #6c64a8 100%
     );
 }
 .cd-brand .bg-primary {
     background-image: var(--cd-hero-primary-gradient);
 }
+.cd-brand .cd-step-section,
+.cd-brand .bg-white {
+    background-color: #fdfaf4;
+}
 .cd-brand .cd-step-section {
-    border-color: #ece8f4;
+    border-color: #e9e2d5;
     border-radius: 1.25rem;
     box-shadow: 0 6px 18px rgba(37, 32, 74, 0.05);
 }
@@ -973,7 +982,7 @@
     grid-auto-flow: column;
     gap: 0.25rem;
     border-radius: 999px;
-    background: #ebe8f3;
+    background: #eeeaf6;
     padding: 0.25rem;
 }
 .cd-brand .cd-segment button {
@@ -986,7 +995,7 @@
 .cd-brand .cd-segment button[aria-selected='true'] {
     background: var(--cd-hero-primary-gradient);
     color: #fff;
-    box-shadow: 0 6px 16px rgba(107, 90, 237, 0.28);
+    box-shadow: 0 6px 16px rgba(111, 104, 173, 0.28);
 }
 .cd-brand .cd-segment button:disabled {
     opacity: 0.5;
@@ -1014,12 +1023,12 @@
     right: 50%;
     width: 100%;
     height: 2px;
-    background: #e6e0d4;
+    background: #e6dccb;
     z-index: 0;
 }
 .cd-clear-app .cd-stepper li.is-done::before,
 .cd-clear-app .cd-stepper li.is-current::before {
-    background: #c9a35a;
+    background: #d4b370;
 }
 .cd-clear-app .cd-stepper-dot {
     position: relative;
@@ -1029,9 +1038,9 @@
     height: 1.9rem;
     align-items: center;
     justify-content: center;
-    border: 2px solid #e6e0d4;
+    border: 2px solid #e6dccb;
     border-radius: 999px;
-    background: #fff;
+    background: var(--cd-surface-solid);
     font-size: 0.8rem;
     font-weight: 700;
     color: var(--cd-hero-muted);
@@ -1039,11 +1048,11 @@
 .cd-clear-app .cd-stepper li.is-done .cd-stepper-dot,
 .cd-clear-app .cd-stepper li.is-current .cd-stepper-dot {
     border-color: transparent;
-    background: linear-gradient(135deg, #e3c27d, #b8893a);
+    background: linear-gradient(135deg, #e7d3a4, #b8924a);
     color: #fff;
 }
 .cd-clear-app .cd-stepper li.is-current .cd-stepper-dot {
-    box-shadow: 0 0 0 4px rgba(201, 163, 90, 0.22);
+    box-shadow: 0 0 0 4px rgba(212, 179, 112, 0.22);
 }
 .cd-clear-app .cd-stepper-label {
     font-size: 0.75rem;
@@ -1061,8 +1070,28 @@
     align-items: center;
     justify-content: center;
     border-radius: 999px;
-    background: linear-gradient(135deg, #e3c27d, #b8893a);
+    background: linear-gradient(135deg, #e7d3a4, #b8924a);
     font-size: 0.78rem;
     font-weight: 700;
     color: #fff;
+}
+
+/* ---------------------------------------------------------------- Washi palette for utility-class surfaces and headings (v3) */
+.cd-clear-app .bg-white,
+.cd-clear-app .bg-cd-surface {
+    background-color: var(--cd-surface-solid);
+}
+.cd-clear-app .border-cd-line {
+    border-color: rgba(176, 156, 120, 0.25);
+}
+/* Page and card headings in Mincho like the mockup; data stays in gothic. */
+.cd-clear-app .cd-hero-heading h1,
+.cd-clear-app .cd-hero-banner h1,
+.cd-clear-app .cd-panel h2 {
+    font-family: 'Shippori Mincho', 'Noto Serif JP', serif;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+.cd-clear-app .cd-mobile-nav a[aria-current='page'] {
+    color: #5f5899;
 }

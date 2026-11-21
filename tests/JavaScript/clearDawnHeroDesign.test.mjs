@@ -66,7 +66,8 @@ test('each screen uses its wa-modern background, with ink text on the washi', ()
     assert.match(css, /\.cd-wa-food \{\s*background-image: url\('\/images\/backgrounds\/cd-wa-food-sp\.webp'\)/);
     assert.match(css, /\.cd-hero-heading h1,\s*\.cd-clear-app \.cd-hero-banner h1 \{\s*color: var\(--cd-hero-ink\)/);
     assert.doesNotMatch(css, /cd-hero-text-shadow/);
-    assert.match(css, /--cd-hero-primary: #6b5aed/);
+    assert.match(css, /--cd-hero-primary: #6f68ad/);
+    assert.match(css, /--cd-hero-surface: rgba\(251, 247, 239, 0\.9\)/);
 });
 
 test('tab-shell pages put hero figures in a white summary card', () => {

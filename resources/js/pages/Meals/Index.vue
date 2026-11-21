@@ -848,7 +848,6 @@ function applyChartFilter(): void {
                             <CdProgressRing
                                 :percent="achievement.ringPercent"
                                 size="xl"
-                                tone="gold"
                                 :label="
                                     achievement.percent === null
                                         ? `本日の摂取 ${formatNum(totals.kcal)} kcal`

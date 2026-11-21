@@ -739,7 +739,7 @@ defineExpose({
 <template>
     <Dialog :open="open" @update:open="(v) => emit('update:open', v)">
         <DialogContent
-            class="cd-brand flex max-h-[92vh] w-[calc(100%-1.5rem)] max-w-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-3xl bg-[#f7f5fb] sm:max-w-5xl"
+            class="cd-brand flex max-h-[92vh] w-[calc(100%-1.5rem)] max-w-[calc(100%-1.5rem)] flex-col overflow-hidden rounded-3xl bg-[#f8f4ec] sm:max-w-5xl"
         >
             <DialogHeader>
                 <DialogTitle
