@@ -594,8 +594,9 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
 
             <!-- Intake vs goal (mockup: achievement ring) -->
             <section
-                class="cd-panel flex items-center gap-5 p-5"
+                class="cd-panel cd-glass-panel flex items-center gap-5 p-5"
                 aria-label="摂取カロリーの達成率"
+                data-sky-extend
             >
                 <CdProgressRing
                     :percent="achievement.ringPercent"

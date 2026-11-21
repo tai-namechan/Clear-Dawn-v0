@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+    SKY_EXTEND_SELECTOR,
     SKY_FALLBACK_PX,
+    SKY_HEADER_OVERLAP_PX,
+    SKY_HEADER_SELECTOR,
     SKY_HERO_SELECTOR,
     SKY_OVERLAP_PX,
     skyBackdropHeight,
@@ -40,5 +43,18 @@ describe('skyBackdropHeight', () => {
         for (const selector of ['.cd-hero-banner', '.cd-page-tab-shell .cd-hero-stage', '.cd-hero-panel']) {
             assert.ok(SKY_HERO_SELECTOR.includes(selector), selector);
         }
+    });
+
+    it('uses a shorter overlap for header-only pages', () => {
+        assert.equal(
+            skyBackdropHeight({ heroBottom: 72, containerTop: 0, scrollTop: 0 }, SKY_HEADER_OVERLAP_PX),
+            72 + SKY_HEADER_OVERLAP_PX,
+        );
+        assert.ok(SKY_HEADER_OVERLAP_PX < SKY_OVERLAP_PX);
+    });
+
+    it('exposes the header and sky-extend selectors used by the backdrop', () => {
+        assert.equal(SKY_HEADER_SELECTOR, '.cd-app-header');
+        assert.equal(SKY_EXTEND_SELECTOR, '[data-sky-extend]');
     });
 });

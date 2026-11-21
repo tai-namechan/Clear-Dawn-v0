@@ -1,47 +1,75 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
 import { nextTick, onMounted, onUnmounted, ref } from 'vue';
-import { SKY_HERO_SELECTOR, skyBackdropHeight } from '@/lib/skyBackdrop.mjs';
+import {
+    SKY_EXTEND_SELECTOR,
+    SKY_HEADER_OVERLAP_PX,
+    SKY_HEADER_SELECTOR,
+    SKY_HERO_SELECTOR,
+    SKY_OVERLAP_PX,
+    skyBackdropHeight,
+} from '@/lib/skyBackdrop.mjs';
 
 /**
  * Full-width dawn sky behind the app header and the page hero. It sits in the
- * scroll container (so it scrolls away with the hero) and grows to the first
- * hero's bottom edge, so white hero text always lands on the sky.
+ * scroll container (so it scrolls away with the hero) and grows to the bottom
+ * of the hero (plus any `data-sky-extend` card), so white text always lands
+ * on the sky. Pages without a hero keep only the header on the sky.
  */
 const root = ref<HTMLElement | null>(null);
 const height = ref(skyBackdropHeight(null));
+const headerOnly = ref(false);
 
-let heroObserver: ResizeObserver | null = null;
+let targetObserver: ResizeObserver | null = null;
 let removeNavigateListener: (() => void) | undefined;
 
-function update(container: HTMLElement, hero: HTMLElement | null): void {
+function update(container: HTMLElement, targets: HTMLElement[]): void {
+    if (targets.length === 0) {
+        height.value = skyBackdropHeight(null);
+
+        return;
+    }
+
     height.value = skyBackdropHeight(
-        hero
-            ? {
-                  heroBottom: hero.getBoundingClientRect().bottom,
-                  containerTop: container.getBoundingClientRect().top,
-                  scrollTop: container.scrollTop,
-              }
-            : null,
+        {
+            heroBottom: Math.max(
+                ...targets.map(
+                    (target) => target.getBoundingClientRect().bottom,
+                ),
+            ),
+            containerTop: container.getBoundingClientRect().top,
+            scrollTop: container.scrollTop,
+        },
+        headerOnly.value ? SKY_HEADER_OVERLAP_PX : SKY_OVERLAP_PX,
     );
 }
 
 function measure(): void {
     const container = root.value?.parentElement;
 
-    heroObserver?.disconnect();
+    targetObserver?.disconnect();
 
     if (!container) {
         return;
     }
 
     const hero = container.querySelector<HTMLElement>(SKY_HERO_SELECTOR);
+    const header = container.querySelector<HTMLElement>(SKY_HEADER_SELECTOR);
+    const targets = hero
+        ? [
+              hero,
+              ...container.querySelectorAll<HTMLElement>(SKY_EXTEND_SELECTOR),
+          ]
+        : header
+          ? [header]
+          : [];
 
-    update(container, hero);
+    headerOnly.value = !hero && Boolean(header);
+    update(container, targets);
 
-    if (hero && typeof ResizeObserver !== 'undefined') {
-        heroObserver = new ResizeObserver(() => update(container, hero));
-        heroObserver.observe(hero);
+    if (targets.length > 0 && typeof ResizeObserver !== 'undefined') {
+        targetObserver = new ResizeObserver(() => update(container, targets));
+        targets.forEach((target) => targetObserver?.observe(target));
     }
 }
 
@@ -56,7 +84,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-    heroObserver?.disconnect();
+    targetObserver?.disconnect();
     removeNavigateListener?.();
     window.removeEventListener('resize', measure);
 });
@@ -65,7 +93,10 @@ onUnmounted(() => {
 <template>
     <div
         ref="root"
-        class="cd-sky-backdrop"
+        :class="[
+            'cd-sky-backdrop',
+            { 'cd-sky-backdrop--header-only': headerOnly },
+        ]"
         :style="{ height: `${height}px` }"
         aria-hidden="true"
     >

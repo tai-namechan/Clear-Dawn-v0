@@ -96,7 +96,7 @@ const ringStyle = computed(() => ({
                             残りの摂取目安
                         </p>
                         <p
-                            class="mt-1.5 font-sans text-3xl font-bold tracking-tight text-cd-ink md:text-[2rem]"
+                            class="mt-1.5 font-sans text-[1.65rem] font-bold tracking-tight whitespace-nowrap text-cd-ink md:text-[2rem]"
                         >
                             <template v-if="isOverGoal"
                                 >超過 +{{

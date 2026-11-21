@@ -8,6 +8,17 @@
     /* Rings and badges that read --cd-primary follow the brand violet here. */
     --cd-primary: #6b5aed;
     --cd-hero-primary-hover: #5a49dc;
+    /* Buttons and selected tabs: violet gradient as in the mockup. */
+    --cd-hero-primary-gradient: linear-gradient(
+        135deg,
+        #8064f5 0%,
+        #5e45df 100%
+    );
+    --cd-hero-primary-gradient-hover: linear-gradient(
+        135deg,
+        #7258ee 0%,
+        #5139d4 100%
+    );
     --cd-hero-primary-soft: #efecff;
     --cd-hero-ink: #211f41;
     --cd-hero-muted: #655f79;
@@ -61,30 +72,38 @@
     );
     mask-image: linear-gradient(180deg, #000 calc(100% - 6.5rem), transparent);
 }
+.cd-clear-app .cd-sky-backdrop--header-only {
+    -webkit-mask-image: linear-gradient(
+        180deg,
+        #000 calc(100% - 1.5rem),
+        transparent
+    );
+    mask-image: linear-gradient(180deg, #000 calc(100% - 1.5rem), transparent);
+}
 .cd-clear-app .cd-sky-backdrop img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     object-position: 72% 58%;
+    filter: saturate(1.12) brightness(1.06);
 }
 .cd-clear-app .cd-sky-backdrop::after {
     content: '';
     position: absolute;
     inset: 0;
-    /* Keep white hero text readable even over the bright sunrise. */
+    /* A light violet veil (not navy) keeps white text readable while the
+       sky stays bright like the mockup. */
     background:
         linear-gradient(
             180deg,
-            rgba(22, 18, 64, 0.55) 0%,
-            rgba(22, 18, 64, 0.3) 45%,
-            rgba(22, 18, 64, 0.1) 75%,
-            rgba(22, 18, 64, 0) 100%
+            rgba(58, 38, 150, 0.4) 0%,
+            rgba(84, 58, 190, 0.16) 45%,
+            rgba(84, 58, 190, 0) 80%
         ),
         linear-gradient(
             95deg,
-            rgba(22, 18, 64, 0.38) 0%,
-            rgba(22, 18, 64, 0.14) 55%,
-            rgba(22, 18, 64, 0) 85%
+            rgba(48, 30, 130, 0.22) 0%,
+            rgba(48, 30, 130, 0) 60%
         );
 }
 
@@ -372,6 +391,7 @@
 /* ---------------------------------------------------------------- Primary #6B5AED for actions and selection */
 .cd-clear-app .bg-primary {
     background-color: var(--cd-hero-primary);
+    background-image: var(--cd-hero-primary-gradient);
 }
 .cd-clear-app .bg-primary\/70 {
     background-color: rgba(107, 90, 237, 0.7);
@@ -379,6 +399,7 @@
 .cd-clear-app .bg-primary:hover,
 .cd-clear-app .hover\:bg-primary\/90:hover {
     background-color: var(--cd-hero-primary-hover);
+    background-image: var(--cd-hero-primary-gradient-hover);
 }
 .cd-clear-app [role='tab'][aria-selected='true'].bg-primary {
     box-shadow: 0 6px 16px rgba(107, 90, 237, 0.28);
@@ -527,7 +548,7 @@
         color 0.15s ease;
 }
 .cd-clear-app .cd-segment button[aria-selected='true'] {
-    background: var(--cd-hero-primary);
+    background: var(--cd-hero-primary-gradient);
     color: #fff;
     box-shadow: 0 6px 16px rgba(107, 90, 237, 0.28);
 }
@@ -652,4 +673,43 @@
 .cd-clear-app .cd-pfc-chip--c {
     background: #e6f0fa;
     color: #3b82c4;
+}
+
+/* ---------------------------------------------------------------- Glass card on the sky (records summary) */
+.cd-clear-app .cd-panel.cd-glass-panel {
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    background: linear-gradient(
+        135deg,
+        rgba(126, 100, 236, 0.46) 0%,
+        rgba(186, 150, 248, 0.26) 100%
+    );
+    box-shadow: 0 18px 40px rgba(40, 26, 120, 0.22);
+    color: #fff;
+    backdrop-filter: blur(14px) saturate(1.2);
+}
+.cd-clear-app .cd-glass-panel :is(.text-cd-ink, .text-cd-ink-muted) {
+    color: #fff;
+}
+.cd-clear-app .cd-glass-panel .text-cd-ink-muted {
+    color: rgba(255, 255, 255, 0.86);
+}
+.cd-clear-app .cd-glass-panel a {
+    color: #fff;
+}
+.cd-clear-app .cd-glass-panel .cd-progress-ring {
+    background: conic-gradient(
+        #fff var(--cd-ring-fill, 0deg),
+        rgba(255, 255, 255, 0.28) 0
+    );
+    box-shadow: 0 0 26px rgba(206, 186, 255, 0.35);
+}
+.cd-clear-app .cd-glass-panel .cd-progress-ring-inner {
+    background: rgba(74, 54, 176, 0.42);
+    color: #fff;
+}
+.cd-clear-app .cd-glass-panel .cd-progress-ring-value {
+    color: #fff;
+}
+.cd-clear-app .cd-glass-panel .cd-progress-ring-caption {
+    color: rgba(255, 255, 255, 0.86);
 }
