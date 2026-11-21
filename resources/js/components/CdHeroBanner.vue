@@ -16,7 +16,7 @@ withDefaults(defineProps<{
             <h1 class="mt-2 max-w-3xl font-sans text-2xl font-bold leading-tight md:text-4xl">
                 {{ title }}
             </h1>
-            <p v-if="subtitle" class="mt-2 max-w-2xl text-sm leading-relaxed text-white/85 md:text-base">
+            <p v-if="subtitle" class="mt-2 max-w-2xl text-sm leading-relaxed text-cd-ink-muted md:text-base">
                 {{ subtitle }}
             </p>
             <div v-if="$slots.default" class="mt-5">

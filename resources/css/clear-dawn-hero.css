@@ -1,5 +1,5 @@
 /*
- * Clear Dawn / Hero UI v2 — dawn-sky header (docs/clear-dawn-hero-design-guidelines.md)
+ * Clear Dawn / Hero UI v3 — wa-modern washi backgrounds (docs/clear-dawn-hero-design-guidelines.md)
  * Scoped to the Clear Dawn application shell: never applies to Kioku/Yoyu.
  * All artwork is decorative; data text and controls stay in Vue/HTML.
  */
@@ -31,132 +31,91 @@
     --cd-hero-edge: rgba(111, 98, 154, 0.15);
     --cd-hero-shadow:
         0 14px 44px rgba(37, 32, 74, 0.075), 0 2px 8px rgba(37, 32, 74, 0.035);
-    --cd-hero-text-shadow: 0 1px 14px rgba(24, 18, 72, 0.38);
     position: relative;
     isolation: isolate;
     color: var(--cd-hero-ink);
 }
-.cd-clear-app.cd-paper-bg {
-    background-color: #f7f5fb;
-    background-image: linear-gradient(
-        180deg,
-        #f7f4fb 0%,
-        #fbfafb 55%,
-        #f7f5fa 100%
-    );
-}
-/* The matrix keeps its marble paper under the sky. */
-.cd-clear-app.cd-paper-bg.cd-marble-page {
-    background-color: hsl(40 28% 96%);
-    background-image:
-        linear-gradient(
-            160deg,
-            hsl(255 30% 96% / 0.46) 0%,
-            hsl(40 34% 97% / 0.5) 55%,
-            hsl(40 30% 96% / 0.44) 100%
-        ),
-        url('/images/backgrounds/dairiseki.png');
+/* ---------------------------------------------------------------- Wa-modern backgrounds (v3) */
+.cd-clear-app.cd-wa-bg {
+    background-color: #faf7f1;
+    background-repeat: no-repeat;
+    background-position: center top;
     background-size: cover;
-    background-position: center;
+}
+.cd-clear-app.cd-wa-today {
+    background-image: url('/images/backgrounds/cd-wa-today-sp.webp');
+}
+.cd-clear-app.cd-wa-food {
+    background-image: url('/images/backgrounds/cd-wa-food-sp.webp');
+}
+.cd-clear-app.cd-wa-condition {
+    background-image: url('/images/backgrounds/cd-wa-condition-sp.webp');
+}
+.cd-clear-app.cd-wa-practice {
+    background-image: url('/images/backgrounds/cd-wa-practice-sp.webp');
+}
+.cd-clear-app.cd-wa-settings {
+    background-image: url('/images/backgrounds/cd-wa-settings-sp.webp');
+}
+@media (min-width: 768px) {
+    .cd-clear-app.cd-wa-today {
+        background-image: url('/images/backgrounds/cd-wa-today-pc.webp');
+    }
+    .cd-clear-app.cd-wa-food {
+        background-image: url('/images/backgrounds/cd-wa-food-pc.webp');
+    }
+    .cd-clear-app.cd-wa-condition {
+        background-image: url('/images/backgrounds/cd-wa-condition-pc.webp');
+    }
+    .cd-clear-app.cd-wa-practice {
+        background-image: url('/images/backgrounds/cd-wa-practice-pc.webp');
+    }
+    .cd-clear-app.cd-wa-settings {
+        background-image: url('/images/backgrounds/cd-wa-settings-pc.webp');
+    }
 }
 
-/* ---------------------------------------------------------------- Sky */
-.cd-clear-app .cd-sky-backdrop {
-    position: absolute;
-    inset-inline: 0;
-    top: 0;
-    z-index: -1;
-    overflow: hidden;
-    pointer-events: none;
-    -webkit-mask-image: linear-gradient(
-        180deg,
-        #000 calc(100% - 6.5rem),
-        transparent
-    );
-    mask-image: linear-gradient(180deg, #000 calc(100% - 6.5rem), transparent);
-}
-.cd-clear-app .cd-sky-backdrop--header-only {
-    -webkit-mask-image: linear-gradient(
-        180deg,
-        #000 calc(100% - 1.5rem),
-        transparent
-    );
-    mask-image: linear-gradient(180deg, #000 calc(100% - 1.5rem), transparent);
-}
-.cd-clear-app .cd-sky-backdrop img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: 72% 58%;
-    filter: saturate(1.12) brightness(1.06);
-}
-.cd-clear-app .cd-sky-backdrop::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    /* A light violet veil (not navy) keeps white text readable while the
-       sky stays bright like the mockup. */
-    background:
-        linear-gradient(
-            180deg,
-            rgba(58, 38, 150, 0.4) 0%,
-            rgba(84, 58, 190, 0.16) 45%,
-            rgba(84, 58, 190, 0) 80%
-        ),
-        linear-gradient(
-            95deg,
-            rgba(48, 30, 130, 0.22) 0%,
-            rgba(48, 30, 130, 0) 60%
-        );
-}
-
-/* ---------------------------------------------------------------- Header on the sky */
+/* ---------------------------------------------------------------- Header on washi */
 .cd-clear-app .cd-app-header {
-    --cd-header-text: #fff;
-    --cd-header-text-muted: rgba(255, 255, 255, 0.84);
-    --cd-header-control-bg: rgba(36, 22, 100, 0.34);
-    --cd-header-border: rgba(255, 255, 255, 0.36);
+    --cd-header-text: var(--cd-hero-ink);
+    --cd-header-text-muted: var(--cd-hero-muted);
+    --cd-header-control-bg: rgba(255, 255, 255, 0.72);
+    --cd-header-border: rgba(111, 98, 154, 0.2);
     background: transparent;
     border-bottom: 0;
     box-shadow: none;
-    text-shadow: var(--cd-hero-text-shadow);
 }
 .cd-clear-app .cd-app-header .cd-header-control,
 .cd-clear-app .cd-app-header [data-test='product-switcher-trigger'],
 .cd-clear-app .cd-app-header [data-test='header-user-menu-button'] {
-    box-shadow: none;
+    box-shadow: 0 4px 14px rgba(37, 32, 74, 0.06);
     backdrop-filter: blur(10px);
-    text-shadow: none;
 }
 .cd-clear-app .cd-app-header .cd-header-control:hover,
 .cd-clear-app .cd-app-header [data-test='product-switcher-trigger']:hover,
 .cd-clear-app .cd-app-header [data-test='header-user-menu-button']:hover {
-    border-color: rgba(255, 255, 255, 0.5);
-    background: rgba(36, 22, 100, 0.5);
+    border-color: rgba(107, 90, 237, 0.35);
+    background: rgba(255, 255, 255, 0.92);
 }
 .cd-clear-app .cd-app-header [data-sidebar='trigger']:hover {
-    background: rgba(255, 255, 255, 0.14);
-    color: #fff;
-}
-.cd-clear-app .cd-app-header .cd-header-control a:hover {
-    color: #fff;
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--cd-hero-ink);
 }
 .cd-clear-app .cd-app-header [data-slot='breadcrumb'] :is(a, span, li) {
-    color: rgba(255, 255, 255, 0.86);
+    color: var(--cd-hero-muted);
 }
 
-/* ---------------------------------------------------------------- Hero: white text straight on the sky */
+/* ---------------------------------------------------------------- Hero: ink text straight on the washi */
 .cd-clear-app .cd-hero-banner,
 .cd-clear-app .cd-hero-panel,
 .cd-clear-app .cd-hero-stage {
     position: relative;
-    color: #fff;
+    color: var(--cd-hero-ink);
     background: transparent;
     border: 0;
     border-radius: 0;
     box-shadow: none;
     overflow: visible;
-    text-shadow: var(--cd-hero-text-shadow);
 }
 .cd-clear-app .cd-hero-banner {
     padding: 0.5rem 1.25rem 0.75rem;
@@ -167,78 +126,62 @@
 }
 .cd-clear-app .cd-hero-heading h1,
 .cd-clear-app .cd-hero-banner h1 {
-    color: #fff;
+    color: var(--cd-hero-ink);
     font-family: var(--font-sans);
     font-weight: 700;
-    letter-spacing: -0.02em;
+    letter-spacing: 0.02em;
 }
 .cd-clear-app .cd-hero-heading p,
 .cd-clear-app .cd-hero-banner p {
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--cd-hero-muted);
     line-height: 1.65;
     text-wrap: pretty;
 }
 .cd-clear-app :is(.cd-hero-panel, .cd-hero-stage) .cd-title-rule {
-    background: linear-gradient(
-        90deg,
-        rgba(255, 228, 178, 0.9),
-        rgba(255, 255, 255, 0)
-    );
+    background: linear-gradient(90deg, #c9a35a, rgba(201, 163, 90, 0));
 }
 .cd-clear-app
     :is(.cd-hero-panel, .cd-hero-stage)
     :is(.text-cd-ink, .text-primary) {
-    color: #fff;
+    color: var(--cd-hero-ink);
 }
 .cd-clear-app
     :is(.cd-hero-panel, .cd-hero-stage)
     :is(.text-cd-ink-muted, .text-muted-foreground) {
-    color: rgba(255, 255, 255, 0.86);
-}
-.cd-clear-app :is(.cd-hero-panel, .cd-hero-stage) .border-cd-line {
-    border-color: rgba(255, 255, 255, 0.35);
+    color: var(--cd-hero-muted);
 }
 .cd-clear-app
     :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
     a:not([data-slot='button']):not(.cd-hero-primary-action):hover {
-    color: #fff;
-    opacity: 0.82;
+    color: var(--cd-hero-primary);
 }
 .cd-clear-app .cd-hero-eyebrow {
-    color: #f6e3ff;
+    color: #9a7a3e;
     letter-spacing: 0.19em;
     font-size: 0.68rem;
     font-weight: 700;
     text-transform: uppercase;
 }
 
-/* Buttons that sit on the sky: frosted glass, never white-on-white. */
-.cd-clear-app
-    :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
-    [data-slot='button']:not(.bg-primary) {
-    color: #fff;
-    text-shadow: none;
-}
-/* Outline buttons become frosted glass; ghost icon buttons stay transparent. */
+/* Outline buttons on the washi: white frosted glass with ink text. */
 .cd-clear-app
     :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
     [data-slot='button'].border:not(.bg-primary) {
-    background: rgba(36, 22, 100, 0.34);
-    border-color: rgba(255, 255, 255, 0.45);
-    text-shadow: none;
+    color: var(--cd-hero-ink);
+    background: rgba(255, 255, 255, 0.72);
+    border-color: rgba(111, 98, 154, 0.22);
     backdrop-filter: blur(10px);
 }
 .cd-clear-app
     :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
     [data-slot='button']:not(.bg-primary):hover {
-    color: #fff;
-    background: rgba(36, 22, 100, 0.5);
+    color: var(--cd-hero-ink);
+    background: rgba(255, 255, 255, 0.92);
 }
 .cd-clear-app .cd-hero-panel .cd-hero-primary-action {
-    color: #2a2153;
-    background: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.72);
-    text-shadow: none;
+    color: #fff;
+    background: var(--cd-hero-primary-gradient);
+    border: 0;
 }
 .cd-clear-app .cd-hero-stage button,
 .cd-clear-app .cd-hero-stage input {
@@ -247,13 +190,13 @@
 .cd-clear-app .cd-hero-stage button[aria-label='日付を選択'],
 .cd-clear-app .cd-hero-stage button[aria-label='前の日'],
 .cd-clear-app .cd-hero-stage button[aria-label='次の日'] {
-    color: #fff;
+    color: var(--cd-hero-ink);
     border-radius: 0.75rem;
 }
 .cd-clear-app .cd-hero-stage button[aria-label='日付を選択']:hover,
 .cd-clear-app .cd-hero-stage button[aria-label='前の日']:hover,
 .cd-clear-app .cd-hero-stage button[aria-label='次の日']:hover {
-    background: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.85);
 }
 .cd-clear-app
     :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
@@ -261,11 +204,10 @@
 .cd-clear-app
     :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
     a:focus-visible {
-    outline: 2px solid #fff;
+    outline: 2px solid var(--cd-hero-primary);
     outline-offset: 2px;
 }
 
-/* Glass figures directly on the sky (dashboard). */
 .cd-clear-app .cd-hero-kpi {
     font-size: clamp(1.5rem, 6vw, 2.7rem);
     font-weight: 750;
@@ -274,16 +216,16 @@
     letter-spacing: -0.04em;
 }
 .cd-clear-app .cd-hero-stat {
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(111, 98, 154, 0.15);
     border-radius: 1.125rem;
-    background: rgba(32, 24, 86, 0.22);
+    background: rgba(255, 255, 255, 0.72);
     padding: 0.85rem 1rem;
     backdrop-filter: blur(10px);
 }
 .cd-clear-app .cd-hero-stat-label {
     font-size: 0.72rem;
     line-height: 1.3;
-    color: rgba(255, 255, 255, 0.84);
+    color: var(--cd-hero-muted);
 }
 .cd-clear-app .cd-hero-stat-number {
     margin-top: 0.3rem;
@@ -291,29 +233,6 @@
     font-weight: 700;
     letter-spacing: -0.025em;
     font-variant-numeric: tabular-nums;
-}
-.cd-clear-app .cd-hero-ring {
-    display: grid;
-    place-items: center;
-    border-radius: 999px;
-    width: 7rem;
-    height: 7rem;
-    background: conic-gradient(
-        #c7a6ff var(--cd-ring-angle, 0deg),
-        rgba(255, 255, 255, 0.19) 0
-    );
-    box-shadow: 0 0 26px rgba(191, 158, 255, 0.24);
-}
-.cd-clear-app .cd-hero-ring-inner {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 5.7rem;
-    height: 5.7rem;
-    border-radius: 999px;
-    background: rgba(34, 29, 72, 0.83);
-    color: #fff;
 }
 
 /* ---------------------------------------------------------------- White surfaces */
@@ -335,7 +254,7 @@
     border-color: rgba(111, 98, 154, 0.22);
 }
 
-/* PageTabShell: hero on the sky, figures in a white summary card, then tabs + body. */
+/* PageTabShell: hero on the washi, figures in a white summary card, then tabs + body. */
 .cd-clear-app .cd-page-tab-shell {
     display: flex;
     flex-direction: column;
@@ -345,7 +264,7 @@
     padding: 0.5rem 1.25rem 0.25rem;
 }
 .cd-clear-app .cd-page-tab-shell .cd-hero-stage .cd-header-hero-link {
-    color: #fff;
+    color: var(--cd-hero-muted);
 }
 .cd-clear-app .cd-page-tab-shell .cd-hero-stage .cd-hero-heading {
     flex: 1;
@@ -416,7 +335,7 @@
     .cd-clear-app {
         padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
     }
-    /* On phones the header scrolls away with the sky; the bottom nav handles navigation. */
+    /* On phones the header scrolls away; the bottom nav handles navigation. */
     .cd-clear-app .cd-app-header {
         position: relative;
     }
@@ -487,9 +406,11 @@
     }
 }
 @media print {
-    .cd-clear-app .cd-mobile-nav,
-    .cd-clear-app .cd-sky-backdrop {
+    .cd-clear-app .cd-mobile-nav {
         display: none !important;
+    }
+    .cd-clear-app.cd-wa-bg {
+        background-image: none !important;
     }
 }
 
@@ -678,64 +599,14 @@
     color: #3b82c4;
 }
 
-/* ---------------------------------------------------------------- Glass card on the sky (records summary) */
-.cd-clear-app .cd-panel.cd-glass-panel {
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    background: linear-gradient(
-        135deg,
-        rgba(126, 100, 236, 0.46) 0%,
-        rgba(186, 150, 248, 0.26) 100%
-    );
-    box-shadow: 0 18px 40px rgba(40, 26, 120, 0.22);
-    color: #fff;
-    backdrop-filter: blur(14px) saturate(1.2);
-}
-.cd-clear-app .cd-glass-panel :is(.text-cd-ink, .text-cd-ink-muted) {
-    color: #fff;
-}
-.cd-clear-app .cd-glass-panel .text-cd-ink-muted {
-    color: rgba(255, 255, 255, 0.86);
-}
-.cd-clear-app .cd-glass-panel a {
-    color: #fff;
-}
-.cd-clear-app .cd-glass-panel .cd-progress-ring {
-    background: conic-gradient(
-        #fff var(--cd-ring-fill, 0deg),
-        rgba(255, 255, 255, 0.28) 0
-    );
-    box-shadow: 0 0 26px rgba(206, 186, 255, 0.35);
-}
-.cd-clear-app .cd-glass-panel .cd-progress-ring-inner {
-    background: rgba(74, 54, 176, 0.42);
-    color: #fff;
-}
-.cd-clear-app .cd-glass-panel .cd-progress-ring-value {
-    color: #fff;
-}
-.cd-clear-app .cd-glass-panel .cd-progress-ring-caption {
-    color: rgba(255, 255, 255, 0.86);
-}
-
-/* ---------------------------------------------------------------- Legibility of controls on the sky */
-/* Account name and chevron: white (the avatar keeps its own light tile). */
-.cd-clear-app .cd-app-header [data-test='header-user-menu-button'] .font-serif,
-.cd-clear-app .cd-app-header [data-test='header-user-menu-button'] > svg,
-.cd-clear-app
-    .cd-app-header
-    [data-test='header-user-menu-button']
-    svg.text-cd-ink-muted {
-    color: #fff;
-    opacity: 1;
-}
-/* Date navigation on the hero: a frosted pill so it reads over the sunrise. */
+/* ---------------------------------------------------------------- Legibility of controls on the washi */
 .cd-clear-app .cd-hero-stage [role='group'][aria-label='日付'] {
-    border: 1px solid rgba(255, 255, 255, 0.32);
+    border: 1px solid rgba(111, 98, 154, 0.18);
     border-radius: 999px;
-    background: rgba(36, 22, 100, 0.34);
+    background: rgba(255, 255, 255, 0.72);
     padding: 0.15rem 0.35rem;
+    box-shadow: 0 4px 14px rgba(37, 32, 74, 0.06);
     backdrop-filter: blur(10px);
-    text-shadow: none;
 }
 .cd-clear-app .cd-segment button:not([aria-selected='true']):hover {
     background: rgba(255, 255, 255, 0.92);

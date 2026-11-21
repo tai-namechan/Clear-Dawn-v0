@@ -50,17 +50,22 @@ test('primary Clear Dawn pages use the hero design', () => {
     assert.match(source('resources/js/pages/Dashboard.vue'), /class="cd-hero-banner cd-home-hero/);
 });
 
-test('the dawn sky sits behind the header and hero, and the matrix keeps its marble', () => {
-    assert.equal(existsSync(resolve(root, 'public/images/backgrounds/cd-sky-dawn.webp')), true);
-    assert.match(source('resources/js/components/CdSkyBackdrop.vue'), /\/images\/backgrounds\/cd-sky-dawn\.webp/);
+test('each screen uses its wa-modern background, with ink text on the washi', () => {
+    for (const scene of ['today', 'food', 'condition', 'practice', 'settings']) {
+        for (const size of ['sp', 'pc']) {
+            const file = `public/images/backgrounds/cd-wa-${scene}-${size}.webp`;
+            assert.equal(existsSync(resolve(root, file)), true, file);
+        }
+    }
 
     const app = source('resources/js/layouts/app/AppSidebarLayout.vue');
-    assert.match(app, /<CdSkyBackdrop \/>/);
-    assert.match(app, /isMatrixPage\.value \? 'cd-marble-page'/);
-    assert.match(app, /page\.component === 'Dashboard'/);
+    assert.match(app, /backgroundScene\(page\.component\)/);
+    assert.match(app, /cd-wa-bg cd-wa-\$\{scene\.value\}/);
 
     const css = source('resources/css/clear-dawn-hero.css');
-    assert.match(css, /\.cd-marble-page[\s\S]*?dairiseki\.png/);
+    assert.match(css, /\.cd-wa-food \{\s*background-image: url\('\/images\/backgrounds\/cd-wa-food-sp\.webp'\)/);
+    assert.match(css, /\.cd-hero-heading h1,\s*\.cd-clear-app \.cd-hero-banner h1 \{\s*color: var\(--cd-hero-ink\)/);
+    assert.doesNotMatch(css, /cd-hero-text-shadow/);
     assert.match(css, /--cd-hero-primary: #6b5aed/);
 });
 

@@ -7,8 +7,8 @@ import AppShell from '@/components/AppShell.vue';
 import AppSidebar from '@/components/AppSidebar.vue';
 import AppSidebarHeader from '@/components/AppSidebarHeader.vue';
 import CdMobileNav from '@/components/CdMobileNav.vue';
-import CdSkyBackdrop from '@/components/CdSkyBackdrop.vue';
 import { Toaster } from '@/components/ui/sonner';
+import { backgroundScene } from '@/lib/backgroundScene.mjs';
 import type { BreadcrumbItem } from '@/types';
 
 type Props = {
@@ -21,16 +21,12 @@ withDefaults(defineProps<Props>(), {
 
 const page = usePage();
 
-/** The matrix (dashboard) keeps the marble page background under the sky. */
-const isMatrixPage = computed(() => page.component === 'Dashboard');
+/** Wa-modern background per screen (docs/clear-dawn-hero-design-guidelines.md v3). */
+const scene = computed(() => backgroundScene(page.component));
 
-const contentClass = computed(() =>
-    [
-        'cd-clear-app cd-paper-bg flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto',
-        isMatrixPage.value ? 'cd-marble-page' : '',
-    ]
-        .filter(Boolean)
-        .join(' '),
+const contentClass = computed(
+    () =>
+        `cd-clear-app cd-wa-bg cd-wa-${scene.value} flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto`,
 );
 </script>
 
@@ -38,7 +34,6 @@ const contentClass = computed(() =>
     <AppShell variant="sidebar">
         <AppSidebar />
         <AppContent variant="sidebar" :class="contentClass">
-            <CdSkyBackdrop />
             <AppSidebarHeader :breadcrumbs="breadcrumbs" />
             <AiUsageBanner />
             <slot />
