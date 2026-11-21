@@ -77,7 +77,7 @@ function prescriptionLine(item: ProgramStepItemDetail): string {
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-4">
-            <PageSectionCard>
+            <PageSectionCard hero>
                 <div class="flex items-start justify-between gap-4">
                     <PageTitleOrnament
                         :title="program.name"

@@ -364,7 +364,7 @@ const metrics = computed((): MetricChip[] => {
         class="flex min-h-0 flex-1 flex-col rounded-xl p-4 pb-28 md:px-6 md:pb-28 lg:pb-6"
     >
         <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4">
-            <PageSectionCard>
+            <PageSectionCard hero>
                 <div class="flex flex-col gap-4">
                     <Link
                         :href="planHref"
