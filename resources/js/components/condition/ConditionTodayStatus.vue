@@ -46,7 +46,7 @@ function toneClass(tone: DeltaTone): string {
 <template>
     <div aria-label="今日の状態">
         <div class="mb-3 flex items-center justify-between gap-2">
-            <h2 class="font-sans text-base font-semibold text-cd-ink">
+            <h2 class="font-sans text-base font-bold text-cd-ink">
                 今日の状態
             </h2>
             <p
@@ -68,36 +68,38 @@ function toneClass(tone: DeltaTone): string {
             </p>
         </div>
 
-        <ul class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <!-- Same compact tiles as the performance screen -->
+        <ul class="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <li
                 v-for="card in statusCards"
                 :key="card.key"
-                class="relative rounded-xl border border-cd-line bg-cd-surface p-4 pr-12"
+                class="cd-condition-card rounded-2xl border border-[#efecf5] bg-white"
             >
-                <component
-                    :is="card.icon"
-                    class="pointer-events-none absolute top-[14px] right-4 text-cd-icon-primary opacity-90"
-                    :size="18"
-                    :stroke-width="1.6"
-                />
-                <p class="font-sans text-xs font-medium text-cd-ink-muted">
-                    {{ card.label }}
-                </p>
-                <p class="mt-3 font-sans text-2xl font-semibold text-cd-ink">
-                    {{ card.display }}
+                <span class="cd-condition-icon" aria-hidden="true">
+                    <component :is="card.icon" :size="18" :stroke-width="1.7" />
+                </span>
+                <span class="min-w-0 flex-1">
                     <span
-                        v-if="card.showUnit"
-                        class="text-sm font-medium text-cd-ink-muted"
-                        >{{ card.unit }}</span
+                        class="block font-sans text-xs font-bold text-cd-ink"
+                        >{{ card.label }}</span
                     >
-                </p>
-                <p
-                    v-if="card.delta"
-                    class="mt-1.5 font-sans text-xs font-medium"
-                    :class="toneClass(card.delta.tone)"
-                >
-                    {{ card.delta.text }}
-                </p>
+                    <span
+                        class="mt-0.5 block font-sans text-[0.98rem] font-bold whitespace-nowrap text-cd-ink tabular-nums sm:text-lg"
+                    >
+                        {{ card.display }}
+                        <small
+                            v-if="card.showUnit"
+                            class="text-xs font-semibold text-cd-ink-muted"
+                            >{{ card.unit }}</small
+                        >
+                    </span>
+                    <span
+                        v-if="card.delta"
+                        class="block font-sans text-[10px] font-medium whitespace-nowrap"
+                        :class="toneClass(card.delta.tone)"
+                        >{{ card.delta.text }}</span
+                    >
+                </span>
             </li>
         </ul>
     </div>

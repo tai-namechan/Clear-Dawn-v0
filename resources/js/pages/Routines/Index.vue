@@ -13,7 +13,6 @@ import { computed, ref, watch } from 'vue';
 import CdProgressRing from '@/components/CdProgressRing.vue';
 import PageTabShell from '@/components/PageTabShell.vue';
 import PageViewTabs from '@/components/PageViewTabs.vue';
-import DailyCheckinPanel from '@/components/routine/DailyCheckinPanel.vue';
 import TodayOpsPrimary from '@/components/routine/TodayOpsPrimary.vue';
 import TodayPlanCard from '@/components/routine/TodayPlanCard.vue';
 import TodayProgressPanel from '@/components/routine/TodayProgressPanel.vue';
@@ -27,7 +26,7 @@ import {
 import { activityLogEventTypeLabels } from '@/lib/routineConstants';
 import { displayDurationMinutes, planRunStatus } from '@/lib/todayPlanDisplay';
 import type { ActivityLog, Routine, RoutinePlan } from '@/types/routine';
-import type { CheckinFormState, TodayOps } from '@/types/todayOps';
+import type { TodayOps } from '@/types/todayOps';
 
 interface Props {
     date: string;
@@ -49,39 +48,10 @@ const viewTabs = [
 const activeTab = ref(props.tab);
 const applyingId = ref<string | null>(null);
 const showCompleted = ref(false);
-const showCheckinEditor = ref(props.ops.checkin == null);
-const savingCheckin = ref(false);
-const checkinForm = ref<CheckinFormState>({
-    sleep_quality: props.ops.checkin?.sleep_quality ?? 5,
-    fatigue: props.ops.checkin?.fatigue ?? 5,
-    muscle_soreness: props.ops.checkin?.muscle_soreness ?? 5,
-    stress: props.ops.checkin?.stress ?? 5,
-    mood: props.ops.checkin?.mood ?? 5,
-    readiness_self: props.ops.checkin?.readiness_self ?? 5,
-});
-
 watch(
     () => props.tab,
     (tab) => {
         activeTab.value = tab;
-    },
-);
-
-watch(
-    () => props.ops.checkin,
-    (checkin) => {
-        showCheckinEditor.value = checkin == null;
-
-        if (checkin) {
-            checkinForm.value = {
-                sleep_quality: checkin.sleep_quality ?? 5,
-                fatigue: checkin.fatigue ?? 5,
-                muscle_soreness: checkin.muscle_soreness ?? 5,
-                stress: checkin.stress ?? 5,
-                mood: checkin.mood ?? 5,
-                readiness_self: checkin.readiness_self ?? 5,
-            };
-        }
     },
 );
 
@@ -166,20 +136,6 @@ const kcalProgress = computed(() => {
     );
 });
 
-const checkinSummary = computed(() => {
-    const checkin = props.ops.checkin;
-
-    if (!checkin) {
-        return null;
-    }
-
-    if (checkin.fatigue != null) {
-        return `チェックイン済 · 疲労 ${checkin.fatigue}/5`;
-    }
-
-    return 'チェックイン済';
-});
-
 function onTabChange(tab: string): void {
     activeTab.value = tab as 'today' | 'routines' | 'history';
     const query =
@@ -198,24 +154,6 @@ function onTabChange(tab: string): void {
 
 function openRoutinesTab(): void {
     onTabChange('routines');
-}
-
-async function saveCheckin(): Promise<void> {
-    savingCheckin.value = true;
-
-    try {
-        await apiFetch('/today/checkin', {
-            method: 'PUT',
-            body: JSON.stringify({
-                checked_on: props.date,
-                ...checkinForm.value,
-            }),
-        });
-        showCheckinEditor.value = false;
-        await router.reload({ only: ['ops', 'plans'] });
-    } finally {
-        savingCheckin.value = false;
-    }
 }
 
 async function applyToToday(routine: Routine): Promise<void> {
@@ -315,7 +253,7 @@ function historyDescription(log: ActivityLog): string {
                     />
                 </template>
 
-                <!-- 今日: セッション + 食事 → 作戦 → チェックイン -->
+                <!-- 今日: セッション + 食事 → 作戦 -->
                 <div
                     v-show="activeTab === 'today'"
                     id="panel-today"
@@ -626,49 +564,6 @@ function historyDescription(log: ActivityLog): string {
                     </div>
 
                     <TodayOpsPrimary :date="date" :ops="ops" />
-
-                    <section
-                        class="rounded-2xl border border-cd-line bg-cd-surface/60 p-4"
-                        aria-label="今日のチェックイン"
-                    >
-                        <div
-                            class="flex flex-wrap items-center justify-between gap-2"
-                        >
-                            <div>
-                                <h2
-                                    class="font-sans text-sm font-semibold text-cd-ink"
-                                >
-                                    今日のチェックイン
-                                </h2>
-                                <p
-                                    class="mt-0.5 font-sans text-xs text-cd-ink-muted"
-                                >
-                                    {{
-                                        checkinSummary ??
-                                        '未入力 · 状態を記録するとおすすめが精度を上げます'
-                                    }}
-                                </p>
-                            </div>
-                            <Button
-                                v-if="!showCheckinEditor"
-                                type="button"
-                                size="sm"
-                                variant="warning"
-                                class="font-sans"
-                                @click="showCheckinEditor = true"
-                            >
-                                編集
-                            </Button>
-                        </div>
-
-                        <DailyCheckinPanel
-                            v-if="showCheckinEditor"
-                            v-model="checkinForm"
-                            class="mt-3"
-                            :saving="savingCheckin"
-                            @save="saveCheckin"
-                        />
-                    </section>
                 </div>
 
                 <!-- ルーティン一覧 -->

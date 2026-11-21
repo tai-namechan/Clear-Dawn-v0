@@ -92,10 +92,10 @@ class RoutinesHubTabsContractTest extends TestCase
             $source,
             'Ops primary card lives on /routines today tab after fold-in',
         );
-        $this->assertStringContainsString(
+        $this->assertStringNotContainsString(
             'DailyCheckinPanel',
             $source,
-            'Check-in UI lives on /routines today tab (single instance)',
+            'The 30-second check-in was retired on 2026-11-22 (docs/product/screens/today-ops.md)',
         );
         $this->assertStringContainsString(
             'href="/programs"',
@@ -106,19 +106,18 @@ class RoutinesHubTabsContractTest extends TestCase
         $sessionPos = strpos($source, '今日のセッション');
         $mealPos = strpos($source, '食事の残り');
         $opsPos = strpos($source, '<TodayOpsPrimary');
-        $checkinPos = strpos($source, '今日のチェックイン');
 
         $this->assertNotFalse($sessionPos);
         $this->assertNotFalse($mealPos);
         $this->assertNotFalse($opsPos);
-        $this->assertNotFalse($checkinPos);
         $this->assertTrue(
             $sessionPos < $opsPos && $mealPos < $opsPos,
             'Session + meal must render before ops',
         );
-        $this->assertTrue(
-            $opsPos < $checkinPos,
-            'Ops must render before check-in',
+        $this->assertStringNotContainsString(
+            '今日のチェックイン',
+            $source,
+            'No check-in block remains on the routines today tab',
         );
         $this->assertStringNotContainsString(
             '今日のメインセッション',

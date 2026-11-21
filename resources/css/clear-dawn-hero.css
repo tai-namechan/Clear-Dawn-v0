@@ -956,3 +956,91 @@
 .cd-clear-app .cd-condition-level-fill--violet {
     background: linear-gradient(90deg, #a08cf7, #6b5aed);
 }
+
+/* ---------------------------------------------------------------- Condition input form */
+.cd-clear-app .cd-measure-field {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid #e6e2f0;
+    border-radius: 1rem;
+    background: #faf9fd;
+    padding: 0.25rem 0.9rem 0.25rem 0.25rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--cd-hero-muted);
+}
+.cd-clear-app .cd-measure-field:focus-within {
+    border-color: var(--cd-hero-primary);
+    box-shadow: 0 0 0 3px rgba(107, 90, 237, 0.15);
+}
+.cd-clear-app .cd-measure-field .cd-measure-input {
+    height: 3rem;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--cd-hero-ink);
+    font-variant-numeric: tabular-nums;
+}
+.cd-clear-app .cd-measure-field .cd-measure-input:focus-visible {
+    box-shadow: none;
+}
+.cd-clear-app .cd-measure-field .cd-measure-input::placeholder {
+    color: #c9c4d8;
+    font-weight: 600;
+}
+.cd-clear-app .cd-measure-field > span {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.cd-clear-app .cd-step-button {
+    display: inline-flex;
+    width: 3rem;
+    height: 3rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e6e2f0;
+    border-radius: 999px;
+    background: #fff;
+    color: var(--cd-hero-primary);
+    transition: background-color 0.15s ease;
+}
+.cd-clear-app .cd-step-button:hover {
+    background: var(--cd-hero-primary-soft);
+}
+.cd-clear-app .cd-step-button:focus-visible,
+.cd-clear-app .cd-scale button:focus-visible {
+    outline: 2px solid var(--cd-hero-primary);
+    outline-offset: 2px;
+}
+.cd-clear-app .cd-scale {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.4rem;
+}
+.cd-clear-app .cd-scale button {
+    height: 2.9rem;
+    border: 1px solid #e6e2f0;
+    border-radius: 0.9rem;
+    background: #fff;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--cd-hero-muted);
+    font-variant-numeric: tabular-nums;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+.cd-clear-app .cd-scale button:hover {
+    background: var(--cd-hero-primary-soft);
+}
+.cd-clear-app .cd-scale button[aria-checked='true'] {
+    border-color: transparent;
+    background: var(--cd-hero-primary-gradient);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(107, 90, 237, 0.28);
+}
