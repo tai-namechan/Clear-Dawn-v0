@@ -1069,3 +1069,129 @@
     bottom: calc(4.6rem + env(safe-area-inset-bottom));
     z-index: 44;
 }
+
+/* ---------------------------------------------------------------- Brand scope for dialogs (they portal outside .cd-clear-app) */
+.cd-brand {
+    --primary: #6b5aed;
+    --cd-primary: #6b5aed;
+    --cd-hero-primary: #6b5aed;
+    --cd-hero-primary-soft: #efecff;
+    --cd-hero-muted: #655f79;
+    --cd-hero-ink: #211f41;
+    --cd-hero-primary-gradient: linear-gradient(
+        135deg,
+        #8064f5 0%,
+        #5e45df 100%
+    );
+}
+.cd-brand .bg-primary {
+    background-image: var(--cd-hero-primary-gradient);
+}
+.cd-brand .cd-step-section {
+    border-color: #ece8f4;
+    border-radius: 1.25rem;
+    box-shadow: 0 6px 18px rgba(37, 32, 74, 0.05);
+}
+.cd-brand .cd-step-section__num {
+    background: var(--cd-hero-primary-gradient);
+}
+.cd-brand .cd-segment,
+.cd-clear-app .cd-segment {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 0.25rem;
+    border-radius: 999px;
+    background: #ebe8f3;
+    padding: 0.25rem;
+}
+.cd-brand .cd-segment button {
+    border-radius: 999px;
+    padding: 0.55rem 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--cd-hero-muted);
+}
+.cd-brand .cd-segment button[aria-selected='true'] {
+    background: var(--cd-hero-primary-gradient);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(107, 90, 237, 0.28);
+}
+.cd-brand .cd-segment button:disabled {
+    opacity: 0.5;
+}
+
+/* ---------------------------------------------------------------- Routine editor */
+.cd-clear-app .cd-stepper {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    padding: 1rem 0.75rem 0.9rem;
+}
+.cd-clear-app .cd-stepper li {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    text-align: center;
+}
+.cd-clear-app .cd-stepper li + li::before {
+    content: '';
+    position: absolute;
+    top: 0.95rem;
+    right: 50%;
+    width: 100%;
+    height: 2px;
+    background: #e6e0d4;
+    z-index: 0;
+}
+.cd-clear-app .cd-stepper li.is-done::before,
+.cd-clear-app .cd-stepper li.is-current::before {
+    background: #c9a35a;
+}
+.cd-clear-app .cd-stepper-dot {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    width: 1.9rem;
+    height: 1.9rem;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #e6e0d4;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--cd-hero-muted);
+}
+.cd-clear-app .cd-stepper li.is-done .cd-stepper-dot,
+.cd-clear-app .cd-stepper li.is-current .cd-stepper-dot {
+    border-color: transparent;
+    background: linear-gradient(135deg, #e3c27d, #b8893a);
+    color: #fff;
+}
+.cd-clear-app .cd-stepper li.is-current .cd-stepper-dot {
+    box-shadow: 0 0 0 4px rgba(201, 163, 90, 0.22);
+}
+.cd-clear-app .cd-stepper-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--cd-hero-muted);
+}
+.cd-clear-app .cd-stepper li.is-current .cd-stepper-label {
+    color: var(--cd-hero-ink);
+}
+.cd-clear-app .cd-step-index {
+    display: inline-flex;
+    width: 1.9rem;
+    height: 1.9rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #e3c27d, #b8893a);
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fff;
+}

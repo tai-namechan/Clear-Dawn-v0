@@ -15,6 +15,8 @@ interface Props {
     categoryLabel?: string;
     totalDurationLabel?: string;
     stepCountLabel?: string;
+    /** Category / duration / step count only mean something once steps exist. */
+    showSummary?: boolean;
 }
 
 withDefaults(defineProps<Props>(), {
@@ -22,6 +24,7 @@ withDefaults(defineProps<Props>(), {
     categoryLabel: '—',
     totalDurationLabel: '—',
     stepCountLabel: '0 件',
+    showSummary: true,
 });
 
 const name = defineModel<string>('name', { required: true });
@@ -51,12 +54,12 @@ const lifeAreaId = defineModel<string | null>('lifeAreaId', { required: true });
                 v-model="description"
                 rows="3"
                 placeholder="任意"
-                class="border-input bg-white ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex min-h-[80px] w-full rounded-md border px-3 py-2 font-sans text-sm text-cd-ink focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                class="flex min-h-[80px] w-full rounded-md border border-input bg-white px-3 py-2 font-sans text-sm text-cd-ink ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 :disabled="disabled"
             />
         </div>
 
-        <div class="space-y-2">
+        <div v-if="showSummary" class="space-y-2">
             <label class="font-sans text-xs font-medium text-cd-ink-muted">
                 カテゴリ
             </label>
@@ -80,9 +83,7 @@ const lifeAreaId = defineModel<string | null>('lifeAreaId', { required: true });
                     <SelectValue placeholder="未設定" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="none">
-                        未設定
-                    </SelectItem>
+                    <SelectItem value="none"> 未設定 </SelectItem>
                     <SelectItem
                         v-for="area in lifeAreas"
                         :key="area.id"
@@ -94,7 +95,7 @@ const lifeAreaId = defineModel<string | null>('lifeAreaId', { required: true });
             </Select>
         </div>
 
-        <div class="space-y-2">
+        <div v-if="showSummary" class="space-y-2">
             <label class="font-sans text-xs font-medium text-cd-ink-muted">
                 合計時間
             </label>
@@ -103,7 +104,7 @@ const lifeAreaId = defineModel<string | null>('lifeAreaId', { required: true });
             </p>
         </div>
 
-        <div class="space-y-2">
+        <div v-if="showSummary" class="space-y-2">
             <label class="font-sans text-xs font-medium text-cd-ink-muted">
                 ステップ数
             </label>
