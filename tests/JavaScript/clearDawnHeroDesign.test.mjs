@@ -50,6 +50,26 @@ test('primary Clear Dawn pages use the hero design', () => {
     assert.match(source('resources/js/pages/Dashboard.vue'), /<CdHeroBanner/);
 });
 
+test('the dawn sky sits behind the header and hero, and the matrix keeps its marble', () => {
+    assert.equal(existsSync(resolve(root, 'public/images/backgrounds/cd-sky-dawn.webp')), true);
+    assert.match(source('resources/js/components/CdSkyBackdrop.vue'), /\/images\/backgrounds\/cd-sky-dawn\.webp/);
+
+    const app = source('resources/js/layouts/app/AppSidebarLayout.vue');
+    assert.match(app, /<CdSkyBackdrop \/>/);
+    assert.match(app, /isMatrixPage\.value \? 'cd-marble-page'/);
+    assert.match(app, /page\.component === 'Dashboard'/);
+
+    const css = source('resources/css/clear-dawn-hero.css');
+    assert.match(css, /\.cd-marble-page[\s\S]*?dairiseki\.png/);
+    assert.match(css, /--cd-hero-primary: #6b5aed/);
+});
+
+test('tab-shell pages put hero figures in a white summary card', () => {
+    const shell = source('resources/js/components/PageTabShell.vue');
+    assert.match(shell, /class="cd-panel cd-hero-summary">\s*<slot name="hero" \/>/);
+    assert.match(shell, /class="cd-hero-stage"/);
+});
+
 test('mobile navigation never overrides the running-session controls', () => {
     assert.ok(source('resources/js/components/CdMobileNav.vue').includes("currentPath.startsWith('/sessions/')"));
 });
