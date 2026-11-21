@@ -6,7 +6,7 @@ use Tests\TestCase;
 
 /**
  * Prove Records index mini-charts share one plot box and keep legends /
- * axis names off the plot so the trend and condition cards stay aligned.
+ * axis names off the plot so the trend and strength cards stay aligned.
  */
 class RecordsIndexChartContractTest extends TestCase
 {
@@ -17,27 +17,27 @@ class RecordsIndexChartContractTest extends TestCase
         $this->assertStringContainsString(
             'const RECORDS_MINI_GRID',
             $source,
-            'Meal and condition mini-charts must share one grid constant for alignment',
-        );
-        $this->assertSame(
-            4,
-            substr_count($source, 'grid: { ...RECORDS_MINI_GRID }'),
-            'All four Records mini-charts should use RECORDS_MINI_GRID',
+            'Trend and strength charts must share one grid constant for alignment',
         );
         $this->assertSame(
             2,
-            substr_count($source, 'class="!h-40"'),
-            'Both condition-card mini-charts (body / strength) should share the same height',
+            substr_count($source, 'grid: { ...RECORDS_MINI_GRID'),
+            'The trend-card builder and the strength chart should both use RECORDS_MINI_GRID',
         );
         $this->assertSame(
             1,
-            substr_count($source, ':option="trendOption"'),
-            'Meal kcal / weight / PFC trends share one switchable chart in the 7-day card',
+            substr_count($source, ':option="trend.option"'),
+            'Sleep / weight / fatigue trends render from one card template so they share a height',
         );
         $this->assertSame(
-            3,
+            1,
+            substr_count($source, 'class="mt-2 !h-32"'),
+            'All trend cards should share the same chart height',
+        );
+        $this->assertSame(
+            1,
             substr_count($source, "chartLegend(10, { bottom: 0, left: 'center' })"),
-            'PFC / condition / strength legends must sit at the bottom',
+            'The strength legend must sit at the bottom, off the plot',
         );
         $this->assertStringNotContainsString(
             "name: '体重 kg'",

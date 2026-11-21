@@ -905,3 +905,54 @@
     padding: 0;
     background: transparent;
 }
+
+/* ---------------------------------------------------------------- Performance (condition cards) */
+.cd-clear-app .cd-condition-card {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.4rem 0.85rem 0.8rem;
+    color: var(--cd-hero-ink);
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+.cd-clear-app a.cd-condition-card:hover {
+    border-color: rgba(107, 90, 237, 0.35);
+}
+.cd-clear-app a.cd-condition-card:focus-visible {
+    outline: 2px solid var(--cd-hero-primary);
+    outline-offset: 2px;
+}
+.cd-clear-app .cd-condition-icon {
+    display: inline-flex;
+    width: 2.2rem;
+    height: 2.2rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.8rem;
+    background: var(--cd-hero-primary-soft);
+    color: var(--cd-hero-primary);
+}
+.cd-clear-app .cd-condition-level {
+    display: block;
+    margin-top: 0.4rem;
+    height: 0.3rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #efecf5;
+}
+.cd-clear-app .cd-condition-level-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+}
+.cd-clear-app .cd-condition-level-fill--gold {
+    background: linear-gradient(90deg, #e3c27d, #b8893a);
+}
+.cd-clear-app .cd-condition-level-fill--violet {
+    background: linear-gradient(90deg, #a08cf7, #6b5aed);
+}
