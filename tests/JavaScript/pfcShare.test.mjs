@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { pfcEnergyShare } from '../../resources/js/lib/pfcShare.mjs';
+import { nutrientProgress, pfcEnergyShare } from '../../resources/js/lib/pfcShare.mjs';
 
 describe('pfcEnergyShare', () => {
     it('weights grams by 4 / 9 / 4 kcal', () => {
@@ -21,5 +21,20 @@ describe('pfcEnergyShare', () => {
     it('returns zeros when nothing was eaten or values are missing', () => {
         assert.deepEqual(pfcEnergyShare({ protein_g: 0, fat_g: 0, carb_g: 0 }), { p: 0, f: 0, c: 0 });
         assert.deepEqual(pfcEnergyShare({ protein_g: null, fat_g: undefined, carb_g: 'x' }), { p: 0, f: 0, c: 0 });
+    });
+});
+
+describe('nutrientProgress', () => {
+    it('is the intake share of the goal, capped at 100', () => {
+        assert.equal(nutrientProgress(92, 120), 77);
+        assert.equal(nutrientProgress('42', '60'), 70);
+        assert.equal(nutrientProgress(180, 120), 100);
+        assert.equal(nutrientProgress(0, 120), 0);
+    });
+
+    it('returns null without a usable goal', () => {
+        for (const goal of [null, undefined, 0, -5, 'x']) {
+            assert.equal(nutrientProgress(50, goal), null);
+        }
     });
 });

@@ -5,6 +5,9 @@
  */
 .cd-clear-app {
     --cd-hero-primary: #6b5aed;
+    /* Gold accent for intake rings and remaining badges (meals mockup). */
+    --cd-gold: #b8893a;
+    --cd-gold-soft: #f7eedb;
     /* Rings and badges that read --cd-primary follow the brand violet here. */
     --cd-primary: #6b5aed;
     --cd-hero-primary-hover: #5a49dc;
@@ -737,4 +740,168 @@
 .cd-clear-app .cd-segment button:not([aria-selected='true']):hover {
     background: rgba(255, 255, 255, 0.92);
     color: var(--cd-hero-ink);
+}
+
+/* ---------------------------------------------------------------- Meals (gold summary, tiles, rows) */
+.cd-clear-app .cd-progress-ring--xl {
+    width: 9rem;
+    height: 9rem;
+}
+.cd-clear-app .cd-progress-ring--gold {
+    background: conic-gradient(
+        from 200deg,
+        #e3c27d 0deg,
+        #b8893a var(--cd-ring-fill, 0deg),
+        #efe9df 0
+    );
+}
+.cd-clear-app .cd-progress-ring--xl .cd-progress-ring-inner {
+    width: calc(100% - 1rem);
+    height: calc(100% - 1rem);
+}
+.cd-clear-app .cd-meal-hero {
+    padding: 1rem 1rem 1.1rem;
+}
+.cd-clear-app .cd-meal-ring-caption {
+    font-size: 0.66rem;
+    color: var(--cd-hero-muted);
+}
+.cd-clear-app .cd-meal-ring-value {
+    margin: 0.1rem 0;
+    font-size: 1.45rem;
+    font-weight: 750;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--cd-hero-ink);
+    font-variant-numeric: tabular-nums;
+}
+.cd-clear-app .cd-meal-ring-value small {
+    margin-left: 0.15rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+.cd-clear-app .cd-meal-remaining {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, #fbf4e4 0%, #f3e4c2 100%);
+    padding: 0.55rem 0.9rem;
+    color: #8a6420;
+}
+.cd-clear-app .cd-meal-remaining span {
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+.cd-clear-app .cd-meal-remaining strong {
+    font-size: 1.5rem;
+    font-weight: 750;
+    line-height: 1.15;
+    color: #6f4f16;
+    font-variant-numeric: tabular-nums;
+}
+.cd-clear-app .cd-meal-remaining strong small {
+    margin-left: 0.15rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.cd-clear-app .cd-meal-remaining--over {
+    background: #fde9e4;
+    color: #b4543c;
+}
+.cd-clear-app .cd-meal-remaining--over strong {
+    color: #9b3f29;
+}
+.cd-clear-app .cd-pfc-letter {
+    display: inline-flex;
+    width: 1.05rem;
+    height: 1.05rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.3rem;
+    font-size: 0.62rem;
+    font-weight: 800;
+    color: #fff;
+}
+.cd-clear-app .cd-pfc-letter--p {
+    background: #3f9a70;
+}
+.cd-clear-app .cd-pfc-letter--f {
+    background: #d58a38;
+}
+.cd-clear-app .cd-pfc-letter--c {
+    background: #3b82c4;
+}
+.cd-clear-app .cd-pfc-bar {
+    margin-top: 0.4rem;
+    height: 0.35rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #efecf5;
+}
+.cd-clear-app .cd-pfc-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+.cd-clear-app .cd-pfc-bar-fill--p {
+    background: #3f9a70;
+}
+.cd-clear-app .cd-pfc-bar-fill--f {
+    background: #d58a38;
+}
+.cd-clear-app .cd-pfc-bar-fill--c {
+    background: #3b82c4;
+}
+.cd-clear-app .cd-meal-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0.5rem 0.9rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--cd-hero-ink);
+    text-align: center;
+}
+.cd-clear-app .cd-meal-tile:hover {
+    border-color: rgba(184, 137, 58, 0.45);
+}
+.cd-clear-app .cd-meal-tile:focus-visible,
+.cd-clear-app .cd-meal-row:focus-visible {
+    outline: 2px solid var(--cd-hero-primary);
+    outline-offset: 2px;
+}
+.cd-clear-app .cd-meal-row {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.95rem 1.1rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--cd-hero-ink);
+    transition: background-color 0.15s ease;
+}
+.cd-clear-app .cd-meal-row + .cd-meal-row {
+    border-top: 1px solid #f0edf5;
+}
+.cd-clear-app .cd-meal-row:hover {
+    background: #faf8fd;
+}
+.cd-clear-app .cd-meal-row:disabled {
+    opacity: 0.55;
+}
+/* A tab-shell body that only holds the tabs: no card chrome, just the pill. */
+.cd-clear-app .cd-panel.cd-page-tab-body:not(:has(.cd-page-tab-content)) {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+.cd-clear-app
+    .cd-page-tab-body:not(:has(.cd-page-tab-content))
+    .cd-page-tab-tabs {
+    padding: 0;
+    background: transparent;
 }

@@ -2,6 +2,7 @@
 import { Head, router } from '@inertiajs/vue3';
 import {
     Camera,
+    ChevronDown,
     ChevronRight,
     Coffee,
     Cookie,
@@ -21,9 +22,9 @@ import type { EChartsCoreOption } from 'echarts/core';
 import { computed, ref, watch } from 'vue';
 import type { Component } from 'vue';
 import BarcodeLookupModal from '@/components/BarcodeLookupModal.vue';
+import CdProgressRing from '@/components/CdProgressRing.vue';
 import DateNavigator from '@/components/DateNavigator.vue';
 import MealsSettingsPanel from '@/components/meals/MealsSettingsPanel.vue';
-import MealsTodayHero from '@/components/meals/MealsTodayHero.vue';
 import MealsTrendsPanel from '@/components/meals/MealsTrendsPanel.vue';
 import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTabShell from '@/components/PageTabShell.vue';
@@ -57,8 +58,9 @@ import {
     chartSplitLine,
     nutritionSeriesByDate,
 } from '@/lib/chartTheme';
+import { kcalAchievement as calculateKcalAchievement } from '@/lib/kcalAchievement.mjs';
 import { PFC_COLORS } from '@/lib/pfcColors';
-import { pfcEnergyShare } from '@/lib/pfcShare.mjs';
+import { nutrientProgress } from '@/lib/pfcShare.mjs';
 import type {
     FoodItem,
     MealEntry,
@@ -175,97 +177,38 @@ watch(
     },
 );
 
-const remaining = computed(() => {
-    if (!props.goal) {
-        return null;
-    }
-
-    return {
-        kcal: Math.max(0, Number(props.goal.kcal) - props.totals.kcal),
-        protein_g: Math.max(
-            0,
-            Number(props.goal.protein_g) - props.totals.protein_g,
-        ),
-        fat_g: Math.max(0, Number(props.goal.fat_g) - props.totals.fat_g),
-        carb_g: Math.max(0, Number(props.goal.carb_g) - props.totals.carb_g),
-    };
-});
-
-const nextFoodHint = computed(() => {
-    const left = remaining.value;
-
-    if (left === null) {
-        return '目標を設定すると、残りカロリーと次に摂るとよいものがわかります。';
-    }
-
-    if (left.protein_g >= left.carb_g * 0.4) {
-        return 'たんぱく質を中心に、野菜や果物も取り入れるのがおすすめです。';
-    }
-
-    if (left.carb_g > left.protein_g) {
-        return '炭水化物の余裕があります。次の食事でエネルギーを補いましょう。';
-    }
-
-    return '残りはバランスよく。無理なく目標に近づけましょう。';
-});
-
-const recordedEntries = computed(() =>
-    props.sections.flatMap((section) =>
-        section.entries.map((entry) => ({
-            ...entry,
-            sectionLabel: section.label,
-        })),
-    ),
+const achievement = computed(() =>
+    calculateKcalAchievement(props.totals.kcal, props.goal?.kcal),
 );
 
-const kcalAchievement = computed(() => {
-    if (!props.goal) {
-        return null;
-    }
-
-    const target = Number(props.goal.kcal);
-
-    if (target <= 0) {
-        return null;
-    }
-
-    return Math.round((props.totals.kcal / target) * 100);
-});
-
-const pfcShare = computed(() => pfcEnergyShare(props.totals));
-
-const pfcChips = computed(() => [
-    {
-        key: 'p',
-        label: 'P',
-        grams: props.totals.protein_g,
-        percent: pfcShare.value.p,
-    },
-    {
-        key: 'f',
-        label: 'F',
-        grams: props.totals.fat_g,
-        percent: pfcShare.value.f,
-    },
-    {
-        key: 'c',
-        label: 'C',
-        grams: props.totals.carb_g,
-        percent: pfcShare.value.c,
-    },
-]);
-
-const goalAmounts = computed(() => {
-    if (!props.goal) {
-        return null;
-    }
-
-    return {
-        protein_g: Number(props.goal.protein_g),
-        fat_g: Number(props.goal.fat_g),
-        carb_g: Number(props.goal.carb_g),
-    };
-});
+const pfcSummary = computed(() =>
+    [
+        {
+            key: 'p',
+            letter: 'P',
+            label: 'たんぱく質',
+            grams: props.totals.protein_g,
+            goal: props.goal ? Number(props.goal.protein_g) : null,
+        },
+        {
+            key: 'f',
+            letter: 'F',
+            label: '脂質',
+            grams: props.totals.fat_g,
+            goal: props.goal ? Number(props.goal.fat_g) : null,
+        },
+        {
+            key: 'c',
+            letter: 'C',
+            label: '炭水化物',
+            grams: props.totals.carb_g,
+            goal: props.goal ? Number(props.goal.carb_g) : null,
+        },
+    ].map((row) => ({
+        ...row,
+        progress: nutrientProgress(row.grams, row.goal),
+    })),
+);
 
 const mealTypeMeta: Record<
     MealSection['meal_type'],
@@ -559,50 +502,91 @@ async function copyPreviousDay(): Promise<void> {
     }
 }
 
-const quickActions = [
-    {
-        key: 'usual',
-        title: 'いつもの食事',
-        description: 'お気に入り・最近・よく使う',
-        icon: Utensils,
-        run: openUsualMeals,
-    },
+/** Mockup: three large tiles for the most common ways to log a meal. */
+const quickTiles = [
     {
         key: 'barcode',
         title: 'バーコード',
-        description: '市販商品を初回でも検索',
+        subtitle: 'スキャン',
         icon: ScanBarcode,
         run: openBarcodeScanner,
     },
     {
-        key: 'photo',
-        title: '料理の写真',
-        description: '料理をAI推定',
-        icon: Camera,
-        run: openPhotoEstimate,
-    },
-    {
-        key: 'menu',
-        title: '外食メニュー',
-        description: '店名とメニュー名から推定',
-        icon: Store,
-        run: openMenuEstimate,
-    },
-    {
         key: 'search',
-        title: 'マイ食品を検索',
-        description: '登録済みの食品から探す',
+        title: '食品を',
+        subtitle: '検索',
         icon: Search,
         run: openQuickFoodSearch,
     },
     {
+        key: 'photo',
+        title: '写真で',
+        subtitle: '栄養登録',
+        icon: Camera,
+        run: openPhotoEstimate,
+    },
+] as const;
+
+/** Shortcut rows under the tiles. */
+const quickRows = [
+    {
+        key: 'usual',
+        title: 'いつもの食事',
+        icon: Utensils,
+        run: openUsualMeals,
+    },
+    {
         key: 'copy',
-        title: '昨日からコピー',
-        description: '前日の食事をまとめて追加',
+        title: '前日の食事をコピー',
         icon: Copy,
         run: copyPreviousDay,
     },
+    {
+        key: 'menu',
+        title: '外食メニューから推定',
+        icon: Store,
+        run: openMenuEstimate,
+    },
+    {
+        key: 'manual',
+        title: '食事を手入力',
+        icon: Plus,
+        run: () => openAddEntry(),
+    },
 ] as const;
+
+const openMealSections = ref<MealSection['meal_type'][]>([]);
+
+/** Breakfast / lunch / dinner always show; snacks only when recorded. */
+const visibleSections = computed(() =>
+    props.sections.filter(
+        (section) =>
+            section.meal_type !== 'snack' || section.entries.length > 0,
+    ),
+);
+
+function isMealSectionOpen(mealType: MealSection['meal_type']): boolean {
+    return openMealSections.value.includes(mealType);
+}
+
+function onMealSectionClick(section: MealSection): void {
+    if (section.entries.length === 0) {
+        openAddEntry(section.meal_type);
+
+        return;
+    }
+
+    openMealSections.value = isMealSectionOpen(section.meal_type)
+        ? openMealSections.value.filter((type) => type !== section.meal_type)
+        : [...openMealSections.value, section.meal_type];
+}
+
+function sectionThumb(section: MealSection): string | null {
+    return (
+        section.entries.find((entry) => entry.has_photo && entry.photo_url)
+            ?.photo_url ?? null
+    );
+}
 
 function openEditEntry(entry: MealEntry): void {
     editingEntry.value = entry;
@@ -854,49 +838,111 @@ function applyChartFilter(): void {
             class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 md:gap-5"
         >
             <PageTabShell
-                title="食事記録"
-                subtitle="残り摂取と次の一手を先に、記録は下で"
+                title="食事"
                 :back-href="`/records?date=${date}`"
                 back-label="パフォーマンス管理"
             >
                 <template #hero>
-                    <div class="cd-meal-summary">
-                        <div class="min-w-0">
-                            <p class="font-sans text-xs text-cd-ink-muted">
-                                本日の摂取
-                            </p>
-                            <p
-                                class="mt-1 font-sans text-[1.6rem] leading-tight font-bold whitespace-nowrap text-cd-ink tabular-nums"
+                    <div class="cd-meal-hero">
+                        <div class="flex items-center gap-4">
+                            <CdProgressRing
+                                :percent="achievement.ringPercent"
+                                size="xl"
+                                tone="gold"
+                                :label="
+                                    achievement.percent === null
+                                        ? `本日の摂取 ${formatNum(totals.kcal)} kcal`
+                                        : `本日の摂取 ${formatNum(totals.kcal)} kcal、目標の ${achievement.percent}%`
+                                "
                             >
-                                {{ formatNum(totals.kcal) }}
-                                <span class="text-sm font-medium">kcal</span>
-                            </p>
-                            <p
-                                class="font-sans text-xs text-cd-ink-muted tabular-nums"
-                            >
-                                {{
+                                <span class="cd-meal-ring-caption"
+                                    >本日の摂取</span
+                                >
+                                <span class="cd-meal-ring-value"
+                                    >{{ formatNum(totals.kcal)
+                                    }}<small>kcal</small></span
+                                >
+                                <span class="cd-meal-ring-caption">{{
                                     goal
                                         ? `/ ${formatNum(goal.kcal)} kcal`
                                         : '目標未設定'
-                                }}
-                            </p>
-                        </div>
-                        <ul class="cd-pfc-chips" aria-label="PFC">
-                            <li
-                                v-for="chip in pfcChips"
-                                :key="chip.key"
-                                :class="`cd-pfc-chip cd-pfc-chip--${chip.key}`"
-                            >
-                                <span class="cd-pfc-chip-label">{{
-                                    chip.label
                                 }}</span>
-                                <span class="cd-pfc-chip-value"
-                                    >{{ formatNum(chip.grams)
-                                    }}<small>g</small></span
+                            </CdProgressRing>
+                            <div class="ml-auto">
+                                <p
+                                    v-if="achievement.status === 'over'"
+                                    class="cd-meal-remaining cd-meal-remaining--over"
                                 >
-                                <span class="cd-pfc-chip-share"
-                                    >({{ chip.percent }}%)</span
+                                    <span>超過</span>
+                                    <strong
+                                        >+{{
+                                            formatNum(
+                                                achievement.difference ?? 0,
+                                            )
+                                        }}<small>kcal</small></strong
+                                    >
+                                </p>
+                                <p
+                                    v-else-if="achievement.status !== 'unset'"
+                                    class="cd-meal-remaining"
                                 >
+                                    <span>残り</span>
+                                    <strong
+                                        >{{
+                                            formatNum(
+                                                Math.abs(
+                                                    achievement.difference ?? 0,
+                                                ),
+                                            )
+                                        }}<small>kcal</small></strong
+                                    >
+                                </p>
+                                <Button
+                                    v-else
+                                    type="button"
+                                    size="sm"
+                                    class="rounded-full font-sans"
+                                    @click="openGoalModal"
+                                >
+                                    目標を設定
+                                </Button>
+                            </div>
+                        </div>
+                        <ul
+                            class="mt-4 grid grid-cols-3 gap-3"
+                            aria-label="PFC"
+                        >
+                            <li v-for="row in pfcSummary" :key="row.key">
+                                <p
+                                    class="flex items-center gap-1.5 font-sans text-[11px] text-cd-ink-muted"
+                                >
+                                    <span
+                                        :class="`cd-pfc-letter cd-pfc-letter--${row.key}`"
+                                        >{{ row.letter }}</span
+                                    >
+                                    {{ row.label }}
+                                </p>
+                                <p
+                                    class="mt-1 font-sans text-base font-bold whitespace-nowrap text-cd-ink tabular-nums"
+                                >
+                                    {{ formatNum(row.grams)
+                                    }}<small class="text-xs font-semibold">
+                                        g</small
+                                    ><span
+                                        v-if="row.goal !== null"
+                                        class="text-[11px] font-medium text-cd-ink-muted"
+                                    >
+                                        / {{ formatNum(row.goal) }} g</span
+                                    >
+                                </p>
+                                <div class="cd-pfc-bar">
+                                    <span
+                                        :class="`cd-pfc-bar-fill cd-pfc-bar-fill--${row.key}`"
+                                        :style="{
+                                            width: `${row.progress ?? 0}%`,
+                                        }"
+                                    />
+                                </div>
                             </li>
                         </ul>
                     </div>
@@ -922,40 +968,6 @@ function applyChartFilter(): void {
                         aria-label="食事記録表示切替"
                     />
                 </template>
-
-                <MealsTodayHero
-                    v-show="activeTab === 'today'"
-                    id="panel-today"
-                    role="tabpanel"
-                    :remaining="remaining"
-                    :totals-kcal="totals.kcal"
-                    :goal-kcal="goal ? Number(goal.kcal) : null"
-                    :kcal-achievement="kcalAchievement"
-                    :goal-amounts="goalAmounts"
-                    :next-food-hint="nextFoodHint"
-                    @set-goal="
-                        activeTab = 'settings';
-                        openGoalModal();
-                    "
-                />
-                <MealsTrendsPanel
-                    v-show="activeTab === 'trends'"
-                    id="panel-trends"
-                    role="tabpanel"
-                    v-model:filter-from="filterFrom"
-                    v-model:filter-to="filterTo"
-                    :has-chart-data="hasChartData"
-                    :kcal-chart-option="kcalChartOption"
-                    :pfc-chart-option="pfcChartOption"
-                    @apply="applyChartFilter"
-                />
-                <MealsSettingsPanel
-                    v-show="activeTab === 'settings'"
-                    id="panel-settings"
-                    role="tabpanel"
-                    :goal="goal"
-                    @edit-goal="openGoalModal"
-                />
             </PageTabShell>
 
             <p
@@ -972,391 +984,297 @@ function applyChartFilter(): void {
                 {{ message }}
             </p>
 
-            <!-- 今日（二次ブロック） -->
+            <section
+                v-show="activeTab === 'trends'"
+                class="cd-panel p-4 md:p-5"
+            >
+                <MealsTrendsPanel
+                    v-show="activeTab === 'trends'"
+                    id="panel-trends"
+                    role="tabpanel"
+                    v-model:filter-from="filterFrom"
+                    v-model:filter-to="filterTo"
+                    :has-chart-data="hasChartData"
+                    :kcal-chart-option="kcalChartOption"
+                    :pfc-chart-option="pfcChartOption"
+                    @apply="applyChartFilter"
+                />
+            </section>
+            <section
+                v-show="activeTab === 'settings'"
+                class="cd-panel p-4 md:p-5"
+            >
+                <MealsSettingsPanel
+                    v-show="activeTab === 'settings'"
+                    id="panel-settings"
+                    role="tabpanel"
+                    :goal="goal"
+                    @edit-goal="openGoalModal"
+                />
+            </section>
+
+            <!-- 今日: quick logging, then today's meals by type (mockup) -->
             <div v-show="activeTab === 'today'" class="flex flex-col gap-4">
+                <div class="grid grid-cols-3 gap-3">
+                    <button
+                        v-for="tile in quickTiles"
+                        :key="tile.key"
+                        type="button"
+                        class="cd-panel cd-meal-tile"
+                        @click="tile.run()"
+                    >
+                        <component
+                            :is="tile.icon"
+                            :size="28"
+                            :stroke-width="1.6"
+                            aria-hidden="true"
+                        />
+                        <span class="mt-2 block">{{ tile.title }}</span>
+                        <span class="block">{{ tile.subtitle }}</span>
+                    </button>
+                </div>
+
+                <nav class="cd-panel overflow-hidden" aria-label="記録の近道">
+                    <button
+                        v-for="row in quickRows"
+                        :key="row.key"
+                        type="button"
+                        class="cd-meal-row"
+                        :disabled="row.key === 'copy' && saving"
+                        @click="row.run()"
+                    >
+                        <component
+                            :is="row.icon"
+                            :size="20"
+                            :stroke-width="1.7"
+                            aria-hidden="true"
+                            class="text-[var(--cd-gold)]"
+                        />
+                        <span class="flex-1 text-left">{{ row.title }}</span>
+                        <ChevronRight
+                            :size="18"
+                            :stroke-width="1.7"
+                            aria-hidden="true"
+                            class="text-cd-ink-muted/70"
+                        />
+                    </button>
+                </nav>
+
                 <PageSectionCard padding="none" aria-label="今日の食事記録">
                     <div
-                        class="flex items-center justify-between gap-3 border-b border-cd-line px-5 py-4"
+                        class="flex items-baseline justify-between gap-3 px-5 pt-4 pb-2"
                     >
-                        <h2
-                            class="font-sans text-base font-semibold text-cd-ink"
-                        >
-                            食事一覧（今日）
+                        <h2 class="font-sans text-lg font-bold text-cd-ink">
+                            本日の食事
                         </h2>
-                        <div
-                            class="flex flex-wrap items-center justify-end gap-2"
+                        <p
+                            class="font-sans text-base font-bold text-cd-ink tabular-nums"
                         >
-                            <BodyStoryExportButton
-                                kind="nutrition"
-                                :date="date"
-                                label="今日の食事を画像にする"
-                            />
-                            <Button
-                                type="button"
-                                size="sm"
-                                class="hidden font-sans md:inline-flex"
-                                @click="openAddEntry()"
+                            {{ formatNum(totals.kcal) }}
+                            <span class="text-xs font-medium text-cd-ink-muted"
+                                >kcal</span
                             >
-                                <Plus :size="14" :stroke-width="1.6" />
-                                食事を追加
-                            </Button>
-                        </div>
+                        </p>
                     </div>
 
-                    <!-- Phones: meal list with photos (mockup) -->
-                    <ul
-                        v-if="recordedEntries.length > 0"
-                        class="flex flex-col md:hidden"
-                        aria-label="食事一覧"
-                    >
+                    <ul class="flex flex-col">
                         <li
-                            v-for="entry in recordedEntries"
-                            :key="entry.id"
-                            class="flex items-center gap-3 border-b border-cd-line/70 px-4 py-3 last:border-b-0"
+                            v-for="section in visibleSections"
+                            :key="section.meal_type"
+                            class="border-t border-cd-line/70"
                         >
-                            <span
-                                class="flex size-7 shrink-0 items-center justify-center rounded-full"
-                                :class="mealTypeMeta[entry.meal_type].className"
-                                aria-hidden="true"
-                            >
-                                <component
-                                    :is="mealTypeMeta[entry.meal_type].icon"
-                                    :size="14"
-                                    :stroke-width="1.8"
-                                />
-                            </span>
-                            <button
-                                v-if="entry.has_photo && entry.photo_url"
-                                type="button"
-                                class="size-14 shrink-0 overflow-hidden rounded-xl border border-cd-line bg-cd-surface"
-                                :aria-label="`${entry.name} の写真を見る`"
-                                @click="openPhotoPreview(entry)"
-                            >
-                                <img
-                                    :src="entry.photo_url"
-                                    :alt="entry.name"
-                                    class="size-full object-cover"
-                                />
-                            </button>
                             <button
                                 type="button"
-                                class="min-w-0 flex-1 text-left"
-                                :aria-label="`${entry.name} を編集`"
-                                @click="openEditEntry(entry)"
+                                class="flex w-full items-center gap-3 px-4 py-3 text-left"
+                                :aria-expanded="
+                                    section.entries.length > 0
+                                        ? isMealSectionOpen(section.meal_type)
+                                        : undefined
+                                "
+                                @click="onMealSectionClick(section)"
                             >
                                 <span
-                                    class="block font-sans text-xs font-semibold text-cd-ink-muted"
-                                    >{{ entry.sectionLabel }}</span
+                                    v-if="sectionThumb(section)"
+                                    class="size-14 shrink-0 overflow-hidden rounded-xl border border-cd-line bg-cd-surface"
                                 >
+                                    <img
+                                        :src="
+                                            sectionThumb(section) ?? undefined
+                                        "
+                                        alt=""
+                                        class="size-full object-cover"
+                                    />
+                                </span>
                                 <span
-                                    class="block truncate font-sans text-[15px] text-cd-ink"
+                                    v-else
+                                    class="flex size-14 shrink-0 items-center justify-center rounded-xl"
+                                    :class="
+                                        mealTypeMeta[section.meal_type]
+                                            .className
+                                    "
+                                    aria-hidden="true"
                                 >
-                                    {{ entry.name }}
-                                    <span class="text-cd-ink-muted"
-                                        >× {{ formatNum(entry.quantity) }}</span
+                                    <component
+                                        :is="
+                                            mealTypeMeta[section.meal_type].icon
+                                        "
+                                        :size="22"
+                                        :stroke-width="1.7"
+                                    />
+                                </span>
+                                <span class="min-w-0 flex-1">
+                                    <span
+                                        class="block font-sans text-[15px] font-bold text-cd-ink"
+                                        >{{ section.label }}</span
+                                    >
+                                    <span
+                                        class="block truncate font-sans text-xs text-cd-ink-muted"
+                                        >{{
+                                            section.entries.length > 0
+                                                ? section.entries
+                                                      .map(
+                                                          (entry) => entry.name,
+                                                      )
+                                                      .join('・')
+                                                : '未記録 · タップして追加'
+                                        }}</span
                                     >
                                 </span>
                                 <span
-                                    class="block font-sans text-xs text-cd-ink-muted tabular-nums"
-                                    >{{ formatNum(entry.kcal) }} kcal</span
+                                    class="shrink-0 font-sans text-sm font-semibold text-cd-ink tabular-nums"
+                                    >{{
+                                        section.entries.length > 0
+                                            ? `${formatNum(section.subtotal.kcal)} kcal`
+                                            : '—'
+                                    }}</span
                                 >
+                                <ChevronDown
+                                    v-if="section.entries.length > 0"
+                                    :size="18"
+                                    :stroke-width="1.7"
+                                    aria-hidden="true"
+                                    class="shrink-0 text-cd-ink-muted/70 transition-transform"
+                                    :class="{
+                                        'rotate-180': isMealSectionOpen(
+                                            section.meal_type,
+                                        ),
+                                    }"
+                                />
+                                <Plus
+                                    v-else
+                                    :size="18"
+                                    :stroke-width="1.7"
+                                    aria-hidden="true"
+                                    class="shrink-0 text-cd-ink-muted/70"
+                                />
                             </button>
-                            <DropdownMenu>
-                                <DropdownMenuTrigger as-child>
+
+                            <ul
+                                v-if="
+                                    section.entries.length > 0 &&
+                                    isMealSectionOpen(section.meal_type)
+                                "
+                                class="mx-4 mb-3 flex flex-col rounded-2xl bg-[#f7f5fb]"
+                            >
+                                <li
+                                    v-for="entry in section.entries"
+                                    :key="entry.id"
+                                    class="flex items-center gap-3 border-b border-white px-3 py-2.5 last:border-b-0"
+                                >
                                     <button
+                                        v-if="
+                                            entry.has_photo && entry.photo_url
+                                        "
                                         type="button"
-                                        class="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-cd-ink-muted hover:bg-[#f3f1f8]"
-                                        :aria-label="`${entry.name} の操作`"
+                                        class="size-10 shrink-0 overflow-hidden rounded-lg border border-cd-line bg-cd-surface"
+                                        :aria-label="`${entry.name} の写真を見る`"
+                                        @click="openPhotoPreview(entry)"
                                     >
-                                        <MoreVertical
-                                            :size="18"
-                                            :stroke-width="1.8"
+                                        <img
+                                            :src="entry.photo_url"
+                                            :alt="entry.name"
+                                            class="size-full object-cover"
                                         />
                                     </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                        @select="openEditEntry(entry)"
-                                        >編集</DropdownMenuItem
+                                    <button
+                                        type="button"
+                                        class="min-w-0 flex-1 text-left"
+                                        :aria-label="`${entry.name} を編集`"
+                                        @click="openEditEntry(entry)"
                                     >
-                                    <DropdownMenuItem
-                                        @select="openCopyEntry(entry)"
-                                        >コピー</DropdownMenuItem
+                                        <span
+                                            class="block truncate font-sans text-sm text-cd-ink"
+                                        >
+                                            {{ entry.name }}
+                                            <span class="text-cd-ink-muted"
+                                                >×
+                                                {{
+                                                    formatNum(entry.quantity)
+                                                }}</span
+                                            >
+                                        </span>
+                                        <span
+                                            class="block font-sans text-[11px] text-cd-ink-muted tabular-nums"
+                                            >{{ formatNum(entry.kcal) }} kcal ·
+                                            P {{ formatNum(entry.protein_g) }} ·
+                                            F {{ formatNum(entry.fat_g) }} · C
+                                            {{ formatNum(entry.carb_g) }}</span
+                                        >
+                                    </button>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger as-child>
+                                            <button
+                                                type="button"
+                                                class="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-cd-ink-muted hover:bg-white"
+                                                :aria-label="`${entry.name} の操作`"
+                                            >
+                                                <MoreVertical
+                                                    :size="18"
+                                                    :stroke-width="1.8"
+                                                />
+                                            </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem
+                                                @select="openEditEntry(entry)"
+                                                >編集</DropdownMenuItem
+                                            >
+                                            <DropdownMenuItem
+                                                @select="openCopyEntry(entry)"
+                                                >コピー</DropdownMenuItem
+                                            >
+                                            <DropdownMenuItem
+                                                class="text-destructive"
+                                                @select="deleteEntry(entry)"
+                                                >削除</DropdownMenuItem
+                                            >
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </li>
+                                <li class="px-3 py-2">
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center gap-1 font-sans text-xs font-semibold text-[var(--cd-hero-primary)]"
+                                        @click="openAddEntry(section.meal_type)"
                                     >
-                                    <DropdownMenuItem
-                                        class="text-destructive"
-                                        @select="deleteEntry(entry)"
-                                        >削除</DropdownMenuItem
-                                    >
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                                        <Plus :size="14" :stroke-width="1.8" />
+                                        {{ section.label }}に追加
+                                    </button>
+                                </li>
+                            </ul>
                         </li>
                     </ul>
 
                     <div
-                        v-if="recordedEntries.length > 0"
-                        class="hidden overflow-x-auto md:block"
+                        class="flex justify-end border-t border-cd-line/70 px-4 py-3"
                     >
-                        <table
-                            class="w-full min-w-[40rem] border-collapse text-left"
-                        >
-                            <thead>
-                                <tr
-                                    class="border-b border-cd-line bg-[#FAFAFC] font-sans text-[11px] font-medium text-cd-ink-muted"
-                                >
-                                    <th class="px-5 py-3 font-medium">食事</th>
-                                    <th class="px-3 py-3 font-medium">
-                                        メニュー・食品
-                                    </th>
-                                    <th
-                                        class="px-3 py-3 text-right font-medium"
-                                    >
-                                        エネルギー (kcal)
-                                    </th>
-                                    <th
-                                        class="px-3 py-3 text-right font-medium"
-                                    >
-                                        P (g)
-                                    </th>
-                                    <th
-                                        class="px-3 py-3 text-right font-medium"
-                                    >
-                                        F (g)
-                                    </th>
-                                    <th
-                                        class="px-3 py-3 text-right font-medium"
-                                    >
-                                        C (g)
-                                    </th>
-                                    <th
-                                        class="px-5 py-3 text-right font-medium"
-                                    >
-                                        操作
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr
-                                    v-for="entry in recordedEntries"
-                                    :key="entry.id"
-                                    class="border-b border-cd-line/80"
-                                >
-                                    <td class="px-5 py-3.5">
-                                        <span
-                                            class="inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink"
-                                        >
-                                            <span
-                                                class="flex size-7 items-center justify-center rounded-full"
-                                                :class="
-                                                    mealTypeMeta[
-                                                        entry.meal_type
-                                                    ].className
-                                                "
-                                            >
-                                                <component
-                                                    :is="
-                                                        mealTypeMeta[
-                                                            entry.meal_type
-                                                        ].icon
-                                                    "
-                                                    :size="13"
-                                                    :stroke-width="1.8"
-                                                />
-                                            </span>
-                                            {{ entry.sectionLabel }}
-                                        </span>
-                                    </td>
-                                    <td
-                                        class="max-w-[16rem] px-3 py-3.5 font-sans text-sm text-cd-ink"
-                                    >
-                                        <div class="flex items-center gap-2.5">
-                                            <button
-                                                v-if="
-                                                    entry.has_photo &&
-                                                    entry.photo_url
-                                                "
-                                                type="button"
-                                                class="size-10 shrink-0 overflow-hidden rounded-lg border border-cd-line bg-cd-surface"
-                                                :aria-label="`${entry.name} の写真を見る`"
-                                                @click="openPhotoPreview(entry)"
-                                            >
-                                                <img
-                                                    :src="entry.photo_url"
-                                                    :alt="entry.name"
-                                                    class="size-full object-cover"
-                                                />
-                                            </button>
-                                            <span class="min-w-0 truncate">
-                                                {{ entry.name }}
-                                                <span class="text-cd-ink-muted">
-                                                    ×
-                                                    {{
-                                                        formatNum(
-                                                            entry.quantity,
-                                                        )
-                                                    }}
-                                                </span>
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td
-                                        class="px-3 py-3.5 text-right font-sans text-sm text-cd-ink"
-                                    >
-                                        {{ formatNum(entry.kcal) }}
-                                    </td>
-                                    <td
-                                        class="px-3 py-3.5 text-right font-sans text-sm text-cd-ink"
-                                    >
-                                        {{ formatNum(entry.protein_g) }}
-                                    </td>
-                                    <td
-                                        class="px-3 py-3.5 text-right font-sans text-sm text-cd-ink"
-                                    >
-                                        {{ formatNum(entry.fat_g) }}
-                                    </td>
-                                    <td
-                                        class="px-3 py-3.5 text-right font-sans text-sm text-cd-ink"
-                                    >
-                                        {{ formatNum(entry.carb_g) }}
-                                    </td>
-                                    <td class="px-5 py-3.5">
-                                        <div class="flex justify-end gap-1.5">
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                variant="outline"
-                                                class="h-7 px-2.5 text-xs"
-                                                :aria-label="`${entry.name} をコピー`"
-                                                @click="openCopyEntry(entry)"
-                                            >
-                                                コピー
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                variant="warning"
-                                                class="h-7 px-2.5 text-xs"
-                                                :aria-label="`${entry.name} を編集`"
-                                                @click="openEditEntry(entry)"
-                                            >
-                                                編集
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                size="sm"
-                                                variant="destructive"
-                                                class="h-7 px-2.5 text-xs"
-                                                :aria-label="`${entry.name} を削除`"
-                                                @click="deleteEntry(entry)"
-                                            >
-                                                削除
-                                            </Button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                            <tfoot>
-                                <tr class="bg-[#FAFAFC]">
-                                    <td
-                                        colspan="2"
-                                        class="px-5 py-3.5 font-sans text-sm font-semibold text-cd-ink"
-                                    >
-                                        合計
-                                    </td>
-                                    <td
-                                        class="px-3 py-3.5 text-right font-sans text-sm font-semibold text-cd-ink"
-                                    >
-                                        {{ formatNum(totals.kcal) }}
-                                    </td>
-                                    <td
-                                        class="px-3 py-3.5 text-right font-sans text-sm font-semibold text-cd-ink"
-                                    >
-                                        {{ formatNum(totals.protein_g) }}
-                                    </td>
-                                    <td
-                                        class="px-3 py-3.5 text-right font-sans text-sm font-semibold text-cd-ink"
-                                    >
-                                        {{ formatNum(totals.fat_g) }}
-                                    </td>
-                                    <td
-                                        class="px-3 py-3.5 text-right font-sans text-sm font-semibold text-cd-ink"
-                                    >
-                                        {{ formatNum(totals.carb_g) }}
-                                    </td>
-                                    <td class="px-5 py-3.5" />
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-
-                    <div
-                        v-else
-                        class="mx-5 my-5 rounded-xl border border-dashed border-cd-line px-4 py-10 text-center"
-                    >
-                        <p class="font-sans text-sm text-cd-ink-muted">
-                            まだ食事は記録されていません。上のクイック操作か「食事を追加」から始めましょう。
-                        </p>
-                    </div>
-
-                    <div
-                        class="grid grid-cols-2 gap-3 border-t border-cd-line/70 p-4 md:hidden"
-                    >
-                        <Button
-                            type="button"
-                            variant="outline"
-                            class="h-12 rounded-full font-sans font-bold"
-                            @click="openAddEntry()"
-                        >
-                            <Plus :size="16" :stroke-width="1.8" />
-                            食事を追加
-                        </Button>
-                        <Button
-                            type="button"
-                            class="h-12 rounded-full font-sans font-bold"
-                            @click="openPhotoEstimate()"
-                        >
-                            <Camera :size="16" :stroke-width="1.8" />
-                            画像から記録
-                        </Button>
+                        <BodyStoryExportButton
+                            kind="nutrition"
+                            :date="date"
+                            label="今日の食事を画像にする"
+                        />
                     </div>
                 </PageSectionCard>
-                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    <button
-                        v-for="action in quickActions"
-                        :key="action.key"
-                        type="button"
-                        class="group flex items-center gap-3.5 rounded-2xl border border-cd-line bg-white px-4 py-5 text-left shadow-sm transition-colors hover:border-primary/35 hover:bg-[#F8F6FC]"
-                        :disabled="action.key === 'copy' && saving"
-                        @click="action.run()"
-                    >
-                        <span
-                            class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-[#F3F1F8] text-primary"
-                        >
-                            <component
-                                :is="action.icon"
-                                :size="22"
-                                :stroke-width="1.7"
-                            />
-                        </span>
-                        <span class="min-w-0 flex-1">
-                            <span
-                                class="block font-sans text-sm font-semibold text-cd-ink"
-                            >
-                                {{ action.title }}
-                            </span>
-                            <span
-                                class="mt-0.5 block font-sans text-xs text-cd-ink-muted"
-                            >
-                                {{ action.description }}
-                            </span>
-                        </span>
-                        <ChevronRight
-                            :size="16"
-                            :stroke-width="1.7"
-                            class="shrink-0 text-cd-ink-muted/70 transition-colors group-hover:text-primary"
-                        />
-                    </button>
-                </div>
             </div>
         </div>
     </div>

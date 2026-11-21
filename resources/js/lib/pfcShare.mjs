@@ -21,3 +21,23 @@ export function pfcEnergyShare(totals) {
         c: Math.round((carb / total) * 100),
     };
 }
+
+/**
+ * Intake as a share of a nutrient goal, capped at 100 for progress bars.
+ * Returns null when there is no usable goal (never invent a target).
+ *
+ * @param {number | string} intake
+ * @param {number | string | null | undefined} goal
+ * @returns {number | null}
+ */
+export function nutrientProgress(intake, goal) {
+    const target = Number(goal);
+
+    if (!Number.isFinite(target) || target <= 0) {
+        return null;
+    }
+
+    const value = Number(intake) || 0;
+
+    return Math.max(0, Math.min(100, Math.round((value / target) * 100)));
+}
