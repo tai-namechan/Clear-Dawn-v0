@@ -33,7 +33,7 @@ function programStatusClass(status: string): string {
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
         <div class="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4">
-            <PageSectionCard>
+            <PageSectionCard hero>
                 <Link
                     href="/routines"
                     class="mb-3 inline-flex items-center gap-2 font-sans text-sm font-medium text-cd-ink-muted transition-colors hover:text-primary"

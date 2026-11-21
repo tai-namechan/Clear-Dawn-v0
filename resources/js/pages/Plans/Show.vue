@@ -234,7 +234,7 @@ function stepPurposeKey(step: RoutinePlanStep) {
         class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6"
     >
         <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4">
-            <PageSectionCard>
+            <PageSectionCard hero>
                 <div class="flex flex-col gap-4">
                     <Link
                         href="/today"
