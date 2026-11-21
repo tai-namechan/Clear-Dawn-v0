@@ -486,6 +486,22 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                 title="パフォーマンス管理"
                 subtitle="食事とコンディションを、すぐ記録して、すぐ振り返る"
             >
+                <template #hero>
+                    <div class="cd-hero-stat min-w-[8.5rem] flex-1">
+                        <p class="cd-hero-stat-label">摂取カロリー</p>
+                        <p class="cd-hero-stat-number">{{ Number(mealTotals.kcal).toLocaleString('ja-JP', { maximumFractionDigits: 0 }) }} <span class="text-xs font-medium">kcal</span></p>
+                        <p v-if="mealGoal" class="mt-1 text-xs text-white/80">目標 {{ Number(mealGoal.kcal).toLocaleString('ja-JP') }} kcal</p>
+                    </div>
+                    <div class="cd-hero-stat min-w-[8.5rem] flex-1">
+                        <p class="cd-hero-stat-label">体重</p>
+                        <p class="cd-hero-stat-number">{{ summaryMetrics.find((item) => item.key === 'weight')?.display ?? '—' }} <span class="text-xs font-medium">kg</span></p>
+                        <p class="mt-1 text-xs text-white/80">今日の測定</p>
+                    </div>
+                    <div class="cd-hero-stat min-w-[8.5rem] flex-1">
+                        <p class="cd-hero-stat-label">たんぱく質</p>
+                        <p class="cd-hero-stat-number">{{ Number(mealTotals.protein_g).toLocaleString('ja-JP', { maximumFractionDigits: 1 }) }} <span class="text-xs font-medium">g</span></p>
+                    </div>
+                </template>
                 <template #calendar>
                     <DateNavigator
                         compact

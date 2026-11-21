@@ -281,6 +281,16 @@ function historyDescription(log: ActivityLog): string {
                 title="ルーティン"
                 subtitle="今日やるセッションを最初に。ルーティンと履歴はここから。"
             >
+                <template #hero>
+                    <div class="cd-hero-stat min-w-[8.5rem] flex-1">
+                        <p class="cd-hero-stat-label">完了したセッション</p>
+                        <p class="cd-hero-stat-number">{{ completedCount }} / {{ totalCount }}</p>
+                    </div>
+                    <div class="cd-hero-stat min-w-[8.5rem] flex-1">
+                        <p class="cd-hero-stat-label">予定時間</p>
+                        <p class="cd-hero-stat-number">{{ totalMinutes }} <span class="text-xs font-medium">分</span></p>
+                    </div>
+                </template>
                 <template #actions>
                     <Button
                         type="button"

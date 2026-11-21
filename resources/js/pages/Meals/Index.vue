@@ -816,6 +816,21 @@ function applyChartFilter(): void {
                 :back-href="`/records?date=${date}`"
                 back-label="パフォーマンス管理"
             >
+                <template #hero>
+                    <div class="cd-hero-stat min-w-[8.5rem] flex-1">
+                        <p class="cd-hero-stat-label">本日の摂取</p>
+                        <p class="cd-hero-stat-number">{{ Number(totals.kcal).toLocaleString('ja-JP', { maximumFractionDigits: 0 }) }} <span class="text-xs font-medium">kcal</span></p>
+                        <p v-if="goal" class="mt-1 text-xs text-white/80">目標 {{ Number(goal.kcal).toLocaleString('ja-JP') }} kcal</p>
+                    </div>
+                    <div class="cd-hero-stat min-w-[8.5rem] flex-1">
+                        <p class="cd-hero-stat-label">たんぱく質</p>
+                        <p class="cd-hero-stat-number">{{ Number(totals.protein_g).toLocaleString('ja-JP', { maximumFractionDigits: 1 }) }} <span class="text-xs font-medium">g</span></p>
+                    </div>
+                    <div class="cd-hero-stat min-w-[8.5rem] flex-1">
+                        <p class="cd-hero-stat-label">記録した食事</p>
+                        <p class="cd-hero-stat-number">{{ recordedEntries.length }} 件</p>
+                    </div>
+                </template>
                 <template #calendar>
                     <DateNavigator
                         compact

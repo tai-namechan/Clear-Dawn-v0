@@ -22,7 +22,7 @@ withDefaults(defineProps<Props>(), {
 
 <template>
     <div
-        class="flex flex-col gap-2"
+        class="cd-hero-heading flex flex-col gap-2"
         :class="
             align === 'center'
                 ? 'items-center py-4 text-center'

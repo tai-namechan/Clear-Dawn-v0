@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AiUsageBanner from '@/components/AiUsageBanner.vue';
+import CdMobileNav from '@/components/CdMobileNav.vue';
 import AppContent from '@/components/AppContent.vue';
 import AppShell from '@/components/AppShell.vue';
 import AppSidebar from '@/components/AppSidebar.vue';
@@ -21,11 +22,12 @@ withDefaults(defineProps<Props>(), {
         <AppSidebar />
         <AppContent
             variant="sidebar"
-            class="cd-paper-bg flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto"
+            class="cd-clear-app cd-paper-bg flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto"
         >
             <AppSidebarHeader :breadcrumbs="breadcrumbs" />
             <AiUsageBanner />
             <slot />
+            <CdMobileNav />
         </AppContent>
         <Toaster />
     </AppShell>
