@@ -5,7 +5,7 @@ import { computed, ref } from 'vue';
 import MatrixCellEditModal from '@/components/MatrixCellEditModal.vue';
 import MatrixSheet from '@/components/MatrixSheet.vue';
 import MatrixSheetMobile from '@/components/MatrixSheetMobile.vue';
-import { formatHomeDate, greetingFor } from '@/lib/homeMatrix.mjs';
+import { formatHomeDate } from '@/lib/homeMatrix.mjs';
 import type { LifeArea, MatrixRow } from '@/types/matrix';
 
 interface Props {
@@ -22,7 +22,6 @@ const todayIso = [
     String(now.getMonth() + 1).padStart(2, '0'),
     String(now.getDate()).padStart(2, '0'),
 ].join('-');
-const greeting = greetingFor(now.getHours());
 
 const editing = ref<{ rowIndex: number; areaIndex: number } | null>(null);
 
@@ -85,7 +84,7 @@ function openCellEditor(payload: { rowIndex: number; areaIndex: number }) {
         >
             <section
                 class="cd-hero-banner cd-home-hero landscape-compact:hidden"
-                aria-label="今日のあいさつ"
+                aria-label="今日の日付"
             >
                 <p class="cd-home-date">
                     <CalendarDays
@@ -95,12 +94,7 @@ function openCellEditor(payload: { rowIndex: number; areaIndex: number }) {
                     />
                     <time :datetime="todayIso">{{ todayLabel }}</time>
                 </p>
-                <h1 class="mt-3 text-3xl leading-tight font-bold md:text-4xl">
-                    {{ greeting }}
-                </h1>
-                <p class="mt-1.5 text-sm md:text-base">
-                    今日も、積み重ねていこう。
-                </p>
+                <h1 class="sr-only">ダッシュボード</h1>
             </section>
             <!-- Desktop / tablet: keep the classic matrix table -->
             <div class="hidden min-h-0 flex-1 flex-col md:flex">

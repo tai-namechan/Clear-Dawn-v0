@@ -111,8 +111,8 @@
 .cd-clear-app .cd-app-header {
     --cd-header-text: #fff;
     --cd-header-text-muted: rgba(255, 255, 255, 0.84);
-    --cd-header-control-bg: rgba(255, 255, 255, 0.14);
-    --cd-header-border: rgba(255, 255, 255, 0.3);
+    --cd-header-control-bg: rgba(36, 22, 100, 0.34);
+    --cd-header-border: rgba(255, 255, 255, 0.36);
     background: transparent;
     border-bottom: 0;
     box-shadow: none;
@@ -129,7 +129,7 @@
 .cd-clear-app .cd-app-header [data-test='product-switcher-trigger']:hover,
 .cd-clear-app .cd-app-header [data-test='header-user-menu-button']:hover {
     border-color: rgba(255, 255, 255, 0.5);
-    background: rgba(255, 255, 255, 0.24);
+    background: rgba(36, 22, 100, 0.5);
 }
 .cd-clear-app .cd-app-header [data-sidebar='trigger']:hover {
     background: rgba(255, 255, 255, 0.14);
@@ -220,8 +220,8 @@
 .cd-clear-app
     :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
     [data-slot='button'].border:not(.bg-primary) {
-    background: rgba(255, 255, 255, 0.16);
-    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(36, 22, 100, 0.34);
+    border-color: rgba(255, 255, 255, 0.45);
     text-shadow: none;
     backdrop-filter: blur(10px);
 }
@@ -229,7 +229,7 @@
     :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
     [data-slot='button']:not(.bg-primary):hover {
     color: #fff;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(36, 22, 100, 0.5);
 }
 .cd-clear-app .cd-hero-panel .cd-hero-primary-action {
     color: #2a2153;
@@ -712,4 +712,29 @@
 }
 .cd-clear-app .cd-glass-panel .cd-progress-ring-caption {
     color: rgba(255, 255, 255, 0.86);
+}
+
+/* ---------------------------------------------------------------- Legibility of controls on the sky */
+/* Account name and chevron: white (the avatar keeps its own light tile). */
+.cd-clear-app .cd-app-header [data-test='header-user-menu-button'] .font-serif,
+.cd-clear-app .cd-app-header [data-test='header-user-menu-button'] > svg,
+.cd-clear-app
+    .cd-app-header
+    [data-test='header-user-menu-button']
+    svg.text-cd-ink-muted {
+    color: #fff;
+    opacity: 1;
+}
+/* Date navigation on the hero: a frosted pill so it reads over the sunrise. */
+.cd-clear-app .cd-hero-stage [role='group'][aria-label='日付'] {
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    border-radius: 999px;
+    background: rgba(36, 22, 100, 0.34);
+    padding: 0.15rem 0.35rem;
+    backdrop-filter: blur(10px);
+    text-shadow: none;
+}
+.cd-clear-app .cd-segment button:not([aria-selected='true']):hover {
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--cd-hero-ink);
 }

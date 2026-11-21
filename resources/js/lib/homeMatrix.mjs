@@ -34,22 +34,6 @@ export function areaIconKey(areaName) {
     );
 }
 
-/**
- * @param {number} hour 0-23 (local time)
- * @returns {string}
- */
-export function greetingFor(hour) {
-    if (hour >= 4 && hour < 11) {
-        return 'おはよう';
-    }
-
-    if (hour >= 11 && hour < 18) {
-        return 'こんにちは';
-    }
-
-    return 'こんばんは';
-}
-
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 
 /**

@@ -2,7 +2,6 @@ export type AreaIconKey =
     'ball' | 'music' | 'study' | 'health' | 'work' | 'private' | 'default';
 
 export function areaIconKey(areaName: string): AreaIconKey;
-export function greetingFor(hour: number): string;
 export function formatHomeDate(date: Date): string;
 export function focusTabLabel(rowKey: string, fallback: string): string;
 export function cellItemCount(

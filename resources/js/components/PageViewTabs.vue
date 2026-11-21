@@ -18,8 +18,9 @@ const emit = defineEmits<{
 </script>
 
 <template>
+    <!-- Same pill segment as the home and records tabs (cd-segment). -->
     <div
-        class="inline-flex max-w-full flex-wrap gap-1 rounded-xl bg-muted/70 p-1"
+        class="cd-segment w-full font-sans"
         role="tablist"
         :aria-label="ariaLabel ?? '表示切替'"
     >
@@ -31,12 +32,6 @@ const emit = defineEmits<{
             role="tab"
             :aria-selected="modelValue === tab.id"
             :aria-controls="`panel-${tab.id}`"
-            class="rounded-lg px-4 py-2 font-sans text-sm font-medium transition-colors"
-            :class="
-                modelValue === tab.id
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-cd-ink-muted hover:bg-background/90 hover:text-cd-ink'
-            "
             @click="emit('update:modelValue', tab.id)"
         >
             {{ tab.label }}

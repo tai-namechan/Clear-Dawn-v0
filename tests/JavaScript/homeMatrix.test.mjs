@@ -5,7 +5,6 @@ import {
     cellItemCount,
     focusTabLabel,
     formatHomeDate,
-    greetingFor,
 } from '../../resources/js/lib/homeMatrix.mjs';
 
 describe('areaIconKey', () => {
@@ -22,18 +21,6 @@ describe('areaIconKey', () => {
         assert.equal(areaIconKey('ボードゲーム'), 'default');
         assert.equal(areaIconKey(''), 'default');
         assert.equal(areaIconKey(undefined), 'default');
-    });
-});
-
-describe('greetingFor', () => {
-    it('greets by local hour', () => {
-        assert.equal(greetingFor(4), 'おはよう');
-        assert.equal(greetingFor(10), 'おはよう');
-        assert.equal(greetingFor(11), 'こんにちは');
-        assert.equal(greetingFor(17), 'こんにちは');
-        assert.equal(greetingFor(18), 'こんばんは');
-        assert.equal(greetingFor(0), 'こんばんは');
-        assert.equal(greetingFor(3), 'こんばんは');
     });
 });
 

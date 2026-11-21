@@ -165,13 +165,21 @@ class PageTabShellContractTest extends TestCase
             'PageViewTabs must remain a tablist',
         );
         $this->assertStringContainsString(
-            'bg-muted/70',
+            'cd-segment',
             $source,
+            'PageViewTabs must share the pill segment used by the home and records tabs',
+        );
+
+        $css = $this->pageSource('resources/css/clear-dawn-hero.css');
+
+        $this->assertMatchesRegularExpression(
+            '/\.cd-segment \{[^}]*background:/',
+            $css,
             'Tab track background makes the control read as a switcher',
         );
         $this->assertStringContainsString(
-            'hover:bg-background/90',
-            $source,
+            ".cd-segment button:not([aria-selected='true']):hover",
+            $css,
             'Inactive tabs must show a hover background',
         );
     }
