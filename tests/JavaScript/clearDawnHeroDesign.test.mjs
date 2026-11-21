@@ -51,5 +51,5 @@ test('primary Clear Dawn pages use the hero design', () => {
 });
 
 test('mobile navigation never overrides the running-session controls', () => {
-    assert.match(source('resources/js/components/CdMobileNav.vue'), /startsWith\('\\/sessions\\/'\)/);
+    assert.ok(source('resources/js/components/CdMobileNav.vue').includes("currentPath.startsWith('/sessions/')"));
 });
