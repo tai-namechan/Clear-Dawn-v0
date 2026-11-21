@@ -67,7 +67,7 @@ test('each screen uses its wa-modern background, with ink text on the washi', ()
     assert.match(css, /\.cd-hero-heading h1,\s*\.cd-clear-app \.cd-hero-banner h1 \{\s*color: var\(--cd-hero-ink\)/);
     assert.doesNotMatch(css, /cd-hero-text-shadow/);
     assert.match(css, /--cd-hero-primary: #6f68ad/);
-    assert.match(css, /--cd-hero-surface: rgba\(251, 247, 239, 0\.9\)/);
+    assert.match(css, /--cd-hero-surface: rgba\(253, 250, 244, 0\.97\)/);
 });
 
 test('tab-shell pages put hero figures in a white summary card', () => {

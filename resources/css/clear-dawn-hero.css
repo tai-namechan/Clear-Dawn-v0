@@ -15,24 +15,24 @@
     /* Buttons and selected tabs: violet gradient as in the mockup. */
     --cd-hero-primary-gradient: linear-gradient(
         135deg,
-        #9a93cf 0%,
-        #6c64a8 100%
+        #7a73b8 0%,
+        #565090 100%
     );
     --cd-hero-primary-gradient-hover: linear-gradient(
         135deg,
-        #8d86c4 0%,
-        #5f5899 100%
+        #6d66ab 0%,
+        #4a447f 100%
     );
     --cd-hero-primary-soft: #eeeaf6;
-    --cd-hero-ink: #2b2a45;
-    --cd-hero-muted: #6c6779;
+    --cd-hero-ink: #23223a;
+    --cd-hero-muted: #55505f;
     --cd-hero-glow: #c2a8ff;
     /* Washi cards (palette: base #FBF7EF / 朝霞 #EEEAF6 / 藍墨 #DCD6E8 / 金 #D4B370). */
-    --cd-hero-surface: rgba(251, 247, 239, 0.9);
+    --cd-hero-surface: rgba(253, 250, 244, 0.97);
     --cd-surface-solid: #fdfaf4;
     --cd-surface-tint: #f4efe6;
     --cd-hero-radius: 1.5rem;
-    --cd-hero-edge: rgba(176, 156, 120, 0.22);
+    --cd-hero-edge: rgba(150, 128, 92, 0.24);
     --cd-hero-shadow:
         0 14px 44px rgba(37, 32, 74, 0.075), 0 2px 8px rgba(37, 32, 74, 0.035);
     position: relative;
@@ -42,6 +42,8 @@
 /* ---------------------------------------------------------------- Wa-modern backgrounds (v3) */
 .cd-clear-app.cd-wa-bg {
     background-color: #faf7f1;
+    /* A washi veil keeps the artwork calm behind text. */
+    box-shadow: inset 0 0 0 100vmax rgba(250, 247, 241, 0.38);
     background-repeat: no-repeat;
     background-position: center top;
     background-size: cover;
@@ -421,6 +423,10 @@
 
 /* ---------------------------------------------------------------- Home (life matrix) */
 .cd-clear-app .cd-home-date {
+    border: 1px solid rgba(150, 128, 92, 0.2);
+    border-radius: 999px;
+    background: rgba(253, 250, 244, 0.85);
+    padding: 0.3rem 0.85rem;
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
@@ -956,8 +962,8 @@
     --cd-hero-ink: #211f41;
     --cd-hero-primary-gradient: linear-gradient(
         135deg,
-        #9a93cf 0%,
-        #6c64a8 100%
+        #7a73b8 0%,
+        #565090 100%
     );
 }
 .cd-brand .bg-primary {
@@ -1086,10 +1092,9 @@
 }
 /* Page and card headings in Mincho like the mockup; data stays in gothic. */
 .cd-clear-app .cd-hero-heading h1,
-.cd-clear-app .cd-hero-banner h1,
-.cd-clear-app .cd-panel h2 {
+.cd-clear-app .cd-hero-banner h1 {
     font-family: 'Shippori Mincho', 'Noto Serif JP', serif;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.04em;
 }
 .cd-clear-app .cd-mobile-nav a[aria-current='page'] {
