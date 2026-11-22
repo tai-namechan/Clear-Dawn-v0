@@ -1100,3 +1100,19 @@
 .cd-clear-app .cd-mobile-nav a[aria-current='page'] {
     color: #5f5899;
 }
+
+/* ---------------------------------------------------------------- Offline notice (iOS app and browser) */
+.cd-clear-app .cd-offline-banner {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: calc(0.5rem + env(safe-area-inset-top)) 1rem 0.5rem;
+    background: #4a447f;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 600;
+}

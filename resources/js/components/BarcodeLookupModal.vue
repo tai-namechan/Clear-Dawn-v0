@@ -15,6 +15,10 @@ import { Label } from '@/components/ui/label';
 import { useBarcodeScan } from '@/composables/useBarcodeScan';
 import { downscaleLabelImage } from '@/composables/useLabelImageCapture';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
+import { scanNativeBarcode } from '@/lib/native/barcode';
+import { takeNativePhoto } from '@/lib/native/camera';
+import { hapticTap } from '@/lib/native/haptics';
+import { isNativeApp } from '@/lib/native/platform';
 import type { FoodItem, MealEntry, MealSection } from '@/types/routine';
 
 type Step =
@@ -215,6 +219,29 @@ function onBarcodeDetected(code: string): void {
     void submitBarcode(code);
 }
 
+const nativeApp = isNativeApp();
+
+/** Native app: the iOS barcode / QR reader. Browser: the web camera. */
+async function startScan(): Promise<void> {
+    if (!nativeApp) {
+        await startCamera();
+
+        return;
+    }
+
+    try {
+        const code = await scanNativeBarcode();
+
+        if (code) {
+            void hapticTap();
+            await submitBarcode(code);
+        }
+    } catch {
+        errorMessage.value =
+            'カメラを起動できませんでした。設定アプリでカメラの利用を許可してください。';
+    }
+}
+
 async function submitManualBarcode(): Promise<void> {
     await submitBarcode(manualBarcode.value.trim());
 }
@@ -382,8 +409,25 @@ function startOneOffEntry(): void {
     step.value = 'one_off';
 }
 
-function openLabelFilePicker(): void {
-    labelFileInput.value?.click();
+async function openLabelFilePicker(): Promise<void> {
+    if (!nativeApp) {
+        labelFileInput.value?.click();
+
+        return;
+    }
+
+    try {
+        const file = await takeNativePhoto('label');
+
+        if (file) {
+            clearOcrFile();
+            ocrFile.value = file;
+            ocrPreviewUrl.value = URL.createObjectURL(file);
+        }
+    } catch {
+        errorMessage.value =
+            'カメラを起動できませんでした。設定アプリでカメラの利用を許可してください。';
+    }
 }
 
 function onLabelFileSelected(event: Event): void {
@@ -731,7 +775,17 @@ const dialogTitle = computed(() => {
             </p>
 
             <div v-if="step === 'scan'" class="flex flex-col gap-4">
-                <div v-if="isSupported" class="relative overflow-hidden rounded-xl bg-black">
+                <Button
+                    v-if="nativeApp"
+                    type="button"
+                    class="h-14 w-full rounded-2xl font-sans text-base font-bold"
+                    :disabled="saving"
+                    @click="startScan"
+                >
+                    <ScanLine :size="20" :stroke-width="1.8" />
+                    カメラでバーコードを読み取る
+                </Button>
+                <div v-else-if="isSupported" class="relative overflow-hidden rounded-xl bg-black">
                     <video
                         ref="videoRef"
                         class="aspect-video w-full object-cover"
@@ -749,7 +803,7 @@ const dialogTitle = computed(() => {
                         class="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60"
                     >
                         <ScanLine :size="32" class="text-white/70" />
-                        <Button type="button" size="sm" class="font-sans" @click="startCamera">
+                        <Button type="button" size="sm" class="font-sans" @click="startScan">
                             カメラを起動
                         </Button>
                     </div>

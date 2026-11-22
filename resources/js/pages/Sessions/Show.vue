@@ -17,6 +17,7 @@ import SessionBlockLogger from '@/components/routine/SessionBlockLogger.vue';
 import SessionExerciseVideo from '@/components/routine/SessionExerciseVideo.vue';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/apiFetch';
+import { hapticSuccess } from '@/lib/native/haptics';
 import {
     formatAmountTarget,
     formatDurationSeconds,
@@ -214,6 +215,7 @@ async function completeStep(): Promise<void> {
             body: JSON.stringify({ status: 'completed' }),
         },
     );
+    void hapticSuccess();
 
     router.reload({
         only: ['session'],
@@ -271,6 +273,7 @@ async function completeSession(): Promise<void> {
         await apiFetch(`/sessions/${props.session.id}/complete`, {
             method: 'POST',
         });
+        void hapticSuccess();
 
         router.visit('/today');
     } finally {
@@ -357,9 +360,7 @@ const metrics = computed((): MetricChip[] => {
 <template>
     <Head title="ルーティン実行" />
 
-    <div
-        class="flex shrink-0 flex-1 flex-col rounded-xl p-4 md:px-6 lg:pb-6"
-    >
+    <div class="flex flex-1 shrink-0 flex-col rounded-xl p-4 md:px-6 lg:pb-6">
         <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4">
             <PageSectionCard hero>
                 <div class="flex flex-col gap-4">

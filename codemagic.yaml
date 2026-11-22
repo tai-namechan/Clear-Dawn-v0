@@ -1,0 +1,50 @@
+# Clear Dawn iOS app → TestFlight (docs/product/ios-app.md)
+#
+# Set up once in the Codemagic UI:
+#   1. Team integrations > Developer Portal: add an App Store Connect API key
+#      and name the integration "clear_dawn_asc".
+#   2. Environment variable group "clear_dawn_ios":
+#        CAP_SERVER_URL      = https://<production host>   (the Laravel server the app opens)
+#        APP_STORE_APPLE_ID  = <numeric Apple ID of the app in App Store Connect>
+workflows:
+    ios-testflight:
+        name: iOS TestFlight
+        max_build_duration: 60
+        instance_type: mac_mini_m2
+        integrations:
+            app_store_connect: clear_dawn_asc
+        environment:
+            groups:
+                - clear_dawn_ios
+            ios_signing:
+                distribution_type: app_store
+                bundle_identifier: com.cleardawn.app
+            vars:
+                XCODE_PROJECT: ios/App/App.xcodeproj
+                XCODE_SCHEME: App
+            node: 22
+            xcode: latest
+        triggering:
+            events:
+                - tag
+            tag_patterns:
+                - pattern: 'ios-v*'
+        scripts:
+            - name: Install JavaScript dependencies (Capacitor plugins are built from node_modules)
+              script: npm ci
+            - name: Point the app at the server and sync Capacitor
+              script: npm run cap:sync
+            - name: Set up code signing
+              script: xcode-project use-profiles
+            - name: Bump the build number past the latest TestFlight build
+              script: |
+                  LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" || echo 0)
+                  cd ios/App && agvtool new-version -all $((LATEST + 1))
+            - name: Build the ipa
+              script: xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME"
+        artifacts:
+            - build/ios/ipa/*.ipa
+        publishing:
+            app_store_connect:
+                auth: integration
+                submit_to_testflight: true

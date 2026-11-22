@@ -7,6 +7,7 @@ import AppShell from '@/components/AppShell.vue';
 import AppSidebar from '@/components/AppSidebar.vue';
 import AppSidebarHeader from '@/components/AppSidebarHeader.vue';
 import CdMobileNav from '@/components/CdMobileNav.vue';
+import CdOfflineBanner from '@/components/CdOfflineBanner.vue';
 import { Toaster } from '@/components/ui/sonner';
 import { backgroundScene } from '@/lib/backgroundScene.mjs';
 import type { BreadcrumbItem } from '@/types';
@@ -34,6 +35,7 @@ const contentClass = computed(
     <AppShell variant="sidebar">
         <AppSidebar />
         <AppContent variant="sidebar" :class="contentClass">
+            <CdOfflineBanner />
             <AppSidebarHeader :breadcrumbs="breadcrumbs" />
             <AiUsageBanner />
             <slot />
