@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\AppleAuthController;
 use App\Http\Controllers\BodyMeasurementImportController;
 use App\Http\Controllers\BodyStoryExportController;
 use App\Http\Controllers\DailyCheckinController;
@@ -35,6 +36,8 @@ use App\Models\RoutineItem;
 use App\Models\RoutinePlan;
 use App\Models\RoutineSession;
 use App\Models\RoutineSessionStep;
+use App\Support\ClientPlatform;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rules\Password;
@@ -71,9 +74,14 @@ Route::bind('bl', function (string $value): RoutineBlockLog {
     return RoutineBlockLog::query()->whereKey($value)->firstOrFail();
 });
 
-Route::get('/', function () {
+Route::get('/', function (Request $request) {
     if (auth()->check()) {
         return redirect()->route('dashboard');
+    }
+
+    // The iOS app opens straight on the sign-in screen, not the marketing page.
+    if (ClientPlatform::isNativeApp($request)) {
+        return redirect()->route('login');
     }
 
     return Inertia::render('PublicLandingPage', [
@@ -214,6 +222,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::redirect('/finance', '/yoyu/money')->middleware(['auth', 'verified']);
+
+// Sign in with Apple (docs/product/ios-app.md)
+Route::middleware(['guest', 'throttle:10,1'])->prefix('auth/apple')->name('auth.apple.')->group(function () {
+    Route::get('redirect', [AppleAuthController::class, 'redirect'])->name('redirect');
+    Route::post('callback', [AppleAuthController::class, 'callback'])->name('callback');
+    Route::get('nonce', [AppleAuthController::class, 'nativeNonce'])->name('nonce');
+    Route::post('native', [AppleAuthController::class, 'native'])->name('native');
+});
 
 require __DIR__.'/settings.php';
 require __DIR__.'/yoyu.php';

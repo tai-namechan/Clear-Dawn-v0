@@ -40,6 +40,21 @@ return [
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
     ],
 
+    /*
+    | Sign in with Apple (docs/product/ios-app.md).
+    | client_id is the Services ID used by the web flow; the iOS app's bundle ID
+    | is accepted as an extra audience for identity tokens from the native sheet.
+    */
+    'apple' => [
+        'client_id' => env('APPLE_CLIENT_ID'),
+        'client_secret' => env('APPLE_CLIENT_SECRET'),
+        'key_id' => env('APPLE_KEY_ID'),
+        'team_id' => env('APPLE_TEAM_ID'),
+        'private_key' => env('APPLE_PRIVATE_KEY'),
+        'redirect' => env('APPLE_REDIRECT_URI', '/auth/apple/callback'),
+        'audiences' => array_values(array_filter([env('APPLE_BUNDLE_ID', 'com.cleardawn.app')])),
+    ],
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
