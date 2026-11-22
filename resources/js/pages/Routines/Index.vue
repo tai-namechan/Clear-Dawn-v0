@@ -3,9 +3,11 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import {
     CalendarPlus,
     ChevronDown,
+    Clapperboard,
     Dumbbell,
     NotebookPen,
     Plus,
+    Target,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import PageTabShell from '@/components/PageTabShell.vue';
@@ -199,6 +201,28 @@ function historyDescription(log: ActivityLog): string {
                         <Link href="/programs">
                             <Dumbbell :size="16" :stroke-width="1.6" />
                             プログラム
+                        </Link>
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        class="shrink-0 font-sans"
+                        as-child
+                    >
+                        <Link href="/goals">
+                            <Target :size="16" :stroke-width="1.6" />
+                            目標
+                        </Link>
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        class="shrink-0 font-sans"
+                        as-child
+                    >
+                        <Link href="/videos">
+                            <Clapperboard :size="16" :stroke-width="1.6" />
+                            動画
                         </Link>
                     </Button>
                 </template>
