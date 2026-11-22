@@ -140,7 +140,7 @@ function openEditor(): void {
             </div>
 
             <!-- This month / now / future for the chosen area -->
-            <div v-if="selectedArea" class="cd-panel cd-scroll-card p-4">
+            <div v-if="selectedArea" class="cd-panel p-4">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <h2 class="font-sans text-lg font-bold text-cd-ink">
