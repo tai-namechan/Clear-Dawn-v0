@@ -140,7 +140,7 @@ function openEditor(): void {
             </div>
 
             <!-- This month / now / future for the chosen area -->
-            <div v-if="selectedArea" class="cd-panel p-4">
+            <div v-if="selectedArea" class="cd-panel cd-scroll-card p-4">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <h2 class="font-sans text-lg font-bold text-cd-ink">
@@ -216,7 +216,7 @@ function openEditor(): void {
                         />
                         <button
                             type="button"
-                            class="min-w-0 flex-1 text-left font-sans text-[15px] leading-snug text-cd-ink"
+                            class="min-w-0 flex-1 text-left font-matrix text-base leading-snug"
                             :class="{
                                 'text-cd-ink-muted line-through decoration-cd-ink-muted/60':
                                     item.is_completed,

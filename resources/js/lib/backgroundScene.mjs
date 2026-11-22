@@ -5,7 +5,9 @@
 
 /** @type {[RegExp, string][]} */
 const SCENE_RULES = [
-    [/^(Dashboard|Goals\/|LifeAreas\/)/, 'today'],
+    // The matrix sits on the calm pagoda washi so the cherry blossoms do not compete.
+    [/^Dashboard$/, 'settings'],
+    [/^(Goals\/|LifeAreas\/)/, 'today'],
     [/^Meals\//, 'food'],
     [/^Records\//, 'condition'],
     [

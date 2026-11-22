@@ -4,7 +4,7 @@ import { backgroundScene } from '../../resources/js/lib/backgroundScene.mjs';
 
 describe('backgroundScene', () => {
     it('maps each page group to its wa-modern background', () => {
-        assert.equal(backgroundScene('Dashboard'), 'today');
+        assert.equal(backgroundScene('Dashboard'), 'settings');
         assert.equal(backgroundScene('Goals/Index'), 'today');
         assert.equal(backgroundScene('Meals/Index'), 'food');
         assert.equal(backgroundScene('Meals/Foods'), 'food');
