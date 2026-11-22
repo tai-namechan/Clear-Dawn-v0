@@ -22,7 +22,7 @@ export async function signInWithAppleNative(): Promise<string | null> {
     try {
         response = await SignInWithApple.authorize({
             // Native requests are validated against the bundle ID on the server.
-            clientId: 'com.cleardawn.app',
+            clientId: 'jp.seedk.cleardawn',
             redirectURI: `${window.location.origin}/auth/apple/callback`,
             scopes: 'email name',
             nonce,

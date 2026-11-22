@@ -9,7 +9,7 @@ import { resolveCapacitorServerUrl } from './scripts/lib/capacitorServer.mjs';
 const server = resolveCapacitorServerUrl(process.env.CAP_SERVER_URL);
 
 const config: CapacitorConfig = {
-    appId: 'com.cleardawn.app',
+    appId: 'jp.seedk.cleardawn',
     appName: 'Clear Dawn',
     webDir: 'capacitor/www',
     backgroundColor: '#FBF7EF',

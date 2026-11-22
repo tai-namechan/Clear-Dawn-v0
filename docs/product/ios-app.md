@@ -34,7 +34,7 @@
 
 ## 構成
 
-- `capacitor.config.ts`: アプリ ID `com.cleardawn.app`、表示名「Clear Dawn」、`server.url` は環境変数 `CAP_SERVER_URL`、`server.errorPath` は `offline.html`。
+- `capacitor.config.ts`: アプリ ID `jp.seedk.cleardawn`、表示名「Clear Dawn」、`server.url` は環境変数 `CAP_SERVER_URL`、`server.errorPath` は `offline.html`。Bundle ID は保有ドメイン `seedk.jp` に揃える（Clear Pitch の `jp.seedk.clearpitch` と同じ系列。初回アップロード後は変更不可）。
 - `capacitor/www/`: アプリに同梱する最小限のファイル（起動画面・オフライン画面）。
 - `ios/`: Xcode プロジェクト（Swift Package Manager）。カメラ・写真の利用目的（`NSCameraUsageDescription` など）を日本語で記載する。
 - `resources/js/lib/native/`: ネイティブ機能の呼び出し口。`Capacitor.isNativePlatform()` が偽ならブラウザ用の動作に戻る。
@@ -42,10 +42,10 @@
 ## ビルドと配布（Mac なし）
 
 - Codemagic（`codemagic.yaml`）のクラウド Mac でビルドし、App Store Connect API キーで署名して TestFlight へ送る。
-- 必要な準備: Apple Developer Program 登録、App Store Connect でアプリ（Bundle ID `com.cleardawn.app`）作成、App Store Connect API キーを Codemagic に登録、`CAP_SERVER_URL` を Codemagic の環境変数に設定。
+- 必要な準備: Apple Developer Program 登録、App Store Connect でアプリ（Bundle ID `jp.seedk.cleardawn`）作成、App Store Connect API キーを Codemagic に登録、`CAP_SERVER_URL` を Codemagic の環境変数に設定。
 - Apple でサインインの準備（Apple Developer > Certificates, Identifiers & Profiles）:
-  - App ID `com.cleardawn.app` の Capabilities で「Sign in with Apple」を有効にする（`ios/App/App/App.entitlements` と一致させる）。
-  - Web 用に Services ID（例 `com.cleardawn.web`）を作り、ドメインと Return URL `https://<本番>/auth/apple/callback` を登録する。
+  - App ID `jp.seedk.cleardawn` の Capabilities で「Sign in with Apple」を有効にする（`ios/App/App/App.entitlements` と一致させる）。
+  - Web 用に Services ID（例 `jp.seedk.cleardawn.web`）を作り、ドメインと Return URL `https://<本番>/auth/apple/callback` を登録する。
   - Keys で「Sign in with Apple」のキー（.p8）を作る。
   - 本番の環境変数: `APPLE_CLIENT_ID`（Services ID）、`APPLE_TEAM_ID`、`APPLE_KEY_ID`、`APPLE_PRIVATE_KEY`（.p8 の内容）、`APPLE_REDIRECT_URI`、`APPLE_BUNDLE_ID`。
 

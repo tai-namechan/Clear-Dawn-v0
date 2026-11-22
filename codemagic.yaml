@@ -18,7 +18,7 @@ workflows:
                 - clear_dawn_ios
             ios_signing:
                 distribution_type: app_store
-                bundle_identifier: com.cleardawn.app
+                bundle_identifier: jp.seedk.cleardawn
             vars:
                 XCODE_PROJECT: ios/App/App.xcodeproj
                 XCODE_SCHEME: App

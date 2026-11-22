@@ -24,7 +24,7 @@ class AppleSignInTest extends TestCase
     {
         parent::setUp();
 
-        config()->set('services.apple.client_id', 'com.cleardawn.web');
+        config()->set('services.apple.client_id', 'jp.seedk.cleardawn.web');
     }
 
     private function appleUser(string $sub = 'apple-sub-1', ?string $email = 'taro@privaterelay.appleid.com', ?string $name = null): SocialiteUser
