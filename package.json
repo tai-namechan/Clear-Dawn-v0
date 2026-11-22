@@ -48,7 +48,6 @@
         "@capacitor/core": "^8.6.2",
         "@capacitor/haptics": "^8.0.2",
         "@capacitor/ios": "^8.6.2",
-        "@capacitor/network": "^8.0.1",
         "@inertiajs/vite": "^3.0.0",
         "@inertiajs/vue3": "^3.0.0",
         "@laravel/passkeys": "^0.2.0",

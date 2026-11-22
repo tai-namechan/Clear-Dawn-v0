@@ -19,16 +19,23 @@ class RoutinesHubTabsContractTest extends TestCase
 
     public function test_sidebar_does_not_list_programs(): void
     {
-        $source = $this->pageSource('resources/js/components/AppSidebar.vue');
+        // The sidebar and the mobile nav share one definition (docs/clear-dawn-hero-design-guidelines.md).
+        $sidebar = $this->pageSource('resources/js/components/AppSidebar.vue');
+        $navigation = $this->pageSource('resources/js/lib/clearDawnNavigation.mjs');
 
+        $this->assertStringContainsString(
+            'clearDawnNavigation',
+            $sidebar,
+            'The sidebar must read the shared navigation definition',
+        );
         $this->assertStringNotContainsString(
             "href: '/programs'",
-            $source,
+            $navigation,
             'Programs must not appear in the sidebar',
         );
         $this->assertStringContainsString(
             "href: '/routines'",
-            $source,
+            $navigation,
             'Routines remains the primary sidebar landing',
         );
     }

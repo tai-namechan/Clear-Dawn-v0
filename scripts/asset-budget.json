@@ -1,8 +1,8 @@
 {
-    "$comment": "Budgets for the static import closure of each Vite entry. Baseline (2026-07-13): resources/js/app.ts = 6 chunks / 458,094 bytes / 145,603 gzip bytes; resources/css/app.css = 1 chunk / 161,299 bytes / 24,799 gzip bytes. Budgets are baseline + ~20% headroom. Raise only with a measured justification recorded in docs/architecture/frontend-asset-boundaries.md.",
+    "$comment": "Budgets for the static import closure of each Vite entry. Baseline (2026-07-13): resources/js/app.ts = 6 chunks / 458,094 bytes / 145,603 gzip bytes; resources/css/app.css = 1 chunk / 161,299 bytes / 24,799 gzip bytes. Budgets are baseline + ~20% headroom. Raise only with a measured justification recorded in docs/architecture/frontend-asset-boundaries.md. 2026-11-23: maxStaticChunks 10 → 12 for two ~2KB bundler helper chunks introduced with Capacitor (see docs).",
     "entries": {
         "resources/js/app.ts": {
-            "maxStaticChunks": 10,
+            "maxStaticChunks": 12,
             "maxStaticBytes": 550000,
             "maxGzipBytes": 175000,
             "forbiddenChunkPatterns": [

@@ -1,35 +1,27 @@
 <script setup lang="ts">
-import type { PluginListenerHandle } from '@capacitor/core';
 import { WifiOff } from '@lucide/vue';
 import { onMounted, onUnmounted, ref } from 'vue';
 
 /**
  * Shows a calm notice when the connection drops while the app is open
- * (docs/product/ios-app.md). Works in the browser too via the plugin's
- * web implementation (navigator.onLine).
+ * (docs/product/ios-app.md). Uses the browser's online/offline events,
+ * which the iOS WebView supports, so no native plugin is needed.
  */
 const offline = ref(false);
-let listener: PluginListenerHandle | null = null;
 
-onMounted(async () => {
-    try {
-        // Loaded after the first paint so the plugin stays out of the entry bundle.
-        const { Network } = await import('@capacitor/network');
+function update(): void {
+    offline.value = !navigator.onLine;
+}
 
-        offline.value = !(await Network.getStatus()).connected;
-        listener = await Network.addListener(
-            'networkStatusChange',
-            (status) => {
-                offline.value = !status.connected;
-            },
-        );
-    } catch {
-        // Without the plugin there is nothing to show.
-    }
+onMounted(() => {
+    update();
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
 });
 
 onUnmounted(() => {
-    void listener?.remove();
+    window.removeEventListener('online', update);
+    window.removeEventListener('offline', update);
 });
 </script>
 
