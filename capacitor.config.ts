@@ -13,6 +13,8 @@ const config: CapacitorConfig = {
     appName: 'Clear Dawn',
     webDir: 'capacitor/www',
     backgroundColor: '#FBF7EF',
+    // The server opens the sign-in screen instead of the landing page for this marker (App\Support\ClientPlatform).
+    appendUserAgent: 'ClearDawnApp',
     server: {
         ...(server ? { url: server.url, cleartext: server.cleartext } : {}),
         errorPath: 'offline.html',

@@ -43,6 +43,11 @@
 
 - Codemagic（`codemagic.yaml`）のクラウド Mac でビルドし、App Store Connect API キーで署名して TestFlight へ送る。
 - 必要な準備: Apple Developer Program 登録、App Store Connect でアプリ（Bundle ID `com.cleardawn.app`）作成、App Store Connect API キーを Codemagic に登録、`CAP_SERVER_URL` を Codemagic の環境変数に設定。
+- Apple でサインインの準備（Apple Developer > Certificates, Identifiers & Profiles）:
+  - App ID `com.cleardawn.app` の Capabilities で「Sign in with Apple」を有効にする（`ios/App/App/App.entitlements` と一致させる）。
+  - Web 用に Services ID（例 `com.cleardawn.web`）を作り、ドメインと Return URL `https://<本番>/auth/apple/callback` を登録する。
+  - Keys で「Sign in with Apple」のキー（.p8）を作る。
+  - 本番の環境変数: `APPLE_CLIENT_ID`（Services ID）、`APPLE_TEAM_ID`、`APPLE_KEY_ID`、`APPLE_PRIVATE_KEY`（.p8 の内容）、`APPLE_REDIRECT_URI`、`APPLE_BUNDLE_ID`。
 
 ## 審査の前提（公開時）
 

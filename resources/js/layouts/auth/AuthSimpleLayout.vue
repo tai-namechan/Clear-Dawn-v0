@@ -1,49 +1,56 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
-import { home } from '@/routes';
+import { login, register } from '@/routes';
 
+/**
+ * App-style sign-in shell (docs/product/ios-app.md): washi background, brand,
+ * and a ログイン / 新規登録 switch on those two screens. Used in the iOS app
+ * and the browser alike.
+ */
 defineProps<{
     title?: string;
     description?: string;
+    /** Shows the login / register switch with this tab selected. */
+    authTab?: 'login' | 'register';
 }>();
 </script>
 
 <template>
-    <div
-        class="cd-paper-bg relative flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10"
-    >
-        <img
-            src="/images/decorations/moon-glow.png"
-            alt=""
-            aria-hidden="true"
-            class="pointer-events-none absolute top-10 right-12 w-20 opacity-60 md:top-16 md:right-24 md:w-24"
-        />
-        <div class="w-full max-w-sm">
-            <div class="flex flex-col gap-8">
-                <div class="flex flex-col items-center gap-4">
+    <div class="cd-auth">
+        <div class="cd-auth-inner">
+            <header class="cd-auth-brand">
+                <span class="cd-auth-rule" aria-hidden="true" />
+                <p class="cd-auth-wordmark">Clear Dawn</p>
+                <p class="cd-auth-tagline">今日を整える、静かな記録帳</p>
+            </header>
+
+            <main class="cd-auth-card">
+                <nav
+                    v-if="authTab"
+                    class="cd-auth-tabs"
+                    aria-label="ログインと新規登録の切り替え"
+                >
                     <Link
-                        :href="home()"
-                        class="flex flex-col items-center gap-2 font-medium"
+                        :href="login()"
+                        :aria-current="authTab === 'login' ? 'page' : undefined"
+                        >ログイン</Link
                     >
-                        <div
-                            class="mb-1 flex h-9 w-9 items-center justify-center rounded-md"
-                        >
-                            <AppLogoIcon
-                                class="size-9 fill-current text-[var(--foreground)] dark:text-white"
-                            />
-                        </div>
-                        <span class="sr-only">{{ title }}</span>
-                    </Link>
-                    <div class="space-y-2 text-center">
-                        <h1 class="text-xl font-medium">{{ title }}</h1>
-                        <p class="text-center text-sm text-muted-foreground">
-                            {{ description }}
-                        </p>
-                    </div>
+                    <Link
+                        :href="register()"
+                        :aria-current="
+                            authTab === 'register' ? 'page' : undefined
+                        "
+                        >新規登録</Link
+                    >
+                </nav>
+
+                <div class="cd-auth-heading">
+                    <h1>{{ title }}</h1>
+                    <p v-if="description">{{ description }}</p>
                 </div>
+
                 <slot />
-            </div>
+            </main>
         </div>
     </div>
 </template>
