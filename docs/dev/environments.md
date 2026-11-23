@@ -21,7 +21,7 @@
 |---|---|---|---|
 | ホスティング | 開発者の PC | 本番と同構成（Laravel Cloud） | Laravel Cloud |
 | DB | MySQL 8.4（Docker, `compose.yaml`） | MySQL 8.4 | MySQL 8.4 |
-| メール | `log`（`storage/logs/laravel.log` に出力） | 実送信 | 実送信 |
+| メール | `log`（`storage/logs/laravel.log` に出力） | 実送信 | 実送信（必須。新規登録のメール確認に使う。`docs/product/signup-policy.md`） |
 
 テスト（`php artisan test`）は速度のため SQLite（インメモリ）で実行する。MySQL 固有の挙動に依存するクエリを書いた場合は、ローカルの MySQL でも動作を確認すること。
 

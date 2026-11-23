@@ -1,6 +1,8 @@
 includes:
     - vendor/larastan/larastan/extension.neon
     - vendor/nesbot/carbon/extension.neon
+    # 既存エラーの凍結。詳細と再生成コマンドは phpstan-baseline.neon の冒頭を参照。
+    - phpstan-baseline.neon
 
 parameters:
     paths:

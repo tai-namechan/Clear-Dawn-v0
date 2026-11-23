@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { router, usePage } from '@inertiajs/vue3';
 import { Check, ChevronDown, Compass, Library, Sun } from '@lucide/vue';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import {
     Dialog,
     DialogContent,
@@ -84,23 +84,19 @@ onMounted(() => {
     });
 });
 
-// モーダルを開いた時点で他プロダクトのページ（JSチャンク + props）を先読みし、
-// カードを押してからの初回遷移待ちを消す
-watch(open, (isOpen) => {
-    if (!isOpen) {
-        return;
-    }
-
-    products.value
-        .filter((product) => product.key !== currentProductKey.value)
-        .forEach((product) => {
-            router.prefetch(
-                product.href,
-                { method: 'get' },
-                { cacheFor: '1m' },
-            );
-        });
-});
+// プロダクト遷移の先読みは行わない（監査 H-1）。
+//
+// router.prefetch は partial reload ではないため、対象ページのクロージャ props が
+// すべて評価される。ヨユウ（route('yoyu.home')）の場合それは
+// EnsureTodayBriefingService::ensure() に到達し、yoyu_briefings 行の作成と
+// GenerateYoyuBriefingJob（課金される AI 呼び出し）の dispatch まで走る。
+// つまり「スイッチャーを開いただけ」でユーザーの AI 予算が消費される。
+//
+// 日次冪等なので青天井の課金にはならないが、「ユーザーが今日ヨユウを開いた」
+// という事実がデータ上で真でなくなる。GET から副作用を分離するまでは
+// 先読みしない（対応は監査ロードマップ Phase 6）。
+//
+// 画像プリロード（上の onMounted）は副作用が無いため維持する。
 </script>
 
 <template>

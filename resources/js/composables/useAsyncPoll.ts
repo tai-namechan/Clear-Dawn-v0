@@ -1,11 +1,5 @@
-import {
-    onMounted,
-    onUnmounted,
-    toValue,
-    watch
-    
-} from 'vue';
-import type {MaybeRefOrGetter} from 'vue';
+import { onMounted, onUnmounted, toValue, watch } from 'vue';
+import type { MaybeRefOrGetter } from 'vue';
 
 export type UseAsyncPollOptions = {
     /** When true, polling runs (subject to visibility / in-flight / max duration). */
@@ -57,7 +51,10 @@ export function useAsyncPoll(options: UseAsyncPollOptions): {
             return;
         }
 
-        if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        if (
+            typeof document !== 'undefined' &&
+            document.visibilityState === 'hidden'
+        ) {
             return;
         }
 

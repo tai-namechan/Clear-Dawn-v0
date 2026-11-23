@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { SOURCE_TYPES  } from '@/lib/kiokuMeta';
-import type {SourceTypeKey} from '@/lib/kiokuMeta';
+import { SOURCE_TYPES } from '@/lib/kiokuMeta';
+import type { SourceTypeKey } from '@/lib/kiokuMeta';
 
 defineProps<{
     sourceCounts?: Record<string, number>;

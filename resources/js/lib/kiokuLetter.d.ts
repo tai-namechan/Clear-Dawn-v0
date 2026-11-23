@@ -69,7 +69,9 @@ declare module '@/lib/kiokuLetter.mjs' {
         | 'in_progress'
         | 'done';
 
-    export function groupKiokuLetterHistory<T extends { id: string; status: string }>(
+    export function groupKiokuLetterHistory<
+        T extends { id: string; status: string },
+    >(
         letters: T[],
     ): Array<
         | { type: 'letter'; letter: T }

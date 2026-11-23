@@ -52,6 +52,8 @@ class ResolveAppleUserService
             'name' => $this->displayName($appleUser, $givenName, $familyName),
             'email' => $email,
             'apple_id' => $appleId,
+            // Apple only issues identity tokens for verified addresses (docs/product/signup-policy.md).
+            'email_verified_at' => now(),
             // Apple-only accounts never use it; a password can be set later via reset.
             'password' => Hash::make(Str::random(64)),
         ])->save();

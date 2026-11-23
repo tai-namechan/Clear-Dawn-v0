@@ -7,6 +7,7 @@ use App\Domain\Yoyu\Jobs\GenerateYoyuBriefingJob;
 use App\Domain\Yoyu\Models\YoyuBriefing;
 use App\Domain\Yoyu\Models\YoyuTask;
 use App\Domain\Yoyu\Support\UserTimezoneResolver;
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -59,7 +60,8 @@ class YoyuHomeTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('yoyu.home', ['tab' => 'tasks']), [
             'X-Inertia' => 'true',
-            'X-Inertia-Version' => '',
+            // The real asset version: once a Vite manifest exists, a mismatch answers 409.
+            'X-Inertia-Version' => (string) app(HandleInertiaRequests::class)->version(request()),
             'X-Inertia-Partial-Component' => 'Yoyu/Index',
             'X-Inertia-Partial-Data' => 'tab',
         ]);

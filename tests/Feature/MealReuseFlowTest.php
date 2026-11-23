@@ -201,6 +201,9 @@ class MealReuseFlowTest extends TestCase
 
     public function test_usual_foods_returns_favorites_recent_frequent_without_duplicates(): void
     {
+        // "Frequent" only counts the last 90 days; keep the fixed eaten_on dates inside that window.
+        $this->travelTo('2026-07-25 12:00:00');
+
         $user = User::factory()->create();
         $other = User::factory()->create();
 

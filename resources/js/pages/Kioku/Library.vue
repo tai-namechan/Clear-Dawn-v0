@@ -14,8 +14,14 @@ import {
     normalizeTagMode,
     toggleTagFilter,
 } from '@/lib/kiokuTags.mjs';
-import { index as memoriesIndex, show as memoryShow } from '@/routes/kioku/memories';
-import { search as recallSearch, feedback as recallFeedback } from '@/routes/kioku/recall';
+import {
+    index as memoriesIndex,
+    show as memoryShow,
+} from '@/routes/kioku/memories';
+import {
+    search as recallSearch,
+    feedback as recallFeedback,
+} from '@/routes/kioku/recall';
 import type {
     KiokuHomeFilters,
     KiokuMemory,
@@ -87,7 +93,13 @@ const { timedOut, timeoutMessage } = useKiokuStatusPoll(
 
 function manualReload(): void {
     router.reload({
-        only: ['memories', 'typeCounts', 'sourceCounts', 'tagCounts', 'totalCount'],
+        only: [
+            'memories',
+            'typeCounts',
+            'sourceCounts',
+            'tagCounts',
+            'totalCount',
+        ],
         preserveUrl: true,
     });
 }
@@ -113,8 +125,11 @@ const hasActiveFilters = computed(
 );
 
 const activeFilterChips = computed(() => {
-    const chips: Array<{ key: string; label: string; kind: 'q' | 'type' | 'tag' }> =
-        [];
+    const chips: Array<{
+        key: string;
+        label: string;
+        kind: 'q' | 'type' | 'tag';
+    }> = [];
 
     if (q.value) {
         chips.push({ key: 'q', label: `「${q.value}」`, kind: 'q' });
@@ -206,13 +221,20 @@ async function sendFeedback(
         memory: KiokuMemory;
     },
 ): Promise<void> {
-    if (!props.recallFeedbackEnabled || !recallSessionId.value || !recallQueryHash.value) {
+    if (
+        !props.recallFeedbackEnabled ||
+        !recallSessionId.value ||
+        !recallQueryHash.value
+    ) {
         return;
     }
 
     await apiFetch(recallFeedback.url(), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+        },
         body: JSON.stringify({
             search_session_id: recallSessionId.value,
             query_hash: recallQueryHash.value,
@@ -361,10 +383,7 @@ defineOptions({
                     絞り込み
                 </Button>
             </div>
-            <div
-                v-if="semanticSearchEnabled"
-                class="mt-3 flex flex-wrap gap-2"
-            >
+            <div v-if="semanticSearchEnabled" class="mt-3 flex flex-wrap gap-2">
                 <Button
                     type="button"
                     variant="outline"

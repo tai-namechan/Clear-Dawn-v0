@@ -72,6 +72,18 @@ class AppleSignInTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function test_apple_accounts_skip_the_email_verification_gate(): void
+    {
+        $provider = $this->mockProvider();
+        $provider->shouldReceive('userByIdentityToken')->once()->andReturn($this->appleUser());
+
+        $this->nativeSignIn()->assertOk();
+
+        $user = User::query()->where('apple_id', 'apple-sub-1')->firstOrFail();
+        $this->assertTrue($user->hasVerifiedEmail());
+        $this->get(route('dashboard'))->assertOk();
+    }
+
     public function test_native_sign_in_verifies_the_token_against_the_issued_nonce(): void
     {
         $provider = $this->mockProvider();

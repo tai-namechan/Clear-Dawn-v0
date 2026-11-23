@@ -27,6 +27,30 @@ return [
     | Drivers: "sync", "database", "beanstalkd", "sqs", "redis",
     |          "deferred", "background", "failover", "null"
     |
+    |--------------------------------------------------------------------------
+    | retry_after は「最長のジョブ timeout」より必ず大きくすること
+    |--------------------------------------------------------------------------
+    |
+    | retry_after を過ぎたジョブをキューは「タイムアウトした」とみなして
+    | 再可視化する。timeout の方が長いと、実行中のジョブが別ワーカーに
+    | 二重取得され、同時に走る。ShouldBeUnique は dispatch 時のロックであり、
+    | この再解放は防げない。
+    |
+    | 既定 90 秒に対し、実際のジョブ timeout は以下のとおり全て超過していた
+    | （docs/audit/2026-07-26-pre-release-audit.md C-4）:
+    |
+    |   ProcessMoneyImportJob        300  ← 金融トランザクションの二重計上
+    |   EstimateFoodMenuJob          180  ← AI 課金の二重発生
+    |   TranscribeMemoryAudioJob     180
+    |   EnrichMemoryJob              180
+    |   GenerateDailyKiokuLetterJob  180
+    |   SyncGoogleCalendarJob        120
+    |   EstimateFoodPhotoJob         120
+    |   LookupFoodLabelOcrJob        120
+    |
+    | 660 = 最長 300 + 十分な余裕。ジョブの timeout を伸ばす際は
+    | ここも必ず見直すこと。
+    |
     */
 
     'connections' => [
@@ -40,7 +64,7 @@ return [
             'connection' => env('DB_QUEUE_CONNECTION'),
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
             'queue' => env('DB_QUEUE', 'default'),
-            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 90),
+            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 660),
             'after_commit' => false,
         ],
 
@@ -48,7 +72,7 @@ return [
             'driver' => 'beanstalkd',
             'host' => env('BEANSTALKD_QUEUE_HOST', 'localhost'),
             'queue' => env('BEANSTALKD_QUEUE', 'default'),
-            'retry_after' => (int) env('BEANSTALKD_QUEUE_RETRY_AFTER', 90),
+            'retry_after' => (int) env('BEANSTALKD_QUEUE_RETRY_AFTER', 660),
             'block_for' => 0,
             'after_commit' => false,
         ],
@@ -68,7 +92,7 @@ return [
             'driver' => 'redis',
             'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
             'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
+            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 660),
             'block_for' => null,
             'after_commit' => false,
         ],

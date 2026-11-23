@@ -22,7 +22,9 @@ export function kiokuEnrichmentLabel(
     }
 
     const capturedAt =
-        memory.captured_at !== null ? Date.parse(memory.captured_at) : Number.NaN;
+        memory.captured_at !== null
+            ? Date.parse(memory.captured_at)
+            : Number.NaN;
     const elapsed = Number.isFinite(capturedAt) ? nowMs - capturedAt : 0;
 
     if (elapsed < 4000) {

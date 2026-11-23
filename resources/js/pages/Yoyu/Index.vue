@@ -1181,7 +1181,9 @@ defineOptions({
                                 </Button>
                             </Form>
                             <Form
-                                v-if="!isDone(event) && event.travel_min !== null"
+                                v-if="
+                                    !isDone(event) && event.travel_min !== null
+                                "
                                 v-bind="eventTravelLead.form()"
                                 class="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-os-sub"
                                 #default="{ processing }"

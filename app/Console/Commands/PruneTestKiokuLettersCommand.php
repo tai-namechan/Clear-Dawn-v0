@@ -10,7 +10,7 @@ use Illuminate\Console\Command;
 class PruneTestKiokuLettersCommand extends Command
 {
     protected $signature = 'kioku:letters:test:prune
-        {userId : users.id}
+        {userId? : Limit deletion to a users.id}
         {--expired-only : Only delete expired test letters}
         {--letter= : Delete a single test letter id}';
 
@@ -18,17 +18,24 @@ class PruneTestKiokuLettersCommand extends Command
 
     public function handle(): int
     {
-        $user = User::query()->find((int) $this->argument('userId'));
-        if ($user === null) {
-            $this->error("User [{$this->argument('userId')}] not found.");
+        $userId = $this->argument('userId');
+
+        if ($userId === null && ! $this->option('expired-only')) {
+            $this->error('Provide userId or use --expired-only for the global scheduled prune.');
+
+            return self::FAILURE;
+        }
+
+        if ($userId !== null && ! User::query()->whereKey((int) $userId)->exists()) {
+            $this->error("User [{$userId}] not found.");
 
             return self::FAILURE;
         }
 
         $query = KiokuLetter::query()
             ->withoutUserScope()
-            ->where('user_id', $user->id)
-            ->where('mode', KiokuLetterMode::Test->value);
+            ->where('mode', KiokuLetterMode::Test->value)
+            ->when($userId !== null, fn ($builder) => $builder->where('user_id', (int) $userId));
 
         if ($this->option('letter')) {
             $query->whereKey((string) $this->option('letter'));
@@ -39,7 +46,8 @@ class PruneTestKiokuLettersCommand extends Command
         $count = $query->count();
         $query->each(fn (KiokuLetter $letter) => $letter->delete());
 
-        $this->info("Deleted {$count} test letter(s) for user {$user->id}.");
+        $scope = $userId === null ? 'all users' : "user {$userId}";
+        $this->info("Deleted {$count} test letter(s) for {$scope}.");
 
         return self::SUCCESS;
     }

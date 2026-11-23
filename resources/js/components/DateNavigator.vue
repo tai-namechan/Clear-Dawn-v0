@@ -80,7 +80,7 @@ function onDatePicked(event: Event): void {
                     <CalendarDays :size="16" :stroke-width="1.6" />
                 </button>
                 <p
-                    class="font-sans text-sm font-semibold tracking-tight text-cd-ink whitespace-nowrap"
+                    class="font-sans text-sm font-semibold tracking-tight whitespace-nowrap text-cd-ink"
                 >
                     {{ formattedDate }}
                 </p>

@@ -4,10 +4,12 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Laravel\Fortify\Features;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class EmailVerificationTest extends TestCase
@@ -48,6 +50,51 @@ class EmailVerificationTest extends TestCase
 
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
         $response->assertRedirect(route('dashboard', absolute: false).'?verified=1');
+    }
+
+    /**
+     * 監査 C-1 の回帰テスト。
+     *
+     * User が MustVerifyEmail を実装していないと EnsureEmailIsVerified が
+     * 黙って素通りし、全ルートの 'verified' ミドルウェアが no-op になる。
+     * 検証ルート単体のテストではこれを検知できなかったため、
+     * 「保護ルートが実際にゲートされていること」を直接固定する。
+     *
+     * @return list<array{0: string}>
+     */
+    public static function protectedRouteProvider(): array
+    {
+        return [
+            'clear dawn dashboard' => ['dashboard'],
+            'yoyu home' => ['yoyu.home'],
+            'kioku home' => ['kioku.home'],
+        ];
+    }
+
+    #[DataProvider('protectedRouteProvider')]
+    public function test_unverified_user_cannot_reach_protected_routes(string $routeName): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $this->actingAs($user)
+            ->get(route($routeName))
+            ->assertRedirect(route('verification.notice'));
+    }
+
+    #[DataProvider('protectedRouteProvider')]
+    public function test_verified_user_can_reach_protected_routes(string $routeName): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route($routeName))
+            ->assertSuccessful();
+    }
+
+    public function test_user_model_implements_must_verify_email(): void
+    {
+        // これが外れると verified ミドルウェアが全ルートで no-op に戻る。
+        $this->assertInstanceOf(MustVerifyEmail::class, User::factory()->make());
     }
 
     public function test_email_is_not_verified_with_invalid_hash()

@@ -621,7 +621,11 @@ defineOptions({
                     variant="outline"
                     class="gap-1.5 rounded-full border border-os-line text-os-sub"
                     @click="
-                        router.post(exportYoyu.url(memory.id), {}, { preserveScroll: true })
+                        router.post(
+                            exportYoyu.url(memory.id),
+                            {},
+                            { preserveScroll: true },
+                        )
                     "
                 >
                     ヨユウへ送る

@@ -2,13 +2,7 @@
 import { Form, router } from '@inertiajs/vue3';
 import { Check, GripVertical, Pencil, Plus, Trash2 } from '@lucide/vue';
 import Sortable from 'sortablejs';
-import {
-    computed,
-    nextTick,
-    onBeforeUnmount,
-    ref,
-    watch,
-} from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import InputError from '@/components/InputError.vue';
 import { Button } from '@/components/ui/button';
 import {

@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { CalendarPlus, ChevronRight, Clock3, History, Pencil } from '@lucide/vue';
+import {
+    CalendarPlus,
+    ChevronRight,
+    Clock3,
+    History,
+    Pencil,
+} from '@lucide/vue';
 import { computed } from 'vue';
 import { Button } from '@/components/ui/button';
 import type { RoutineEditor } from '@/types/routine';
@@ -41,7 +47,9 @@ const canDelete = computed(() => props.routine.id !== null);
                 </h2>
             </div>
 
-            <div class="grid grid-cols-3 divide-x divide-cd-line px-2 py-4 text-center xl:grid-cols-1 xl:divide-x-0 xl:divide-y">
+            <div
+                class="grid grid-cols-3 divide-x divide-cd-line px-2 py-4 text-center xl:grid-cols-1 xl:divide-x-0 xl:divide-y"
+            >
                 <div class="px-2 xl:py-3">
                     <p class="font-sans text-xl font-semibold text-cd-ink">
                         {{ stepCount }}
@@ -51,7 +59,9 @@ const canDelete = computed(() => props.routine.id !== null);
                     </p>
                 </div>
                 <div class="px-2 xl:py-3">
-                    <p class="truncate font-sans text-sm font-semibold text-cd-ink">
+                    <p
+                        class="truncate font-sans text-sm font-semibold text-cd-ink"
+                    >
                         {{ durationLabel }}
                     </p>
                     <p class="mt-0.5 font-sans text-[11px] text-cd-ink-muted">
@@ -59,7 +69,9 @@ const canDelete = computed(() => props.routine.id !== null);
                     </p>
                 </div>
                 <div class="px-2 xl:py-3">
-                    <p class="truncate font-sans text-sm font-semibold text-cd-ink">
+                    <p
+                        class="truncate font-sans text-sm font-semibold text-cd-ink"
+                    >
                         {{ categoryLabel }}
                     </p>
                     <p class="mt-0.5 font-sans text-[11px] text-cd-ink-muted">
@@ -109,7 +121,12 @@ const canDelete = computed(() => props.routine.id !== null);
                 >
                     削除
                 </Button>
-                <Button type="button" variant="ghost" class="w-full justify-between" as-child>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    class="w-full justify-between"
+                    as-child
+                >
                     <Link href="/history">
                         <span class="inline-flex items-center gap-2">
                             <History :size="15" :stroke-width="1.6" />
@@ -121,8 +138,12 @@ const canDelete = computed(() => props.routine.id !== null);
             </div>
         </section>
 
-        <section class="hidden rounded-xl border border-cd-line/70 bg-white/45 px-4 py-3 xl:block">
-            <div class="flex items-center gap-2 font-sans text-xs text-cd-ink-muted">
+        <section
+            class="hidden rounded-xl border border-cd-line/70 bg-white/45 px-4 py-3 xl:block"
+        >
+            <div
+                class="flex items-center gap-2 font-sans text-xs text-cd-ink-muted"
+            >
                 <Clock3 :size="14" :stroke-width="1.5" />
                 並べ替えはドラッグ、または上下ボタンで行えます。
             </div>

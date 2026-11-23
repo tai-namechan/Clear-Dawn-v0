@@ -43,7 +43,7 @@ class DispatchPendingTranscriptionsCommandTest extends TestCase
         return ['memory' => $memory, 'asset' => $asset];
     }
 
-    public function test_command_fails_without_transcription_provider(): void
+    public function test_command_is_a_successful_noop_without_transcription_provider(): void
     {
         config(['kioku.transcription.provider' => 'none']);
         Bus::fake([TranscribeMemoryAudioJob::class]);
@@ -51,7 +51,7 @@ class DispatchPendingTranscriptionsCommandTest extends TestCase
         $this->createPendingVoice($user);
 
         $this->artisan('kioku:transcriptions:dispatch-pending')
-            ->assertFailed();
+            ->assertSuccessful();
 
         Bus::assertNotDispatched(TranscribeMemoryAudioJob::class);
     }
