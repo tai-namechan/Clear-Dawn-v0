@@ -71,6 +71,19 @@ manifest の総 chunk 数ではなく、entry から `imports` だけで到達�
 
 予算はこの実測値に約 20% の余裕を加えて [scripts/asset-budget.json](../../scripts/asset-budget.json) に設定している。予算を引き上げる場合は、実測の根拠を本ドキュメントへ追記する。
 
+### 予算の引き上げ（2026-11-23, iOS アプリ化）
+
+`app.ts` の static chunk 数の上限を 10 → 12 に引き上げる。バイト数の上限は変えない。
+
+| 指標 | 引き上げ前（0e0a394） | 引き上げ後（Capacitor 追加） |
+|---|---|---|
+| `app.ts` static chunks | 9 | 11 |
+| `app.ts` static bytes / gzip | 約 491 KB / 152 KB | 約 491 KB / 152 KB（ほぼ同じ） |
+| 増えた chunk | — | `rolldown-runtime`（694 bytes）、`preload-helper`（1,262 bytes） |
+
+- 理由: Capacitor のプラグイン（ページ側で使用・バーコードは必要時に dynamic import）を加えると、バンドラーの補助コード（CJS 相互運用と preload ヘルパー）が entry とページ chunk の両方で使われ、entry から独立した小さな共有 chunk に切り出される。entry へ戻す設定はなく、内容は約 2KB。
+- Capacitor 本体・プラグインは entry の static closure に入っていない（`npm run assets:check` で確認）。
+
 ## 非目標
 
 - chunk を 1 ファイルへまとめること

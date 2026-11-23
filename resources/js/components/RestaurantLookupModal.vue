@@ -14,6 +14,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { downscaleLabelImage } from '@/composables/useLabelImageCapture';
 import { apiFetch, ApiError } from '@/lib/apiFetch';
+import { takeNativePhoto } from '@/lib/native/camera';
+import { hapticTap } from '@/lib/native/haptics';
+import { isNativeApp } from '@/lib/native/platform';
 import type { FoodItem, MealEntry, MealSection } from '@/types/routine';
 
 type Step = 'choose' | 'photo_capture' | 'menu_input' | 'polling' | 'confirm';
@@ -218,8 +221,27 @@ function close(): void {
     emit('update:open', false);
 }
 
-function openPhotoPicker(): void {
-    photoFileInput.value?.click();
+/** Native app: iOS camera. Browser: the existing file picker. */
+async function openPhotoPicker(): Promise<void> {
+    if (!isNativeApp()) {
+        photoFileInput.value?.click();
+
+        return;
+    }
+
+    try {
+        const file = await takeNativePhoto('meal');
+
+        if (file) {
+            clearPhotoFile();
+            photoFile.value = file;
+            photoPreviewUrl.value = URL.createObjectURL(file);
+            void hapticTap();
+        }
+    } catch {
+        errorMessage.value =
+            'カメラを起動できませんでした。設定アプリでカメラの利用を許可してください。';
+    }
 }
 
 function onPhotoFileSelected(event: Event): void {

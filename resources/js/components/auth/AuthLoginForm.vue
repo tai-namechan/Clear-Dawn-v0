@@ -30,7 +30,11 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <PasskeyVerify />
+    <PasskeyVerify
+        label="パスキーでログイン"
+        loading-label="確認しています…"
+        separator="またはメールアドレスで"
+    />
 
     <Form
         v-bind="store.form()"
@@ -96,7 +100,11 @@ const emit = defineEmits<{
             </Button>
         </div>
 
-        <div v-if="canRegister" class="text-center text-sm text-muted-foreground">
+        <!-- Standalone pages switch with the layout tabs instead. -->
+        <div
+            v-if="canRegister && modal"
+            class="text-center text-sm text-muted-foreground"
+        >
             アカウントをお持ちでない方
             <button
                 v-if="modal"

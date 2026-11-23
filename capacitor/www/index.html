@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ja">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <title>Clear Dawn</title>
+        <style>
+            body {
+                margin: 0;
+                min-height: 100dvh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #fbf7ef;
+                color: #55505f;
+                font-family: -apple-system, 'Hiragino Sans', sans-serif;
+            }
+        </style>
+    </head>
+    <body>
+        <p>Clear Dawn を読み込んでいます…</p>
+        <script src="app-config.js"></script>
+        <script>
+            // Normally Capacitor opens CD_SERVER_URL directly; this is only a fallback.
+            if (window.CD_SERVER_URL) {
+                window.location.replace(window.CD_SERVER_URL);
+            }
+        </script>
+    </body>
+</html>

@@ -1,65 +1,19 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import {
-    ChartLine,
-    CircleCheck,
-    Clapperboard,
-    Home,
-    Settings,
-    Target,
-} from '@lucide/vue';
-import type { Component } from 'vue';
+import { Link, usePage } from '@inertiajs/vue3';
 import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
     SidebarHeader,
 } from '@/components/ui/sidebar';
-import { useCurrentUrl } from '@/composables/useCurrentUrl';
+import { clearDawnNavIcons } from '@/lib/clearDawnNavIcons';
+import {
+    clearDawnNavItems as navItems,
+    isNavPathActive,
+} from '@/lib/clearDawnNavigation.mjs';
 import { dashboard } from '@/routes';
-import { edit as editProfile } from '@/routes/profile';
-import type { NavItem } from '@/types';
 
-interface CdNavItem {
-    title: string;
-    icon: Component;
-    href: NavItem['href'];
-    matchPrefix?: boolean;
-}
-
-const navItems: CdNavItem[] = [
-    { title: 'ダッシュボード', icon: Home, href: dashboard() },
-    {
-        title: 'ルーティン',
-        icon: CircleCheck,
-        href: '/routines',
-        matchPrefix: true,
-    },
-    {
-        title: 'パフォーマンス管理',
-        icon: ChartLine,
-        href: '/records',
-        matchPrefix: true,
-    },
-    {
-        title: '目標',
-        icon: Target,
-        href: '/goals',
-        matchPrefix: true,
-    },
-    { title: '動画', icon: Clapperboard, href: '/videos' },
-    { title: '設定', icon: Settings, href: editProfile() },
-];
-
-const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
-
-function isNavActive(item: CdNavItem): boolean {
-    if (item.matchPrefix) {
-        return isCurrentOrParentUrl(item.href);
-    }
-
-    return isCurrentUrl(item.href);
-}
+const page = usePage();
 </script>
 
 <template>
@@ -121,17 +75,24 @@ function isNavActive(item: CdNavItem): boolean {
                     aria-label="メインメニュー"
                     class="mt-8 flex flex-col items-center gap-5 group-data-[collapsible=icon]:mt-8 group-data-[collapsible=icon]:gap-5 landscape-compact:mt-10 landscape-compact:gap-2"
                 >
-                    <template v-for="item in navItems" :key="item.title">
+                    <template v-for="item in navItems" :key="item.key">
                         <Link
                             :href="item.href"
                             :aria-current="
-                                isNavActive(item) ? 'page' : undefined
+                                isNavPathActive(item.paths, page.url)
+                                    ? 'page'
+                                    : undefined
                             "
                             class="cd-sidebar-nav-link flex w-24 flex-col items-center justify-center gap-2 rounded-2xl px-3 py-3 transition-colors group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:p-2 landscape-compact:w-20 landscape-compact:gap-1 landscape-compact:rounded-xl landscape-compact:px-2 landscape-compact:py-1.5"
-                            :class="{ 'is-active': isNavActive(item) }"
+                            :class="{
+                                'is-active': isNavPathActive(
+                                    item.paths,
+                                    page.url,
+                                ),
+                            }"
                         >
                             <component
-                                :is="item.icon"
+                                :is="clearDawnNavIcons[item.key]"
                                 :size="26"
                                 :stroke-width="2.2"
                                 class="landscape-compact:size-5"
@@ -139,7 +100,7 @@ function isNavActive(item: CdNavItem): boolean {
                             <span
                                 class="font-serif text-xs font-semibold tracking-[0.2em] whitespace-nowrap group-data-[collapsible=icon]:hidden landscape-compact:text-[0.65rem] landscape-compact:tracking-[0.12em]"
                             >
-                                {{ item.title }}
+                                {{ item.label }}
                             </span>
                         </Link>
                     </template>

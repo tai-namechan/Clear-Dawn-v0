@@ -25,6 +25,7 @@ Clear Dawn v0（プロトタイプ）の仕様・設計・デザインに関す�
 | [screens/finance.md](./product/screens/finance.md) | Finance 仕様 |
 | [screens/videos.md](./product/screens/videos.md) | 動画仕様 |
 | [screens/ai-assist.md](./product/screens/ai-assist.md) | AI 支援仕様 |
+| [ios-app.md](./product/ios-app.md) | iOS アプリ（Capacitor）: ネイティブ機能・構成・Codemagic での配布 |
 
 ### デザイン（docs/design/）
 

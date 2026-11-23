@@ -59,6 +59,7 @@ import {
     nutritionSeriesByDate,
 } from '@/lib/chartTheme';
 import { kcalAchievement as calculateKcalAchievement } from '@/lib/kcalAchievement.mjs';
+import { hapticSuccess } from '@/lib/native/haptics';
 import { PFC_COLORS } from '@/lib/pfcColors';
 import { nutrientProgress } from '@/lib/pfcShare.mjs';
 import type {
@@ -798,6 +799,7 @@ async function saveEntry(): Promise<void> {
 
         showEntryModal.value = false;
         message.value = '保存しました。';
+        void hapticSuccess();
         router.reload({
             only: ['sections', 'totals', 'chartPoints', 'goal'],
         });

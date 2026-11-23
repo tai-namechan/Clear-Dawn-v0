@@ -102,7 +102,8 @@ const emit = defineEmits<{
             </Button>
         </div>
 
-        <div class="text-center text-sm text-muted-foreground">
+        <!-- Standalone pages switch with the layout tabs instead. -->
+        <div v-if="modal" class="text-center text-sm text-muted-foreground">
             すでにアカウントをお持ちの方
             <button
                 v-if="modal"

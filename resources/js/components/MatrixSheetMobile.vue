@@ -18,6 +18,7 @@ import {
     cellItemCount,
     focusTabLabel,
 } from '@/lib/homeMatrix.mjs';
+import { hapticTap } from '@/lib/native/haptics';
 import { toggle } from '@/routes/matrix-cell-items';
 import type { LifeArea, MatrixCellItem, MatrixRow } from '@/types/matrix';
 
@@ -77,6 +78,7 @@ function currentCount(areaIndex: number): number {
 }
 
 function toggleCompletion(item: MatrixCellItem): void {
+    void hapticTap();
     router.patch(toggle.url(item.id), {}, { preserveScroll: true });
 }
 

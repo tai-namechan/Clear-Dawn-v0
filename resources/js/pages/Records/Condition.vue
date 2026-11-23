@@ -42,6 +42,7 @@ import {
     formatSleepMinutes,
     metricLabel,
 } from '@/lib/metricLabels';
+import { hapticSuccess } from '@/lib/native/haptics';
 import type { ChartPoint, DailyMetricEntry } from '@/types/routine';
 
 type BodyMeasurementSummary = {
@@ -596,6 +597,7 @@ async function saveAll(): Promise<void> {
         });
 
         saveMessage.value = '保存しました。';
+        void hapticSuccess();
         router.reload({
             only: ['metrics', 'previousMetrics', 'chartSeries', 'date'],
         });

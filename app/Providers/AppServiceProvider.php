@@ -32,9 +32,12 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use RuntimeException;
+use SocialiteProviders\Apple\Provider as AppleProvider;
+use SocialiteProviders\Manager\SocialiteWasCalled;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -103,6 +106,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        // Sign in with Apple is a community Socialite provider (docs/product/ios-app.md).
+        Event::listen(function (SocialiteWasCalled $event): void {
+            $event->extendSocialite('apple', AppleProvider::class);
+        });
 
         // activity_logs は不変ログのため、subject_type にクラス名ではなく
         // 安定した alias を保存する（クラスのリネームでログが壊れないようにする）

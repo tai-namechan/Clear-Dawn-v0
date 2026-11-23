@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
 import { Check, Pencil, Sunrise } from '@lucide/vue';
+import { hapticTap } from '@/lib/native/haptics';
 import { toggle } from '@/routes/matrix-cell-items';
 import type { LifeArea, MatrixCellItem, MatrixRow } from '@/types/matrix';
 
@@ -16,6 +17,7 @@ const emit = defineEmits<{
 }>();
 
 function toggleCompletion(item: MatrixCellItem): void {
+    void hapticTap();
     router.patch(toggle.url(item.id), {}, { preserveScroll: true });
 }
 </script>

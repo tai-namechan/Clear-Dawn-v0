@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
+        // Apple posts the sign-in result cross-site (form_post); the provider
+        // verifies it with an encrypted nonce cookie instead of a CSRF token.
+        $middleware->validateCsrfTokens(except: ['auth/apple/callback']);
+
         // AddLinkHeadersForPreloadedAssets is intentionally NOT registered:
         // with 200+ manifest chunks it emitted a ~60KB Link header, which
         // overflowed the proxy's upstream header buffer and 502'd production.
