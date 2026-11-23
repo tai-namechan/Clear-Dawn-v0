@@ -20,6 +20,16 @@ class PublicLandingPageTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->component('PublicLandingPage'));
     }
 
+    public function test_landing_page_offers_sign_up_and_password_reset(): void
+    {
+        $response = $this->get(route('home'));
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('PublicLandingPage')
+            ->where('canRegister', true)
+            ->where('canResetPassword', true));
+    }
+
     public function test_authenticated_users_are_redirected_from_home_to_dashboard(): void
     {
         $user = User::factory()->create();
