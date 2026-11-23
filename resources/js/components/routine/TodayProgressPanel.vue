@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import {
     CalendarDays,
-    CheckCircle2,
+    Check,
     ChevronLeft,
     ChevronRight,
-    Clock3,
+    Minus,
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
+import CdProgressRing from '@/components/CdProgressRing.vue';
 import { Button } from '@/components/ui/button';
 import { useDateNavigation } from '@/composables/useDateNavigation';
 import { formatMinutesJa } from '@/lib/todayPlanDisplay';
@@ -16,9 +17,19 @@ interface Props {
     completedCount: number;
     totalCount: number;
     totalMinutes: number;
+    /** Today's sessions for the checklist next to the ring. */
+    sessions?: { id: string; title: string; done: boolean }[];
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    sessions: () => [],
+});
+
+const CHECKLIST_LIMIT = 4;
+const checklist = computed(() => props.sessions.slice(0, CHECKLIST_LIMIT));
+const hiddenCount = computed(() =>
+    Math.max(0, props.sessions.length - CHECKLIST_LIMIT),
+);
 const dateRef = computed(() => props.date);
 const dateInputRef = ref<HTMLInputElement | null>(null);
 
@@ -60,129 +71,124 @@ function onDatePicked(event: Event): void {
 </script>
 
 <template>
-    <aside class="min-w-0 overflow-hidden rounded-2xl bg-[#F7F6FA]">
-        <div
-            class="flex min-w-0 flex-col gap-3 p-3 sm:flex-row sm:items-center sm:gap-3 sm:p-3.5"
-        >
-            <div
-                class="flex min-w-0 flex-1 items-center gap-1 rounded-xl bg-white/70 px-2 py-2 sm:gap-2 sm:px-2.5"
+    <aside class="min-w-0 overflow-hidden rounded-2xl" aria-label="今日の進捗">
+        <!-- Mockup: "本日の実行" ring and a checklist of today's sessions -->
+        <div class="flex items-center gap-4 px-4 pt-4 pb-3">
+            <CdProgressRing
+                :percent="completionRate"
+                size="lg"
+                tone="gold"
+                :label="`本日の実行 ${completedCount} / ${totalCount}`"
             >
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    class="shrink-0 text-cd-ink-muted"
-                    aria-label="前の日"
-                    @click="shiftDate(-1)"
+                <span class="cd-meal-ring-caption">本日の実行</span>
+                <span class="cd-meal-ring-value"
+                    >{{ completedCount }}<small>/ {{ totalCount }}</small></span
                 >
-                    <ChevronLeft :size="16" :stroke-width="1.6" />
-                </Button>
+            </CdProgressRing>
+            <div class="min-w-0 flex-1">
+                <ul v-if="checklist.length > 0" class="flex flex-col">
+                    <li
+                        v-for="item in checklist"
+                        :key="item.id"
+                        class="flex items-center gap-2 border-b border-[#f0edf5] py-1.5 last:border-b-0"
+                    >
+                        <Check
+                            v-if="item.done"
+                            :size="15"
+                            :stroke-width="2.4"
+                            class="shrink-0 text-[var(--cd-gold)]"
+                            aria-label="完了"
+                        />
+                        <Minus
+                            v-else
+                            :size="15"
+                            :stroke-width="2"
+                            class="shrink-0 text-cd-ink-muted/60"
+                            aria-label="未完了"
+                        />
+                        <span
+                            class="min-w-0 flex-1 truncate font-sans text-sm text-cd-ink"
+                            :class="{ 'text-cd-ink-muted': item.done }"
+                            >{{ item.title }}</span
+                        >
+                    </li>
+                </ul>
+                <p v-else class="font-sans text-sm text-cd-ink-muted">
+                    今日のセッションはまだありません
+                </p>
+                <p
+                    class="mt-1.5 font-sans text-[11px] text-cd-ink-muted tabular-nums"
+                >
+                    <template v-if="hiddenCount > 0"
+                        >ほか {{ hiddenCount }} 件 ·
+                    </template>
+                    予定
+                    {{ totalMinutes > 0 ? formatMinutesJa(totalMinutes) : '—' }}
+                </p>
+            </div>
+        </div>
 
-                <div
-                    class="flex min-w-0 flex-1 flex-col items-center justify-center text-center"
-                >
-                    <div class="inline-flex max-w-full items-center gap-1.5">
-                        <button
-                            type="button"
-                            class="inline-flex shrink-0 items-center justify-center rounded-md p-1 text-primary transition-colors hover:bg-primary/10"
-                            aria-label="日付を選択"
-                            @click="openDatePicker"
-                        >
-                            <CalendarDays :size="16" :stroke-width="1.7" />
-                        </button>
-                        <p
-                            class="truncate font-sans text-sm font-semibold text-cd-ink"
-                        >
-                            {{ formattedDate }}
-                        </p>
-                    </div>
+        <div
+            class="flex min-w-0 items-center gap-1 border-t border-[#efecf5] px-2 py-1.5"
+        >
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                class="shrink-0 text-cd-ink-muted"
+                aria-label="前の日"
+                @click="shiftDate(-1)"
+            >
+                <ChevronLeft :size="16" :stroke-width="1.6" />
+            </Button>
+
+            <div
+                class="flex min-w-0 flex-1 flex-col items-center justify-center text-center"
+            >
+                <div class="inline-flex max-w-full items-center gap-1.5">
+                    <button
+                        type="button"
+                        class="inline-flex shrink-0 items-center justify-center rounded-md p-1 text-[var(--cd-hero-primary)] transition-colors hover:bg-[var(--cd-hero-primary-soft)]"
+                        aria-label="日付を選択"
+                        @click="openDatePicker"
+                    >
+                        <CalendarDays :size="16" :stroke-width="1.7" />
+                    </button>
+                    <p
+                        class="truncate font-sans text-sm font-semibold text-cd-ink"
+                    >
+                        {{ formattedDate }}
+                    </p>
                     <button
                         v-if="!isToday"
                         type="button"
-                        class="mt-0.5 font-sans text-[11px] text-primary hover:underline"
+                        class="font-sans text-[11px] font-semibold text-[var(--cd-hero-primary)] hover:underline"
                         @click="goToday"
                     >
                         今日に戻る
                     </button>
-                    <p
-                        v-else
-                        class="mt-0.5 font-sans text-[11px] text-cd-ink-muted"
-                    >
-                        今日のルーティン
-                    </p>
-                    <input
-                        ref="dateInputRef"
-                        type="date"
-                        class="sr-only"
-                        :value="date"
-                        tabindex="-1"
-                        aria-hidden="true"
-                        @change="onDatePicked"
-                    />
                 </div>
-
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    class="shrink-0 text-cd-ink-muted"
-                    aria-label="次の日"
-                    @click="shiftDate(1)"
-                >
-                    <ChevronRight :size="16" :stroke-width="1.6" />
-                </Button>
+                <input
+                    ref="dateInputRef"
+                    type="date"
+                    class="sr-only"
+                    :value="date"
+                    tabindex="-1"
+                    aria-hidden="true"
+                    @change="onDatePicked"
+                />
             </div>
 
-            <div class="grid min-w-0 grid-cols-3 gap-2 sm:max-w-md sm:flex-1">
-                <div
-                    class="flex min-w-0 flex-col items-center rounded-xl bg-white px-2 py-2 text-center shadow-sm"
-                >
-                    <CheckCircle2
-                        :size="14"
-                        :stroke-width="1.8"
-                        class="text-primary"
-                    />
-                    <p class="mt-1 font-sans text-sm font-semibold text-cd-ink">
-                        {{ completedCount }} / {{ totalCount }}
-                    </p>
-                    <p class="font-sans text-[10px] text-cd-ink-muted">完了</p>
-                </div>
-                <div
-                    class="flex min-w-0 flex-col items-center rounded-xl bg-white px-2 py-2 text-center shadow-sm"
-                >
-                    <span
-                        class="flex size-3.5 items-center justify-center rounded-full border-[1.5px] border-primary/35"
-                        aria-hidden="true"
-                    >
-                        <span class="block size-1.5 rounded-full bg-primary/50" />
-                    </span>
-                    <p class="mt-1 font-sans text-sm font-semibold text-cd-ink">
-                        {{ completionRate }}%
-                    </p>
-                    <p class="font-sans text-[10px] text-cd-ink-muted">進捗</p>
-                </div>
-                <div
-                    class="flex min-w-0 flex-col items-center rounded-xl bg-white px-2 py-2 text-center shadow-sm"
-                >
-                    <Clock3
-                        :size="14"
-                        :stroke-width="1.7"
-                        class="text-cd-ink-muted"
-                    />
-                    <p
-                        class="mt-1 truncate font-sans text-sm font-semibold text-cd-ink"
-                    >
-                        {{
-                            totalMinutes > 0
-                                ? formatMinutesJa(totalMinutes)
-                                : '—'
-                        }}
-                    </p>
-                    <p class="font-sans text-[10px] text-cd-ink-muted">
-                        予定時間
-                    </p>
-                </div>
-            </div>
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                class="shrink-0 text-cd-ink-muted"
+                aria-label="次の日"
+                @click="shiftDate(1)"
+            >
+                <ChevronRight :size="16" :stroke-width="1.6" />
+            </Button>
         </div>
     </aside>
 </template>

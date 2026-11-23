@@ -10,18 +10,16 @@ use App\Models\RuleDefinition;
  */
 class EnsureDefaultRuleDefinitionsService
 {
+    /**
+     * Rules that are no longer offered; existing rows are switched off.
+     *
+     * @var list<string>
+     */
+    private const RETIRED_KEYS = ['missing_daily_checkin'];
+
     public function handle(): void
     {
         $definitions = [
-            [
-                'key' => 'missing_daily_checkin',
-                'kind' => RuleDefinitionKind::UserPolicy,
-                'title' => '30秒チェックイン未入力',
-                'description' => '当日のチェックインが無いとき、作戦カードで入力を促す。',
-                'params' => ['priority' => 10],
-                'is_hard_gate' => false,
-                'confidence' => 0.9,
-            ],
             [
                 'key' => 'h7_neural_symptom_lock',
                 'kind' => RuleDefinitionKind::ClinicianRule,
@@ -71,5 +69,11 @@ class EnsureDefaultRuleDefinitionsService
                 ],
             );
         }
+
+        // 30秒チェックインは 2026-11-22 に廃止（docs/product/screens/today-ops.md）。
+        RuleDefinition::query()
+            ->whereNull('user_id')
+            ->whereIn('key', self::RETIRED_KEYS)
+            ->update(['is_active' => false]);
     }
 }

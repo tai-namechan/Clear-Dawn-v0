@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Enums\PlanGenerationSource;
 use App\Enums\RecommendationScope;
 use App\Enums\RecommendationStatus;
-use App\Models\DailyCheckin;
 use App\Models\PersonalBaseline;
 use App\Models\PersonalProfileEntry;
 use App\Models\Recommendation;
@@ -44,11 +43,6 @@ class EvaluateRulesForDayService
                 ->orderByDesc('is_hard_gate')
                 ->get();
 
-            $checkin = DailyCheckin::query()
-                ->where('user_id', $user->id)
-                ->whereDate('checked_on', $date->toDateString())
-                ->first();
-
             $calibrating = PersonalBaseline::query()
                 ->where('user_id', $user->id)
                 ->where('sample_count', '<', 28)
@@ -75,10 +69,6 @@ class EvaluateRulesForDayService
 
             foreach ($rules as $rule) {
                 $result = match ($rule->key) {
-                    'missing_daily_checkin' => [
-                        'triggered' => $checkin === null,
-                        'inputs' => ['has_checkin' => $checkin !== null],
-                    ],
                     'calibration_period' => [
                         'triggered' => $calibrating,
                         'inputs' => ['calibrating' => $calibrating],
@@ -122,9 +112,7 @@ class EvaluateRulesForDayService
                     continue;
                 }
 
-                if ($calibrating && $rule->key === 'missing_daily_checkin') {
-                    // 入力促しは較正中でも出す
-                } elseif ($calibrating && ! $rule->is_hard_gate && $rule->key !== 'calibration_period' && $rule->key !== 'program_day_ready') {
+                if ($calibrating && ! $rule->is_hard_gate && $rule->key !== 'calibration_period' && $rule->key !== 'program_day_ready') {
                     continue;
                 }
 
@@ -189,14 +177,6 @@ class EvaluateRulesForDayService
         bool $calibrating,
     ): Recommendation {
         $payload = match ($rule->key) {
-            'missing_daily_checkin' => [
-                'title' => '30秒チェックインを記録',
-                'rationale' => '今日のコンディション入力がまだありません。作戦の前提になります。',
-                'goal_impact' => '入力後に readiness と作戦カードが更新されます。',
-                'options' => [
-                    ['action_key' => 'detail', 'label' => 'チェックインする', 'description' => '睡眠・疲労・張りを30秒で記録'],
-                ],
-            ],
             'calibration_period' => [
                 'title' => '個人の基準づくりの期間です',
                 'rationale' => 'コンディションなどの記録がまだ少ないため、あなた個人の基準が固まっていません。このあいだは厳しい警告アラートは出さないようにしています。',
@@ -251,7 +231,7 @@ class EvaluateRulesForDayService
                 'plan_ids' => $programPlans->pluck('id')->all(),
             ],
             'confidence' => $rule->confidence,
-            'missing_data' => $rule->key === 'missing_daily_checkin' ? ['daily_checkin'] : null,
+            'missing_data' => null,
             'is_interrupt' => $isInterrupt,
             'status' => RecommendationStatus::Pending,
         ]);

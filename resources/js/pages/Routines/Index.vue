@@ -4,16 +4,12 @@ import {
     CalendarPlus,
     ChevronDown,
     Dumbbell,
-    Heart,
     NotebookPen,
     Plus,
-    Utensils,
 } from '@lucide/vue';
 import { computed, ref, watch } from 'vue';
 import PageTabShell from '@/components/PageTabShell.vue';
 import PageViewTabs from '@/components/PageViewTabs.vue';
-import DailyCheckinPanel from '@/components/routine/DailyCheckinPanel.vue';
-import TodayOpsPrimary from '@/components/routine/TodayOpsPrimary.vue';
 import TodayPlanCard from '@/components/routine/TodayPlanCard.vue';
 import TodayProgressPanel from '@/components/routine/TodayProgressPanel.vue';
 import { Button } from '@/components/ui/button';
@@ -22,7 +18,7 @@ import { categoryIcon } from '@/lib/categoryIcon';
 import { activityLogEventTypeLabels } from '@/lib/routineConstants';
 import { displayDurationMinutes, planRunStatus } from '@/lib/todayPlanDisplay';
 import type { ActivityLog, Routine, RoutinePlan } from '@/types/routine';
-import type { CheckinFormState, TodayOps } from '@/types/todayOps';
+import type { TodayOps } from '@/types/todayOps';
 
 interface Props {
     date: string;
@@ -44,39 +40,10 @@ const viewTabs = [
 const activeTab = ref(props.tab);
 const applyingId = ref<string | null>(null);
 const showCompleted = ref(false);
-const showCheckinEditor = ref(props.ops.checkin == null);
-const savingCheckin = ref(false);
-const checkinForm = ref<CheckinFormState>({
-    sleep_quality: props.ops.checkin?.sleep_quality ?? 5,
-    fatigue: props.ops.checkin?.fatigue ?? 5,
-    muscle_soreness: props.ops.checkin?.muscle_soreness ?? 5,
-    stress: props.ops.checkin?.stress ?? 5,
-    mood: props.ops.checkin?.mood ?? 5,
-    readiness_self: props.ops.checkin?.readiness_self ?? 5,
-});
-
 watch(
     () => props.tab,
     (tab) => {
         activeTab.value = tab;
-    },
-);
-
-watch(
-    () => props.ops.checkin,
-    (checkin) => {
-        showCheckinEditor.value = checkin == null;
-
-        if (checkin) {
-            checkinForm.value = {
-                sleep_quality: checkin.sleep_quality ?? 5,
-                fatigue: checkin.fatigue ?? 5,
-                muscle_soreness: checkin.muscle_soreness ?? 5,
-                stress: checkin.stress ?? 5,
-                mood: checkin.mood ?? 5,
-                readiness_self: checkin.readiness_self ?? 5,
-            };
-        }
     },
 );
 
@@ -104,6 +71,14 @@ const visiblePlans = computed(() => {
 });
 
 const completedCount = computed(() => completedPlans.value.length);
+
+const sessionChecklist = computed(() =>
+    displayedPlans.value.map((plan) => ({
+        id: plan.id,
+        title: plan.title,
+        done: planRunStatus(plan) === 'completed',
+    })),
+);
 const totalCount = computed(() => displayedPlans.value.length);
 
 const totalMinutes = computed(() =>
@@ -117,64 +92,6 @@ function choiceContextFor(planId: string) {
         (context) => context.plan_id === planId,
     );
 }
-
-const nutritionTarget = computed(
-    () =>
-        props.ops.nutrition?.profile ??
-        props.ops.nutrition?.fallback_goal ??
-        null,
-);
-const nutritionIntake = computed(
-    () =>
-        props.ops.nutrition?.intake ?? {
-            kcal: 0,
-            protein_g: 0,
-            fat_g: 0,
-            carb_g: 0,
-        },
-);
-
-const remainingKcal = computed(() => {
-    if (!nutritionTarget.value) {
-        return null;
-    }
-
-    return Math.max(
-        0,
-        Number(nutritionTarget.value.kcal) - Number(nutritionIntake.value.kcal),
-    );
-});
-
-const kcalProgress = computed(() => {
-    if (!nutritionTarget.value) {
-        return 0;
-    }
-
-    const target = Number(nutritionTarget.value.kcal);
-
-    if (target <= 0) {
-        return 0;
-    }
-
-    return Math.min(
-        100,
-        Math.round((Number(nutritionIntake.value.kcal) / target) * 100),
-    );
-});
-
-const checkinSummary = computed(() => {
-    const checkin = props.ops.checkin;
-
-    if (!checkin) {
-        return null;
-    }
-
-    if (checkin.fatigue != null) {
-        return `チェックイン済 · 疲労 ${checkin.fatigue}/5`;
-    }
-
-    return 'チェックイン済';
-});
 
 function onTabChange(tab: string): void {
     activeTab.value = tab as 'today' | 'routines' | 'history';
@@ -194,24 +111,6 @@ function onTabChange(tab: string): void {
 
 function openRoutinesTab(): void {
     onTabChange('routines');
-}
-
-async function saveCheckin(): Promise<void> {
-    savingCheckin.value = true;
-
-    try {
-        await apiFetch('/today/checkin', {
-            method: 'PUT',
-            body: JSON.stringify({
-                checked_on: props.date,
-                ...checkinForm.value,
-            }),
-        });
-        showCheckinEditor.value = false;
-        await router.reload({ only: ['ops', 'plans'] });
-    } finally {
-        savingCheckin.value = false;
-    }
 }
 
 async function applyToToday(routine: Routine): Promise<void> {
@@ -281,6 +180,15 @@ function historyDescription(log: ActivityLog): string {
                 title="ルーティン"
                 subtitle="今日やるセッションを最初に。ルーティンと履歴はここから。"
             >
+                <template #hero>
+                    <TodayProgressPanel
+                        :date="date"
+                        :completed-count="completedCount"
+                        :total-count="totalCount"
+                        :total-minutes="totalMinutes"
+                        :sessions="sessionChecklist"
+                    />
+                </template>
                 <template #actions>
                     <Button
                         type="button"
@@ -303,7 +211,7 @@ function historyDescription(log: ActivityLog): string {
                     />
                 </template>
 
-                <!-- 今日: セッション + 食事 → 作戦 → チェックイン -->
+                <!-- 今日: セッションの実行に集中 -->
                 <div
                     v-show="activeTab === 'today'"
                     id="panel-today"
@@ -333,29 +241,11 @@ function historyDescription(log: ActivityLog): string {
                                         プログラム生成プランと手動プランをここから開始します。
                                     </p>
                                 </div>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    class="font-sans"
-                                    @click="openRoutinesTab"
-                                >
-                                    <Plus :size="14" :stroke-width="1.8" />
-                                    ルーティンから追加
-                                </Button>
                             </div>
 
-                            <TodayProgressPanel
-                                :date="date"
-                                :completed-count="completedCount"
-                                :total-count="totalCount"
-                                :total-minutes="totalMinutes"
-                                class="mb-4"
-                            />
-
-                            <div
+                            <ul
                                 v-if="visiblePlans.length > 0"
-                                class="flex min-w-0 flex-col gap-3"
+                                class="flex min-w-0 list-none flex-col gap-3"
                             >
                                 <TodayPlanCard
                                     v-for="plan in visiblePlans"
@@ -364,7 +254,7 @@ function historyDescription(log: ActivityLog): string {
                                     :date="date"
                                     :choice-context="choiceContextFor(plan.id)"
                                 />
-                            </div>
+                            </ul>
 
                             <div
                                 v-else
@@ -403,6 +293,17 @@ function historyDescription(log: ActivityLog): string {
                                 </div>
                             </div>
 
+                            <Button
+                                v-if="visiblePlans.length > 0"
+                                type="button"
+                                variant="outline"
+                                class="mt-3 h-12 w-full rounded-full font-sans font-bold"
+                                @click="openRoutinesTab"
+                            >
+                                <Plus :size="16" :stroke-width="1.8" />
+                                ルーティンから追加
+                            </Button>
+
                             <button
                                 v-if="completedCount > 0"
                                 type="button"
@@ -424,230 +325,7 @@ function historyDescription(log: ActivityLog): string {
                                 }}
                             </button>
                         </section>
-
-                        <aside
-                            class="min-w-0 rounded-2xl border border-cd-line bg-white p-4 shadow-sm md:p-5"
-                            aria-label="今日の状態"
-                        >
-                            <p
-                                class="font-sans text-xs font-medium text-cd-ink-muted"
-                            >
-                                今日の状態
-                            </p>
-                            <h2
-                                class="mt-1 font-sans text-base font-semibold tracking-tight text-cd-ink"
-                            >
-                                食事の残り
-                            </h2>
-
-                            <template v-if="nutritionTarget">
-                                <p
-                                    class="mt-3 font-sans text-2xl font-semibold tracking-tight text-cd-ink"
-                                >
-                                    残り
-                                    {{ remainingKcal?.toLocaleString('ja-JP') }}
-                                    kcal
-                                </p>
-                                <p
-                                    class="mt-1 font-sans text-xs text-cd-ink-muted"
-                                >
-                                    {{
-                                        Number(
-                                            nutritionIntake.kcal,
-                                        ).toLocaleString('ja-JP')
-                                    }}
-                                    /
-                                    {{
-                                        Number(
-                                            nutritionTarget.kcal,
-                                        ).toLocaleString('ja-JP')
-                                    }}
-                                    kcal
-                                </p>
-                                <div
-                                    class="mt-3 h-3.5 overflow-hidden rounded-full bg-[#EAE6F2]"
-                                    role="progressbar"
-                                    :aria-valuenow="kcalProgress"
-                                    aria-valuemin="0"
-                                    aria-valuemax="100"
-                                    aria-label="カロリー進捗"
-                                >
-                                    <div
-                                        class="h-full rounded-full bg-primary transition-[width] duration-300"
-                                        :style="{ width: `${kcalProgress}%` }"
-                                    />
-                                </div>
-                                <div class="mt-4 grid grid-cols-3 gap-2.5">
-                                    <div class="min-w-0">
-                                        <p
-                                            class="font-sans text-[10px] text-cd-ink-muted"
-                                        >
-                                            たんぱく質
-                                        </p>
-                                        <div
-                                            class="mt-1.5 h-2 overflow-hidden rounded-full bg-[#EAE6F2]"
-                                        >
-                                            <div
-                                                class="h-full rounded-full bg-primary/70"
-                                                :style="{
-                                                    width: `${Math.min(100, Math.round((Number(nutritionIntake.protein_g) / Math.max(1, Number(nutritionTarget.protein_g))) * 100))}%`,
-                                                }"
-                                            />
-                                        </div>
-                                        <p
-                                            class="mt-1 font-sans text-xs font-semibold text-cd-ink"
-                                        >
-                                            {{
-                                                Number(
-                                                    nutritionIntake.protein_g,
-                                                )
-                                            }}/{{
-                                                Number(
-                                                    nutritionTarget.protein_g,
-                                                )
-                                            }}g
-                                        </p>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <p
-                                            class="font-sans text-[10px] text-cd-ink-muted"
-                                        >
-                                            脂質
-                                        </p>
-                                        <div
-                                            class="mt-1.5 h-2 overflow-hidden rounded-full bg-[#EAE6F2]"
-                                        >
-                                            <div
-                                                class="h-full rounded-full bg-primary/70"
-                                                :style="{
-                                                    width: `${Math.min(100, Math.round((Number(nutritionIntake.fat_g) / Math.max(1, Number(nutritionTarget.fat_g))) * 100))}%`,
-                                                }"
-                                            />
-                                        </div>
-                                        <p
-                                            class="mt-1 font-sans text-xs font-semibold text-cd-ink"
-                                        >
-                                            {{
-                                                Number(nutritionIntake.fat_g)
-                                            }}/{{
-                                                Number(nutritionTarget.fat_g)
-                                            }}g
-                                        </p>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <p
-                                            class="font-sans text-[10px] text-cd-ink-muted"
-                                        >
-                                            炭水化物
-                                        </p>
-                                        <div
-                                            class="mt-1.5 h-2 overflow-hidden rounded-full bg-[#EAE6F2]"
-                                        >
-                                            <div
-                                                class="h-full rounded-full bg-primary/70"
-                                                :style="{
-                                                    width: `${Math.min(100, Math.round((Number(nutritionIntake.carb_g) / Math.max(1, Number(nutritionTarget.carb_g))) * 100))}%`,
-                                                }"
-                                            />
-                                        </div>
-                                        <p
-                                            class="mt-1 font-sans text-xs font-semibold text-cd-ink"
-                                        >
-                                            {{
-                                                Number(nutritionIntake.carb_g)
-                                            }}/{{
-                                                Number(nutritionTarget.carb_g)
-                                            }}g
-                                        </p>
-                                    </div>
-                                </div>
-                            </template>
-
-                            <template v-else>
-                                <p
-                                    class="mt-3 font-sans text-sm text-cd-ink-muted"
-                                >
-                                    栄養目標が未設定です。コンディションで設定すると残りが表示されます。
-                                </p>
-                            </template>
-
-                            <div class="mt-4 flex flex-col gap-2">
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    class="w-full font-sans"
-                                    as-child
-                                >
-                                    <Link href="/meals">
-                                        <Utensils
-                                            :size="14"
-                                            :stroke-width="1.8"
-                                        />
-                                        食事を記録
-                                    </Link>
-                                </Button>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    class="w-full font-sans"
-                                    as-child
-                                >
-                                    <Link
-                                        :href="`/records/condition?date=${date}`"
-                                    >
-                                        <Heart :size="14" :stroke-width="1.8" />
-                                        コンディションへ
-                                    </Link>
-                                </Button>
-                            </div>
-                        </aside>
                     </div>
-
-                    <TodayOpsPrimary :date="date" :ops="ops" />
-
-                    <section
-                        class="rounded-2xl border border-cd-line bg-cd-surface/60 p-4"
-                        aria-label="今日のチェックイン"
-                    >
-                        <div
-                            class="flex flex-wrap items-center justify-between gap-2"
-                        >
-                            <div>
-                                <h2
-                                    class="font-sans text-sm font-semibold text-cd-ink"
-                                >
-                                    今日のチェックイン
-                                </h2>
-                                <p
-                                    class="mt-0.5 font-sans text-xs text-cd-ink-muted"
-                                >
-                                    {{
-                                        checkinSummary ??
-                                        '未入力 · 状態を記録するとおすすめが精度を上げます'
-                                    }}
-                                </p>
-                            </div>
-                            <Button
-                                v-if="!showCheckinEditor"
-                                type="button"
-                                size="sm"
-                                variant="warning"
-                                class="font-sans"
-                                @click="showCheckinEditor = true"
-                            >
-                                編集
-                            </Button>
-                        </div>
-
-                        <DailyCheckinPanel
-                            v-if="showCheckinEditor"
-                            v-model="checkinForm"
-                            class="mt-3"
-                            :saving="savingCheckin"
-                            @save="saveCheckin"
-                        />
-                    </section>
                 </div>
 
                 <!-- ルーティン一覧 -->

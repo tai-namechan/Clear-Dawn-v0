@@ -4,12 +4,14 @@ namespace Tests\Feature;
 
 use App\Enums\RecommendationStatus;
 use App\Enums\RoutinePlanStatus;
+use App\Enums\RuleDefinitionKind;
 use App\Models\DailyCheckin;
 use App\Models\DailyResourceState;
 use App\Models\PersonalBaseline;
 use App\Models\PersonalProfileEntry;
 use App\Models\Recommendation;
 use App\Models\RoutinePlan;
+use App\Models\RuleDefinition;
 use App\Models\RuleEvaluation;
 use App\Models\SymptomObservation;
 use App\Models\User;
@@ -172,6 +174,57 @@ class TodayOpsPhaseTest extends TestCase
             ->all();
 
         $this->assertSame($firstIds, $laterIds);
+    }
+
+    public function test_retired_checkin_rule_is_inactive_and_never_recommended(): void
+    {
+        $user = User::factory()->create();
+        $date = Carbon::parse('2026-07-21');
+
+        $this->actingAs($user)->get(route('today.index', ['date' => $date->toDateString()]))->assertRedirect(route('routines.index'));
+
+        $retiredRule = RuleDefinition::query()
+            ->whereNull('user_id')
+            ->where('key', 'missing_daily_checkin')
+            ->first();
+
+        $this->assertTrue($retiredRule === null || $retiredRule->is_active === false);
+        $this->assertFalse(
+            Recommendation::query()
+                ->where('user_id', $user->id)
+                ->whereDate('recommended_on', $date->toDateString())
+                ->where('title', 'like', '%チェックイン%')
+                ->exists(),
+        );
+    }
+
+    public function test_previously_active_checkin_rule_is_switched_off_and_its_card_removed(): void
+    {
+        $user = User::factory()->create();
+        $date = Carbon::parse('2026-07-21');
+
+        $legacyRule = RuleDefinition::query()->create([
+            'user_id' => null,
+            'key' => 'missing_daily_checkin',
+            'kind' => RuleDefinitionKind::UserPolicy,
+            'title' => '30秒チェックイン未入力',
+            'description' => 'legacy',
+            'params' => ['priority' => 10],
+            'confidence' => 0.9,
+            'is_active' => true,
+            'is_hard_gate' => false,
+            'version_number' => 1,
+        ]);
+
+        $this->actingAs($user)->get(route('today.index', ['date' => $date->toDateString()]))->assertRedirect(route('routines.index'));
+
+        $this->assertFalse($legacyRule->refresh()->is_active);
+        $this->assertFalse(
+            Recommendation::query()
+                ->where('user_id', $user->id)
+                ->where('title', 'like', '%チェックイン%')
+                ->exists(),
+        );
     }
 
     public function test_user_can_record_symptom_observation(): void

@@ -3,12 +3,14 @@ import { Head, Link } from '@inertiajs/vue3';
 import {
     Activity,
     ArrowRight,
-    Flame,
+    BatteryMedium,
+    BedDouble,
+    ChevronRight,
     Gauge,
-    HeartPulse,
-    Moon,
+    PencilLine,
     Scale,
     UtensilsCrossed,
+    Zap,
 } from '@lucide/vue';
 import type { EChartsCoreOption } from 'echarts/core';
 import { computed } from 'vue';
@@ -20,7 +22,6 @@ import PageTabShell from '@/components/PageTabShell.vue';
 import BodyStoryExportButton from '@/components/records/BodyStoryExportButton.vue';
 import { Button } from '@/components/ui/button';
 import {
-    CHART_COLORS,
     STRENGTH_SERIES_COLORS,
     chartAxisLabel,
     chartAxisLine,
@@ -28,14 +29,10 @@ import {
     chartLineSeriesStyle,
     chartSplitLine,
     eachDateInclusive,
-    nutritionSeriesByDate,
 } from '@/lib/chartTheme';
-import {
-    formatSleepDelta,
-    formatSleepMinutes,
-    metricLabel,
-} from '@/lib/metricLabels';
-import { PFC_COLORS } from '@/lib/pfcColors';
+import { trendAverage, trendAxisLabels } from '@/lib/conditionTrend.mjs';
+import { formatSleepDelta, formatSleepMinutes } from '@/lib/metricLabels';
+import { show as showMetric } from '@/routes/records';
 import type {
     DailyMetricEntry,
     NutritionChartPoint,
@@ -68,13 +65,6 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-
-const metricIcons: Record<string, Component> = {
-    weight: Scale,
-    sleep_minutes: Moon,
-    pain_level: HeartPulse,
-    pitch_speed_max: Gauge,
-};
 
 const chartColors = [...STRENGTH_SERIES_COLORS];
 
@@ -135,291 +125,211 @@ function deltaLabel(
     return `${sign} ${abs}（前日比）`;
 }
 
-const summaryMetrics = computed(() =>
-    ['weight', 'sleep_minutes', 'pain_level', 'pitch_speed_max'].map((key) => {
-        const today = metricValue(props.metrics, key);
-        const prev = metricValue(props.previousMetrics, key);
-        const meta = props.metrics.find(
-            (item) => item.metric.key === key,
-        )?.metric;
+/** Mockup: sleep / weight / fatigue / pain cards, then pitch speed. */
+const CONDITION_CARDS: {
+    key: string;
+    label: string;
+    icon: Component;
+    tone?: 'gold' | 'violet';
+}[] = [
+    { key: 'sleep_minutes', label: '睡眠', icon: BedDouble },
+    { key: 'weight', label: '体重', icon: Scale },
+    {
+        key: 'fatigue_level',
+        label: '疲労度',
+        icon: BatteryMedium,
+        tone: 'gold',
+    },
+    { key: 'pain_level', label: '痛み・しびれ', icon: Zap, tone: 'violet' },
+    { key: 'pitch_speed_max', label: '最高球速', icon: Gauge },
+];
+
+const LEVEL_KEYS = ['fatigue_level', 'pain_level'];
+
+/** "▼ 0.2（前日比）" → "前日比 ▼0.2" so it fits on a half-width card. */
+function compactDelta(label: string | null): string | null {
+    if (label === null) {
+        return null;
+    }
+
+    const body = label.replace('（前日比）', '').replace(' ', '').trim();
+
+    return body === '変化なし' ? '前日比 変化なし' : `前日比 ${body}`;
+}
+const UNITLESS_KEYS = ['sleep_minutes', ...LEVEL_KEYS];
+
+const conditionCards = computed(() =>
+    CONDITION_CARDS.map((card) => {
+        const entry = props.metrics.find(
+            (item) => item.metric.key === card.key,
+        );
+        const today = metricValue(props.metrics, card.key);
+        const previous = metricValue(props.previousMetrics, card.key);
+        const isLevel = LEVEL_KEYS.includes(card.key);
 
         return {
-            key,
-            label: metricLabel(key, meta?.label),
-            unit: meta?.unit ?? '',
-            display: formatMetric(key, today),
-            delta: deltaLabel(key, today, prev),
-            icon: metricIcons[key] ?? Activity,
+            ...card,
+            display: formatMetric(card.key, today),
+            unit:
+                today !== null && !UNITLESS_KEYS.includes(card.key)
+                    ? (entry?.metric.unit ?? '')
+                    : '',
+            level:
+                isLevel && today !== null
+                    ? Math.max(0, Math.min(100, (today / 5) * 100))
+                    : null,
+            delta:
+                card.key === 'weight'
+                    ? compactDelta(deltaLabel(card.key, today, previous))
+                    : null,
+            href: entry ? showMetric(entry.metric.key).url : null,
         };
     }),
 );
 
-const pfcEnergy = computed(() => {
-    const p = props.mealTotals.protein_g * 4;
-    const f = props.mealTotals.fat_g * 9;
-    const c = props.mealTotals.carb_g * 4;
-    const total = p + f + c;
+/**
+ * Shared plot box for the compact charts (trend cards and strength chart)
+ * so they line up; bottom room is for the date labels / legend.
+ */
+const RECORDS_MINI_GRID = {
+    left: 40,
+    right: 16,
+    top: 10,
+    bottom: 48,
+} as const;
 
-    if (total <= 0) {
-        return { p: 0, f: 0, c: 0 };
-    }
+type TrendDefinition = {
+    key: string;
+    label: string;
+    icon: Component;
+    color: string;
+    unit: string;
+    range?: [number, number];
+    /** Extra room above/below the data so small changes read calmly. */
+    padding?: number;
+    toChartValue: (value: number) => number;
+    formatAverage: (value: number) => string;
+};
 
-    return {
-        p: Math.round((p / total) * 100),
-        f: Math.round((f / total) * 100),
-        c: Math.round((c / total) * 100),
-    };
-});
+/** Mockup: sleep (violet), weight (gold) and fatigue (violet) for 7 days. */
+const TRENDS: TrendDefinition[] = [
+    {
+        key: 'sleep_minutes',
+        label: '睡眠時間',
+        icon: BedDouble,
+        color: '#7D76BB',
+        unit: '時間',
+        padding: 1,
+        toChartValue: (minutes) => Math.round((minutes / 60) * 10) / 10,
+        formatAverage: (minutes) => formatSleepMinutes(minutes),
+    },
+    {
+        key: 'weight',
+        label: '体重',
+        icon: Scale,
+        color: '#C29D55',
+        unit: 'kg',
+        padding: 1,
+        toChartValue: (value) => value,
+        formatAverage: (value) =>
+            `${value.toLocaleString('ja-JP', { maximumFractionDigits: 1 })} kg`,
+    },
+    {
+        key: 'fatigue_level',
+        label: '疲労度',
+        icon: Zap,
+        color: '#7D76BB',
+        unit: '/ 5',
+        range: [1, 5],
+        toChartValue: (value) => value,
+        formatAverage: (value) =>
+            `${value.toLocaleString('ja-JP', { maximumFractionDigits: 1 })} / 5`,
+    },
+];
 
-const pfcDonutStyle = computed(() => {
-    const { p, f, c } = pfcEnergy.value;
-
-    if (p + f + c <= 0) {
-        return {
-            background: 'conic-gradient(var(--cd-line) 0deg 360deg)',
-        };
-    }
-
-    const pEnd = p * 3.6;
-    const fEnd = pEnd + f * 3.6;
-
-    return {
-        background: `conic-gradient(
-            ${PFC_COLORS.p.css} 0deg ${pEnd}deg,
-            ${PFC_COLORS.f.css} ${pEnd}deg ${fEnd}deg,
-            ${PFC_COLORS.c.css} ${fEnd}deg 360deg
-        )`,
-    };
-});
-
-const kcalProgress = computed(() => {
-    if (!props.mealGoal) {
-        return null;
-    }
-
-    const target = Number(props.mealGoal.kcal);
-
-    if (target <= 0) {
-        return null;
-    }
-
-    return Math.min(100, Math.round((props.mealTotals.kcal / target) * 100));
-});
-
-const hasMealChartData = computed(() =>
-    props.mealChartPoints.some(
-        (point) =>
-            point.kcal > 0 ||
-            point.protein_g > 0 ||
-            point.fat_g > 0 ||
-            point.carb_g > 0,
-    ),
+const trendDates = computed(() =>
+    eachDateInclusive(props.chartFrom, props.chartTo),
 );
 
-const hasConditionChartData = computed(() =>
-    Object.values(props.conditionChartSeries).some(
-        (points) => points.length > 0,
-    ),
+function trendOption(
+    trend: TrendDefinition,
+    points: ChartPoint[],
+): EChartsCoreOption {
+    const valueByDate = new Map(
+        points.map((point) => [
+            point.date,
+            trend.toChartValue(Number(point.value)),
+        ]),
+    );
+
+    return {
+        grid: { ...RECORDS_MINI_GRID, bottom: 24 },
+        tooltip: { trigger: 'axis' },
+        xAxis: {
+            type: 'category',
+            data: trendAxisLabels(trendDates.value),
+            axisLabel: chartAxisLabel(10),
+            axisLine: chartAxisLine(),
+        },
+        yAxis: {
+            type: 'value',
+            scale: !trend.range,
+            splitNumber: 3,
+            min:
+                trend.range?.[0] ??
+                ((extent: { min: number }) =>
+                    Math.floor(extent.min - (trend.padding ?? 0))),
+            max:
+                trend.range?.[1] ??
+                ((extent: { max: number }) =>
+                    Math.ceil(extent.max + (trend.padding ?? 0))),
+            axisLabel: chartAxisLabel(10),
+            splitLine: chartSplitLine(),
+        },
+        series: [
+            {
+                name: trend.label,
+                type: 'line',
+                smooth: 0.3,
+                ...chartLineSeriesStyle(trend.color),
+                symbol: 'circle',
+                symbolSize: 6,
+                areaStyle: { color: `${trend.color}1f` },
+                data: trendDates.value.map(
+                    (date) => valueByDate.get(date) ?? null,
+                ),
+                tooltip: {
+                    valueFormatter: (value: unknown) =>
+                        value == null || value === ''
+                            ? '—'
+                            : `${value} ${trend.unit}`,
+                },
+            },
+        ],
+    };
+}
+
+const trendCards = computed(() =>
+    TRENDS.map((trend) => {
+        const points = props.conditionChartSeries[trend.key] ?? [];
+        const average = trendAverage(points);
+
+        return {
+            ...trend,
+            hasData: points.length > 0,
+            average: average === null ? null : trend.formatAverage(average),
+            option: trendOption(trend, points),
+        };
+    }),
 );
 
 const hasStrengthChartData = computed(
     () => props.strengthChartPoints.length > 0,
 );
 
-/**
- * Shared plot box for meal / condition mini-charts so left and right cards
- * line up in the lg:grid-cols-2 layout. Bottom room is for legends.
- */
-const RECORDS_MINI_GRID = {
-    left: 40,
-    right: 36,
-    top: 10,
-    bottom: 48,
-} as const;
-
-const mealKcalChartOption = computed<EChartsCoreOption>(() => {
-    const { dates, values } = nutritionSeriesByDate(
-        props.mealChartPoints,
-        props.chartFrom,
-        props.chartTo,
-        'kcal',
-    );
-
-    return {
-        grid: { ...RECORDS_MINI_GRID },
-        tooltip: { trigger: 'axis' },
-        xAxis: {
-            type: 'category',
-            data: dates.map((date) => date.slice(5)),
-            axisLabel: chartAxisLabel(10),
-            axisLine: chartAxisLine(),
-        },
-        yAxis: {
-            type: 'value',
-            axisLabel: chartAxisLabel(10),
-            splitLine: chartSplitLine(),
-        },
-        series: [
-            {
-                name: 'kcal',
-                type: 'line',
-                smooth: true,
-                ...chartLineSeriesStyle(CHART_COLORS.primary),
-                data: values,
-                areaStyle: { color: CHART_COLORS.primaryArea },
-            },
-        ],
-    };
-});
-
-const mealPfcChartOption = computed<EChartsCoreOption>(() => {
-    const protein = nutritionSeriesByDate(
-        props.mealChartPoints,
-        props.chartFrom,
-        props.chartTo,
-        'protein_g',
-    );
-    const fat = nutritionSeriesByDate(
-        props.mealChartPoints,
-        props.chartFrom,
-        props.chartTo,
-        'fat_g',
-    );
-    const carb = nutritionSeriesByDate(
-        props.mealChartPoints,
-        props.chartFrom,
-        props.chartTo,
-        'carb_g',
-    );
-
-    return {
-        grid: { ...RECORDS_MINI_GRID },
-        tooltip: { trigger: 'axis' },
-        legend: chartLegend(10, { bottom: 0, left: 'center' }),
-        xAxis: {
-            type: 'category',
-            data: protein.dates.map((date) => date.slice(5)),
-            axisLabel: chartAxisLabel(10),
-            axisLine: chartAxisLine(),
-        },
-        yAxis: {
-            type: 'value',
-            axisLabel: chartAxisLabel(10),
-            splitLine: chartSplitLine(),
-        },
-        series: [
-            {
-                name: 'P',
-                type: 'bar',
-                stack: 'pfc',
-                barMaxWidth: 28,
-                data: protein.values,
-                itemStyle: { color: PFC_COLORS.p.hex },
-            },
-            {
-                name: 'F',
-                type: 'bar',
-                stack: 'pfc',
-                barMaxWidth: 28,
-                data: fat.values,
-                itemStyle: { color: PFC_COLORS.f.hex },
-            },
-            {
-                name: 'C',
-                type: 'bar',
-                stack: 'pfc',
-                barMaxWidth: 28,
-                data: carb.values,
-                itemStyle: {
-                    color: PFC_COLORS.c.hex,
-                    borderRadius: [4, 4, 0, 0],
-                },
-            },
-        ],
-    };
-});
-
-const conditionChartOption = computed<EChartsCoreOption>(() => {
-    const dates = Array.from(
-        new Set(
-            Object.values(props.conditionChartSeries)
-                .flat()
-                .map((point) => point.date),
-        ),
-    ).sort();
-
-    const weightMap = new Map(
-        (props.conditionChartSeries.weight ?? []).map((point) => [
-            point.date,
-            Number(point.value),
-        ]),
-    );
-    const sleepHoursMap = new Map(
-        (props.conditionChartSeries.sleep_minutes ?? []).map((point) => [
-            point.date,
-            Math.round((Number(point.value) / 60) * 10) / 10,
-        ]),
-    );
-
-    return {
-        // Mini chart: keep axis names off the plot — legend + tooltip carry units.
-        grid: { ...RECORDS_MINI_GRID },
-        tooltip: { trigger: 'axis' },
-        legend: chartLegend(10, { bottom: 0, left: 'center' }),
-        xAxis: {
-            type: 'category',
-            data: dates.map((date) => date.slice(5)),
-            axisLabel: chartAxisLabel(10),
-            axisLine: chartAxisLine(),
-        },
-        yAxis: [
-            {
-                type: 'value',
-                axisLabel: chartAxisLabel(10),
-                splitLine: chartSplitLine(),
-                scale: true,
-            },
-            {
-                type: 'value',
-                axisLabel: chartAxisLabel(10),
-                splitLine: { show: false },
-                min: 0,
-                max: (extent: { max: number }) =>
-                    Math.max(10, Math.ceil((extent.max || 0) + 1)),
-            },
-        ],
-        series: [
-            {
-                name: '体重',
-                type: 'line' as const,
-                smooth: true,
-                yAxisIndex: 0,
-                ...chartLineSeriesStyle(CHART_COLORS.primary),
-                data: dates.map((date) => weightMap.get(date) ?? null),
-                tooltip: {
-                    valueFormatter: (value: unknown) =>
-                        value == null || value === ''
-                            ? '—'
-                            : `${value} kg`,
-                },
-            },
-            {
-                name: '睡眠',
-                type: 'line' as const,
-                smooth: true,
-                yAxisIndex: 1,
-                ...chartLineSeriesStyle(CHART_COLORS.secondary),
-                data: dates.map((date) => sleepHoursMap.get(date) ?? null),
-                tooltip: {
-                    valueFormatter: (value: unknown) =>
-                        value == null || value === ''
-                            ? '—'
-                            : `${value} 時間`,
-                },
-            },
-        ],
-    };
-});
+function formatKcal(value: number | string): string {
+    return Number(value).toLocaleString('ja-JP', { maximumFractionDigits: 0 });
+}
 
 const strengthItemNames = computed(() =>
     [...new Set(props.strengthChartPoints.map((point) => point.item_name))]
@@ -484,7 +394,7 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
         >
             <PageTabShell
                 title="パフォーマンス管理"
-                subtitle="食事とコンディションを、すぐ記録して、すぐ振り返る"
+                subtitle="体の状態を、すぐ記録して、すぐ振り返る"
             >
                 <template #calendar>
                     <DateNavigator
@@ -507,135 +417,137 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                 </template>
             </PageTabShell>
 
-            <PageSectionCard padding="none" aria-label="本日のサマリ">
-                <div
-                    class="grid grid-cols-2 divide-x divide-y divide-cd-line md:grid-cols-3 xl:grid-cols-6 xl:divide-y-0"
+            <!-- Today's condition (mockup: 2×2 cards on the sky) -->
+            <section
+                class="grid grid-cols-2 gap-3 lg:grid-cols-5"
+                aria-label="今日のコンディション"
+                data-sky-extend
+            >
+                <component
+                    :is="card.href ? Link : 'div'"
+                    v-for="card in conditionCards"
+                    :key="card.key"
+                    :href="card.href ?? undefined"
+                    class="cd-panel cd-condition-card"
+                    :class="{
+                        'col-span-2 lg:col-span-1':
+                            card.key === 'pitch_speed_max',
+                    }"
                 >
-                    <div class="relative p-4 pr-14">
-                        <Flame
-                            class="pointer-events-none absolute top-3 right-3 text-cd-icon-primary opacity-90"
-                            :size="28"
-                            :stroke-width="1.5"
-                        />
-                        <p class="font-sans text-xs text-cd-ink-muted">
-                            摂取カロリー
-                        </p>
-                        <p
-                            class="mt-2 font-sans text-2xl font-semibold text-cd-ink"
-                        >
-                            {{
-                                Number(mealTotals.kcal).toLocaleString(
-                                    'ja-JP',
-                                    { maximumFractionDigits: 0 },
-                                )
-                            }}
-                            <span class="text-sm font-medium text-cd-ink-muted"
-                                >kcal</span
-                            >
-                        </p>
-                        <p
-                            v-if="mealGoal"
-                            class="mt-1 font-sans text-xs text-cd-ink-muted"
-                        >
-                            目標
-                            {{
-                                Number(mealGoal.kcal).toLocaleString('ja-JP', {
-                                    maximumFractionDigits: 0,
-                                })
-                            }}
-                            kcal
-                        </p>
-                        <div
-                            v-if="kcalProgress !== null"
-                            class="mt-3 h-2 overflow-hidden rounded-full bg-cd-line/40"
-                        >
-                            <div
-                                class="h-full rounded-full bg-primary"
-                                :style="{ width: `${kcalProgress}%` }"
-                            />
-                        </div>
-                    </div>
-
-                    <div class="p-4">
-                        <p class="font-sans text-xs text-cd-ink-muted">
-                            PFC バランス
-                        </p>
-                        <div class="mt-3 flex items-center gap-3">
-                            <div
-                                class="relative size-14 shrink-0 rounded-full"
-                                :style="pfcDonutStyle"
-                            >
-                                <div
-                                    class="absolute inset-[22%] rounded-full bg-cd-surface"
-                                />
-                            </div>
-                            <div class="flex flex-col gap-1 font-sans text-xs">
-                                <span
-                                    class="inline-flex items-center gap-1.5 text-cd-pfc-p"
-                                >
-                                    <span
-                                        class="size-2 rounded-sm bg-cd-pfc-p"
-                                    />
-                                    P {{ pfcEnergy.p }}%
-                                </span>
-                                <span
-                                    class="inline-flex items-center gap-1.5 text-cd-pfc-f"
-                                >
-                                    <span
-                                        class="size-2 rounded-sm bg-cd-pfc-f"
-                                    />
-                                    F {{ pfcEnergy.f }}%
-                                </span>
-                                <span
-                                    class="inline-flex items-center gap-1.5 text-cd-pfc-c"
-                                >
-                                    <span
-                                        class="size-2 rounded-sm bg-cd-pfc-c"
-                                    />
-                                    C {{ pfcEnergy.c }}%
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div
-                        v-for="item in summaryMetrics"
-                        :key="item.key"
-                        class="relative p-4 pr-14"
-                    >
+                    <span class="cd-condition-icon" aria-hidden="true">
                         <component
-                            :is="item.icon"
-                            class="pointer-events-none absolute top-3 right-3 text-cd-icon-primary opacity-90"
-                            :size="28"
-                            :stroke-width="1.5"
+                            :is="card.icon"
+                            :size="20"
+                            :stroke-width="1.7"
                         />
-                        <p class="font-sans text-xs text-cd-ink-muted">
-                            {{ item.label }}
-                        </p>
-                        <p
-                            class="mt-2 font-sans text-2xl font-semibold text-cd-ink"
+                    </span>
+                    <span class="min-w-0 flex-1">
+                        <span
+                            class="block font-sans text-xs font-bold text-cd-ink"
+                            >{{ card.label }}</span
                         >
-                            {{ item.display }}
-                            <span
-                                v-if="
-                                    item.display !== '—' &&
-                                    item.key !== 'sleep_minutes' &&
-                                    item.key !== 'pain_level' &&
-                                    item.key !== 'fatigue_level'
-                                "
-                                class="text-sm font-medium text-cd-ink-muted"
-                                >{{ item.unit }}</span
+                        <span
+                            class="mt-0.5 block font-sans text-[0.98rem] font-bold whitespace-nowrap text-cd-ink tabular-nums sm:text-lg"
+                        >
+                            {{ card.display }}
+                            <small
+                                v-if="card.unit"
+                                class="text-xs font-semibold text-cd-ink-muted"
+                                >{{ card.unit }}</small
                             >
-                        </p>
-                        <p
-                            v-if="item.delta"
-                            class="mt-1 font-sans text-xs text-cd-ink-muted"
+                        </span>
+                        <span
+                            v-if="card.delta"
+                            class="block font-sans text-[10px] whitespace-nowrap text-cd-ink-muted"
+                            >{{ card.delta }}</span
                         >
-                            {{ item.delta }}
+                        <span
+                            v-if="card.level !== null"
+                            class="cd-condition-level"
+                            aria-hidden="true"
+                        >
+                            <span
+                                :class="`cd-condition-level-fill cd-condition-level-fill--${card.tone}`"
+                                :style="{ width: `${card.level}%` }"
+                            />
+                        </span>
+                    </span>
+                    <ChevronRight
+                        v-if="card.href"
+                        :size="15"
+                        :stroke-width="1.8"
+                        aria-hidden="true"
+                        class="absolute top-3 right-2.5 text-cd-ink-muted/70"
+                    />
+                </component>
+            </section>
+
+            <Button
+                as-child
+                class="h-12 rounded-full font-sans text-base font-bold"
+            >
+                <Link
+                    :href="`/records/condition?date=${date}`"
+                    class="inline-flex items-center justify-center gap-2"
+                >
+                    <PencilLine :size="18" :stroke-width="1.8" />
+                    今日のコンディションを記録
+                </Link>
+            </Button>
+
+            <!-- 7-day trends -->
+            <section aria-label="最近の推移" class="flex flex-col gap-3">
+                <h2 class="px-1 font-sans text-lg font-bold text-cd-ink">
+                    最近の推移
+                    <span class="text-sm font-medium text-cd-ink-muted"
+                        >（7日間）</span
+                    >
+                </h2>
+                <div class="grid gap-3 lg:grid-cols-3">
+                    <article
+                        v-for="trend in trendCards"
+                        :key="trend.key"
+                        class="cd-panel p-4"
+                        :aria-label="`${trend.label}の推移`"
+                    >
+                        <div class="flex items-center justify-between gap-2">
+                            <p
+                                class="inline-flex items-center gap-2 font-sans text-sm font-bold text-cd-ink"
+                            >
+                                <component
+                                    :is="trend.icon"
+                                    :size="18"
+                                    :stroke-width="1.7"
+                                    aria-hidden="true"
+                                    :style="{ color: trend.color }"
+                                />
+                                {{ trend.label }}
+                            </p>
+                            <p
+                                v-if="trend.average"
+                                class="font-sans text-xs text-cd-ink-muted"
+                            >
+                                平均
+                                <strong
+                                    class="text-sm font-bold text-cd-ink tabular-nums"
+                                    >{{ trend.average }}</strong
+                                >
+                            </p>
+                        </div>
+                        <BaseChart
+                            v-if="trend.hasData"
+                            :option="trend.option"
+                            class="mt-2 !h-32"
+                        />
+                        <p
+                            v-else
+                            class="mt-2 flex !h-32 items-center justify-center rounded-xl border border-dashed border-cd-line px-3 text-center font-sans text-sm text-cd-ink-muted"
+                        >
+                            まだ記録がありません
                         </p>
-                    </div>
+                    </article>
                 </div>
-            </PageSectionCard>
+            </section>
 
             <div class="grid gap-4 lg:grid-cols-2">
                 <PageSectionCard aria-label="食事記録への入り口">
@@ -649,74 +561,48 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                                     :stroke-width="1.6"
                                 />
                             </div>
-                            <div>
+                            <div class="min-w-0">
                                 <h2
                                     class="font-sans text-lg font-semibold text-cd-ink"
                                 >
                                     食事記録
                                 </h2>
-                                <p class="font-sans text-sm text-cd-ink-muted">
-                                    直近7日の摂取推移を確認して、記録へ進みます。
+                                <p
+                                    class="font-sans text-sm text-cd-ink-muted tabular-nums"
+                                >
+                                    今日
+                                    {{ formatKcal(mealTotals.kcal) }}
+                                    {{
+                                        mealGoal
+                                            ? `/ ${formatKcal(mealGoal.kcal)} kcal`
+                                            : 'kcal'
+                                    }}
+                                    · PFC は食事画面で確認できます
                                 </p>
                             </div>
                         </div>
 
                         <div
-                            v-if="hasMealChartData"
-                            class="grid gap-3"
-                            aria-label="食事の直近7日推移"
+                            class="flex flex-col gap-2 sm:flex-row sm:items-center"
                         >
-                            <div>
-                                <div
-                                    class="mb-1 flex min-h-7 items-center"
-                                >
-                                    <p
-                                        class="font-sans text-xs text-cd-ink-muted"
-                                    >
-                                        エネルギー (kcal)
-                                    </p>
-                                </div>
-                                <BaseChart
-                                    :option="mealKcalChartOption"
-                                    class="!h-40"
-                                />
-                            </div>
-                            <div>
-                                <div
-                                    class="mb-1 flex min-h-7 items-center"
-                                >
-                                    <p
-                                        class="font-sans text-xs text-cd-ink-muted"
-                                    >
-                                        PFC (g)
-                                    </p>
-                                </div>
-                                <BaseChart
-                                    :option="mealPfcChartOption"
-                                    class="!h-40"
-                                />
-                            </div>
-                        </div>
-                        <p
-                            v-else
-                            class="rounded-xl border border-dashed border-cd-line px-3 py-6 text-center font-sans text-sm text-cd-ink-muted"
-                        >
-                            この期間の食事記録がまだありません。記録すると推移グラフが表示されます。
-                        </p>
-
-                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
                             <BodyStoryExportButton
                                 kind="weekly"
                                 :date="date"
                                 label="週の記録を画像にする"
                             />
-                            <Button as-child class="font-sans tracking-[0.06em]">
+                            <Button
+                                as-child
+                                class="font-sans tracking-[0.06em]"
+                            >
                                 <Link
                                     :href="`/meals?date=${date}`"
                                     class="inline-flex items-center gap-2"
                                 >
                                     食事を記録する
-                                    <ArrowRight :size="16" :stroke-width="1.6" />
+                                    <ArrowRight
+                                        :size="16"
+                                        :stroke-width="1.6"
+                                    />
                                 </Link>
                             </Button>
                         </div>
@@ -724,97 +610,49 @@ const strengthChartOption = computed<EChartsCoreOption>(() => ({
                 </PageSectionCard>
 
                 <PageSectionCard aria-label="コンディション管理への入り口">
-                    <div class="flex flex-col gap-4">
-                        <div class="flex items-start gap-3">
-                            <div
-                                class="flex size-10 shrink-0 items-center justify-center rounded-full bg-cd-icon-bg text-cd-icon-primary"
-                            >
-                                <Activity :size="20" :stroke-width="1.6" />
-                            </div>
-                            <div>
-                                <h2
-                                    class="font-sans text-lg font-semibold text-cd-ink"
+                    <div class="flex flex-col gap-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-start gap-3">
+                                <div
+                                    class="flex size-10 shrink-0 items-center justify-center rounded-full bg-cd-icon-bg text-cd-icon-primary"
                                 >
-                                    コンディション管理
-                                </h2>
-                                <p class="font-sans text-sm text-cd-ink-muted">
-                                    体重・睡眠の推移と筋力チャートをまとめて確認します。
-                                </p>
+                                    <Activity :size="20" :stroke-width="1.6" />
+                                </div>
+                                <div>
+                                    <h2
+                                        class="font-sans text-lg font-semibold text-cd-ink"
+                                    >
+                                        筋力チャート
+                                    </h2>
+                                    <p
+                                        class="font-sans text-sm text-cd-ink-muted"
+                                    >
+                                        直近7日に完了した筋力セッション
+                                    </p>
+                                </div>
                             </div>
+                            <Button
+                                as-child
+                                variant="outline"
+                                size="sm"
+                                class="h-8 shrink-0 font-sans"
+                            >
+                                <Link href="/records/strength?period=3months">
+                                    詳細
+                                </Link>
+                            </Button>
                         </div>
-
-                        <div
-                            class="grid gap-3"
-                            aria-label="コンディションの直近7日推移"
+                        <BaseChart
+                            v-if="hasStrengthChartData"
+                            :option="strengthChartOption"
+                            class="!h-40"
+                        />
+                        <p
+                            v-else
+                            class="flex !h-40 items-center justify-center rounded-xl border border-dashed border-cd-line px-3 text-center font-sans text-sm text-cd-ink-muted"
                         >
-                            <div aria-label="体重・睡眠の直近7日推移">
-                                <div
-                                    class="mb-1 flex min-h-7 items-center"
-                                >
-                                    <p
-                                        class="font-sans text-xs text-cd-ink-muted"
-                                    >
-                                        体重・睡眠（7日）
-                                    </p>
-                                </div>
-                                <BaseChart
-                                    v-if="hasConditionChartData"
-                                    :option="conditionChartOption"
-                                    class="!h-40"
-                                />
-                                <p
-                                    v-else
-                                    class="flex !h-40 items-center justify-center rounded-xl border border-dashed border-cd-line px-3 text-center font-sans text-sm text-cd-ink-muted"
-                                >
-                                    まだ推移データがありません。コンディションを記録するとここにグラフが表示されます。
-                                </p>
-                            </div>
-
-                            <div aria-label="筋力ミニチャート">
-                                <div
-                                    class="mb-1 flex min-h-7 items-center justify-between gap-2"
-                                >
-                                    <p
-                                        class="font-sans text-xs text-cd-ink-muted"
-                                    >
-                                        筋力チャート（7日）
-                                    </p>
-                                    <Button
-                                        as-child
-                                        variant="outline"
-                                        size="sm"
-                                        class="h-7 font-sans"
-                                    >
-                                        <Link
-                                            href="/records/strength?period=3months"
-                                        >
-                                            詳細
-                                        </Link>
-                                    </Button>
-                                </div>
-                                <BaseChart
-                                    v-if="hasStrengthChartData"
-                                    :option="strengthChartOption"
-                                    class="!h-40"
-                                />
-                                <p
-                                    v-else
-                                    class="flex !h-40 items-center justify-center rounded-xl border border-dashed border-cd-line px-3 text-center font-sans text-sm text-cd-ink-muted"
-                                >
-                                    この期間に完了した筋力セッションがありません。
-                                </p>
-                            </div>
-                        </div>
-
-                        <Button as-child class="font-sans tracking-[0.06em]">
-                            <Link
-                                :href="`/records/condition?date=${date}`"
-                                class="inline-flex items-center gap-2"
-                            >
-                                コンディションを記録する
-                                <ArrowRight :size="16" :stroke-width="1.6" />
-                            </Link>
-                        </Button>
+                            この期間に完了した筋力セッションがありません。
+                        </p>
                     </div>
                 </PageSectionCard>
             </div>

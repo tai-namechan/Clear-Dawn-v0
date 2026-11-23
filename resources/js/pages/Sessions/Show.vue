@@ -87,15 +87,12 @@ const completedCount = computed(
 const resolvedCount = computed(
     () =>
         steps.value.filter(
-            (step) =>
-                step.status === 'completed' || step.status === 'skipped',
+            (step) => step.status === 'completed' || step.status === 'skipped',
         ).length,
 );
 
 const allStepsResolved = computed(
-    () =>
-        steps.value.length > 0 &&
-        resolvedCount.value >= steps.value.length,
+    () => steps.value.length > 0 && resolvedCount.value >= steps.value.length,
 );
 
 const progressPercent = computed(() => {
@@ -108,9 +105,7 @@ const progressPercent = computed(() => {
 
 const targetBlocks = computed(() => currentStep.value?.target_blocks ?? 0);
 
-const planHref = computed(
-    () => `/plans/${props.session.routine_plan_id}`,
-);
+const planHref = computed(() => `/plans/${props.session.routine_plan_id}`);
 
 const isSessionFinished = computed(
     () =>
@@ -321,8 +316,10 @@ const metrics = computed((): MetricChip[] => {
             ? {
                   label: '回数',
                   value:
-                      formatAmountTarget(step.target_amount, step.amount_unit) ??
-                      '—',
+                      formatAmountTarget(
+                          step.target_amount,
+                          step.amount_unit,
+                      ) ?? '—',
                   icon: 'hash',
               }
             : null,
@@ -361,10 +358,10 @@ const metrics = computed((): MetricChip[] => {
     <Head title="ルーティン実行" />
 
     <div
-        class="flex min-h-0 flex-1 flex-col rounded-xl p-4 pb-28 md:px-6 md:pb-28 lg:pb-6"
+        class="flex shrink-0 flex-1 flex-col rounded-xl p-4 md:px-6 lg:pb-6"
     >
         <div class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4">
-            <PageSectionCard>
+            <PageSectionCard hero>
                 <div class="flex flex-col gap-4">
                     <Link
                         :href="planHref"
@@ -404,8 +401,7 @@ const metrics = computed((): MetricChip[] => {
                             >
                                 <span>進捗</span>
                                 <span>
-                                    {{ resolvedCount }} /
-                                    {{ steps.length }}（{{
+                                    {{ resolvedCount }} / {{ steps.length }}（{{
                                         progressPercent
                                     }}%）
                                 </span>
@@ -429,9 +425,7 @@ const metrics = computed((): MetricChip[] => {
                 </div>
             </PageSectionCard>
 
-            <div
-                class="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px]"
-            >
+            <div class="grid flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
                 <section
                     v-if="allStepsResolved && !isSessionFinished"
                     aria-label="実行のまとめ"
@@ -469,11 +463,7 @@ const metrics = computed((): MetricChip[] => {
                             @click="completeSession"
                         >
                             <Check :size="16" :stroke-width="1.8" />
-                            {{
-                                completing
-                                    ? '完了処理中…'
-                                    : '実行を完了する'
-                            }}
+                            {{ completing ? '完了処理中…' : '実行を完了する' }}
                         </Button>
                     </div>
                 </section>
@@ -484,9 +474,7 @@ const metrics = computed((): MetricChip[] => {
                     class="cd-panel flex flex-col px-5 py-8"
                 >
                     <div class="mx-auto max-w-md text-center">
-                        <h2
-                            class="font-sans text-xl font-semibold text-cd-ink"
-                        >
+                        <h2 class="font-sans text-xl font-semibold text-cd-ink">
                             {{
                                 session.status === 'completed'
                                     ? 'この実行は完了済みです'
@@ -571,7 +559,7 @@ const metrics = computed((): MetricChip[] => {
                                         {{ metric.label }}
                                     </p>
                                     <p
-                                        class="mt-1 font-sans text-sm font-medium leading-none text-cd-ink"
+                                        class="mt-1 font-sans text-sm leading-none font-medium text-cd-ink"
                                     >
                                         {{ metric.value }}
                                     </p>
@@ -585,6 +573,7 @@ const metrics = computed((): MetricChip[] => {
                             class="grid items-start gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(15rem,0.85fr)]"
                         >
                             <SessionExerciseVideo
+                                v-if="currentStep.video"
                                 :src="playbackUrl"
                                 :loading="playbackLoading"
                                 :empty-label="
@@ -608,9 +597,7 @@ const metrics = computed((): MetricChip[] => {
                                     :load-unit="currentStep.load_unit"
                                     :amount-unit="currentStep.amount_unit"
                                     :default-load="currentStep.target_load"
-                                    :default-amount="
-                                        currentStep.target_amount
-                                    "
+                                    :default-amount="currentStep.target_amount"
                                     :logging="logging || isSessionFinished"
                                     @log="logBlock"
                                     @unlog="unlogBlock"
@@ -654,7 +641,9 @@ const metrics = computed((): MetricChip[] => {
 
                             <div
                                 v-if="currentStep.memo"
-                                :class="cueLines.length > 0 ? 'mt-3' : undefined"
+                                :class="
+                                    cueLines.length > 0 ? 'mt-3' : undefined
+                                "
                             >
                                 <p
                                     class="mb-1 font-sans text-xs tracking-[0.08em] text-cd-ink-muted"
@@ -701,7 +690,7 @@ const metrics = computed((): MetricChip[] => {
                         ステップ一覧（{{ steps.length }}）
                     </div>
 
-                    <ul class="max-h-[min(70vh,720px)] overflow-y-auto">
+                    <ul class="lg:max-h-[min(70vh,720px)] lg:overflow-y-auto">
                         <li
                             v-for="(step, index) in steps"
                             :key="step.id"
@@ -788,8 +777,7 @@ const metrics = computed((): MetricChip[] => {
                             type="button"
                             class="w-full"
                             :disabled="
-                                !currentStep ||
-                                currentStep.status !== 'pending'
+                                !currentStep || currentStep.status !== 'pending'
                             "
                             @click="completeStep"
                         >
@@ -804,11 +792,7 @@ const metrics = computed((): MetricChip[] => {
                             @click="completeSession"
                         >
                             <Check :size="16" :stroke-width="1.8" />
-                            {{
-                                completing
-                                    ? '完了処理中…'
-                                    : '実行を完了する'
-                            }}
+                            {{ completing ? '完了処理中…' : '実行を完了する' }}
                         </Button>
 
                         <Button
@@ -840,9 +824,16 @@ const metrics = computed((): MetricChip[] => {
             </div>
         </div>
 
+        <!-- Room for the fixed action bar + bottom nav on phones -->
         <div
             v-if="!isSessionFinished"
-            class="fixed inset-x-4 bottom-4 z-40 rounded-2xl border border-cd-line bg-[#fffcf8]/95 p-2 shadow-xl backdrop-blur lg:hidden"
+            class="h-24 shrink-0 lg:hidden"
+            aria-hidden="true"
+        />
+
+        <div
+            v-if="!isSessionFinished"
+            class="cd-session-actionbar rounded-2xl border border-cd-line bg-white/95 p-2 shadow-xl backdrop-blur lg:hidden"
         >
             <div class="flex flex-col gap-2">
                 <div class="grid grid-cols-[1fr_auto_auto] gap-2">

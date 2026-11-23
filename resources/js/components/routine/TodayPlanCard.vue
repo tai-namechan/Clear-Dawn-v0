@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { apiFetch } from '@/lib/apiFetch';
 import { categoryIcon } from '@/lib/categoryIcon';
+import { planStepProgress } from '@/lib/planProgress.mjs';
 import { planRunStatusBadgeClasses } from '@/lib/statusBadge';
 import {
     displayDurationMinutes,
@@ -52,6 +53,7 @@ const status = computed(() => planRunStatus(props.plan));
 const needsChoice = computed(() => props.choiceContext?.needs_choice === true);
 const session = computed(() => latestSession(props.plan));
 const description = computed(() => planDescription(props.plan));
+const progress = computed(() => planStepProgress(props.plan));
 const durationMinutes = computed(() => displayDurationMinutes(props.plan));
 const clockRange = computed(() => {
     if (status.value === 'not_started') {
@@ -193,117 +195,121 @@ async function selectChoice(choiceOptionId: string): Promise<void> {
 
 <template>
     <li
-        class="group min-w-0 rounded-2xl border border-cd-line bg-white px-3 py-3 sm:px-4"
+        class="group min-w-0 rounded-2xl border border-cd-line bg-white px-3 py-3 shadow-sm sm:px-4"
     >
-        <div class="flex min-w-0 items-center gap-2.5 sm:gap-3">
+        <div class="flex min-w-0 items-start gap-3">
             <div
-                class="flex size-11 shrink-0 items-center justify-center rounded-full bg-[#F3F1F8] text-primary"
+                class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--cd-hero-primary-soft)] text-[var(--cd-hero-primary)]"
             >
-                <component :is="iconComponent" :size="20" :stroke-width="1.6" />
+                <component :is="iconComponent" :size="22" :stroke-width="1.7" />
             </div>
 
-            <div class="min-w-0 flex-1 overflow-hidden">
-                <Link :href="`/plans/${plan.id}`" class="block min-w-0">
-                    <div class="flex min-w-0 flex-wrap items-center gap-2">
-                        <p
-                            class="min-w-0 truncate font-sans text-sm font-semibold text-cd-ink"
-                        >
-                            {{ plan.title }}
-                        </p>
-                        <span
-                            class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-sans text-[0.68rem] font-medium"
-                            :class="statusMeta[status].className"
-                        >
-                            <Check
-                                v-if="status === 'completed'"
-                                :size="11"
-                                :stroke-width="2"
-                            />
-                            {{ statusMeta[status].label }}
-                        </span>
-                    </div>
-                    <p
-                        class="mt-0.5 line-clamp-1 font-sans text-xs text-cd-ink-muted"
-                    >
-                        {{ description }}
-                    </p>
-                </Link>
-                <div
-                    v-if="durationMinutes || clockRange"
-                    class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 font-sans text-[11px] text-cd-ink-muted md:hidden"
+            <Link :href="`/plans/${plan.id}`" class="block min-w-0 flex-1">
+                <p
+                    class="line-clamp-2 font-sans text-[15px] leading-snug font-bold text-cd-ink"
                 >
-                    <span v-if="durationMinutes"
-                        >予定 {{ formatMinutesJa(durationMinutes) }}</span
+                    {{ plan.title }}
+                </p>
+                <div class="mt-1 flex min-w-0 items-center gap-2">
+                    <span
+                        class="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-sans text-[0.68rem] font-medium"
+                        :class="statusMeta[status].className"
+                    >
+                        <Check
+                            v-if="status === 'completed'"
+                            :size="11"
+                            :stroke-width="2"
+                        />
+                        {{ statusMeta[status].label }}
+                    </span>
+                    <span
+                        class="min-w-0 truncate font-sans text-xs text-cd-ink-muted"
+                        >{{ description }}</span
+                    >
+                </div>
+            </Link>
+
+            <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        class="-mr-1 shrink-0 text-cd-ink-muted"
+                        :aria-label="`${plan.title} のメニュー`"
+                    >
+                        <EllipsisVertical :size="16" :stroke-width="1.6" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" class="min-w-40">
+                    <DropdownMenuItem as-child>
+                        <Link :href="`/plans/${plan.id}`">プラン詳細</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem v-if="status === 'in_progress'" as-child>
+                        <Link :href="primaryHref">実行を続ける</Link>
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+
+        <div class="mt-3 flex min-w-0 items-center gap-3">
+            <div class="min-w-0 flex-1">
+                <div v-if="progress.total > 0" class="flex items-center gap-2">
+                    <span
+                        class="cd-plan-progress"
+                        role="progressbar"
+                        :aria-valuenow="progress.done"
+                        aria-valuemin="0"
+                        :aria-valuemax="progress.total"
+                        :aria-label="`${plan.title} の進み具合`"
+                    >
+                        <span :style="{ width: `${progress.percent}%` }" />
+                    </span>
+                    <span
+                        class="shrink-0 font-sans text-[11px] font-semibold text-cd-ink tabular-nums"
+                        >{{ progress.done }} / {{ progress.total }}</span
+                    >
+                </div>
+                <p
+                    v-if="durationMinutes || clockRange"
+                    class="mt-1 flex flex-wrap items-center gap-x-3 font-sans text-[11px] text-cd-ink-muted"
+                >
+                    <span
+                        v-if="durationMinutes"
+                        class="inline-flex items-center gap-1"
+                        ><Clock3 :size="12" :stroke-width="1.7" />予定
+                        {{ formatMinutesJa(durationMinutes) }}</span
                     >
                     <span v-if="clockRange">{{ clockRange }}</span>
-                </div>
+                </p>
             </div>
 
-            <div
-                class="flex shrink-0 items-center gap-1.5 self-center sm:gap-2"
+            <Button
+                v-if="status === 'not_started' && !needsChoice"
+                type="button"
+                class="h-10 shrink-0 rounded-full px-4 font-sans font-bold"
+                :disabled="starting"
+                @click="startSession"
             >
-                <div
-                    v-if="durationMinutes"
-                    class="hidden items-center gap-1.5 font-sans text-xs text-cd-ink-muted md:flex"
-                >
-                    <Clock3 :size="14" :stroke-width="1.6" />
-                    {{ formatMinutesJa(durationMinutes) }}
-                </div>
-
-                <Button
-                    v-if="status === 'not_started' && !needsChoice"
-                    type="button"
-                    size="sm"
-                    class="rounded-full px-3.5 font-sans"
-                    :disabled="starting"
-                    @click="startSession"
-                >
-                    <CirclePlay :size="15" :stroke-width="1.7" />
-                    {{ starting ? '開始中…' : primaryLabel }}
-                </Button>
-                <Button
-                    v-else
-                    type="button"
-                    size="sm"
-                    class="rounded-full px-3.5 font-sans"
-                    as-child
-                >
-                    <Link :href="primaryHref">
-                        <CirclePlay :size="15" :stroke-width="1.7" />
-                        {{ primaryLabel }}
-                    </Link>
-                </Button>
-
-                <DropdownMenu>
-                    <DropdownMenuTrigger as-child>
-                        <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            class="text-cd-ink-muted sm:inline-flex"
-                            :aria-label="`${plan.title} のメニュー`"
-                        >
-                            <EllipsisVertical :size="16" :stroke-width="1.6" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" class="min-w-40">
-                        <DropdownMenuItem as-child>
-                            <Link :href="`/plans/${plan.id}`">プラン詳細</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                            v-if="status === 'in_progress'"
-                            as-child
-                        >
-                            <Link :href="primaryHref">実行を続ける</Link>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
+                <CirclePlay :size="16" :stroke-width="1.8" />
+                {{ starting ? '開始中…' : primaryLabel }}
+            </Button>
+            <Button
+                v-else
+                type="button"
+                class="h-10 shrink-0 rounded-full px-4 font-sans font-bold"
+                as-child
+            >
+                <Link :href="primaryHref">
+                    <CirclePlay :size="16" :stroke-width="1.8" />
+                    {{ primaryLabel }}
+                </Link>
+            </Button>
         </div>
 
         <div
             v-if="needsChoice && choiceContext"
-            class="mt-3 border-t border-cd-line pt-3 sm:ml-14"
+            class="mt-3 border-t border-cd-line pt-3"
         >
             <p class="font-sans text-xs font-medium text-cd-ink">
                 今日行う内容を選択してください

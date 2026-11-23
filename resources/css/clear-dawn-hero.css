@@ -1,0 +1,1102 @@
+/*
+ * Clear Dawn / Hero UI v3 — wa-modern washi backgrounds (docs/clear-dawn-hero-design-guidelines.md)
+ * Scoped to the Clear Dawn application shell: never applies to Kioku/Yoyu.
+ * All artwork is decorative; data text and controls stay in Vue/HTML.
+ */
+.cd-clear-app {
+    --cd-hero-primary: #6f68ad;
+    /* Gold accent for intake rings and remaining badges (meals mockup). */
+    --cd-gold: #b8924a;
+    --cd-gold-accent: #d4b370;
+    --cd-gold-soft: #f7eedb;
+    /* Rings and badges that read --cd-primary follow the brand violet here. */
+    --cd-primary: #6f68ad;
+    --cd-hero-primary-hover: #5f5899;
+    /* Buttons and selected tabs: violet gradient as in the mockup. */
+    --cd-hero-primary-gradient: linear-gradient(
+        135deg,
+        #7a73b8 0%,
+        #565090 100%
+    );
+    --cd-hero-primary-gradient-hover: linear-gradient(
+        135deg,
+        #6d66ab 0%,
+        #4a447f 100%
+    );
+    --cd-hero-primary-soft: #eeeaf6;
+    --cd-hero-ink: #23223a;
+    --cd-hero-muted: #55505f;
+    --cd-hero-glow: #c2a8ff;
+    /* Washi cards (palette: base #FBF7EF / 朝霞 #EEEAF6 / 藍墨 #DCD6E8 / 金 #D4B370). */
+    --cd-hero-surface: rgba(253, 250, 244, 0.97);
+    --cd-surface-solid: #fdfaf4;
+    --cd-surface-tint: #f4efe6;
+    --cd-hero-radius: 1.5rem;
+    --cd-hero-edge: rgba(150, 128, 92, 0.24);
+    --cd-hero-shadow:
+        0 14px 44px rgba(37, 32, 74, 0.075), 0 2px 8px rgba(37, 32, 74, 0.035);
+    position: relative;
+    isolation: isolate;
+    color: var(--cd-hero-ink);
+}
+/* ---------------------------------------------------------------- Wa-modern backgrounds (v3) */
+.cd-clear-app.cd-wa-bg {
+    background-color: #faf7f1;
+    /* A washi veil keeps the artwork calm behind text. */
+    box-shadow: inset 0 0 0 100vmax rgba(250, 247, 241, 0.38);
+    background-repeat: no-repeat;
+    background-position: center top;
+    background-size: cover;
+}
+.cd-clear-app.cd-wa-today {
+    background-image: url('/images/backgrounds/cd-wa-today-sp.webp');
+}
+.cd-clear-app.cd-wa-food {
+    background-image: url('/images/backgrounds/cd-wa-food-sp.webp');
+}
+.cd-clear-app.cd-wa-condition {
+    background-image: url('/images/backgrounds/cd-wa-condition-sp.webp');
+}
+.cd-clear-app.cd-wa-practice {
+    background-image: url('/images/backgrounds/cd-wa-practice-sp.webp');
+}
+.cd-clear-app.cd-wa-settings {
+    background-image: url('/images/backgrounds/cd-wa-settings-sp.webp');
+}
+@media (min-width: 768px) {
+    .cd-clear-app.cd-wa-today {
+        background-image: url('/images/backgrounds/cd-wa-today-pc.webp');
+    }
+    .cd-clear-app.cd-wa-food {
+        background-image: url('/images/backgrounds/cd-wa-food-pc.webp');
+    }
+    .cd-clear-app.cd-wa-condition {
+        background-image: url('/images/backgrounds/cd-wa-condition-pc.webp');
+    }
+    .cd-clear-app.cd-wa-practice {
+        background-image: url('/images/backgrounds/cd-wa-practice-pc.webp');
+    }
+    .cd-clear-app.cd-wa-settings {
+        background-image: url('/images/backgrounds/cd-wa-settings-pc.webp');
+    }
+}
+
+/* ---------------------------------------------------------------- Header on washi */
+.cd-clear-app .cd-app-header {
+    --cd-header-text: var(--cd-hero-ink);
+    --cd-header-text-muted: var(--cd-hero-muted);
+    --cd-header-control-bg: rgba(255, 255, 255, 0.72);
+    --cd-header-border: rgba(111, 98, 154, 0.2);
+    background: transparent;
+    border-bottom: 0;
+    box-shadow: none;
+}
+.cd-clear-app .cd-app-header .cd-header-control,
+.cd-clear-app .cd-app-header [data-test='product-switcher-trigger'],
+.cd-clear-app .cd-app-header [data-test='header-user-menu-button'] {
+    box-shadow: 0 4px 14px rgba(37, 32, 74, 0.06);
+    backdrop-filter: blur(10px);
+}
+.cd-clear-app .cd-app-header .cd-header-control:hover,
+.cd-clear-app .cd-app-header [data-test='product-switcher-trigger']:hover,
+.cd-clear-app .cd-app-header [data-test='header-user-menu-button']:hover {
+    border-color: rgba(111, 104, 173, 0.35);
+    background: rgba(251, 247, 239, 0.95);
+}
+.cd-clear-app .cd-app-header [data-sidebar='trigger']:hover {
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--cd-hero-ink);
+}
+.cd-clear-app .cd-app-header [data-slot='breadcrumb'] :is(a, span, li) {
+    color: var(--cd-hero-muted);
+}
+
+/* ---------------------------------------------------------------- Hero: ink text straight on the washi */
+.cd-clear-app .cd-hero-banner,
+.cd-clear-app .cd-hero-panel,
+.cd-clear-app .cd-hero-stage {
+    position: relative;
+    color: var(--cd-hero-ink);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+}
+.cd-clear-app .cd-hero-banner {
+    padding: 0.5rem 1.25rem 0.75rem;
+}
+.cd-clear-app .cd-hero-panel {
+    padding-top: 0.5rem;
+    padding-bottom: 0.75rem;
+}
+.cd-clear-app .cd-hero-heading h1,
+.cd-clear-app .cd-hero-banner h1 {
+    color: var(--cd-hero-ink);
+    font-family: var(--font-sans);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+.cd-clear-app .cd-hero-heading p,
+.cd-clear-app .cd-hero-banner p {
+    color: var(--cd-hero-muted);
+    line-height: 1.65;
+    text-wrap: pretty;
+}
+.cd-clear-app :is(.cd-hero-panel, .cd-hero-stage) .cd-title-rule {
+    background: linear-gradient(90deg, #d4b370, rgba(212, 179, 112, 0));
+}
+.cd-clear-app
+    :is(.cd-hero-panel, .cd-hero-stage)
+    :is(.text-cd-ink, .text-primary) {
+    color: var(--cd-hero-ink);
+}
+.cd-clear-app
+    :is(.cd-hero-panel, .cd-hero-stage)
+    :is(.text-cd-ink-muted, .text-muted-foreground) {
+    color: var(--cd-hero-muted);
+}
+.cd-clear-app
+    :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
+    a:not([data-slot='button']):not(.cd-hero-primary-action):hover {
+    color: var(--cd-hero-primary);
+}
+.cd-clear-app .cd-hero-eyebrow {
+    color: #9a7a3e;
+    letter-spacing: 0.19em;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+/* Outline buttons on the washi: white frosted glass with ink text. */
+.cd-clear-app
+    :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
+    [data-slot='button'].border:not(.bg-primary) {
+    color: var(--cd-hero-ink);
+    background: rgba(251, 247, 239, 0.78);
+    border-color: rgba(111, 98, 154, 0.22);
+    backdrop-filter: blur(10px);
+}
+.cd-clear-app
+    :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
+    [data-slot='button']:not(.bg-primary):hover {
+    color: var(--cd-hero-ink);
+    background: rgba(251, 247, 239, 0.95);
+}
+.cd-clear-app .cd-hero-panel .cd-hero-primary-action {
+    color: #fff;
+    background: var(--cd-hero-primary-gradient);
+    border: 0;
+}
+.cd-clear-app .cd-hero-stage button,
+.cd-clear-app .cd-hero-stage input {
+    font-variant-numeric: tabular-nums;
+}
+.cd-clear-app .cd-hero-stage button[aria-label='日付を選択'],
+.cd-clear-app .cd-hero-stage button[aria-label='前の日'],
+.cd-clear-app .cd-hero-stage button[aria-label='次の日'] {
+    color: var(--cd-hero-ink);
+    border-radius: 0.75rem;
+}
+.cd-clear-app .cd-hero-stage button[aria-label='日付を選択']:hover,
+.cd-clear-app .cd-hero-stage button[aria-label='前の日']:hover,
+.cd-clear-app .cd-hero-stage button[aria-label='次の日']:hover {
+    background: rgba(255, 255, 255, 0.85);
+}
+.cd-clear-app
+    :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
+    button:not([disabled]):focus-visible,
+.cd-clear-app
+    :is(.cd-hero-banner, .cd-hero-panel, .cd-hero-stage)
+    a:focus-visible {
+    outline: 2px solid var(--cd-hero-primary);
+    outline-offset: 2px;
+}
+
+.cd-clear-app .cd-hero-kpi {
+    font-size: clamp(1.5rem, 6vw, 2.7rem);
+    font-weight: 750;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.04em;
+}
+.cd-clear-app .cd-hero-stat {
+    border: 1px solid rgba(111, 98, 154, 0.15);
+    border-radius: 1.125rem;
+    background: rgba(251, 247, 239, 0.78);
+    padding: 0.85rem 1rem;
+    backdrop-filter: blur(10px);
+}
+.cd-clear-app .cd-hero-stat-label {
+    font-size: 0.72rem;
+    line-height: 1.3;
+    color: var(--cd-hero-muted);
+}
+.cd-clear-app .cd-hero-stat-number {
+    margin-top: 0.3rem;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------- White surfaces */
+.cd-clear-app .cd-panel:not(.cd-hero-panel) {
+    border: 1px solid var(--cd-hero-edge);
+    border-radius: var(--cd-hero-radius);
+    background: var(--cd-hero-surface);
+    box-shadow: var(--cd-hero-shadow);
+    backdrop-filter: blur(6px);
+}
+.cd-clear-app .cd-panel:not(.cd-hero-panel) h2 {
+    letter-spacing: -0.018em;
+}
+.cd-clear-app .cd-panel:not(.cd-hero-panel) {
+    transition:
+        box-shadow 0.18s ease,
+        border-color 0.18s ease;
+}
+.cd-clear-app .cd-panel:not(.cd-hero-panel):hover {
+    border-color: rgba(111, 98, 154, 0.22);
+}
+
+/* PageTabShell: hero on the washi, figures in a white summary card, then tabs + body. */
+.cd-clear-app .cd-page-tab-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.cd-clear-app .cd-page-tab-shell .cd-hero-stage {
+    padding: 0.5rem 1.25rem 0.25rem;
+}
+.cd-clear-app .cd-page-tab-shell .cd-hero-stage .cd-header-hero-link {
+    color: var(--cd-hero-muted);
+}
+.cd-clear-app .cd-page-tab-shell .cd-hero-stage .cd-hero-heading {
+    flex: 1;
+    min-width: 0;
+}
+.cd-clear-app .cd-hero-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(6.25rem, 1fr));
+    padding: 0.5rem;
+}
+.cd-clear-app .cd-hero-summary .cd-hero-stat {
+    min-width: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    backdrop-filter: none;
+    padding: 0.75rem 1rem;
+}
+.cd-clear-app .cd-hero-summary .cd-hero-stat + .cd-hero-stat {
+    border-left: 1px solid #ece6dc;
+}
+.cd-clear-app .cd-hero-summary .cd-hero-stat-label {
+    color: var(--cd-hero-muted);
+}
+.cd-clear-app .cd-hero-summary .cd-hero-stat-number {
+    color: var(--cd-hero-ink);
+    font-size: 1.6rem;
+}
+.cd-clear-app
+    .cd-hero-summary
+    :is(.text-white, .text-white\/80, .text-white\/85) {
+    color: var(--cd-hero-muted);
+}
+.cd-clear-app .cd-page-tab-shell .cd-page-tab-tabs {
+    padding: 1rem 1.25rem 0.3rem;
+    background: transparent;
+}
+.cd-clear-app .cd-page-tab-shell .cd-page-tab-content {
+    padding: 1.25rem;
+    background: transparent;
+}
+.cd-clear-app .cd-page-tab-shell .cd-page-tab-tabs + .cd-page-tab-content {
+    border-top: 1px solid #ece6dc;
+}
+
+/* ---------------------------------------------------------------- Primary #6f68ad for actions and selection */
+.cd-clear-app .bg-primary {
+    background-color: var(--cd-hero-primary);
+    background-image: var(--cd-hero-primary-gradient);
+}
+.cd-clear-app .bg-primary\/70 {
+    background-color: rgba(111, 104, 173, 0.7);
+}
+.cd-clear-app .bg-primary:hover,
+.cd-clear-app .hover\:bg-primary\/90:hover {
+    background-color: var(--cd-hero-primary-hover);
+    background-image: var(--cd-hero-primary-gradient-hover);
+}
+.cd-clear-app [role='tab'][aria-selected='true'].bg-primary {
+    box-shadow: 0 6px 16px rgba(111, 104, 173, 0.28);
+}
+
+/* ---------------------------------------------------------------- Mobile bottom navigation */
+.cd-clear-app .cd-mobile-nav {
+    display: none;
+}
+@media (max-width: 767px) {
+    .cd-clear-app {
+        padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+    }
+    /* On phones the header scrolls away; the bottom nav handles navigation. */
+    .cd-clear-app .cd-app-header {
+        position: relative;
+    }
+    .cd-clear-app .cd-hero-banner {
+        padding: 0.25rem 1rem 0.5rem;
+    }
+    .cd-clear-app .cd-hero-ring {
+        width: 5.8rem;
+        height: 5.8rem;
+    }
+    .cd-clear-app .cd-hero-ring-inner {
+        width: 4.75rem;
+        height: 4.75rem;
+    }
+    .cd-clear-app .cd-page-tab-shell .cd-hero-stage {
+        padding: 0.25rem 1rem 0;
+    }
+    .cd-clear-app .cd-page-tab-shell .cd-page-tab-content {
+        padding: 1rem;
+    }
+    .cd-clear-app .cd-hero-summary .cd-hero-stat {
+        padding: 0.65rem 0.75rem;
+    }
+    .cd-clear-app .cd-hero-summary .cd-hero-stat-number {
+        font-size: 1.35rem;
+    }
+    .cd-clear-app .cd-mobile-nav {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.2rem;
+        position: fixed;
+        inset-inline: 0;
+        bottom: 0;
+        z-index: 45;
+        padding: 0.45rem 0.45rem calc(0.45rem + env(safe-area-inset-bottom));
+        background: rgba(251, 247, 239, 0.96);
+        border-top: 1px solid rgba(111, 98, 154, 0.12);
+        box-shadow: 0 -8px 24px rgba(37, 32, 74, 0.06);
+        backdrop-filter: blur(18px);
+    }
+    .cd-clear-app .cd-mobile-nav a {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.2rem;
+        min-height: 2.9rem;
+        border-radius: 0.8rem;
+        color: #8a849c;
+        font-size: 0.64rem;
+        font-weight: 600;
+    }
+    .cd-clear-app .cd-mobile-nav a[aria-current='page'] {
+        color: var(--cd-hero-primary);
+    }
+    .cd-clear-app .cd-mobile-nav a[aria-current='page'] svg {
+        fill: color-mix(in srgb, var(--cd-hero-primary) 16%, transparent);
+        stroke-width: 2.2;
+    }
+    .cd-clear-app .cd-mobile-nav a:focus-visible {
+        outline: 2px solid var(--cd-hero-primary);
+        outline-offset: 2px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .cd-clear-app .cd-panel {
+        transition: none !important;
+    }
+}
+@media print {
+    .cd-clear-app .cd-mobile-nav {
+        display: none !important;
+    }
+    .cd-clear-app.cd-wa-bg {
+        background-image: none !important;
+    }
+}
+
+/* ---------------------------------------------------------------- Home (life matrix) */
+.cd-clear-app .cd-home-date {
+    border: 1px solid rgba(150, 128, 92, 0.2);
+    border-radius: 999px;
+    background: rgba(253, 250, 244, 0.85);
+    padding: 0.3rem 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+}
+.cd-clear-app .cd-home-area-tile {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    border: 1.5px solid transparent;
+    border-radius: 1.1rem;
+    background: #f4f0f8;
+    padding: 1rem 0.75rem 0.9rem;
+    text-align: center;
+    transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease;
+}
+.cd-clear-app .cd-home-area-tile:hover {
+    background: #ebe7f4;
+}
+.cd-clear-app .cd-home-area-tile[aria-selected='true'] {
+    border-color: var(--cd-hero-primary);
+    background: #e7e2f2;
+}
+.cd-clear-app .cd-home-area-tile:focus-visible {
+    outline: 2px solid var(--cd-hero-primary);
+    outline-offset: 2px;
+}
+.cd-clear-app .cd-home-area-icon {
+    color: var(--cd-hero-primary);
+}
+.cd-clear-app .cd-segment {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 0.25rem;
+    border-radius: 999px;
+    background: #eeeaf6;
+    padding: 0.25rem;
+}
+.cd-clear-app .cd-segment button {
+    border-radius: 999px;
+    padding: 0.55rem 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--cd-hero-muted);
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+.cd-clear-app .cd-segment button[aria-selected='true'] {
+    background: var(--cd-hero-primary-gradient);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(111, 104, 173, 0.28);
+}
+.cd-clear-app .cd-segment button:focus-visible {
+    outline: 2px solid var(--cd-hero-primary);
+    outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- Progress ring & achievement badge */
+.cd-clear-app .cd-progress-ring {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    border-radius: 999px;
+    background: conic-gradient(
+        var(--cd-hero-primary) var(--cd-ring-fill, 0deg),
+        #eeeaf6 0
+    );
+}
+.cd-clear-app .cd-progress-ring--lg {
+    width: 7.5rem;
+    height: 7.5rem;
+}
+.cd-clear-app .cd-progress-ring--md {
+    width: 5.75rem;
+    height: 5.75rem;
+}
+.cd-clear-app .cd-progress-ring-inner {
+    display: flex;
+    width: calc(100% - 1.25rem);
+    height: calc(100% - 1.25rem);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--cd-surface-solid);
+    color: var(--cd-hero-ink);
+}
+.cd-clear-app .cd-progress-ring-value {
+    font-size: 1.6rem;
+    font-weight: 750;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    color: var(--cd-hero-primary);
+}
+.cd-clear-app .cd-progress-ring--md .cd-progress-ring-value {
+    font-size: 1.25rem;
+}
+.cd-clear-app .cd-progress-ring-caption {
+    margin-top: 0.15rem;
+    font-size: 0.7rem;
+    color: var(--cd-hero-muted);
+}
+.cd-clear-app .cd-achievement-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 0.2rem 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+/* Over the goal is a fact, not a failure: warm but calm, never alarm red. */
+.cd-clear-app .cd-achievement-badge--over {
+    background: #fde9e4;
+    color: #b4543c;
+}
+.cd-clear-app .cd-achievement-badge--remaining,
+.cd-clear-app .cd-achievement-badge--reached {
+    background: var(--cd-hero-primary-soft);
+    color: #5a5396;
+}
+
+/* ---------------------------------------------------------------- Meals summary */
+.cd-clear-app .cd-meal-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 0.75rem 0.75rem 1rem;
+}
+.cd-clear-app .cd-pfc-chips {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(3.9rem, 1fr));
+    gap: 0.4rem;
+}
+.cd-clear-app .cd-pfc-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-radius: 0.9rem;
+    padding: 0.45rem 0.35rem;
+    font-variant-numeric: tabular-nums;
+}
+.cd-clear-app .cd-pfc-chip-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+.cd-clear-app .cd-pfc-chip-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--cd-hero-ink);
+}
+.cd-clear-app .cd-pfc-chip-value small {
+    margin-left: 0.1rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+.cd-clear-app .cd-pfc-chip-share {
+    font-size: 0.68rem;
+    color: var(--cd-hero-muted);
+}
+.cd-clear-app .cd-pfc-chip--p {
+    background: #e8f5ee;
+    color: #3f9a70;
+}
+.cd-clear-app .cd-pfc-chip--f {
+    background: #fbefe1;
+    color: #c07a2c;
+}
+.cd-clear-app .cd-pfc-chip--c {
+    background: #e6f0fa;
+    color: #3b82c4;
+}
+
+/* ---------------------------------------------------------------- Legibility of controls on the washi */
+.cd-clear-app .cd-hero-stage [role='group'][aria-label='日付'] {
+    border: 1px solid rgba(111, 98, 154, 0.18);
+    border-radius: 999px;
+    background: rgba(251, 247, 239, 0.78);
+    padding: 0.15rem 0.35rem;
+    box-shadow: 0 4px 14px rgba(37, 32, 74, 0.06);
+    backdrop-filter: blur(10px);
+}
+.cd-clear-app .cd-segment button:not([aria-selected='true']):hover {
+    background: rgba(251, 247, 239, 0.95);
+    color: var(--cd-hero-ink);
+}
+
+/* ---------------------------------------------------------------- Meals (gold summary, tiles, rows) */
+.cd-clear-app .cd-progress-ring--xl {
+    width: 9rem;
+    height: 9rem;
+}
+.cd-clear-app .cd-progress-ring--gold {
+    background: conic-gradient(
+        from 200deg,
+        #e7d3a4 0deg,
+        #b8924a var(--cd-ring-fill, 0deg),
+        #efe6d6 0
+    );
+}
+.cd-clear-app .cd-progress-ring--xl .cd-progress-ring-inner {
+    width: calc(100% - 1rem);
+    height: calc(100% - 1rem);
+}
+.cd-clear-app .cd-meal-hero {
+    padding: 1rem 1rem 1.1rem;
+}
+.cd-clear-app .cd-meal-ring-caption {
+    font-size: 0.66rem;
+    color: var(--cd-hero-muted);
+}
+.cd-clear-app .cd-meal-ring-value {
+    margin: 0.1rem 0;
+    font-size: 1.45rem;
+    font-weight: 750;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--cd-hero-ink);
+    font-variant-numeric: tabular-nums;
+}
+.cd-clear-app .cd-meal-ring-value small {
+    margin-left: 0.15rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+.cd-clear-app .cd-meal-remaining {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, #fbf4e4 0%, #f3e4c2 100%);
+    padding: 0.55rem 0.9rem;
+    color: #8a6420;
+}
+.cd-clear-app .cd-meal-remaining span {
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+.cd-clear-app .cd-meal-remaining strong {
+    font-size: 1.5rem;
+    font-weight: 750;
+    line-height: 1.15;
+    color: #6f4f16;
+    font-variant-numeric: tabular-nums;
+}
+.cd-clear-app .cd-meal-remaining strong small {
+    margin-left: 0.15rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.cd-clear-app .cd-meal-remaining--over {
+    background: #fde9e4;
+    color: #b4543c;
+}
+.cd-clear-app .cd-meal-remaining--over strong {
+    color: #9b3f29;
+}
+.cd-clear-app .cd-pfc-letter {
+    display: inline-flex;
+    width: 1.05rem;
+    height: 1.05rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.3rem;
+    font-size: 0.62rem;
+    font-weight: 800;
+    color: #fff;
+}
+.cd-clear-app .cd-pfc-letter--p {
+    background: #3f9a70;
+}
+.cd-clear-app .cd-pfc-letter--f {
+    background: #d58a38;
+}
+.cd-clear-app .cd-pfc-letter--c {
+    background: #3b82c4;
+}
+.cd-clear-app .cd-pfc-bar {
+    margin-top: 0.4rem;
+    height: 0.35rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #ece6dc;
+}
+.cd-clear-app .cd-pfc-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+.cd-clear-app .cd-pfc-bar-fill--p {
+    background: #3f9a70;
+}
+.cd-clear-app .cd-pfc-bar-fill--f {
+    background: #d58a38;
+}
+.cd-clear-app .cd-pfc-bar-fill--c {
+    background: #3b82c4;
+}
+.cd-clear-app .cd-meal-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0.5rem 0.9rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--cd-hero-ink);
+    text-align: center;
+}
+.cd-clear-app .cd-meal-tile:hover {
+    border-color: rgba(184, 137, 58, 0.45);
+}
+.cd-clear-app .cd-meal-tile:focus-visible,
+.cd-clear-app .cd-meal-row:focus-visible {
+    outline: 2px solid var(--cd-hero-primary);
+    outline-offset: 2px;
+}
+.cd-clear-app .cd-meal-row {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.95rem 1.1rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--cd-hero-ink);
+    transition: background-color 0.15s ease;
+}
+.cd-clear-app .cd-meal-row + .cd-meal-row {
+    border-top: 1px solid #ece6dc;
+}
+.cd-clear-app .cd-meal-row:hover {
+    background: #f6f1e7;
+}
+.cd-clear-app .cd-meal-row:disabled {
+    opacity: 0.55;
+}
+/* A tab-shell body that only holds the tabs: no card chrome, just the pill. */
+.cd-clear-app .cd-panel.cd-page-tab-body:not(:has(.cd-page-tab-content)) {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+.cd-clear-app
+    .cd-page-tab-body:not(:has(.cd-page-tab-content))
+    .cd-page-tab-tabs {
+    padding: 0;
+    background: transparent;
+}
+
+/* ---------------------------------------------------------------- Performance (condition cards) */
+.cd-clear-app .cd-condition-card {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.4rem 0.85rem 0.8rem;
+    color: var(--cd-hero-ink);
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+.cd-clear-app a.cd-condition-card:hover {
+    border-color: rgba(111, 104, 173, 0.35);
+}
+.cd-clear-app a.cd-condition-card:focus-visible {
+    outline: 2px solid var(--cd-hero-primary);
+    outline-offset: 2px;
+}
+.cd-clear-app .cd-condition-icon {
+    display: inline-flex;
+    width: 2.2rem;
+    height: 2.2rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.8rem;
+    background: var(--cd-hero-primary-soft);
+    color: var(--cd-hero-primary);
+}
+.cd-clear-app .cd-condition-level {
+    display: block;
+    margin-top: 0.4rem;
+    height: 0.3rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #ece6dc;
+}
+.cd-clear-app .cd-condition-level-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+}
+.cd-clear-app .cd-condition-level-fill--gold {
+    background: linear-gradient(90deg, #e7d3a4, #b8924a);
+}
+.cd-clear-app .cd-condition-level-fill--violet {
+    background: linear-gradient(90deg, #b8b2dc, #6f68ad);
+}
+
+/* ---------------------------------------------------------------- Condition input form */
+.cd-clear-app .cd-measure-field {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid #e3dccf;
+    border-radius: 1rem;
+    background: #fcf9f3;
+    padding: 0.25rem 0.9rem 0.25rem 0.25rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--cd-hero-muted);
+}
+.cd-clear-app .cd-measure-field:focus-within {
+    border-color: var(--cd-hero-primary);
+    box-shadow: 0 0 0 3px rgba(111, 104, 173, 0.15);
+}
+.cd-clear-app .cd-measure-field .cd-measure-input {
+    height: 3rem;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--cd-hero-ink);
+    font-variant-numeric: tabular-nums;
+}
+.cd-clear-app .cd-measure-field .cd-measure-input:focus-visible {
+    box-shadow: none;
+}
+.cd-clear-app .cd-measure-field .cd-measure-input::placeholder {
+    color: #c9c4d8;
+    font-weight: 600;
+}
+.cd-clear-app .cd-measure-field > span {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.cd-clear-app .cd-step-button {
+    display: inline-flex;
+    width: 3rem;
+    height: 3rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e3dccf;
+    border-radius: 999px;
+    background: var(--cd-surface-solid);
+    color: var(--cd-hero-primary);
+    transition: background-color 0.15s ease;
+}
+.cd-clear-app .cd-step-button:hover {
+    background: var(--cd-hero-primary-soft);
+}
+.cd-clear-app .cd-step-button:focus-visible,
+.cd-clear-app .cd-scale button:focus-visible {
+    outline: 2px solid var(--cd-hero-primary);
+    outline-offset: 2px;
+}
+.cd-clear-app .cd-scale {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.4rem;
+}
+.cd-clear-app .cd-scale button {
+    height: 2.9rem;
+    border: 1px solid #e3dccf;
+    border-radius: 0.9rem;
+    background: var(--cd-surface-solid);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--cd-hero-muted);
+    font-variant-numeric: tabular-nums;
+    transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
+}
+.cd-clear-app .cd-scale button:hover {
+    background: var(--cd-hero-primary-soft);
+}
+.cd-clear-app .cd-scale button[aria-checked='true'] {
+    border-color: transparent;
+    background: var(--cd-hero-primary-gradient);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(111, 104, 173, 0.28);
+}
+
+/* ---------------------------------------------------------------- Routines (plan progress bar) */
+.cd-clear-app .cd-plan-progress {
+    display: block;
+    height: 0.4rem;
+    flex: 1;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #efe6d6;
+}
+.cd-clear-app .cd-plan-progress > span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #e7d3a4, #b8924a);
+    transition: width 0.3s ease;
+}
+
+/* ---------------------------------------------------------------- Session run: action bar above the bottom nav */
+.cd-clear-app .cd-session-actionbar {
+    position: fixed;
+    inset-inline: 0.75rem;
+    bottom: calc(4.6rem + env(safe-area-inset-bottom));
+    z-index: 44;
+}
+
+/* ---------------------------------------------------------------- Brand scope for dialogs (they portal outside .cd-clear-app) */
+.cd-brand {
+    --primary: #6f68ad;
+    --cd-primary: #6f68ad;
+    --cd-hero-primary: #6f68ad;
+    --cd-hero-primary-soft: #eeeaf6;
+    --cd-hero-muted: #655f79;
+    --cd-hero-ink: #211f41;
+    --cd-hero-primary-gradient: linear-gradient(
+        135deg,
+        #7a73b8 0%,
+        #565090 100%
+    );
+}
+.cd-brand .bg-primary {
+    background-image: var(--cd-hero-primary-gradient);
+}
+.cd-brand .cd-step-section,
+.cd-brand .bg-white {
+    background-color: #fdfaf4;
+}
+.cd-brand .cd-step-section {
+    border-color: #e9e2d5;
+    border-radius: 1.25rem;
+    box-shadow: 0 6px 18px rgba(37, 32, 74, 0.05);
+}
+.cd-brand .cd-step-section__num {
+    background: var(--cd-hero-primary-gradient);
+}
+.cd-brand .cd-segment,
+.cd-clear-app .cd-segment {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 0.25rem;
+    border-radius: 999px;
+    background: #eeeaf6;
+    padding: 0.25rem;
+}
+.cd-brand .cd-segment button {
+    border-radius: 999px;
+    padding: 0.55rem 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--cd-hero-muted);
+}
+.cd-brand .cd-segment button[aria-selected='true'] {
+    background: var(--cd-hero-primary-gradient);
+    color: #fff;
+    box-shadow: 0 6px 16px rgba(111, 104, 173, 0.28);
+}
+.cd-brand .cd-segment button:disabled {
+    opacity: 0.5;
+}
+
+/* ---------------------------------------------------------------- Routine editor */
+.cd-clear-app .cd-stepper {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    padding: 1rem 0.75rem 0.9rem;
+}
+.cd-clear-app .cd-stepper li {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    text-align: center;
+}
+.cd-clear-app .cd-stepper li + li::before {
+    content: '';
+    position: absolute;
+    top: 0.95rem;
+    right: 50%;
+    width: 100%;
+    height: 2px;
+    background: #e6dccb;
+    z-index: 0;
+}
+.cd-clear-app .cd-stepper li.is-done::before,
+.cd-clear-app .cd-stepper li.is-current::before {
+    background: #d4b370;
+}
+.cd-clear-app .cd-stepper-dot {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    width: 1.9rem;
+    height: 1.9rem;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #e6dccb;
+    border-radius: 999px;
+    background: var(--cd-surface-solid);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--cd-hero-muted);
+}
+.cd-clear-app .cd-stepper li.is-done .cd-stepper-dot,
+.cd-clear-app .cd-stepper li.is-current .cd-stepper-dot {
+    border-color: transparent;
+    background: linear-gradient(135deg, #e7d3a4, #b8924a);
+    color: #fff;
+}
+.cd-clear-app .cd-stepper li.is-current .cd-stepper-dot {
+    box-shadow: 0 0 0 4px rgba(212, 179, 112, 0.22);
+}
+.cd-clear-app .cd-stepper-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--cd-hero-muted);
+}
+.cd-clear-app .cd-stepper li.is-current .cd-stepper-label {
+    color: var(--cd-hero-ink);
+}
+.cd-clear-app .cd-step-index {
+    display: inline-flex;
+    width: 1.9rem;
+    height: 1.9rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #e7d3a4, #b8924a);
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+/* ---------------------------------------------------------------- Washi palette for utility-class surfaces and headings (v3) */
+.cd-clear-app .bg-white,
+.cd-clear-app .bg-cd-surface {
+    background-color: var(--cd-surface-solid);
+}
+.cd-clear-app .border-cd-line {
+    border-color: rgba(176, 156, 120, 0.25);
+}
+/* Page and card headings in Mincho like the mockup; data stays in gothic. */
+.cd-clear-app .cd-hero-heading h1,
+.cd-clear-app .cd-hero-banner h1 {
+    font-family: 'Shippori Mincho', 'Noto Serif JP', serif;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+.cd-clear-app .cd-mobile-nav a[aria-current='page'] {
+    color: #5f5899;
+}

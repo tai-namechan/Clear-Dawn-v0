@@ -153,6 +153,43 @@ class MetricRecordTest extends TestCase
             );
     }
 
+    public function test_records_index_sends_the_fatigue_trend_for_the_seven_day_window(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $fatigue = Metric::query()->where('key', 'fatigue_level')->firstOrFail();
+
+        MetricRecord::factory()->create([
+            'user_id' => $user->id,
+            'metric_id' => $fatigue->id,
+            'recorded_on' => '2026-07-05',
+            'value' => 3,
+        ]);
+        MetricRecord::factory()->create([
+            'user_id' => $user->id,
+            'metric_id' => $fatigue->id,
+            'recorded_on' => '2026-06-30',
+            'value' => 5,
+        ]);
+        MetricRecord::factory()->create([
+            'user_id' => $otherUser->id,
+            'metric_id' => $fatigue->id,
+            'recorded_on' => '2026-07-05',
+            'value' => 1,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('records.index', ['date' => '2026-07-07']))
+            ->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->component('Records/Index')
+                ->where('conditionChartSeries.fatigue_level', fn ($points) => collect($points)->count() === 1
+                    && collect($points)->first()['date'] === '2026-07-05'
+                    && collect($points)->first()['value'] === '3.00',
+                )
+            );
+    }
+
     public function test_records_index_hub_charts_are_scoped_and_windowed_to_seven_days(): void
     {
         $user = User::factory()->create();

@@ -53,7 +53,7 @@ class MetricRecordController extends Controller
         $previous = $query->handle($user, $previousOn);
         $meals = $mealsQuery->handle($user, $recordedOn);
 
-        $conditionChartKeys = ['weight', 'sleep_minutes'];
+        $conditionChartKeys = ['weight', 'sleep_minutes', 'fatigue_level'];
         $metricsByKey = Metric::query()->whereIn('key', $conditionChartKeys)->get()->keyBy('key');
         $conditionChartSeries = [];
 

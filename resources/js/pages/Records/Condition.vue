@@ -24,7 +24,6 @@ import PageSectionCard from '@/components/PageSectionCard.vue';
 import PageTabShell from '@/components/PageTabShell.vue';
 import PageViewTabs from '@/components/PageViewTabs.vue';
 import BodyStoryExportButton from '@/components/records/BodyStoryExportButton.vue';
-import DailyCheckinPanel from '@/components/routine/DailyCheckinPanel.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,13 +36,13 @@ import {
     chartLineSeriesStyle,
     chartSplitLine,
 } from '@/lib/chartTheme';
+import { toFormValue } from '@/lib/conditionForm.mjs';
 import {
     formatSleepDelta,
     formatSleepMinutes,
     metricLabel,
 } from '@/lib/metricLabels';
 import type { ChartPoint, DailyMetricEntry } from '@/types/routine';
-import type { CheckinFormState, TodayOpsCheckin } from '@/types/todayOps';
 
 type BodyMeasurementSummary = {
     parse_status?: string | null;
@@ -62,12 +61,10 @@ interface Props {
     previousMetrics: DailyMetricEntry[];
     chartSeries: Record<string, ChartPoint[]>;
     bodyMeasurement?: BodyMeasurementSummary | null;
-    checkin?: TodayOpsCheckin | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     bodyMeasurement: null,
-    checkin: null,
 });
 
 const importForm = useForm({
@@ -128,7 +125,7 @@ const values = ref<Record<string, string>>(
     Object.fromEntries(
         props.metrics.map((entry) => [
             entry.metric.key,
-            entry.record?.value != null ? String(entry.record.value) : '',
+            toFormValue(entry.record?.value),
         ]),
     ),
 );
@@ -145,25 +142,13 @@ const notes = ref<Record<string, string>>(
 const reflection = ref('');
 const saving = ref(false);
 const saveMessage = ref<string | null>(null);
-const savingCheckin = ref(false);
-const checkinMessage = ref<string | null>(null);
-
-const checkinForm = ref<CheckinFormState>({
-    sleep_quality: props.checkin?.sleep_quality ?? 5,
-    fatigue: props.checkin?.fatigue ?? 5,
-    muscle_soreness: props.checkin?.muscle_soreness ?? 5,
-    stress: props.checkin?.stress ?? 5,
-    mood: props.checkin?.mood ?? 5,
-    readiness_self: props.checkin?.readiness_self ?? 5,
-});
-
 watch(
     () => props.metrics,
     (metrics) => {
         values.value = Object.fromEntries(
             metrics.map((entry) => [
                 entry.metric.key,
-                entry.record?.value != null ? String(entry.record.value) : '',
+                toFormValue(entry.record?.value),
             ]),
         );
         notes.value = Object.fromEntries(
@@ -219,24 +204,7 @@ function formatBodyNumber(
     })}${suffix}`;
 }
 
-watch(
-    () => props.checkin,
-    (checkin) => {
-        checkinForm.value = {
-            sleep_quality: checkin?.sleep_quality ?? 5,
-            fatigue: checkin?.fatigue ?? 5,
-            muscle_soreness: checkin?.muscle_soreness ?? 5,
-            stress: checkin?.stress ?? 5,
-            mood: checkin?.mood ?? 5,
-            readiness_self: checkin?.readiness_self ?? 5,
-        };
-    },
-);
-
-function metricValue(
-    list: DailyMetricEntry[],
-    key: string,
-): number | null {
+function metricValue(list: DailyMetricEntry[], key: string): number | null {
     const entry = list.find((item) => item.metric.key === key);
 
     if (!entry?.record?.value) {
@@ -338,7 +306,9 @@ function conditionScore(list: DailyMetricEntry[]): number | null {
         return null;
     }
 
-    return Math.round(parts.reduce((sum, part) => sum + part, 0) / parts.length);
+    return Math.round(
+        parts.reduce((sum, part) => sum + part, 0) / parts.length,
+    );
 }
 
 const overall = computed(() => {
@@ -399,7 +369,7 @@ const statusCards = computed(() =>
 );
 
 const hasAnyPrimaryInput = computed(() =>
-    statusCards.value.some((card) => card.filled) || props.checkin != null,
+    statusCards.value.some((card) => card.filled),
 );
 
 const hasChartData = computed(() =>
@@ -439,6 +409,40 @@ const sleepMinutesPart = computed({
         values.value.sleep_minutes = String(h * 60 + m);
     },
 });
+
+/** What 1 and 5 mean on the 1–5 scales, shown under the buttons. */
+const scaleHints: Record<string, [string, string]> = {
+    pain_level: ['なし', '強い'],
+    fatigue_level: ['元気', 'とても疲れている'],
+};
+
+const openNotes = ref<string[]>([]);
+
+function openNote(key: string): void {
+    if (!openNotes.value.includes(key)) {
+        openNotes.value = [...openNotes.value, key];
+    }
+}
+
+/** Yesterday's value as a hint next to each field ("昨日 62.6 kg"). */
+function yesterdayLabel(key: string): string | null {
+    const value = metricValue(props.previousMetrics, key);
+
+    if (value === null) {
+        return null;
+    }
+
+    const unit =
+        props.metrics.find((entry) => entry.metric.key === key)?.metric.unit ??
+        '';
+    const showUnit = !['sleep_minutes', 'pain_level', 'fatigue_level'].includes(
+        key,
+    );
+
+    return showUnit && unit
+        ? `${formatDisplay(key, value)} ${unit}`
+        : formatDisplay(key, value);
+}
 
 function stepValue(key: string, delta: number, step = 1): void {
     const current = Number(values.value[key] || 0);
@@ -522,9 +526,7 @@ const chartOption = computed<EChartsCoreOption>(() => {
                 data: dates.map((date) => weightMap.get(date) ?? null),
                 tooltip: {
                     valueFormatter: (value: unknown) =>
-                        value == null || value === ''
-                            ? '—'
-                            : `${value} kg`,
+                        value == null || value === '' ? '—' : `${value} kg`,
                 },
             },
             {
@@ -536,9 +538,7 @@ const chartOption = computed<EChartsCoreOption>(() => {
                 data: dates.map((date) => sleepHoursMap.get(date) ?? null),
                 tooltip: {
                     valueFormatter: (value: unknown) =>
-                        value == null || value === ''
-                            ? '—'
-                            : `${value} 時間`,
+                        value == null || value === '' ? '—' : `${value} 時間`,
                 },
             },
             {
@@ -550,35 +550,12 @@ const chartOption = computed<EChartsCoreOption>(() => {
                 data: dates.map((date) => pitchMap.get(date) ?? null),
                 tooltip: {
                     valueFormatter: (value: unknown) =>
-                        value == null || value === ''
-                            ? '—'
-                            : `${value} km/h`,
+                        value == null || value === '' ? '—' : `${value} km/h`,
                 },
             },
         ],
     };
 });
-
-async function saveCheckin(): Promise<void> {
-    savingCheckin.value = true;
-    checkinMessage.value = null;
-
-    try {
-        await apiFetch('/today/checkin', {
-            method: 'PUT',
-            body: JSON.stringify({
-                checked_on: props.date,
-                ...checkinForm.value,
-            }),
-        });
-        checkinMessage.value = 'チェックインを保存しました。';
-        await router.reload({ only: ['checkin'] });
-    } catch {
-        checkinMessage.value = 'チェックインの保存に失敗しました。';
-    } finally {
-        savingCheckin.value = false;
-    }
-}
 
 async function saveAll(): Promise<void> {
     saving.value = true;
@@ -620,7 +597,7 @@ async function saveAll(): Promise<void> {
 
         saveMessage.value = '保存しました。';
         router.reload({
-            only: ['metrics', 'previousMetrics', 'chartSeries', 'date', 'checkin'],
+            only: ['metrics', 'previousMetrics', 'chartSeries', 'date'],
         });
     } catch {
         saveMessage.value = '保存に失敗しました。';
@@ -634,7 +611,9 @@ async function saveAll(): Promise<void> {
     <Head title="コンディション" />
 
     <div class="flex h-full flex-1 flex-col rounded-xl p-4 md:px-6 md:pb-6">
-        <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 md:gap-5">
+        <div
+            class="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 md:gap-5"
+        >
             <PageTabShell
                 title="コンディション"
                 subtitle="今日の入力と、過去の推移を分けて見ます"
@@ -651,7 +630,6 @@ async function saveAll(): Promise<void> {
                             'previousMetrics',
                             'chartSeries',
                             'date',
-                            'checkin',
                         ]"
                     />
                 </template>
@@ -686,37 +664,18 @@ async function saveAll(): Promise<void> {
             </PageTabShell>
 
             <!-- 今日（二次ブロック） -->
-            <div
-                v-show="activeTab === 'today'"
-                class="flex flex-col gap-4"
-            >
-                <DailyCheckinPanel
-                    v-model="checkinForm"
-                    :saving="savingCheckin"
-                    :has-existing="checkin != null"
-                    @save="saveCheckin"
-                />
-                <p
-                    v-if="checkinMessage"
-                    class="font-sans text-sm"
-                    :class="
-                        checkinMessage.includes('失敗')
-                            ? 'text-destructive'
-                            : 'text-cd-moss'
-                    "
-                >
-                    {{ checkinMessage }}
-                </p>
-
+            <div v-show="activeTab === 'today'" class="flex flex-col gap-4">
                 <PageSectionCard
                     padding="none"
                     aria-label="今日のコンディションを記録"
                 >
                     <div
-                        class="flex items-start justify-between gap-3 border-b border-cd-line px-5 py-4"
+                        class="flex flex-col gap-3 border-b border-cd-line px-5 py-4 sm:flex-row sm:items-start sm:justify-between"
                     >
                         <div>
-                            <h2 class="font-sans text-base font-semibold text-cd-ink">
+                            <h2
+                                class="font-sans text-base font-semibold text-cd-ink"
+                            >
                                 基本の測定を記録
                             </h2>
                             <p class="mt-1 font-sans text-xs text-cd-ink-muted">
@@ -730,130 +689,204 @@ async function saveAll(): Promise<void> {
                         />
                     </div>
 
-                    <ul class="grid gap-3 p-4 sm:grid-cols-2">
+                    <ul class="flex flex-col">
                         <li
                             v-for="entry in primaryMetrics"
                             :key="entry.metric.key"
-                            class="rounded-xl border border-cd-line bg-cd-surface p-4"
+                            class="border-t border-[#f0edf5] px-4 py-4 first:border-t-0 sm:px-5"
                         >
-                            <div class="flex flex-col gap-3">
-                                <div>
-                                    <Label
-                                        :for="`metric-${entry.metric.key}`"
-                                        class="font-sans text-sm font-semibold text-cd-ink"
-                                    >
-                                        {{
-                                            metricLabel(
-                                                entry.metric.key,
-                                                entry.metric.label,
-                                            )
-                                        }}
-                                        <span
-                                            class="ml-1 text-xs font-normal text-cd-ink-muted"
-                                        >({{ entry.metric.unit }})</span>
-                                    </Label>
-                                </div>
+                            <div class="flex items-center gap-3">
+                                <span
+                                    class="cd-condition-icon"
+                                    aria-hidden="true"
+                                >
+                                    <component
+                                        :is="
+                                            metricIcons[entry.metric.key] ??
+                                            Activity
+                                        "
+                                        :size="18"
+                                        :stroke-width="1.7"
+                                    />
+                                </span>
+                                <Label
+                                    :for="`metric-${entry.metric.key}`"
+                                    class="flex-1 font-sans text-[15px] font-bold text-cd-ink"
+                                >
+                                    {{
+                                        metricLabel(
+                                            entry.metric.key,
+                                            entry.metric.label,
+                                        )
+                                    }}
+                                </Label>
+                                <span
+                                    v-if="yesterdayLabel(entry.metric.key)"
+                                    class="font-sans text-xs text-cd-ink-muted tabular-nums"
+                                    >昨日
+                                    {{ yesterdayLabel(entry.metric.key) }}</span
+                                >
+                            </div>
 
-                                <template v-if="entry.metric.key === 'sleep_minutes'">
-                                    <div class="flex items-center gap-2">
+                            <div class="mt-3">
+                                <div
+                                    v-if="entry.metric.key === 'sleep_minutes'"
+                                    class="grid grid-cols-2 gap-3"
+                                >
+                                    <label class="cd-measure-field">
                                         <Input
+                                            :id="`metric-${entry.metric.key}`"
                                             v-model="sleepHours"
                                             type="text"
                                             inputmode="numeric"
-                                            placeholder="時"
-                                            class="text-center"
+                                            placeholder="7"
+                                            class="cd-measure-input"
                                         />
-                                        <span class="font-sans text-sm">時間</span>
+                                        <span>時間</span>
+                                    </label>
+                                    <label class="cd-measure-field">
                                         <Input
                                             v-model="sleepMinutesPart"
                                             type="text"
                                             inputmode="numeric"
-                                            placeholder="分"
-                                            class="text-center"
+                                            placeholder="30"
+                                            class="cd-measure-input"
+                                            aria-label="睡眠時間（分）"
                                         />
-                                        <span class="font-sans text-sm">分</span>
-                                    </div>
-                                </template>
+                                        <span>分</span>
+                                    </label>
+                                </div>
 
                                 <template
-                                    v-else-if="entry.metric.value_type === 'scale_1_5'"
+                                    v-else-if="
+                                        entry.metric.value_type === 'scale_1_5'
+                                    "
                                 >
-                                    <div class="flex flex-wrap gap-1.5">
-                                        <Button
+                                    <div
+                                        class="cd-scale"
+                                        role="radiogroup"
+                                        :aria-label="
+                                            metricLabel(
+                                                entry.metric.key,
+                                                entry.metric.label,
+                                            )
+                                        "
+                                    >
+                                        <button
                                             v-for="n in 5"
+                                            :id="
+                                                n === 1
+                                                    ? `metric-${entry.metric.key}`
+                                                    : undefined
+                                            "
                                             :key="n"
                                             type="button"
-                                            size="sm"
-                                            :variant="
-                                                values[entry.metric.key] === String(n)
-                                                    ? 'default'
-                                                    : 'outline'
+                                            role="radio"
+                                            :aria-checked="
+                                                values[entry.metric.key] ===
+                                                String(n)
                                             "
-                                            class="min-w-9 font-sans"
-                                            @click="setScale(entry.metric.key, n)"
+                                            @click="
+                                                setScale(entry.metric.key, n)
+                                            "
                                         >
                                             {{ n }}
-                                        </Button>
+                                        </button>
+                                    </div>
+                                    <div
+                                        v-if="scaleHints[entry.metric.key]"
+                                        class="mt-1.5 flex justify-between px-1 font-sans text-[11px] text-cd-ink-muted"
+                                    >
+                                        <span
+                                            >1
+                                            {{
+                                                scaleHints[entry.metric.key][0]
+                                            }}</span
+                                        >
+                                        <span
+                                            >{{
+                                                scaleHints[entry.metric.key][1]
+                                            }}
+                                            5</span
+                                        >
                                     </div>
                                 </template>
 
-                                <template v-else>
-                                    <div class="flex items-center gap-2">
-                                        <Button
-                                            type="button"
-                                            size="icon"
-                                            variant="outline"
-                                            :aria-label="`${metricLabel(entry.metric.key, entry.metric.label)} を減らす`"
-                                            @click="
-                                                stepValue(
-                                                    entry.metric.key,
-                                                    -1,
-                                                    entry.metric.value_type === 'decimal'
-                                                        ? 0.1
-                                                        : 1,
-                                                )
-                                            "
-                                        >
-                                            <Minus :size="14" :stroke-width="1.6" />
-                                        </Button>
+                                <div v-else class="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        class="cd-step-button"
+                                        :aria-label="`${metricLabel(entry.metric.key, entry.metric.label)} を減らす`"
+                                        @click="
+                                            stepValue(
+                                                entry.metric.key,
+                                                -1,
+                                                entry.metric.value_type ===
+                                                    'decimal'
+                                                    ? 0.1
+                                                    : 1,
+                                            )
+                                        "
+                                    >
+                                        <Minus :size="18" :stroke-width="2" />
+                                    </button>
+                                    <label class="cd-measure-field flex-1">
                                         <Input
                                             :id="`metric-${entry.metric.key}`"
                                             v-model="values[entry.metric.key]"
                                             type="text"
                                             :inputmode="
-                                                entry.metric.value_type === 'decimal'
+                                                entry.metric.value_type ===
+                                                'decimal'
                                                     ? 'decimal'
                                                     : 'numeric'
                                             "
-                                            class="text-center"
-                                            :placeholder="entry.metric.unit"
+                                            class="cd-measure-input"
+                                            placeholder="—"
                                         />
-                                        <Button
-                                            type="button"
-                                            size="icon"
-                                            variant="outline"
-                                            :aria-label="`${metricLabel(entry.metric.key, entry.metric.label)} を増やす`"
-                                            @click="
-                                                stepValue(
-                                                    entry.metric.key,
-                                                    1,
-                                                    entry.metric.value_type === 'decimal'
-                                                        ? 0.1
-                                                        : 1,
-                                                )
-                                            "
-                                        >
-                                            <Plus :size="14" :stroke-width="1.6" />
-                                        </Button>
-                                    </div>
-                                </template>
+                                        <span>{{ entry.metric.unit }}</span>
+                                    </label>
+                                    <button
+                                        type="button"
+                                        class="cd-step-button"
+                                        :aria-label="`${metricLabel(entry.metric.key, entry.metric.label)} を増やす`"
+                                        @click="
+                                            stepValue(
+                                                entry.metric.key,
+                                                1,
+                                                entry.metric.value_type ===
+                                                    'decimal'
+                                                    ? 0.1
+                                                    : 1,
+                                            )
+                                        "
+                                    >
+                                        <Plus :size="18" :stroke-width="2" />
+                                    </button>
+                                </div>
+                            </div>
 
+                            <div class="mt-2.5">
                                 <Input
+                                    v-if="
+                                        openNotes.includes(entry.metric.key) ||
+                                        notes[entry.metric.key]
+                                    "
                                     v-model="notes[entry.metric.key]"
                                     type="text"
                                     placeholder="メモ（任意）"
                                     class="text-sm"
+                                    :aria-label="`${metricLabel(entry.metric.key, entry.metric.label)} のメモ`"
                                 />
+                                <button
+                                    v-else
+                                    type="button"
+                                    class="inline-flex items-center gap-1 font-sans text-xs font-semibold text-[var(--cd-hero-primary)]"
+                                    @click="openNote(entry.metric.key)"
+                                >
+                                    <Plus :size="13" :stroke-width="2" />
+                                    メモを追加
+                                </button>
                             </div>
                         </li>
                     </ul>
@@ -894,7 +927,8 @@ async function saveAll(): Promise<void> {
                                     }}
                                     <span
                                         class="ml-1 text-xs font-normal text-cd-ink-muted"
-                                    >({{ entry.metric.unit }})</span>
+                                        >({{ entry.metric.unit }})</span
+                                    >
                                 </Label>
                                 <div class="mt-3 flex items-center gap-2">
                                     <Button
@@ -905,7 +939,8 @@ async function saveAll(): Promise<void> {
                                             stepValue(
                                                 entry.metric.key,
                                                 -1,
-                                                entry.metric.value_type === 'decimal'
+                                                entry.metric.value_type ===
+                                                    'decimal'
                                                     ? 0.1
                                                     : 1,
                                             )
@@ -927,7 +962,8 @@ async function saveAll(): Promise<void> {
                                             stepValue(
                                                 entry.metric.key,
                                                 1,
-                                                entry.metric.value_type === 'decimal'
+                                                entry.metric.value_type ===
+                                                    'decimal'
                                                     ? 0.1
                                                     : 1,
                                             )
@@ -956,7 +992,8 @@ async function saveAll(): Promise<void> {
                         <Label
                             for="reflection-note"
                             class="font-sans text-sm font-semibold text-cd-ink"
-                        >今日の振り返りメモ</Label>
+                            >今日の振り返りメモ</Label
+                        >
                         <textarea
                             id="reflection-note"
                             v-model="reflection"
@@ -966,6 +1003,29 @@ async function saveAll(): Promise<void> {
                             placeholder="気づきや体調のメモ（任意）"
                         />
                     </div>
+
+                    <div class="border-t border-cd-line px-4 py-4 sm:px-5">
+                        <Button
+                            type="button"
+                            class="h-12 w-full rounded-full font-sans text-base font-bold"
+                            :disabled="saving"
+                            @click="saveAll"
+                        >
+                            記録を保存
+                            <ArrowRight :size="16" :stroke-width="1.8" />
+                        </Button>
+                        <p
+                            v-if="saveMessage"
+                            class="mt-2 text-center font-sans text-sm"
+                            :class="
+                                saveMessage.includes('失敗')
+                                    ? 'text-destructive'
+                                    : 'text-cd-moss'
+                            "
+                        >
+                            {{ saveMessage }}
+                        </p>
+                    </div>
                 </PageSectionCard>
 
                 <PageSectionCard aria-label="体組成PDFの取り込み">
@@ -973,7 +1033,9 @@ async function saveAll(): Promise<void> {
                         class="flex items-start justify-between gap-3 border-b border-cd-line px-5 py-4"
                     >
                         <div>
-                            <h2 class="font-sans text-base font-semibold text-cd-ink">
+                            <h2
+                                class="font-sans text-base font-semibold text-cd-ink"
+                            >
                                 体組成
                             </h2>
                             <p class="mt-1 font-sans text-xs text-cd-ink-muted">
@@ -998,10 +1060,10 @@ async function saveAll(): Promise<void> {
                                     bodyMeasurement.parse_status ===
                                     'needs_review'
                                 "
-                                class="sm:col-span-2 text-destructive"
+                                class="text-destructive sm:col-span-2"
                             >
-                                読み取り結果が不自然なため要確認です。グラフと Body
-                                Story には使っていません。
+                                読み取り結果が不自然なため要確認です。グラフと
+                                Body Story には使っていません。
                             </p>
                             <p>
                                 体重
@@ -1055,10 +1117,7 @@ async function saveAll(): Promise<void> {
                                 }}
                             </p>
                         </div>
-                        <p
-                            v-else
-                            class="font-sans text-sm text-cd-ink-muted"
-                        >
+                        <p v-else class="font-sans text-sm text-cd-ink-muted">
                             この日の体組成はまだ取り込まれていません
                         </p>
 
@@ -1081,11 +1140,11 @@ async function saveAll(): Promise<void> {
                                 <span
                                     class="font-sans text-sm font-medium text-cd-ink"
                                 >
-                                    {{
-                                        importForm.pdf?.name ?? 'PDFを選択'
-                                    }}
+                                    {{ importForm.pdf?.name ?? 'PDFを選択' }}
                                 </span>
-                                <span class="font-sans text-xs text-cd-ink-muted">
+                                <span
+                                    class="font-sans text-xs text-cd-ink-muted"
+                                >
                                     {{
                                         importForm.pdf
                                             ? '別のPDFに変える'
@@ -1124,30 +1183,6 @@ async function saveAll(): Promise<void> {
                         </div>
                     </div>
                 </PageSectionCard>
-
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <p
-                        v-if="saveMessage"
-                        class="font-sans text-sm"
-                        :class="
-                            saveMessage.includes('失敗')
-                                ? 'text-destructive'
-                                : 'text-cd-moss'
-                        "
-                    >
-                        {{ saveMessage }}
-                    </p>
-                    <span v-else />
-                    <Button
-                        type="button"
-                        class="font-sans tracking-[0.08em]"
-                        :disabled="saving"
-                        @click="saveAll"
-                    >
-                        記録を保存
-                        <ArrowRight :size="16" :stroke-width="1.6" />
-                    </Button>
-                </div>
 
                 <div
                     class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cd-line bg-cd-surface/80 px-4 py-3"
