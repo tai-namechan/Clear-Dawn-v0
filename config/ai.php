@@ -9,9 +9,12 @@ return [
         'version' => env('ANTHROPIC_VERSION', '2023-06-01'),
     ],
 
+    // モデルを差し替えたら pricing にも必ず対応行を足すこと。
+    // 未登録のまま使うと default レートへフォールバックし、
+    // 月次上限が実際の金額とずれる（AiCostCalculator が警告ログを出す）。
     'models' => [
         'cheap' => env('AI_MODEL_CHEAP', 'claude-haiku-4-5-20251001'),
-        'strong' => env('AI_MODEL_STRONG', 'claude-sonnet-4-6'),
+        'strong' => env('AI_MODEL_STRONG', 'claude-sonnet-5'),
     ],
 
     'pricing' => [

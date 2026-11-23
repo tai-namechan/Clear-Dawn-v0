@@ -41,9 +41,7 @@ function onLoadedMetadata(event: Event): void {
 <template>
     <div
         class="exercise-video-shell border border-cd-line shadow-sm"
-        :class="
-            orientation === 'portrait' ? 'is-portrait' : 'is-landscape'
-        "
+        :class="orientation === 'portrait' ? 'is-portrait' : 'is-landscape'"
         :data-orientation="orientation"
     >
         <div

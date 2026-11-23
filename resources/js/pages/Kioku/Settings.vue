@@ -24,9 +24,9 @@ const page = usePage();
 const flashedToken = computed(
     () =>
         props.plainToken ??
-        ((page.props.flash as { kioku_plain_token?: string } | undefined)
+        (page.props.flash as { kioku_plain_token?: string } | undefined)
             ?.kioku_plain_token ??
-            null),
+        null,
 );
 
 defineOptions({
@@ -44,9 +44,12 @@ defineOptions({
         <section
             class="rounded-2xl border border-os-line bg-os-kioku-paper p-5 shadow-[0_1px_3px_rgba(43,41,36,0.05)]"
         >
-            <h2 class="text-sm font-bold text-os-kioku">iOS Shortcut Capture</h2>
+            <h2 class="text-sm font-bold text-os-kioku">
+                iOS Shortcut Capture
+            </h2>
             <p class="mt-1 text-[12.5px] leading-relaxed text-os-sub">
-                スコープ付きトークンで Shortcut からキオクへ送れます。平文は発行時のみ表示します。
+                スコープ付きトークンで Shortcut
+                からキオクへ送れます。平文は発行時のみ表示します。
             </p>
 
             <div
@@ -59,7 +62,7 @@ defineOptions({
             <template v-else>
                 <p
                     v-if="flashedToken"
-                    class="mt-3 break-all rounded-xl border border-os-kioku/30 bg-os-kioku-bg p-3 text-[12px] text-os-ink"
+                    class="mt-3 rounded-xl border border-os-kioku/30 bg-os-kioku-bg p-3 text-[12px] break-all text-os-ink"
                     role="status"
                 >
                     新しいトークン（再表示されません）:<br />
@@ -92,7 +95,9 @@ defineOptions({
                         class="flex items-center justify-between gap-3 rounded-xl border border-os-line px-3 py-2 text-[12.5px]"
                     >
                         <div>
-                            <p class="font-bold text-os-ink">{{ token.name }}</p>
+                            <p class="font-bold text-os-ink">
+                                {{ token.name }}
+                            </p>
                             <p class="text-os-sub">
                                 {{ token.token_prefix }}… ·
                                 {{ token.revoked_at ? '失効済' : '有効' }}

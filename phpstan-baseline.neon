@@ -1,0 +1,1658 @@
+# Larastan (level 7) の既存エラーを凍結するベースライン（監査 C-5）。
+#
+# 生成時点（2026-11-23）で 382 件。大半は nullsafe.neverNull /
+# missingType.iterableValue / Money ドメインの enum と string の型不一致で、
+# 挙動のバグではなく型情報の不足である。
+#
+# ベースラインにより「新しく増えた分だけ CI が落ちる」状態にする。
+# 既存分は別 PR で段階的に減らす（docs/audit/remediation-roadmap.md Phase 6）。
+#
+# 生成・更新は次のコマンドで行う。手で編集しないこと。
+#
+#     vendor/bin/phpstan analyse --generate-baseline
+#
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Console/Commands/ReconcileAiUsageCommand.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Domain/Kioku/Audio/AudioDurationProbe.php
+
+		-
+			message: '#^Parameter \#2 \$length of function fread expects int\<1, max\>, int\<0, 16\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Domain/Kioku/Audio/AudioDurationProbe.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 1
+			path: app/Domain/Kioku/Services/CleanupUserKiokuAudioService.php
+
+		-
+			message: '#^Property App\\Domain\\Kioku\\Models\\KiokuConciergeSchedule\:\:\$next_delivery_at \(Illuminate\\Support\\Carbon\|null\) does not accept Carbon\\CarbonImmutable\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Domain/Kioku/Services/KiokuConciergePilotService.php
+
+		-
+			message: '#^Parameter \#2 \$data of function hash expects string, string\|false given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Domain/Kioku/Services/KiokuContextBuilder.php
+
+		-
+			message: '#^Method App\\Domain\\Kioku\\Services\\RelatedMemoryService\:\:titleWords\(\) should return Illuminate\\Support\\Collection\<int, string\> but returns Illuminate\\Support\\Collection\<int, lowercase\-string&non\-falsy\-string\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Domain/Kioku/Services/RelatedMemoryService.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/CleanupUserYoyuMoneyFilesService.php
+
+		-
+			message: '#^Offset ''certainty'' on array\{direction\: string, amount_minor\: int, certainty\: string, status\: string, due_on\: string, kind\?\: string, remaining_minor\?\: int\|null, category_is_essential\?\: bool\|null\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: app/Domain/Yoyu/Money/Services/MarginCalculator.php
+
+		-
+			message: '#^Offset ''direction'' on array\{direction\: string, amount_minor\: int, certainty\: string, status\: string, due_on\: string, kind\?\: string, remaining_minor\?\: int\|null, category_is_essential\?\: bool\|null\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: app/Domain/Yoyu/Money/Services/MarginCalculator.php
+
+		-
+			message: '#^Offset ''due_on'' on array\{direction\: string, amount_minor\: int, certainty\: string, status\: string, due_on\: string, kind\?\: string, remaining_minor\?\: int\|null, category_is_essential\?\: bool\|null\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 3
+			path: app/Domain/Yoyu/Money/Services/MarginCalculator.php
+
+		-
+			message: '#^Offset ''status'' on array\{direction\: string, amount_minor\: int, certainty\: string, status\: string, due_on\: string, kind\?\: string, remaining_minor\?\: int\|null, category_is_essential\?\: bool\|null\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: app/Domain/Yoyu/Money/Services/MarginCalculator.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyAccountService.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments string, array\{App\\Domain\\Yoyu\\Money\\Enums\\MoneyTransactionKind\:\:Purchase, App\\Domain\\Yoyu\\Money\\Enums\\MoneyTransactionKind\:\:Fee, App\\Domain\\Yoyu\\Money\\Enums\\MoneyTransactionKind\:\:Interest\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyAnalysisQuery.php
+
+		-
+			message: '#^Cannot call method toDateString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyAnalysisQuery.php
+
+		-
+			message: '#^Method App\\Domain\\Yoyu\\Money\\Services\\MoneyAnalysisQuery\:\:analyze\(\) should return array\{from\: string, to\: string, total_spend_minor\: string, monthly\: list\<array\{year_month\: string, amount_minor\: string\}\>, by_category\: list\<array\{category_id\: string\|null, amount_minor\: string\}\>, by_counterparty\: list\<array\{counterparty_id\: string\|null, amount_minor\: string\}\>\} but returns array\{from\: string, to\: string, total_spend_minor\: string, monthly\: list\<array\{year_month\: non\-falsy\-string, amount_minor\: string\}\>, by_category\: list\<array\{category_id\?\: string\|null, counterparty_id\?\: string\|null, amount_minor\: string\}\>, by_counterparty\: list\<array\{category_id\?\: string\|null, counterparty_id\?\: string\|null, amount_minor\: string\}\>\}\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyAnalysisQuery.php
+
+		-
+			message: '#^Method App\\Domain\\Yoyu\\Money\\Services\\MoneyAnalysisQuery\:\:mapKeyedAmounts\(\) should return list\<array\{category_id\?\: string\|null, counterparty_id\?\: string\|null, amount_minor\: string\}\> but returns list\<non\-empty\-array\<string, string\|null\>\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyAnalysisQuery.php
+
+		-
+			message: '#^Result of \|\| is always false\.$#'
+			identifier: booleanOr.alwaysFalse
+			count: 3
+			path: app/Domain/Yoyu/Money/Services/MoneyAnalysisQuery.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 3
+			path: app/Domain/Yoyu/Money/Services/MoneyAnalysisQuery.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyTransactionKind\:\:Adjustment will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyAnalysisQuery.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyTransactionKind\:\:CardPayment will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyAnalysisQuery.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyTransactionKind\:\:Income will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyAnalysisQuery.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyTransactionKind\:\:LoanPayment will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyAnalysisQuery.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyTransactionKind\:\:Refund will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyAnalysisQuery.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyTransactionKind\:\:Transfer will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyAnalysisQuery.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyAuditService.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments string, array\{App\\Domain\\Yoyu\\Money\\Enums\\MoneyCashflowStatus\:\:Settled, App\\Domain\\Yoyu\\Money\\Enums\\MoneyCashflowStatus\:\:Canceled, App\\Domain\\Yoyu\\Money\\Enums\\MoneyCashflowStatus\:\:Deferred\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCardService.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCardService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Models\\MoneyCardStatement\:\:\$status \(string\) does not accept App\\Domain\\Yoyu\\Money\\Enums\\MoneyCardStatementStatus\:\:Superseded\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCardService.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments string, array\{App\\Domain\\Yoyu\\Money\\Enums\\MoneyCashflowStatus\:\:Settled, App\\Domain\\Yoyu\\Money\\Enums\\MoneyCashflowStatus\:\:Canceled, App\\Domain\\Yoyu\\Money\\Enums\\MoneyCashflowStatus\:\:Deferred\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 2
+			path: app/Domain/Yoyu/Money/Services/MoneyCashflowService.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 10
+			path: app/Domain/Yoyu/Money/Services/MoneyCashflowService.php
+
+		-
+			message: '#^Cannot call method toDateString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Domain/Yoyu/Money/Services/MoneyCashflowService.php
+
+		-
+			message: '#^Match arm comparison between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyCashflowKind\:\:CardStatement is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCashflowService.php
+
+		-
+			message: '#^Match arm comparison between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyCashflowKind\:\:Income is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCashflowService.php
+
+		-
+			message: '#^Match arm comparison between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyCashflowKind\:\:LoanPayment is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCashflowService.php
+
+		-
+			message: '#^Match arm comparison between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyCashflowKind\:\:Transfer is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCashflowService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Models\\MoneyCashflow\:\:\$status \(string\) does not accept App\\Domain\\Yoyu\\Money\\Enums\\MoneyCashflowStatus\:\:Canceled\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCashflowService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Models\\MoneyCashflow\:\:\$status \(string\) does not accept App\\Domain\\Yoyu\\Money\\Enums\\MoneyCashflowStatus\:\:Deferred\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCashflowService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Models\\MoneyCashflow\:\:\$status \(string\) does not accept App\\Domain\\Yoyu\\Money\\Enums\\MoneyCashflowStatus\:\:PartiallySettled\|App\\Domain\\Yoyu\\Money\\Enums\\MoneyCashflowStatus\:\:Settled\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCashflowService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyCashflowStatus\:\:Settled will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: app/Domain/Yoyu/Money/Services/MoneyCashflowService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyDirection\:\:Inflow will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCashflowService.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type string\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Domain/Yoyu/Money/Services/MoneyCashflowService.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type App\\Domain\\Yoyu\\Money\\Models\\MoneyTransaction\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCashflowService.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments string, array\{App\\Domain\\Yoyu\\Money\\Enums\\MoneyImportStatus\:\:Uploaded, App\\Domain\\Yoyu\\Money\\Enums\\MoneyImportStatus\:\:Mapped, App\\Domain\\Yoyu\\Money\\Enums\\MoneyImportStatus\:\:Previewed\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCsvImportService.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCsvImportService.php
+
+		-
+			message: '#^Constant App\\Domain\\Yoyu\\Money\\Services\\MoneyCsvImportService\:\:PREVIEW_LIMIT is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCsvImportService.php
+
+		-
+			message: '#^Generator expects value type array\{row_number\: int, raw\: array\<string, string\>, cells\: array\<string, string\>\}, array\{row_number\: int\<1, max\>, raw\: array\<int\|non\-empty\-string, string\>, cells\: array\<int\|non\-empty\-string, string\>\} given\.$#'
+			identifier: generator.valueType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCsvImportService.php
+
+		-
+			message: '#^Method App\\Domain\\Yoyu\\Money\\Services\\MoneyCsvImportService\:\:readCsvRows\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCsvImportService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Models\\MoneyImport\:\:\$status \(string\) does not accept App\\Domain\\Yoyu\\Money\\Enums\\MoneyImportStatus\:\:Completed\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCsvImportService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Models\\MoneyImportRow\:\:\$status \(string\) does not accept App\\Domain\\Yoyu\\Money\\Enums\\MoneyImportRowStatus\:\:Imported\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCsvImportService.php
+
+		-
+			message: '#^Result of && is always true\.$#'
+			identifier: booleanAnd.alwaysTrue
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCsvImportService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyImportStatus\:\:Completed will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCsvImportService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyImportStatus\:\:Failed will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCsvImportService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyImportStatus\:\:Previewed will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCsvImportService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and false will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCsvImportService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyImportStatus\:\:Completed will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCsvImportService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyImportStatus\:\:RolledBack will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyCsvImportService.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 3
+			path: app/Domain/Yoyu/Money/Services/MoneyCsvImportService.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 3
+			path: app/Domain/Yoyu/Money/Services/MoneyDecisionService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Models\\MoneyDecision\:\:\$actual_effect_payload \(string\|null\) does not accept array\<string, mixed\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyDecisionService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Models\\MoneyDecision\:\:\$status \(string\) does not accept App\\Domain\\Yoyu\\Money\\Enums\\MoneyDecisionStatus\:\:Reviewed\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyDecisionService.php
+
+		-
+			message: '#^Method App\\Domain\\Yoyu\\Money\\Services\\MoneyExportService\:\:exportAccounts\(\) should return list\<array\<string, mixed\>\> but returns array\<int, array\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyExportService.php
+
+		-
+			message: '#^Method App\\Domain\\Yoyu\\Money\\Services\\MoneyExportService\:\:exportCards\(\) should return list\<array\<string, mixed\>\> but returns array\<int, array\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyExportService.php
+
+		-
+			message: '#^Method App\\Domain\\Yoyu\\Money\\Services\\MoneyExportService\:\:exportCashflows\(\) should return list\<array\<string, mixed\>\> but returns array\<int, array\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyExportService.php
+
+		-
+			message: '#^Method App\\Domain\\Yoyu\\Money\\Services\\MoneyExportService\:\:exportCategories\(\) should return list\<array\<string, mixed\>\> but returns array\<int, array\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyExportService.php
+
+		-
+			message: '#^Method App\\Domain\\Yoyu\\Money\\Services\\MoneyExportService\:\:exportDecisions\(\) should return list\<array\<string, mixed\>\> but returns array\<int, array\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyExportService.php
+
+		-
+			message: '#^Method App\\Domain\\Yoyu\\Money\\Services\\MoneyExportService\:\:exportLoans\(\) should return list\<array\<string, mixed\>\> but returns array\<int, array\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyExportService.php
+
+		-
+			message: '#^Method App\\Domain\\Yoyu\\Money\\Services\\MoneyExportService\:\:exportSettings\(\) should return list\<array\<string, mixed\>\> but returns array\<int, array\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyExportService.php
+
+		-
+			message: '#^Method App\\Domain\\Yoyu\\Money\\Services\\MoneyExportService\:\:exportTransactions\(\) should return list\<array\<string, mixed\>\> but returns array\<int, array\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyExportService.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 3
+			path: app/Domain/Yoyu/Money/Services/MoneyLoanService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Models\\MoneyLoan\:\:\$status \(string\) does not accept App\\Domain\\Yoyu\\Money\\Enums\\MoneyLoanStatus\:\:PaidOff\.$#'
+			identifier: assign.propertyType
+			count: 2
+			path: app/Domain/Yoyu/Money/Services/MoneyLoanService.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 9
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Cannot call method toDateString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 5
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Comparison operation "\<" between 0 and 5 is always true\.$#'
+			identifier: smaller.alwaysTrue
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Empty array passed to foreach\.$#'
+			identifier: foreach.emptyArray
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 6
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Result of \|\| is always true\.$#'
+			identifier: booleanOr.alwaysTrue
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyDirection\:\:Outflow will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 2
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between Carbon\\CarbonImmutable and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between null and null will always evaluate to true\.$#'
+			identifier: identical.alwaysTrue
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyCertainty\:\:Confirmed will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 3
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyCertainty\:\:Expected will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 3
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyDirection\:\:Inflow will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 3
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyDirection\:\:Outflow will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 5
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\CarbonImmutable\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type string\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 5
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>is_essential" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyProjectionQuery.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments string, array\{App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationStatus\:\:Applied, App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationStatus\:\:Discarded\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments string, array\{App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationStatus\:\:Draft, App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationStatus\:\:Calculated, App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationStatus\:\:Stale\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\{\} will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 8
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Cannot assign offset ''stale_fingerprint'' to array\|string\.$#'
+			identifier: offsetAssign.dimType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Cannot call method toDateString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Comparison operation "\>" between 0 and 0 is always false\.$#'
+			identifier: greater.alwaysFalse
+			count: 3
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Match arm comparison between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationActionType\:\:AddPurchase is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Match arm comparison between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationActionType\:\:AdjustIncome is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Match arm comparison between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationActionType\:\:CapCategory is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Match arm comparison between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationActionType\:\:ChangeCardPayment is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Match arm comparison between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationActionType\:\:DeferCashflow is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Match arm comparison between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationActionType\:\:PauseRecurring is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Match arm comparison between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationActionType\:\:PrepayLoan is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Match expression does not handle remaining value\: string$#'
+			identifier: match.unhandled
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Offset ''amount_minor'' on array\{\}\|string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Offset ''amount_minor'' on string\|null on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Offset ''cap_minor'' on string\|null on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Offset ''cashflow_ids'' on string\|null on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Offset ''certainty'' on array\{\}\|string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Offset ''due_on'' on array\{\}\|string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Offset ''due_on'' on string\|null on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Offset ''fee_estimate_minor'' on \*NEVER\* on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Offset ''fee_estimate_minor'' on array\{\}\|string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Offset ''fingerprint'' on array\{\}\|string in isset\(\) does not exist\.$#'
+			identifier: isset.offset
+			count: 2
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Offset ''future_monthly_minor'' on \*NEVER\* on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Offset ''future_monthly_minor'' on array\{\}\|string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Offset ''months'' on \*NEVER\* on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Offset ''months'' on array\{\}\|string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Offset ''new_due_on'' on array\{\}\|string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Offset ''this_month…'' on \*NEVER\* on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Offset ''this_month…'' on array\{\}\|string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Parameter \$cashflows of method App\\Domain\\Yoyu\\Money\\Services\\MarginCalculator\:\:calculate\(\) expects list\<array\{direction\: string, amount_minor\: int, certainty\: string, status\: string, due_on\: string, kind\?\: string, remaining_minor\?\: int\|null, category_is_essential\?\: bool\|null\}\>, list\<array\<string, mixed\>\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Models\\MoneySimulation\:\:\$assumptions_payload \(string\|null\) does not accept array\<string, string\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Models\\MoneySimulation\:\:\$result_payload \(string\|null\) does not accept array\<string, array\<int\<0, max\>\|string, array\<string, mixed\>\>\|string\|null\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Models\\MoneySimulation\:\:\$status \(string\) does not accept App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationStatus\:\:Calculated\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Models\\MoneySimulation\:\:\$status \(string\) does not accept App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationStatus\:\:Discarded\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Models\\MoneySimulation\:\:\$status \(string\) does not accept App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationStatus\:\:Stale\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Models\\MoneySimulationAction\:\:\$effect_payload \(string\|null\) does not accept array\<string, mixed\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Services\\MoneySimulationService\:\:\$cashflowService is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Services\\MoneySimulationService\:\:\$decisionService is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 4
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between array\{\} and array\{\} will always evaluate to false\.$#'
+			identifier: notIdentical.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between null and null will always evaluate to false\.$#'
+			identifier: notIdentical.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationStatus\:\:Calculated will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationActionType\:\:ChangeCardPayment will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationStatus\:\:Applied will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationStatus\:\:Stale will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 2
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type string\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>is_essential" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneySimulationService.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 4
+			path: app/Domain/Yoyu/Money/Services/MoneyTransactionService.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on null\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyTransactionService.php
+
+		-
+			message: '#^Property App\\Domain\\Yoyu\\Money\\Models\\MoneyTransaction\:\:\$status \(string\) does not accept App\\Domain\\Yoyu\\Money\\Enums\\MoneyTransactionStatus\:\:Voided\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyTransactionService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyTransactionStatus\:\:Voided will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/MoneyTransactionService.php
+
+		-
+			message: '#^Cannot call method toDateString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 4
+			path: app/Domain/Yoyu/Money/Services/RecurringCashflowGenerator.php
+
+		-
+			message: '#^Match arm comparison between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyRecurringFrequency\:\:Weekly is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/RecurringCashflowGenerator.php
+
+		-
+			message: '#^Match arm comparison between string and App\\Domain\\Yoyu\\Money\\Enums\\MoneyRecurringFrequency\:\:Yearly is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Services/RecurringCashflowGenerator.php
+
+		-
+			message: '#^Parameter \#1 \$num1 of function bcadd expects numeric\-string, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Domain/Yoyu/Money/Support/MoneyAmount.php
+
+		-
+			message: '#^Parameter \#1 \$num1 of function bccomp expects numeric\-string, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Domain/Yoyu/Money/Support/MoneyAmount.php
+
+		-
+			message: '#^Parameter \#1 \$num1 of function bcsub expects numeric\-string, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Domain/Yoyu/Money/Support/MoneyAmount.php
+
+		-
+			message: '#^Parameter \#2 \$num2 of function bcadd expects numeric\-string, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Domain/Yoyu/Money/Support/MoneyAmount.php
+
+		-
+			message: '#^Parameter \#2 \$num2 of function bcsub expects numeric\-string, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Domain/Yoyu/Money/Support/MoneyAmount.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between Carbon\\CarbonImmutable\|null and false will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Domain/Yoyu/Money/Support/MoneyCsvNormalizer.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between Carbon\\CarbonImmutable\|null and false will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Domain/Yoyu/Money/Support/MoneyCsvNormalizer.php
+
+		-
+			message: '#^Variable \$value on left side of \?\? always exists and is always null\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: app/Domain/Yoyu/Money/Support/MoneyCsvNormalizer.php
+
+		-
+			message: '#^Parameter \#3 \$attributes of method App\\Services\\ConfirmFoodLookupAndCreateMealService\:\:handle\(\) expects array\{name\: string, serving_label\: string, kcal\: float\|int\|string, protein_g\: float\|int\|string, fat_g\: float\|int\|string, carb_g\: float\|int\|string, barcode\?\: string\|null, brand\?\: string\|null, \.\.\.\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/FoodBarcodeLookupController.php
+
+		-
+			message: '#^Parameter \#3 \$attributes of method App\\Services\\ConfirmFoodLookupService\:\:handle\(\) expects array\{name\: string, serving_label\: string, kcal\: float\|int\|string, protein_g\: float\|int\|string, fat_g\: float\|int\|string, carb_g\: float\|int\|string, barcode\?\: string\|null, brand\?\: string\|null, \.\.\.\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/FoodBarcodeLookupController.php
+
+		-
+			message: '#^Parameter \#2 \$data of method App\\Services\\CreateManualFoodAndMealService\:\:handle\(\) expects array\{save_mode\: string, name\: string, serving_label\?\: string\|null, kcal\: float\|int\|string, protein_g\: float\|int\|string, fat_g\: float\|int\|string, carb_g\: float\|int\|string, barcode\?\: string\|null, \.\.\.\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/FoodItemController.php
+
+		-
+			message: '#^Parameter \#2 \$attributes of method App\\Services\\ReviseProgramVersionService\:\:handle\(\) expects array\{change_summary\: string, change_reason\: string, starts_on\?\: string\|null, ends_on\?\: string\|null\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/ProgramController.php
+
+		-
+			message: '#^Parameter \#2 \$attributes of method App\\Services\\ApplyTodayPlanAdjustmentService\:\:handle\(\) expects array\{action\: ''adjust''\|''execute''\|''lighten''\|''skip'', reason\: string, note\?\: string\|null\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/ProgramPlanController.php
+
+		-
+			message: '#^Parameter \#3 \$attributes of method App\\Services\\DecideRecommendationService\:\:handle\(\) expects array\{action_key\: string, reason\?\: string\|null, recommendation_option_id\?\: string\|null\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/RecommendationDecisionController.php
+
+		-
+			message: '#^Offset ''food'' might not exist on array\{status\: ''hit'', food\?\: App\\Models\\FoodItem, lookup\?\: App\\Models\\FoodLookupRequest\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: app/Http/Controllers/RestaurantLookupController.php
+
+		-
+			message: '#^Offset ''lookup'' might not exist on array\{status\: string, food\?\: App\\Models\\FoodItem, lookup\?\: App\\Models\\FoodLookupRequest\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: app/Http/Controllers/RestaurantLookupController.php
+
+		-
+			message: '#^Parameter \#2 \$attributes of method App\\Services\\CreateRoutinePlanStepService\:\:handle\(\) expects array\{routine_item_id\: string, title\?\: string\|null, video_id\?\: string\|null, purpose\?\: App\\Enums\\StepPurpose\|string\|null, target_load\?\: float\|string\|null, load_unit\?\: string\|null, target_amount\?\: float\|string\|null, amount_unit\?\: string\|null, \.\.\.\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/RoutinePlanStepController.php
+
+		-
+			message: '#^Parameter \#2 \$attributes of method App\\Services\\CreateRoutineStepService\:\:handle\(\) expects array\{routine_item_id\: string, title\?\: string\|null, video_id\?\: string\|null, purpose\?\: App\\Enums\\StepPurpose\|string\|null, target_load\?\: float\|string\|null, load_unit\?\: string\|null, target_amount\?\: float\|string\|null, amount_unit\?\: string\|null, \.\.\.\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/RoutineStepController.php
+
+		-
+			message: '#^Parameter \#3 \$attributes of method App\\Services\\RecordSymptomObservationService\:\:handle\(\) expects array\{body_region\: string, symptom_kind\: string, severity\: int, is_new\?\: bool, note\?\: string\|null\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/SymptomObservationController.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyAccountController.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyAccountController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneyAccount\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyAccountController.php
+
+		-
+			message: '#^Parameter \#2 \$data of method App\\Domain\\Yoyu\\Money\\Services\\MoneyAccountService\:\:create\(\) expects array\{name\: string, type\: App\\Domain\\Yoyu\\Money\\Enums\\MoneyAccountType\|string, currency_code\?\: string, current_balance_minor\?\: int, available_balance_minor\?\: int\|null, balance_as_of\?\: DateTimeInterface\|string\|null, identifier_last4\?\: string\|null, memo\?\: string\|null, \.\.\.\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyAccountController.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneyAccount\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyAccountController.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type string\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyAccountController.php
+
+		-
+			message: '#^Parameter \#3 \$data of method App\\Domain\\Yoyu\\Money\\Services\\MoneyCardService\:\:createOrReviseStatement\(\) expects array\{period_start\: string, period_end\: string, due_on\: string, amount_minor\: int, closed_on\?\: string\|null, status\?\: App\\Domain\\Yoyu\\Money\\Enums\\MoneyCardStatementStatus\|string, source\?\: App\\Domain\\Yoyu\\Money\\Enums\\MoneyTransactionSource\|string\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyCardController.php
+
+		-
+			message: '#^Parameter \#3 \$data of method App\\Domain\\Yoyu\\Money\\Services\\MoneyCardService\:\:updateSnapshot\(\) expects array\{limit_minor\?\: int\|null, available_minor\?\: int\|null, current_statement_minor\?\: int\|null, unconfirmed_minor\?\: int\|null, revolving_balance_minor\?\: int\|null, installment_balance_minor\?\: int\|null, minimum_payment_minor\?\: int\|null, observed_at\?\: DateTimeInterface\|string\|null, \.\.\.\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyCardController.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 6
+			path: app/Http/Controllers/Yoyu/Money/MoneyCashflowController.php
+
+		-
+			message: '#^Cannot call method toDateString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyCashflowController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneyCashflow\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyCashflowController.php
+
+		-
+			message: '#^Parameter \#3 \$options of method App\\Domain\\Yoyu\\Money\\Services\\MoneyCashflowService\:\:settle\(\) expects array\{amount_minor\: int, occurred_on\: string, lock_version\?\: int, account_id\?\: string\|null, create_transaction\?\: bool, update_balance\?\: bool, note\?\: string\|null\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyCashflowController.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneyCashflow\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyCashflowController.php
+
+		-
+			message: '#^Unable to resolve the template type TKey in call to function collect$#'
+			identifier: argument.templateType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyCashflowController.php
+
+		-
+			message: '#^Unable to resolve the template type TValue in call to function collect$#'
+			identifier: argument.templateType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyCashflowController.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type string\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyCashflowController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>is_essential" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyCashflowController.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyDecisionController.php
+
+		-
+			message: '#^Cannot call method toDateString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyDecisionController.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyDecisionController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneyDecision\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyDecisionController.php
+
+		-
+			message: '#^Parameter \#2 \$data of method App\\Domain\\Yoyu\\Money\\Services\\MoneyDecisionService\:\:createManual\(\) expects array\{title\: string, decided_on\?\: string\|null, status\?\: App\\Domain\\Yoyu\\Money\\Enums\\MoneyDecisionStatus\|string, simulation_id\?\: string\|null, before_payload\?\: array\<string, mixed\>\|null, expected_effect_payload\?\: array\<string, mixed\>\|null, memo\?\: string\|null\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyDecisionController.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Support\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneyDecision\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyDecisionController.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type string\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyDecisionController.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 3
+			path: app/Http/Controllers/Yoyu/Money/MoneyImportController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneyAccount\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyImportController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneyImport\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyImportController.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneyAccount\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyImportController.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneyImport\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyImportController.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: app/Http/Controllers/Yoyu/Money/MoneyLoanController.php
+
+		-
+			message: '#^Cannot call method toDateString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyLoanController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneyLoan\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyLoanController.php
+
+		-
+			message: '#^Parameter \#3 \$data of method App\\Domain\\Yoyu\\Money\\Services\\MoneyLoanService\:\:recordPayment\(\) expects array\{due_on\: string, total_minor\: int, principal_minor\?\: int\|null, interest_minor\?\: int\|null, fee_minor\?\: int\|null, create_cashflow\?\: bool, create_transaction\?\: bool, source\?\: App\\Domain\\Yoyu\\Money\\Enums\\MoneyTransactionSource\|string, \.\.\.\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyLoanController.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Support\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneyLoan\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyLoanController.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type string\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyLoanController.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 3
+			path: app/Http/Controllers/Yoyu/Money/MoneySettingsController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneyCategory\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneySettingsController.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneyCategory\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneySettingsController.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneySimulationController.php
+
+		-
+			message: '#^Cannot call method toDateString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneySimulationController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneySimulation\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneySimulationController.php
+
+		-
+			message: '#^Parameter \#3 \$data of method App\\Domain\\Yoyu\\Money\\Services\\MoneySimulationService\:\:addAction\(\) expects array\{action_type\: App\\Domain\\Yoyu\\Money\\Enums\\MoneySimulationActionType\|string, sort_order\?\: int, target_type\?\: string\|null, target_id\?\: string\|null, params_payload\?\: array\<string, mixed\>\|null\}, array\<string, mixed\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneySimulationController.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneySimulation\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneySimulationController.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type string\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneySimulationController.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 3
+			path: app/Http/Controllers/Yoyu/Money/MoneyTransactionController.php
+
+		-
+			message: '#^Cannot call method toDateString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyTransactionController.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyTransactionController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneyTransaction\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyTransactionController.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Support\\Collection\<int,App\\Domain\\Yoyu\\Money\\Models\\MoneyTransaction\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyTransactionController.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type string\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/Yoyu/Money/MoneyTransactionController.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Illuminate\\Support\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Resources/Kioku/MemoryResource.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type App\\Enums\\RoutineSessionStepStatus\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Resources/RoutineSessionStepResource.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Illuminate\\Support\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Resources/RoutineSessionSummaryResource.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type App\\Enums\\VideoStatus\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Resources/VideoResource.php
+
+		-
+			message: '#^Call to function is_string\(\) with null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 2
+			path: app/Jobs/EstimateFoodMenuJob.php
+
+		-
+			message: '#^Constant App\\Jobs\\EstimateFoodMenuJob\:\:SYSTEM_PROMPT is unused\.$#'
+			identifier: classConstant.unused
+			count: 1
+			path: app/Jobs/EstimateFoodMenuJob.php
+
+		-
+			message: '#^Method App\\Jobs\\EstimateFoodMenuJob\:\:decodeJson\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: app/Jobs/EstimateFoodMenuJob.php
+
+		-
+			message: '#^Method App\\Jobs\\EstimateFoodMenuJob\:\:finishFound\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: app/Jobs/EstimateFoodMenuJob.php
+
+		-
+			message: '#^Method App\\Jobs\\EstimateFoodMenuJob\:\:retryOrFail\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: app/Jobs/EstimateFoodMenuJob.php
+
+		-
+			message: '#^Method App\\Jobs\\EstimateFoodMenuJob\:\:validateAndMap\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: app/Jobs/EstimateFoodMenuJob.php
+
+		-
+			message: '#^Offset ''menu_name'' on string\|null on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Jobs/EstimateFoodMenuJob.php
+
+		-
+			message: '#^Offset ''store_name'' on string\|null on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Jobs/EstimateFoodMenuJob.php
+
+		-
+			message: '#^Result of \|\| is always true\.$#'
+			identifier: booleanOr.alwaysTrue
+			count: 3
+			path: app/Jobs/EstimateFoodMenuJob.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between \*NEVER\* and '''' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: app/Jobs/EstimateFoodMenuJob.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: app/Jobs/EstimateFoodMenuJob.php
+
+		-
+			message: '#^Call to function is_array\(\) with string\|null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Jobs/EstimateFoodPhotoJob.php
+
+		-
+			message: '#^Cannot access offset ''router'' on Illuminate\\Contracts\\Foundation\\Application\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: app/Providers/FortifyServiceProvider.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments ''day''\|''week'', array\{''day'', ''week''\} and true will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Queries/GetMetricChartQuery.php
+
+		-
+			message: '#^Parameter \#1 \$expression of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\MetricRecord\>\:\:selectRaw\(\) expects literal\-string, non\-falsy\-string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Queries/GetMetricChartQuery.php
+
+		-
+			message: '#^Parameter \#1 \$value of static method Illuminate\\Database\\Connection\:\:raw\(\) expects float\|int\|literal\-string, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Queries/GetMetricChartQuery.php
+
+		-
+			message: '#^Method App\\Queries\\GetTodayOpsQuery\:\:handle\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Queries/GetTodayOpsQuery.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Support\\Collection\<int,array\<string, mixed\>\>\:\:all\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Queries/GetTodayOpsQuery.php
+
+		-
+			message: '#^Return type of call to method Illuminate\\Support\\Collection\<int,array\<string, mixed\>\>\:\:values\(\) contains unresolvable type\.$#'
+			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Queries/GetTodayOpsQuery.php
+
+		-
+			message: '#^Parameter \#2 \$ids of method App\\Queries\\GetUsualFoodItemsQuery\:\:loadFoodsInOrder\(\) expects list\<string\>, array\<mixed\> given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Queries/GetUsualFoodItemsQuery.php
+
+		-
+			message: '#^Match arm comparison between ''skip'' and ''skip'' is always true\.$#'
+			identifier: match.alwaysTrue
+			count: 1
+			path: app/Services/ApplyTodayPlanAdjustmentService.php
+
+		-
+			message: '#^Property App\\Models\\PersonalBaseline\:\:\$computed_at \(Illuminate\\Support\\Carbon\|null\) does not accept Carbon\\CarbonImmutable\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Services/ComputeDailyResourceStatesService.php
+
+		-
+			message: '#^Property App\\Models\\PersonalBaseline\:\:\$mean_value \(string\|null\) does not accept float\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Services/ComputeDailyResourceStatesService.php
+
+		-
+			message: '#^Property App\\Models\\PersonalBaseline\:\:\$stddev_value \(string\|null\) does not accept float\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Services/ComputeDailyResourceStatesService.php
+
+		-
+			message: '#^Property App\\Models\\PersonalBaseline\:\:\$window_end \(Illuminate\\Support\\Carbon\|null\) does not accept string\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Services/ComputeDailyResourceStatesService.php
+
+		-
+			message: '#^Undefined variable\: \$windowStart$#'
+			identifier: variable.undefined
+			count: 1
+			path: app/Services/ComputeDailyResourceStatesService.php
+
+		-
+			message: '#^Call to function is_array\(\) with string\|null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Services/ConfirmFoodLookupAndCreateMealService.php
+
+		-
+			message: '#^Call to function is_string\(\) with null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Services/ConfirmFoodLookupAndCreateMealService.php
+
+		-
+			message: '#^Offset ''meal_entry_id'' on array\{\} on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/ConfirmFoodLookupAndCreateMealService.php
+
+		-
+			message: '#^Property App\\Models\\FoodLookupRequest\:\:\$meta \(string\|null\) does not accept array\<string, string\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Services/ConfirmFoodLookupAndCreateMealService.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 1
+			path: app/Services/ConfirmFoodLookupAndCreateMealService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between \*NEVER\* and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Services/ConfirmFoodLookupAndCreateMealService.php
+
+		-
+			message: '#^Call to function is_array\(\) with string\|null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Services/ConfirmFoodLookupService.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: app/Services/ConfirmFoodLookupService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between float\|int\|string and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Services/CopyMealEntryService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Services/CopyMealEntryService.php
+
+		-
+			message: '#^Offset ''eaten_on'' might not exist on array\{save_mode\: string, name\: string, serving_label\?\: string\|null, kcal\: float\|int\|string, protein_g\: float\|int\|string, fat_g\: float\|int\|string, carb_g\: float\|int\|string, barcode\?\: string\|null, \.\.\.\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 2
+			path: app/Services/CreateManualFoodAndMealService.php
+
+		-
+			message: '#^Offset ''meal_type'' might not exist on array\{save_mode\: string, name\: string, serving_label\?\: string\|null, kcal\: float\|int\|string, protein_g\: float\|int\|string, fat_g\: float\|int\|string, carb_g\: float\|int\|string, barcode\?\: string\|null, \.\.\.\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 2
+			path: app/Services/CreateManualFoodAndMealService.php
+
+		-
+			message: '#^Offset ''quantity'' might not exist on array\{save_mode\: string, name\: string, serving_label\?\: string\|null, kcal\: float\|int\|string, protein_g\: float\|int\|string, fat_g\: float\|int\|string, carb_g\: float\|int\|string, barcode\?\: string\|null, \.\.\.\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: app/Services/CreateManualFoodAndMealService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/EvaluateRulesForDayService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>fixed_load" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/GenerateProgramDayPlansService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>percent_of_reference" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/GenerateProgramDayPlansService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>reps" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/GenerateProgramDayPlansService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>rpe_target" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/GenerateProgramDayPlansService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>sets" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/GenerateProgramDayPlansService.php
+
+		-
+			message: '#^Parameter \#1 \$callback of function array_map expects \(callable\(string, int\|string\)\: mixed\)\|null, Closure\(string, string\)\: non\-falsy\-string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/InstallViolinProgramService.php
+
+		-
+			message: '#^Method App\\Support\\RoutineStepDisplay\:\:fromPlanStep\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Support/RoutineStepDisplay.php
+
+		-
+			message: '#^Method App\\Support\\RoutineStepDisplay\:\:fromRoutineStep\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: app/Support/RoutineStepDisplay.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Support/RoutineStepDisplay.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Schema\\ForeignKeyDefinition\:\:comment\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: database/migrations/2026_07_17_100003_create_rule_and_recommendation_tables.php
+
+		-
+			message: '#^Access to an undefined property object\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: database/migrations/2026_07_28_100002_relabel_multi_variable_week_prescriptions.php
+
+		-
+			message: '#^Access to an undefined property object\:\:\$intent\.$#'
+			identifier: property.notFound
+			count: 3
+			path: database/migrations/2026_07_28_100002_relabel_multi_variable_week_prescriptions.php
+
+		-
+			message: '#^Access to an undefined property object\:\:\$note\.$#'
+			identifier: property.notFound
+			count: 3
+			path: database/migrations/2026_07_28_100002_relabel_multi_variable_week_prescriptions.php
+
+		-
+			message: '#^Access to an undefined property object\:\:\$program_step_item_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: database/migrations/2026_07_28_100002_relabel_multi_variable_week_prescriptions.php

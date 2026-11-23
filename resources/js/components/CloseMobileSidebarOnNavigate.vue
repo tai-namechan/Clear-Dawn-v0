@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useSidebar } from '@/components/ui/sidebar';
 import { router } from '@inertiajs/vue3';
 import { onMounted, onUnmounted } from 'vue';
+import { useSidebar } from '@/components/ui/sidebar';
 
 const { isMobile, setOpenMobile } = useSidebar();
 

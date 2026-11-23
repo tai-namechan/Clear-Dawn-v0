@@ -52,7 +52,7 @@ return [
         'team_id' => env('APPLE_TEAM_ID'),
         'private_key' => env('APPLE_PRIVATE_KEY'),
         'redirect' => env('APPLE_REDIRECT_URI', '/auth/apple/callback'),
-        'audiences' => array_values(array_filter([env('APPLE_BUNDLE_ID', 'jp.seedk.cleardawn')])),
+        'audiences' => array_filter([env('APPLE_BUNDLE_ID', 'jp.seedk.cleardawn')]),
     ],
 
     'google' => [

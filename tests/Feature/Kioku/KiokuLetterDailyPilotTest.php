@@ -155,6 +155,9 @@ class KiokuLetterDailyPilotTest extends TestCase
 
     public function test_resolve_halt_allows_generation_again_without_clearing_sensitive(): void
     {
+        // Inside the factory's default pilot window (2026-07-15 + 14 days); past it the schedule completes instead.
+        $this->travelTo(CarbonImmutable::parse('2026-07-16 10:00:00', 'Asia/Tokyo'));
+
         $user = User::factory()->create();
         $memory = $this->readyMemory($user);
         $letter = KiokuLetter::factory()->create([

@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import { Form, Head } from '@inertiajs/vue3';
+import { Form, Head, Link } from '@inertiajs/vue3';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
-import { logout } from '@/routes';
+import { dashboard, logout } from '@/routes';
 import { send } from '@/routes/verification';
 
+/**
+ * Email verification gate (docs/product/signup-policy.md). The link opens in
+ * the device browser, so the iOS app needs a way back in once it is done.
+ */
 defineOptions({
     layout: {
-        title: 'Email verification',
+        title: 'メールを確認してください',
         description:
-            'Please verify your email address by clicking on the link we just emailed to you.',
+            '登録したメールアドレスに確認用のリンクを送りました。リンクを開くと使い始められます。',
     },
 });
 
@@ -20,28 +24,34 @@ defineProps<{
 </script>
 
 <template>
-    <Head title="Email verification" />
+    <Head title="メールの確認" />
 
     <div
         v-if="status === 'verification-link-sent'"
-        class="mb-4 text-center text-sm font-medium text-green-600"
+        class="mb-4 text-center text-sm font-medium text-green-700"
+        role="status"
     >
-        A new verification link has been sent to the email address you provided
-        during registration.
+        確認用のリンクをもう一度送りました。
     </div>
 
-    <Form
-        v-bind="send.form()"
-        class="space-y-6 text-center"
-        v-slot="{ processing }"
-    >
-        <Button :disabled="processing" variant="secondary">
-            <Spinner v-if="processing" />
-            Resend verification email
+    <div class="space-y-4 text-center">
+        <Button as-child class="w-full">
+            <Link :href="dashboard()">確認が済んだら開く</Link>
         </Button>
 
+        <Form v-bind="send.form()" v-slot="{ processing }">
+            <Button :disabled="processing" variant="secondary" class="w-full">
+                <Spinner v-if="processing" />
+                確認メールをもう一度送る
+            </Button>
+        </Form>
+
+        <p class="text-xs text-[var(--cd-auth-muted)]">
+            届かないときは迷惑メールのフォルダも確認してください。
+        </p>
+
         <TextLink :href="logout()" as="button" class="mx-auto block text-sm">
-            Log out
+            ログアウト
         </TextLink>
-    </Form>
+    </div>
 </template>

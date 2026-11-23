@@ -23,7 +23,7 @@
 
 - アプリで開いたとき（User-Agent に `ClearDawnApp`）は、公開ランディングページを出さず、未ログインならログイン画面へ直接送る。
 - ログイン・新規登録の画面はアプリ向けのデザイン（和紙の背景、ロゴ、ログイン / 新規登録の切り替えタブ、大きな入力欄とボタン）。ブラウザでも同じ画面を使う。
-- 新規登録は公開（`APP_PUBLIC_SIGNUP_ENABLED` は廃止済み、PR #225）。パスワードは全環境共通のポリシー。
+- 新規登録は公開（`APP_PUBLIC_SIGNUP_ENABLED` は廃止済み、PR #225）。パスワードは全環境共通のポリシー。メールアドレスで登録した場合はメール確認が必須（`docs/product/signup-policy.md`）。確認画面に「確認が済んだら開く」を置き、ブラウザで確認したあとアプリに戻れるようにする。
 - **Apple でサインイン**:
   - アプリ内: iOS のネイティブ画面（`@capacitor-community/apple-sign-in`）。サーバーが発行した使い捨ての nonce を渡し、返ってきた identity token をサーバーで検証する（署名・発行者・対象・nonce）。
   - ブラウザ: Apple の Web 画面へリダイレクト（Services ID、`form_post` のコールバック。CSRF の代わりに暗号化した nonce Cookie で検証）。

@@ -2,6 +2,10 @@
 
 プロジェクト固有の思考フレームワーク。タスク種別に応じて `.cursor/rules/task-skill-routing.mdc` が参照する。
 
+> **このディレクトリが手書きワークフロースキルの正（source of truth）である。**
+> `.claude/skills/` からは symlink されており、Claude Code / Codex からも同じ内容が参照される。
+> 編集はこちら（`.cursor/skills/`）に対して行うこと。
+
 ## プロジェクト固有スキル
 
 | スキル | 種別 | 用途 |
@@ -39,3 +43,17 @@
 | `.cursor/skills/*/SKILL.md` | タスク種別ごとの手順・出力フォーマット |
 
 タスク種別 → スキルの対応表は `rules/task-skill-routing.mdc`。
+
+**ルールの正も `.cursor/rules/` である。** `CLAUDE.md` / `AGENTS.md` はそこを参照するだけで、
+規約の本文を持たない。両ファイルの共通プリアンブルは CI で同一性が検査される。
+
+## ディレクトリ構成の意図
+
+| 分類 | 正の場所 | 同期方法 | 手編集 |
+|---|---|---|---|
+| 手書きワークフロースキル（7件 + `_shared`） | **`.cursor/skills/`** | `.claude/skills/` から symlink | 可（ここを編集） |
+| Cloud デプロイスキル | `.ai/skills/deploying-laravel-cloud/` | 両者から symlink | 可 |
+| Boost 生成スキル（7件） | `.claude/skills/` `.cursor/skills/` | `boost:update` が再生成 | **禁止** |
+
+Boost 生成スキルを symlink 化してはいけない。`composer update` の `post-update-cmd` で
+`boost:update` が走り、実体ファイルとして書き戻されるため。**生成器と戦わない。**

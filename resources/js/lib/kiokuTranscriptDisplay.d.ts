@@ -3,10 +3,5 @@ declare module '@/lib/kiokuTranscriptDisplay.mjs' {
         transcriptionEnabled: boolean;
         transcriptionStatus: string | null;
         transcriptText: string | null;
-    }):
-        | 'text'
-        | 'empty_ready'
-        | 'not_configured'
-        | 'failed'
-        | 'processing';
+    }): 'text' | 'empty_ready' | 'not_configured' | 'failed' | 'processing';
 }

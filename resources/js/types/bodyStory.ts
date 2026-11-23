@@ -1,11 +1,7 @@
 export type BodyStoryKind = 'nutrition' | 'weight' | 'weekly' | 'body';
 
 export type BodyStorySegmentKey =
-    | 'left_arm'
-    | 'right_arm'
-    | 'torso'
-    | 'left_leg'
-    | 'right_leg';
+    'left_arm' | 'right_arm' | 'torso' | 'left_leg' | 'right_leg';
 
 export type BodyStorySegmentValues = {
     lean_mass_kg: number | null;
@@ -86,8 +82,5 @@ export type BodyCompositionStoryViewModel = {
     skeletalMuscle: { value: number | null; display: string };
     bodyFat: { value: number | null; display: string };
     abdominal: { value: number | null; display: string };
-    segments: Record<
-        BodyStorySegmentKey,
-        { lean: string; fat: string }
-    >;
+    segments: Record<BodyStorySegmentKey, { lean: string; fat: string }>;
 };

@@ -27,7 +27,33 @@ M4 以降は集計クエリ・金額計算・Object Storage・API 設計が厚�
 
 エージェントは **Claude Code**（`claude_code`）と **Cursor**（`cursor`）の両方を選択済み。
 
-プロジェクト固有スキル（`bugfix`, `spec`, `vue-sfc-patterns` 等）は **そのまま共存** する。Boost は同名ディレクトリだけを同期し、既存スキルは消さない。
+## 生成物と手書き資産の境界（重要）
+
+`.claude/skills/` と `.cursor/skills/` に同じ内容が並ぶのは **Boost による自動生成**であり、手作業のコピーではない。
+両者を混同すると、symlink 化した手書き資産が `boost:update` で実体ファイルに戻される等の事故が起きる。
+
+| 分類 | 正の場所 | 同期方法 | 手編集 |
+|---|---|---|---|
+| Boost 生成スキル（`boost.json` の `skills` 7件） | `.claude/skills/` `.cursor/skills/` に実体 | `boost:update` が再生成 | **禁止** |
+| Cloud デプロイスキル | `.ai/skills/deploying-laravel-cloud/` | 両者から symlink | 可 |
+| 手書きワークフロースキル（7件 + `_shared`） | **`.cursor/skills/`** | `.claude/skills/` から symlink | 可 |
+
+手書きワークフロースキル: `bugfix` / `incident` / `perf-review` / `review-only` / `spec` /
+`test-design-review` / `vue-sfc-patterns`。
+
+**Boost 生成スキルを symlink 化してはいけない。** `composer update` の `post-update-cmd` で
+`boost:update` が走り、実体ファイルとして書き戻されるため。生成器と戦わない。
+
+Boost は同名ディレクトリだけを同期し、既存スキルは消さない。
+
+## ルールの正は `.cursor/rules/`
+
+コーディング規約・品質基準の**正は `.cursor/rules/*.mdc`**（14ファイル）。
+`CLAUDE.md` / `AGENTS.md` は規約本文を持たず、`.cursor/rules/` を参照するだけにしてある。
+
+両ファイル冒頭の共通プリアンブル（`<!-- AGENT-PREAMBLE:START -->` 〜 `:END -->`）は
+**CI で同一性が検査される**（`.github/workflows/ci.yml` の `docs` ジョブ）。
+片方だけ編集すると CI が落ちる。
 
 ## プロダクト仕様との関係
 
